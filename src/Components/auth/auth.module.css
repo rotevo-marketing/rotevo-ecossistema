@@ -31,5 +31,5 @@
 @media (max-width: 380px) { .header { gap: 14px; } .wordmark { font-size: 38px; } .card { padding: 28px 20px; } .title { font-size: 23px; } }
 
 .clientHeader { grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: clamp(4px, 2vw, 20px); }
-.clientHeader .headerLink { color: #477000; font-size: clamp(12px, calc(4vw - 0.8px), 16px); font-weight: 600; white-space: nowrap; padding-inline: 2px; }
-.clientHeader .headerLink:hover { color: #355400; }
+.clientHeader .headerLink { color: #000000; font-size: clamp(12px, calc(4vw - 0.8px), 16px); font-weight: 600; white-space: nowrap; padding-inline: 2px; }
+.clientHeader .headerLink:is(:hover, :focus) { color: #000000; }

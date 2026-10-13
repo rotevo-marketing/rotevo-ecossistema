@@ -15,7 +15,7 @@ export function AuthShell({ title, children, strategist = false }: { title: stri
           </Link>
           <span className={styles.separator} aria-hidden="true" />
           <Link href={strategist ? "/" : "/estrategista/login"} className={styles.headerLink}>
-            {strategist ? "Login do cliente" : "Área do estrategista"}
+            {strategist ? "Login do cliente" : "Área do Estrategista"}
           </Link>
         </header>
         <section className={styles.card} aria-labelledby="auth-title">

@@ -1,9 +1,7 @@
-import { Archivo_Black } from "next/font/google";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { RotevoLogo } from "../RotevoLogo";
 import styles from "./auth.module.css";
-
-const archivoBlack = Archivo_Black({ weight: "400", subsets: ["latin"], display: "swap", adjustFontFallback: false });
 
 export { styles as authStyles };
 
@@ -13,7 +11,7 @@ export function AuthShell({ title, children, strategist = false }: { title: stri
       <div className={styles.container}>
         <header className={styles.header}>
           <Link href="/" aria-label="Rotevo — login do cliente" className={styles.brandLink}>
-            <span className={archivoBlack.className + " " + styles.wordmark}>rotevo</span>
+            <RotevoLogo variant="black" className={styles.wordmark} />
           </Link>
           <span className={styles.separator} aria-hidden="true" />
           <Link href={strategist ? "/" : "/estrategista/login"} className={styles.headerLink}>

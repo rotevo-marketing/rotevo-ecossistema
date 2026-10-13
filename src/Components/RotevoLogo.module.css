@@ -1,0 +1,21 @@
+.logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.04em;
+  flex-shrink: 0;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.black { color: #000000; }
+.white { color: #ffffff; }
+
+.dot {
+  width: 0.14em;
+  height: 0.14em;
+  margin-bottom: 0.15em;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: #a7e000;
+}

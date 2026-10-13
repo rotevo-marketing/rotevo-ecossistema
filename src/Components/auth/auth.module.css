@@ -1,11 +1,12 @@
-.screen { min-height: 100svh; display: grid; place-items: center; padding: 48px 20px; color: #e7eefc; background-color: #19182f; background-image: radial-gradient(ellipse at 15% 10%, #6543ad22, transparent 55%), radial-gradient(ellipse at 95% 85%, #6543ad18, transparent 50%), linear-gradient(#9181c508 1px, transparent 1px), linear-gradient(90deg, #9181c508 1px, transparent 1px); background-size: auto, auto, 64px 64px, 64px 64px; }
+.screen { min-height: 100svh; display: grid; place-items: center; padding: 48px 20px; color: #e7eefc; background-color: #f4f5f7; background-image: radial-gradient(ellipse at 4% 45%, #a78bfa24 0%, transparent 48%), radial-gradient(ellipse at 96% 55%, #b39aee24 0%, transparent 48%), linear-gradient(#69677b0a 1px, transparent 1px), linear-gradient(90deg, #69677b0a 1px, transparent 1px); background-size: auto, auto, 64px 64px, 64px 64px; }
 .container { width: 100%; max-width: 440px; }
 .header { display: grid; grid-template-columns: auto 1px minmax(0, 1fr); align-items: center; gap: 20px; margin-bottom: 28px; }
 .brandLink { display: flex; align-items: center; min-height: 48px; border-radius: 8px; }
-.wordmark { display: block; color: #fff; font-size: 44px; line-height: 1; font-weight: 400; letter-spacing: -1.5px; }
+.wordmark { display: block; color: #090D1C; font-size: 44px; line-height: 1; font-weight: 400; letter-spacing: -1.5px; }
 .separator { width: 1px; height: 36px; background: #574b80; flex-shrink: 0; }
-.headerLink { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 8px; color: #e7eefc; font-size: 15px; font-weight: 500; line-height: 1.4; text-align: center; padding: 10px 6px; }
-.headerLink:hover, .link:not([aria-disabled="true"]):hover { color: #c5fc60; }
+.headerLink { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 8px; color: #090D1C; font-size: 15px; font-weight: 500; line-height: 1.4; text-align: center; padding: 10px 6px; }
+.headerLink:hover { color: #090D1C; }
+.link:not([aria-disabled="true"]):hover { color: #c5fc60; }
 .card { background: #15132f; border: 1px solid #42337e; border-radius: 20px; padding: 36px 32px; box-shadow: 0 24px 80px #09071845; }
 .title { text-align: center; font-family: var(--font-body), Arial, sans-serif; font-size: 25px; font-weight: 600; line-height: 1.3; letter-spacing: -.6px; margin-bottom: 28px; }
 .form { display: grid; gap: 20px; }

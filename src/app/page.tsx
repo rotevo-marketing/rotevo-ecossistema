@@ -86,7 +86,7 @@ export default function HomePage() {
         <PasswordRecoveryLink />
 
         {errorMessage && <p role="alert" className={s.message + " " + s.error}>{errorMessage}</p>}
-        <button type="submit" className={s.button} disabled={isLoading}>{isLoading ? "Entrando..." : "Entrar"}</button>
+        <button type="submit" className={s.button} disabled={isLoading}>{isLoading ? "Entrando..." : "Acessar Ecossistema"}</button>
       </form>
     </AuthShell>
   );

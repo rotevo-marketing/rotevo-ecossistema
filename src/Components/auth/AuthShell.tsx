@@ -9,7 +9,7 @@ export function AuthShell({ title, children, strategist = false }: { title: stri
   return (
     <main className={styles.screen}>
       <div className={styles.container}>
-        <header className={styles.header}>
+        <header className={styles.header + (strategist ? "" : " " + styles.clientHeader)}>
           <Link href="/" aria-label="Rotevo — login do cliente" className={styles.brandLink}>
             <RotevoLogo variant="black" className={styles.wordmark} />
           </Link>

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 import { AuthShell, authStyles as s } from "@/Components/auth/AuthShell";
 import { PasswordField } from "@/Components/auth/PasswordField";
+import { PasswordRecoveryLink } from "@/Components/auth/PasswordRecoveryLink";
 
 export default function HomePage() {
   const router = useRouter();
@@ -82,11 +83,10 @@ export default function HomePage() {
           <input id="email" type="email" autoComplete="username" required disabled={isLoading} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" className={s.input} />
         </label>
         <PasswordField id="password" value={password} onChange={setPassword} disabled={isLoading} />
-        <p className={s.note}>Esqueceu sua senha? Fale com o estrategista.</p>
+        <PasswordRecoveryLink />
 
         {errorMessage && <p role="alert" className={s.message + " " + s.error}>{errorMessage}</p>}
         <button type="submit" className={s.button} disabled={isLoading}>{isLoading ? "Entrando..." : "Entrar"}</button>
-        <p className={s.note}>Ainda não tem acesso? Fale com o estrategista.</p>
       </form>
     </AuthShell>
   );

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Lowercase r outlined from Poppins SemiBold 600 (SIL OFL 1.1).
+       Source: https://github.com/google/fonts/blob/main/ofl/poppins/Poppins-SemiBold.ttf
+       Font SHA-256: d3bf1bdaf0550e83da9ac0b1d1d9fe6db086835a83aa28578e609a394b9a0286 -->
+  <rect width="64" height="64" fill="#A7E000"/>
+  <path fill="#000000" transform="translate(18.448399 49.000000) scale(0.06049822 -0.06049822)" d="M279.5 537Q323 562 379 562L379 415L342 415Q276 415 242.5 384Q209 353 209 276L209 0L69 0L69 554L209 554L209 468Q236 512 279.5 537Z"/>
+</svg>

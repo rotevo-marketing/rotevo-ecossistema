@@ -17,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Método | Planejamento Estratégico Digital",
-  description: "Agora existe um caminho claro para o seu projeto crescer",
+  title: "Rotevo | Ecossistema de Crescimento",
+  description: "Planejamento estratégico, inteligência de marketing e gestão do crescimento empresarial em um único ecossistema.",
 };
 
 export default function RootLayout({

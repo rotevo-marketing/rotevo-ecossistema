@@ -165,6 +165,7 @@ import MateriaisEducacionaisForm, {
 import EstrategiaDoSiteForm, {
   initialSiteStrategyData,
   SiteStrategyData,
+  normalizeSiteStrategyData,
 } from "@/Components/modulos/EstrategiaDoSiteForm";
 
 import MapaDoSiteForm, {
@@ -1173,36 +1174,7 @@ if (isSiteMapModule && isSiteMapData(savedContent)) {
 }
 
 if (isSiteStrategyModule && isSiteStrategyData(savedContent)) {
-  setSiteStrategyData({
-    visualIdentity: savedContent.visualIdentity || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            url: r.url || "",
-          }))
-        : [{ title: "", url: "" }],
-    integrations:
-      Array.isArray(savedContent.integrations) && savedContent.integrations.length
-        ? savedContent.integrations.map((i) => ({ name: i.name || "" }))
-        : [{ name: "" }],
-    essentialPages:
-      Array.isArray(savedContent.essentialPages) && savedContent.essentialPages.length
-        ? savedContent.essentialPages.map((p) => ({ value: p.value || "" }))
-        : [{ value: "" }],
-    importantFeatures:
-      Array.isArray(savedContent.importantFeatures) && savedContent.importantFeatures.length
-        ? savedContent.importantFeatures.map((f) => ({ value: f.value || "" }))
-        : [{ value: "" }],
-    strategicNotes: savedContent.strategicNotes || "",
-    externalReferences:
-      Array.isArray(savedContent.externalReferences) && savedContent.externalReferences.length
-        ? savedContent.externalReferences.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : [{ title: "", link: "" }],
-  });
+  setSiteStrategyData(normalizeSiteStrategyData(savedContent));
 }
 
 if (isEducationalMaterialsModule && isEducationalMaterialsData(savedContent)) {

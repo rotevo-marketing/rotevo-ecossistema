@@ -63,6 +63,7 @@ export default function SelecionarModulosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isPreview, setIsPreview] = useState(false);
 
   const selectedCount = selectedModules.length;
 
@@ -95,7 +96,12 @@ export default function SelecionarModulosPage() {
         return;
       }
 
-      const storedDraft = getStoredDraft();
+      // Read-only demonstration: no client details or project creation required.
+      const previewMode = new URLSearchParams(window.location.search).get("preview") === "1";
+      setIsPreview(previewMode);
+      const storedDraft = previewMode
+        ? { clientName: "Cliente de demonstração", clientSlug: "cliente-demonstracao", projectTitle: "Planejamento Estratégico 2027 — Prévia", projectSlug: "planejamento-demo", description: "", coverImageUrl: "" }
+        : getStoredDraft();
       if (!storedDraft) {
         router.push("/admin/novo-planejamento");
         return;
@@ -135,6 +141,10 @@ export default function SelecionarModulosPage() {
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isPreview) {
+      setErrorMessage("Modo de pré-visualização: nenhum projeto será criado. Para criar um planejamento real, volte ao painel.");
+      return;
+    }
 
     if (!draft) {
       setErrorMessage("Os dados iniciais do planejamento não foram encontrados.");
@@ -324,6 +334,12 @@ export default function SelecionarModulosPage() {
             </div>
           </div>
 
+          {isPreview && (
+            <div role="status" className="mt-6 rounded-2xl border border-[#A7E000] bg-[#F5FBDD] px-5 py-4 text-sm font-medium text-[#243100]">
+              Modo de pré-visualização — dados fictícios. Você pode testar a seleção dos módulos sem cadastrar um cliente. Nenhum planejamento será criado.
+            </div>
+          )}
+
           {errorMessage && (
             <div className="mt-6 rounded-2xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
               {errorMessage}
@@ -455,10 +471,10 @@ export default function SelecionarModulosPage() {
 
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || isPreview}
                 className="inline-flex cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSaving ? "Criando..." : "Criar planejamento"}
+                {isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}
               </button>
             </div>
           </form>

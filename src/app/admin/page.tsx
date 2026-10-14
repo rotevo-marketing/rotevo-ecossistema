@@ -113,7 +113,10 @@ export default function AdminPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
+    const loadingStartedAt = performance.now();
+    const authStartedAt = performance.now();
     const { data: userData, error: userError } = await supabase.auth.getUser();
+    const authDurationMs = Math.round(performance.now() - authStartedAt);
 
     if (userError || !userData.user) {
       window.localStorage.removeItem("metodo-epc-strategist-auth");
@@ -121,6 +124,7 @@ export default function AdminPage() {
       return;
     }
 
+    const profileStartedAt = performance.now();
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -134,7 +138,9 @@ export default function AdminPage() {
       return;
     }
 
+    const profileDurationMs = Math.round(performance.now() - profileStartedAt);
     setUserEmail(userData.user.email ?? "");
+    const projectsStartedAt = performance.now();
 
     const { data, error } = await supabase
       .from("planning_projects")
@@ -156,6 +162,15 @@ export default function AdminPage() {
       `
       )
       .order("updated_at", { ascending: false });
+
+    const projectsDurationMs = Math.round(performance.now() - projectsStartedAt);
+    console.info("[Rotevo] Tempos de carregamento do painel (ms)", {
+      autenticacao: authDurationMs,
+      perfil: profileDurationMs,
+      planejamentos: projectsDurationMs,
+      total: Math.round(performance.now() - loadingStartedAt),
+      quantidadeProjetos: data?.length ?? 0,
+    });
 
     if (error) {
       setErrorMessage("Não foi possível carregar os planejamentos.");

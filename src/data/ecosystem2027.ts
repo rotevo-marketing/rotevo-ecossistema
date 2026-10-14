@@ -710,6 +710,48 @@ export const ecosystemTasks: EcosystemTask[] = [
     "title": "Construir roadmap anual",
     "application": "Obrigatória",
     "documentTemplate": "12.02 — Construir roadmap anual | MODELO"
+  },
+  {
+    "code": "12.03",
+    "area": "12 Execução e Governança",
+    "title": "Definir responsabilidades e governança",
+    "application": "Obrigatória",
+    "documentTemplate": "12.03 — Definir responsabilidades e governança | MODELO"
+  },
+  {
+    "code": "12.04",
+    "area": "12 Execução e Governança",
+    "title": "Mapear dependências de execução",
+    "application": "Obrigatória",
+    "documentTemplate": "12.04 — Mapear dependências de execução | MODELO"
+  },
+  {
+    "code": "12.05",
+    "area": "12 Execução e Governança",
+    "title": "Criar centro de decisões",
+    "application": "Obrigatória",
+    "documentTemplate": "12.05 — Criar centro de decisões | MODELO"
+  },
+  {
+    "code": "12.06",
+    "area": "12 Execução e Governança",
+    "title": "Mapear riscos e contingências",
+    "application": "Obrigatória",
+    "documentTemplate": "12.06 — Mapear riscos e contingências | MODELO"
+  },
+  {
+    "code": "12.07",
+    "area": "12 Execução e Governança",
+    "title": "Criar base de aprendizados",
+    "application": "Obrigatória",
+    "documentTemplate": "12.07 — Criar base de aprendizados | MODELO"
+  },
+  {
+    "code": "12.08",
+    "area": "12 Execução e Governança",
+    "title": "Definir cadência de governança",
+    "application": "Obrigatória",
+    "documentTemplate": "12.08 — Definir cadência de governança | MODELO"
   }
 ];
 

@@ -1057,35 +1057,4 @@ export default function ApresentacaoDinamicaPage() {
   return <LegacyPresentationV2 sections={sections} clientName={clientName} projectTitle={project.title} coverImageUrl={coverImageUrl}
     moduleContent={moduleContent} isStrategist={isStrategist} clientSlug={client?.slug??""}/>;
 
-  /* Legacy layout retained temporarily for rollback.
-  if (viewMode === "overview") {
-    return (
-      <OverviewMode
-        sections={sections}
-        clientName={clientName}
-        projectTitle={project.title}
-        coverImageUrl={coverImageUrl}
-        isStrategist={isStrategist}
-        projectSlug={project.slug}
-        onSelect={(s) => {
-          setActiveSlug(s);
-          setViewMode("detail");
-        }}
-      />
-    );
-  }
-
-  return (
-    <DetailMode
-      sections={sections}
-      activeSlug={activeSlug}
-      clientName={clientName}
-      coverImageUrl={coverImageUrl}
-      moduleContent={moduleContent}
-      isStrategist={isStrategist}
-      onChangeSlug={setActiveSlug}
-      onBackToOverview={() => setViewMode("overview")}
-    />
-  );
-  */
 }

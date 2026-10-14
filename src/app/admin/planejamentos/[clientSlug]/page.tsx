@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { moduleCategories, planningModules } from "@/data/modules";
-import { MetodoFooter, MetodoLogo } from "@/Components/MetodoBrand";
+import { RotevoLogo } from "@/Components/RotevoLogo";
+import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
 type ClientRecord = {
@@ -23,6 +24,7 @@ type ProjectData = {
     description: string;
   }[];
   moduleContent?: Record<string, unknown>;
+  ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[] };
 };
 
 type PlanningProject = {
@@ -96,6 +98,7 @@ export default function PlanejamentoClientePage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const client = project ? getProjectClient(project) : null;
 
@@ -107,6 +110,11 @@ export default function PlanejamentoClientePage() {
   }, [selectedModuleSlugs]);
 
   const coverImageUrl = project?.data?.coverImageUrl || "";
+  const hasEcosystem = !!project?.data?.ecosystem2027;
+  const documentCodes = project?.data?.ecosystem2027?.selectedDocumentCodes ?? [];
+  const presentedCodes = project?.data?.ecosystem2027?.presentedDocumentCodes ?? [];
+  const selectedDocuments = ecosystemDocuments.filter((doc) => documentCodes.includes(doc.code));
+  const documentAreas = Array.from(new Set(selectedDocuments.map((doc) => doc.area)));
 
   useEffect(() => {
     async function loadProject() {
@@ -135,6 +143,7 @@ export default function PlanejamentoClientePage() {
         return;
       }
 
+      setUserEmail(userData.user.email ?? "");
       const { data, error } = await supabase
         .from("planning_projects")
         .select(
@@ -297,39 +306,23 @@ export default function PlanejamentoClientePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 lg:px-10">
-        <MetodoLogo variant="dark" />
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin"
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-          >
-            Voltar ao painel
-          </Link>
-
-          {project ? (
-            <Link
-              href={`/admin/planejamentos/${clientSlug}/acesso`}
-              className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-            >
-              Configurar acesso
-            </Link>
-          ) : null}
-
-          {project ? (
-            <Link
-              href={`/apresentacao/${project.slug}`}
-              className="rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
-            >
-              Ver apresentação
-            </Link>
-          ) : null}
+    <main className="admin-manage-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+      <style jsx global>{` .admin-manage-v2, .admin-manage-v2 h1, .admin-manage-v2 h2, .admin-manage-v2 h3, .admin-manage-v2 h4 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
+      <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27}/></Link>
+            <span className="hidden h-6 w-px bg-[#E3E7F0] sm:block"/>
+            <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {userEmail && <div title={userEmail} className="hidden items-center gap-2 sm:flex"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">{userEmail.charAt(0).toUpperCase()}</span><span className="hidden max-w-44 truncate text-xs text-[#525B70] lg:block">{userEmail}</span></div>}
+            <Link href="/admin" className="rounded-xl border border-[#E3E7F0] bg-white px-3 py-2.5 text-xs font-medium text-[#090D1C] sm:px-4 sm:text-sm">Voltar ao painel</Link>
+          </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 pb-20 lg:px-10">
+      <section className="mx-auto w-full max-w-6xl flex-1 px-5 pb-20 pt-9 sm:px-8 lg:px-10">
         {isLoading ? (
           <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
             <p className="text-slate-500">Carregando planejamento...</p>
@@ -357,13 +350,13 @@ export default function PlanejamentoClientePage() {
 
         {!isLoading && project ? (
           <>
-            <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-200">
+            <div className="overflow-hidden rounded-2xl border border-[#E3E7F0] bg-white">
               <div className="h-1 bg-slate-200" />
               <div className="p-8 lg:p-10">
                 <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Configuração do planejamento
+                    <p className="text-xs font-semibold text-[#697386]">
+                      Gerenciar planejamento
                     </p>
 
                     <div className="mt-5 flex items-center gap-4">
@@ -382,7 +375,7 @@ export default function PlanejamentoClientePage() {
                       </div>
 
                       <div>
-                        <h1 className="text-4xl font-bold tracking-[-0.04em] text-slate-950">
+                        <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em] text-[#090D1C]">
                           {client?.name ?? "Cliente"}
                         </h1>
 
@@ -461,7 +454,7 @@ export default function PlanejamentoClientePage() {
               </div>
             </div>
 
-            <div className="sticky top-0 z-10 mt-8 rounded-3xl bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur lg:p-6">
+            {!hasEcosystem && <div className="mt-8 rounded-xl border border-[#E3E7F0] bg-white p-5 lg:p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -518,7 +511,7 @@ export default function PlanejamentoClientePage() {
               ) : null}
             </div>
 
-            <div className="mt-8 space-y-10">
+            {!hasEcosystem && <div className="mt-8 space-y-10">
               {moduleCategories.map((category) => {
                 const categoryModules = planningModules.filter(
                   (module) => module.category === category && module.presentation
@@ -609,12 +602,33 @@ export default function PlanejamentoClientePage() {
                   </section>
                 );
               })}
-            </div>
+            </div>}
+
+            {hasEcosystem && <div className="mt-7 space-y-5">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Documentos selecionados</p><strong className="mt-2 block text-2xl">{selectedDocuments.length}</strong></div>
+                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Visíveis ao cliente</p><strong className="mt-2 block text-2xl">{presentedCodes.length}</strong></div>
+                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Áreas do projeto</p><strong className="mt-2 block text-2xl">{documentAreas.length}</strong></div>
+              </div>
+              <div className="rounded-xl border border-[#E3E7F0] bg-white p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Escopo selecionado na criação, organizado pelas áreas do Ecossistema 2027.</p></div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/admin/planejamentos/${clientSlug}/acesso`} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium">Configurar acesso</Link>
+                    <Link href={`/apresentacao/${project.slug}`} className="rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">Ver apresentação</Link>
+                  </div>
+                </div>
+                <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">Os editores e a apresentação do modelo 2027 ainda serão integrados aos documentos selecionados. Esta tela mostra o escopo salvo sem alterar o conteúdo de projetos existentes.</div>
+                <div className="mt-5 space-y-4">
+                  {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="shrink-0 text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Exibir ao cliente" : "Uso interno"}</span></div>)}</div></section>)}
+                </div>
+              </div>
+            </div>}
           </>
         ) : null}
       </section>
 
-      <MetodoFooter />
+      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
 }

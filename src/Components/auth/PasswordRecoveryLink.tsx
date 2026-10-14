@@ -6,7 +6,7 @@ import { authStyles as s } from "./AuthShell";
 
 // Enable only after SMTP/delivery, redirect URLs and end-to-end recovery tests
 // are validated and both recovery routes are included in the release.
-const PASSWORD_RECOVERY_ENABLED = false;
+const PASSWORD_RECOVERY_ENABLED = true;
 
 export function PasswordRecoveryLink({ strategist = false }: { strategist?: boolean }) {
   const descriptionId = useId();

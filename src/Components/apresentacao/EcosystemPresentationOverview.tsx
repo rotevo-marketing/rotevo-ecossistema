@@ -12,24 +12,22 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && selectedCodes.includes(d.code) && presentedCodes.includes(d.code));
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
-  const [expanded,setExpanded] = useState<string[]>([]);
   const [menuOpen,setMenuOpen] = useState(false);
   const chosen = docs.find(d=>d.code===active);
-  const chosenArea = areas.includes(active) ? active : null;
-  const toggleArea=(area:string)=>{setExpanded(old=>old.includes(area)?old.filter(a=>a!==area):[...old,area]);setActive(area);setMenuOpen(false);};
-  const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1"><div className="mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6"><div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div></div>
-    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-sm font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><span className="flex items-center gap-3"><AreaIcon index={0}/>Painel Executivo</span></button>
+  const chosenArea = areas.includes(active) ? active : chosen?.area ?? null;
+  const areaDocs = chosenArea ? docs.filter(d=>d.area===chosenArea) : [];
+  const selectArea=(area:string)=>{setActive(area);setMenuOpen(false);};
+  const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1">
+    <div className="mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div>
+      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div>
+    </div>
+    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-[15px] font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><span className="flex items-center gap-3"><AreaIcon index={0}/>Painel Executivo</span></button>
     <p className="px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1]">Áreas estratégicas</p>
-    {areas.map(area=><div key={area}>
-      <button type="button" onClick={()=>toggleArea(area)} aria-expanded={expanded.includes(area)}
-        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-3.5 text-left text-[15px] leading-5 font-medium ${active===area?"bg-white/10 text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
-        <span className="flex min-w-0 items-center gap-3"><AreaIcon index={Number(area.slice(0,2))}/><span>{area.slice(3)}</span></span><span aria-hidden="true">{expanded.includes(area)?"−":"+"}</span>
-      </button>
-      {expanded.includes(area)&&<div className="space-y-1 pb-2 pl-5">
-        {docs.filter(d=>d.area===area).map(doc=><button key={doc.code} type="button" onClick={()=>{setActive(doc.code);setMenuOpen(false);}}
-          className={`w-full cursor-pointer rounded-lg px-3 py-2 text-left text-xs leading-5 ${active===doc.code?"bg-[#6D35F5] text-white":"text-[#CED5E3] hover:bg-white/10"}`}>{doc.code} · {doc.title}</button>)}
-      </div>}
-    </div>)}
+    {areas.map(area=><button key={area} type="button" onClick={()=>selectArea(area)} aria-current={chosenArea===area?"page":undefined}
+      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] leading-5 font-medium transition-colors ${chosenArea===area?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
+      <AreaIcon index={Number(area.slice(0,2))}/><span>{area.slice(3)}</span>
+    </button>)}
   </nav>);
   return <main className="ecosystem-presentation-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
     <style jsx global>{` .ecosystem-presentation-v2, .ecosystem-presentation-v2 h1, .ecosystem-presentation-v2 h2, .ecosystem-presentation-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
@@ -39,10 +37,17 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
         <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm font-medium hover:bg-[#F6F7FB]">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
       </div>
     </header>
-    <div className="mx-auto flex w-full max-w-7xl flex-1 items-stretch">
-      <aside className="hidden w-[306px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
+    <div className="flex w-full flex-1 items-stretch">
+      <aside className="hidden w-[286px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
       {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{nav}</aside>}
-      <div className={`min-w-0 flex-1 px-5 pb-20 pt-8 sm:px-8 ${menuOpen?"hidden lg:block":""}`}>
+      <div className={`min-w-0 flex-1 px-5 pb-20 pt-5 sm:px-7 ${menuOpen?"hidden lg:block":""}`}>
+        {chosenArea&&<div className="mb-6 border-b border-[#E3E7F0]">
+          <div className="mb-2 flex items-center gap-2"><span className="text-[#6D35F5]"><AreaIcon index={Number(chosenArea.slice(0,2))}/></span><h2 className="text-base font-semibold">{chosenArea.slice(3)}</h2></div>
+          <div role="tablist" aria-label={`Documentos de ${chosenArea.slice(3)}`} className="flex gap-2 overflow-x-auto pb-3">
+            {areaDocs.map(doc=><button key={doc.code} type="button" role="tab" aria-selected={active===doc.code} onClick={()=>setActive(doc.code)}
+              className={`shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium ${active===doc.code?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70] hover:border-[#6D35F5]"}`}>{doc.title}</button>)}
+          </div>
+        </div>}
         {active==="dashboard"&&<div className="space-y-6">
           <div><p className="text-xs font-semibold text-[#697386]">Painel Executivo</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Visão geral estratégica</h1><p className="mt-2 text-sm text-[#525B70]">Consolidação dos objetivos, prioridades, iniciativas e acompanhamento do planejamento.</p></div>
           <div className="space-y-4">

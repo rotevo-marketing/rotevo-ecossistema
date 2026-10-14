@@ -317,8 +317,8 @@ export default function SelecionarModulosPage() {
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <input aria-label="Buscar área ou tarefa" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar área, tarefa ou código..." className="w-full rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-sm outline-none focus:border-[#6D35F5] sm:max-w-md"/>
             <div className="flex gap-2">
-              <button type="button" onClick={() => {setTaskExecution(selectableDocuments.map((doc) => doc.code));setTaskPresentation(selectableDocuments.map((doc) => doc.code));setExpandedAreas(selectableAreas);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
-              <button type="button" onClick={() => {setTaskExecution([]);setTaskPresentation([]);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Limpar seleção</button>
+              <button type="button" onClick={() => {setTaskExecution(selectableDocuments.map((doc) => doc.code));setTaskPresentation(selectableDocuments.map((doc) => doc.code));setExpandedAreas(selectableAreas);}} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
+              <button type="button" onClick={() => {setTaskExecution([]);setTaskPresentation([]);}} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Limpar seleção</button>
             </div>
           </div>
           <form onSubmit={handleSubmit}>

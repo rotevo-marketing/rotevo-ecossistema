@@ -48,7 +48,7 @@ export default function ClientAreaPage(){
       <button type="button" onClick={logout} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-5 py-2.5 text-sm font-medium hover:bg-[#F6F7FB]">Sair</button>
     </div></header>
     <section className="mx-auto w-full max-w-6xl flex-1 px-5 pb-20 pt-10 sm:px-8 lg:px-10">
-      <div className="mb-8"><p className="text-sm font-medium text-[#697386]">Área do Cliente</p><h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">{clientName?`Olá, ${clientName}!`:"Meus planejamentos"}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe seus projetos e acesse seus planejamentos estratégicos.</p></div>
+      <div className="mb-8"><h1 className="text-3xl font-bold tracking-[-0.03em] sm:text-4xl">{clientName?`Olá, ${clientName}!`:"Boas-vindas à Rotevo"}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Seu espaço para acompanhar o trabalho estratégico desenvolvido pela Rotevo e consultar o que já está disponível.</p></div>
       {errorMessage&&<p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{errorMessage}</p>}
       <h2 className="mb-4 text-xl font-bold">Meus planejamentos</h2>
       {isLoading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seus planejamentos...</div>:

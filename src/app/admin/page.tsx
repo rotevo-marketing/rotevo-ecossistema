@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 type ClientRecord = {
   id: string;
@@ -83,6 +86,7 @@ export default function AdminPage() {
   const [isPublishingId, setIsPublishingId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -132,6 +136,8 @@ export default function AdminPage() {
       router.push("/estrategista/login");
       return;
     }
+
+    setUserEmail(userData.user.email ?? "");
 
     const { data, error } = await supabase
       .from("planning_projects")
@@ -240,7 +246,7 @@ export default function AdminPage() {
 
 
   return (
-    <main className="min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+    <main className={`${inter.className} min-h-screen bg-[#F6F7FB] text-[#090D1C]`}>
       <header className="border-b border-[#E3E7F0] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">
@@ -248,37 +254,44 @@ export default function AdminPage() {
             <span className="hidden h-6 w-px bg-[#E3E7F0] sm:block" />
             <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
           </div>
-          <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-5 py-2.5 text-sm font-medium text-[#525B70] hover:bg-[#F6F7FB]">Sair</button>
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <div className="flex items-center gap-2" title={userEmail} aria-label={"Usuário conectado: " + userEmail}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]" aria-hidden="true">
+                  {userEmail.charAt(0).toUpperCase()}
+                </span>
+                <span className="hidden max-w-48 truncate text-xs text-[#525B70] md:block">{userEmail}</span>
+              </div>
+            )}
+            <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-5 py-2.5 text-sm font-medium text-[#525B70] hover:bg-[#F6F7FB]">Sair</button>
+          </div>
         </div>
       </header>
       <section className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6D35F5]">Painel administrativo</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">Planejamentos</h1>
+            <h1 className="mt-2 text-[30px] leading-[38px] font-bold tracking-[-0.02em]">Planejamentos</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
           </div>
           <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { label: "Total de planejamentos", value: totalProjects, icon: "▦", color: "text-[#6D35F5]" },
-            { label: "Em produção", value: inProgressProjects, icon: "◷", color: "text-[#B27821]" },
-            { label: "Publicados", value: publishedProjects, icon: "✓", color: "text-[#16794B]" }
+            { label: "Total de planejamentos", value: totalProjects },
+            { label: "Em produção", value: inProgressProjects },
+            { label: "Publicados", value: publishedProjects }
           ].map((metric) => (
             <div key={metric.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-6">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-[#525B70]">{metric.label}</p>
-                <span className={"text-xl " + metric.color} aria-hidden="true">{metric.icon}</span>
-              </div>
-              <strong className="mt-4 block text-4xl font-bold">{isLoading ? "..." : metric.value}</strong>
+              <p className="text-sm font-medium text-[#525B70]">{metric.label}</p>
+              <strong className="mt-3 block text-[34px] leading-10 font-bold tabular-nums">{isLoading ? "..." : metric.value}</strong>
             </div>
           ))}
         </div>
         <section aria-labelledby="projects-heading" className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-6 lg:p-8">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="projects-heading" className="text-xl font-semibold">Projetos recentes</h2>
+              <h2 id="projects-heading" className="text-2xl leading-8 font-bold tracking-[-0.02em]">Projetos recentes</h2>
               <p className="mt-1 text-sm text-[#697386]">Localize, acompanhe e gerencie seus planejamentos.</p>
             </div>
             {!isLoading && <span className="shrink-0 text-xs text-[#697386]">{visibleProjects.length} de {projects.length}</span>}
@@ -317,7 +330,7 @@ export default function AdminPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="break-words text-base font-semibold">{clientName}</h3>
+                            <h3 className="break-words text-[17px] leading-6 font-bold">{clientName}</h3>
                             <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
                           </div>
                           <p className="mt-1 break-words text-sm text-[#525B70]">{project.title}</p>
@@ -349,7 +362,7 @@ export default function AdminPage() {
           )}
         </section>
       </section>
-      <footer className="border-t border-[#E3E7F0] bg-[#F6F7FB]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs text-[#697386] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
+      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
     </main>
   );
 }

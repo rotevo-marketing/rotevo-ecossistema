@@ -3,9 +3,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
-import { getIconPath } from "@/Components/apresentacao/ModuleIcon";
-const areaIcons=["resumo-estrategico","dna-da-empresa","objetivos","pesquisa-de-concorrencia","personas","identidade-visual","canais-digitais-atuais","linhas-editoriais","captacao-de-lead","conversao-de-vendas","fluxo-de-automacao","metricas-e-indicadores","linha-do-tempo"];
-function AreaIcon({index}:{index:number}) { const url=getIconPath(areaIcons[index]||"resumo-estrategico"); return <span aria-hidden="true" className="inline-block h-5 w-5 shrink-0 bg-current" style={{maskImage:`url(${url})`,WebkitMaskImage:`url(${url})`,maskSize:"contain",WebkitMaskSize:"contain",maskRepeat:"no-repeat",WebkitMaskRepeat:"no-repeat"}}/>; }
+// Ícones próprios em SVG: traço arredondado e uniforme, sem dependências externas.
+function AreaIcon({index}:{index:number}) {
+  const paths: Record<number, React.ReactNode> = {
+    0: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 15v-4m5 4V7m5 8v-6"/></>,
+    1: <><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 8h4M7 12h4M7 16h4M15 8h2m-2 4h2m-2 4h2"/></>,
+    2: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13c6 4 12 4 18 0"/></>,
+    3: <><path d="M3 18V7l6-4 6 4v11M9 3v15M3 11h12"/><circle cx="18" cy="16" r="3"/><path d="m20.5 18.5 2 2"/></>,
+    4: <><circle cx="9" cy="8" r="3"/><circle cx="18" cy="9" r="2.5"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3Zm12-7a5 5 0 0 1 6 5v2h-4"/></>,
+    5: <><path d="M12 3 4 7v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></>,
+    6: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></>,
+    7: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></>,
+    8: <><path d="m4 12 12-6v12L4 12Zm12-4 3-2v12l-3-2M5 13l2 6h3l-2-5M20 10l2-2m-2 6 2 2"/></>,
+    9: <><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/><path d="M7 8h10"/></>,
+    10: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M17 14v7m-3.5-3.5h7"/></>,
+    11: <><path d="M4 20V4m0 16h17M8 15l4-4 3 2 5-7"/><path d="m16 6 4 0v4"/></>,
+    12: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 14h4m5-1 2 2 3-4"/></>,
+  };
+  return <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0">{paths[index] ?? paths[0]}</svg>;
+}
 
 type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
 export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {

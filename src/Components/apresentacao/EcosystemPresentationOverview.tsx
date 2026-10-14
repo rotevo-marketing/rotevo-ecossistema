@@ -3,6 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
+import { getIconPath } from "@/Components/apresentacao/ModuleIcon";
+const areaIcons=["resumo-estrategico","dna-da-empresa","objetivos","pesquisa-de-concorrencia","personas","identidade-visual","canais-digitais-atuais","linhas-editoriais","captacao-de-lead","conversao-de-vendas","fluxo-de-automacao","metricas-e-indicadores","linha-do-tempo"];
+function AreaIcon({index}:{index:number}) { const url=getIconPath(areaIcons[index]||"resumo-estrategico"); return <span aria-hidden="true" className="inline-block h-5 w-5 shrink-0 bg-current" style={{maskImage:`url(${url})`,WebkitMaskImage:`url(${url})`,maskSize:"contain",WebkitMaskSize:"contain",maskRepeat:"no-repeat",WebkitMaskRepeat:"no-repeat"}}/>; }
 
 type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
 export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {
@@ -15,12 +18,12 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   const chosenArea = areas.includes(active) ? active : null;
   const toggleArea=(area:string)=>{setExpanded(old=>old.includes(area)?old.filter(a=>a!==area):[...old,area]);setActive(area);setMenuOpen(false);};
   const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1"><div className="mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6"><div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div></div>
-    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-sm font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>Painel Executivo</button>
+    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-sm font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><span className="flex items-center gap-3"><AreaIcon index={0}/>Painel Executivo</span></button>
     <p className="px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1]">Áreas estratégicas</p>
     {areas.map(area=><div key={area}>
       <button type="button" onClick={()=>toggleArea(area)} aria-expanded={expanded.includes(area)}
-        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-3 text-left text-xs font-medium ${active===area?"bg-white/10 text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
-        <span>{area}</span><span aria-hidden="true">{expanded.includes(area)?"−":"+"}</span>
+        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-3.5 text-left text-sm font-medium ${active===area?"bg-white/10 text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
+        <span className="flex min-w-0 items-center gap-3"><AreaIcon index={Number(area.slice(0,2))}/><span>{area.slice(3)}</span></span><span aria-hidden="true">{expanded.includes(area)?"−":"+"}</span>
       </button>
       {expanded.includes(area)&&<div className="space-y-1 pb-2 pl-4">
         {docs.filter(d=>d.area===area).map(doc=><button key={doc.code} type="button" onClick={()=>{setActive(doc.code);setMenuOpen(false);}}

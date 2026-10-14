@@ -11,14 +11,18 @@ function AreaIcon({index}:{index:number}) {
     2: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13c6 4 12 4 18 0"/></>,
     3: <><path d="M3 18V7l6-4 6 4v11M9 3v15M3 11h12"/><circle cx="18" cy="16" r="3"/><path d="m20.5 18.5 2 2"/></>,
     4: <><circle cx="9" cy="8" r="3"/><circle cx="18" cy="9" r="2.5"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3Zm12-7a5 5 0 0 1 6 5v2h-4"/></>,
-    5: <><path d="M12 3 4 7v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></>,
-    6: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></>,
+    5: <><path d="M12 3.5a8.5 8.5 0 1 0 0 17h1.5a2 2 0 0 0 1.7-3.1 1.8 1.8 0 0 1 1.5-2.8h1.3a3 3 0 0 0 3-3c0-4.5-4.1-8.1-9-8.1Z"/><circle cx="7.6" cy="11" r=".7"/><circle cx="10" cy="7.3" r=".7"/><circle cx="15" cy="7.8" r=".7"/><circle cx="18" cy="11.5" r=".7"/></>,
+    6: <><path d="m3 11 13-6v14L3 13v-2Z"/><path d="m7 14 1.5 5h3L10 16M19 8a5 5 0 0 1 0 8"/></>,
     7: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></>,
-    8: <><path d="m4 12 12-6v12L4 12Zm12-4 3-2v12l-3-2M5 13l2 6h3l-2-5M20 10l2-2m-2 6 2 2"/></>,
-    9: <><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/><path d="M7 8h10"/></>,
-    10: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M17 14v7m-3.5-3.5h7"/></>,
-    11: <><path d="M4 20V4m0 16h17M8 15l4-4 3 2 5-7"/><path d="m16 6 4 0v4"/></>,
-    12: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 14h4m5-1 2 2 3-4"/></>,
+    8: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="m12 12 8-8"/></>,
+    9: <><path d="M3 5h18l-7.5 8v5l-3 2v-7L3 5Z"/></>,
+    10: <><path d="m13 2-9 11h7l-1 9 10-12h-7l0-8Z"/></>,
+    11: <><path d="M21 12a9 9 0 1 1-9-9v9h9Z"/><path d="M13 3a8 8 0 0 1 8 8h-8V3Z"/></>,
+    12: <><rect x="2.5" y="4" width="6" height="6" rx="1.5"/><rect x="15.5" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5.5 10v3h13v-3M12 13v2"/></>,
+    13: <><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-8"/></>,
+    14: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 10 1.5 1.5L12 9M14 10h3m-9 6 1.5 1.5L12 15m2 1h3"/></>,
+    15: <><path d="m3 11 13-6v14L3 13v-2Z"/><path d="M7 14l2 5h3l-2-4M19 8a5 5 0 0 1 0 8"/></>,
+    16: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></>,
   };
   return <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0">{paths[index] ?? paths[0]}</svg>;
 }
@@ -68,10 +72,10 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
         {active==="dashboard"&&<div className="space-y-6">
           <div><p className="text-xs font-semibold text-[#697386]">Painel Executivo</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Visão geral estratégica</h1><p className="mt-2 text-sm text-[#525B70]">Consolidação dos objetivos, prioridades, iniciativas e acompanhamento do planejamento.</p></div>
           <div className="space-y-4">
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={11}/></span>Evolução dos resultados</h2><p className="mt-2 text-sm text-[#697386]">Os gráficos serão apresentados quando houver indicadores e séries históricas verificáveis.</p><div className="mt-5 flex h-52 items-center justify-center rounded-lg border border-dashed border-[#DDE2EC] bg-[#F9FAFD] text-xs text-[#697386]">Aguardando dados de resultados</div></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={2}/></span>Prioridades e decisões</h2><p className="mt-3 text-sm text-[#697386]">As prioridades, decisões registradas, pendências e riscos serão consolidados aqui.</p><div className="mt-5 rounded-lg bg-[#F6F7FB] p-4 text-sm text-[#525B70]">Nenhuma informação consolidada ainda.</div></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={8}/></span>Iniciativas e campanhas</h2><p className="mt-3 text-sm text-[#697386]">Situação das iniciativas previstas no planejamento.</p><p className="mt-4 text-sm font-medium">Aguardando integração</p></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={12}/></span>Próximos marcos</h2><p className="mt-3 text-sm text-[#697386]">Plano de execução e próximas entregas.</p><p className="mt-4 text-sm font-medium">A definir</p></section>
+            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={13}/></span>Evolução dos resultados</h2><p className="mt-2 text-sm text-[#697386]">Os gráficos serão apresentados quando houver indicadores e séries históricas verificáveis.</p><div className="mt-5 flex h-52 items-center justify-center rounded-lg border border-dashed border-[#DDE2EC] bg-[#F9FAFD] text-xs text-[#697386]">Aguardando dados de resultados</div></section>
+            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={14}/></span>Prioridades e decisões</h2><p className="mt-3 text-sm text-[#697386]">As prioridades, decisões registradas, pendências e riscos serão consolidados aqui.</p><div className="mt-5 rounded-lg bg-[#F6F7FB] p-4 text-sm text-[#525B70]">Nenhuma informação consolidada ainda.</div></section>
+            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={15}/></span>Iniciativas e campanhas</h2><p className="mt-3 text-sm text-[#697386]">Situação das iniciativas previstas no planejamento.</p><p className="mt-4 text-sm font-medium">Aguardando integração</p></section>
+            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={16}/></span>Próximos marcos</h2><p className="mt-3 text-sm text-[#697386]">Plano de execução e próximas entregas.</p><p className="mt-4 text-sm font-medium">A definir</p></section>
           </div>
 
         </div>}

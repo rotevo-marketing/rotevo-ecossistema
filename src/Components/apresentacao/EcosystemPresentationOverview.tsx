@@ -22,10 +22,10 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
     <p className="px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1]">Áreas estratégicas</p>
     {areas.map(area=><div key={area}>
       <button type="button" onClick={()=>toggleArea(area)} aria-expanded={expanded.includes(area)}
-        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-3.5 text-left text-sm font-medium ${active===area?"bg-white/10 text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
+        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-3.5 text-left text-[15px] leading-5 font-medium ${active===area?"bg-white/10 text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
         <span className="flex min-w-0 items-center gap-3"><AreaIcon index={Number(area.slice(0,2))}/><span>{area.slice(3)}</span></span><span aria-hidden="true">{expanded.includes(area)?"−":"+"}</span>
       </button>
-      {expanded.includes(area)&&<div className="space-y-1 pb-2 pl-4">
+      {expanded.includes(area)&&<div className="space-y-1 pb-2 pl-5">
         {docs.filter(d=>d.area===area).map(doc=><button key={doc.code} type="button" onClick={()=>{setActive(doc.code);setMenuOpen(false);}}
           className={`w-full cursor-pointer rounded-lg px-3 py-2 text-left text-xs leading-5 ${active===doc.code?"bg-[#6D35F5] text-white":"text-[#CED5E3] hover:bg-white/10"}`}>{doc.code} · {doc.title}</button>)}
       </div>}

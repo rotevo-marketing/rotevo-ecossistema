@@ -243,7 +243,15 @@ export default function AdminPage() {
 
 
   return (
-    <main className="min-h-screen bg-[#F6F7FB] text-[#090D1C]" style={{ fontFamily: "var(--font-body), Arial, sans-serif" }}>
+    <main className="admin-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+      <style jsx global>{`
+        .admin-v2,
+        .admin-v2 h1,
+        .admin-v2 h2,
+        .admin-v2 h3 {
+          font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
+        }
+      `}</style>
       <header className="border-b border-[#E3E7F0] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">
@@ -268,7 +276,7 @@ export default function AdminPage() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6D35F5]">Painel administrativo</p>
-            <h1 style={{ fontFamily: "var(--font-body), Arial, sans-serif" }} className="mt-2 text-[30px] leading-[38px] font-bold tracking-[-0.02em]">Planejamentos</h1>
+            <h1 className="mt-2 text-[30px] leading-[38px] font-bold tracking-[-0.02em]">Planejamentos</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
           </div>
           <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
@@ -288,7 +296,7 @@ export default function AdminPage() {
         <section aria-labelledby="projects-heading" className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-6 lg:p-8">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="projects-heading" style={{ fontFamily: "var(--font-body), Arial, sans-serif" }} className="text-2xl leading-8 font-bold tracking-[-0.02em]">Projetos recentes</h2>
+              <h2 id="projects-heading" className="text-2xl leading-8 font-bold tracking-[-0.02em]">Projetos recentes</h2>
               <p className="mt-1 text-sm text-[#697386]">Localize, acompanhe e gerencie seus planejamentos.</p>
             </div>
             {!isLoading && <span className="shrink-0 text-xs text-[#697386]">{visibleProjects.length} de {projects.length}</span>}
@@ -305,8 +313,8 @@ export default function AdminPage() {
           {errorMessage && <div role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{errorMessage}</div>}
           {successMessage && <div role="status" className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{successMessage}</div>}
           {isLoading && <p role="status" className="mt-6 text-sm text-[#697386]">Carregando planejamentos...</p>}
-          {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 style={{ fontFamily: "var(--font-body), Arial, sans-serif" }} className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
-          {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 style={{ fontFamily: "var(--font-body), Arial, sans-serif" }} className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
+          {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
+          {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
           {!isLoading && visibleProjects.length>0 && (
             <div className="mt-6 space-y-3">
               {visibleProjects.map((project) => {
@@ -327,7 +335,7 @@ export default function AdminPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 style={{ fontFamily: "var(--font-body), Arial, sans-serif" }} className="break-words text-[17px] leading-6 font-bold">{clientName}</h3>
+                            <h3 className="break-words text-[17px] leading-6 font-bold">{clientName}</h3>
                             <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
                           </div>
                           <p className="mt-1 break-words text-sm text-[#525B70]">{project.title}</p>

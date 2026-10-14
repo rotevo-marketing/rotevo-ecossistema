@@ -762,7 +762,16 @@ export const ecosystemAreas = Array.from(
 // Official presentation document titles from Notion Docs, not methodological task labels.
 // Codes follow the document database, which may group several methodological tasks.
 export type EcosystemDocument = { code: string; area: string; title: string; visibility: string | null };
+// Area 00 display names are concise presentation labels derived from the executive model;
+// unlike areas 01-12, these are not from the newer Docs collection.
 export const ecosystemDocuments: EcosystemDocument[] = [
+  { code: "00.01", area: "00 Painel Executivo", title: "Objetivo do Ciclo", visibility: "Apresentação executiva" },
+  { code: "00.02", area: "00 Painel Executivo", title: "Estado Atual do Crescimento", visibility: "Apresentação executiva" },
+  { code: "00.03", area: "00 Painel Executivo", title: "Prioridades Executivas", visibility: "Apresentação executiva" },
+  { code: "00.04", area: "00 Painel Executivo", title: "Campanhas Ativas", visibility: "Apresentação executiva" },
+  { code: "00.05", area: "00 Painel Executivo", title: "Progresso do Plano de 90 Dias", visibility: "Apresentação executiva" },
+  { code: "00.06", area: "00 Painel Executivo", title: "Alertas Executivos", visibility: "Apresentação executiva" },
+  { code: "00.07", area: "00 Painel Executivo", title: "Decisões Recentes", visibility: "Apresentação executiva" },
   {
     "code": "01.01",
     "area": "01 Negócio e Diagnóstico",

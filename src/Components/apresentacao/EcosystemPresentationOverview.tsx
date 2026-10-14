@@ -13,35 +13,36 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
   const [menuOpen,setMenuOpen] = useState(false);
+  const [sidebarCollapsed,setSidebarCollapsed] = useState(false);
   const chosen = docs.find(d=>d.code===active);
   const chosenArea = areas.includes(active) ? active : chosen?.area ?? null;
   const areaDocs = chosenArea ? docs.filter(d=>d.area===chosenArea) : [];
   const selectArea=(area:string)=>{setActive(area);setMenuOpen(false);};
   const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1">
-    <div className="mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6">
+    <div className={`mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6 ${sidebarCollapsed?"lg:justify-center lg:px-0":""}`}>
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div>
-      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div>
+      <div className={`min-w-0 ${sidebarCollapsed?"lg:hidden":""}`}><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div>
     </div>
-    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-[15px] font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><span className="flex items-center gap-3"><AreaIcon index={0}/>Painel Executivo</span></button>
-    <p className="px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1]">Áreas estratégicas</p>
-    {areas.map(area=><button key={area} type="button" onClick={()=>selectArea(area)} aria-current={chosenArea===area?"page":undefined}
-      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] leading-5 font-medium transition-colors ${chosenArea===area?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
-      <AreaIcon index={Number(area.slice(0,2))}/><span>{area.slice(3)}</span>
+    <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} title="Painel Executivo" aria-label="Painel Executivo" className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-[15px] font-semibold ${sidebarCollapsed?"lg:flex lg:justify-center lg:px-2":""} ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><span className="flex items-center gap-3"><AreaIcon index={0}/><span className={sidebarCollapsed?"lg:hidden":""}>Painel Executivo</span></span></button>
+    <p className={`px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1] ${sidebarCollapsed?"lg:hidden":""}`}>Áreas estratégicas</p>
+    {areas.map(area=><button key={area} type="button" onClick={()=>selectArea(area)} title={area.slice(3)} aria-label={area.slice(3)} aria-current={chosenArea===area?"page":undefined}
+      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] leading-5 font-medium transition-colors ${sidebarCollapsed?"lg:justify-center lg:px-2":""} ${chosenArea===area?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
+      <AreaIcon index={Number(area.slice(0,2))}/><span className={sidebarCollapsed?"lg:hidden":""}>{area.slice(3)}</span>
     </button>)}
   </nav>);
   return <main className="ecosystem-presentation-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
     <style jsx global>{` .ecosystem-presentation-v2, .ecosystem-presentation-v2 h1, .ecosystem-presentation-v2 h2, .ecosystem-presentation-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
-    <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-5 sm:px-8"><RotevoLogo size={27}/>
-        <div className="flex items-center gap-2"><button onClick={()=>setMenuOpen(v=>!v)} type="button" aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-3 py-2.5 text-sm font-medium lg:hidden">Menu</button>
-        <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm font-medium hover:bg-[#F6F7FB]">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B142A] text-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-5 sm:px-8"><RotevoLogo variant="white" size={27}/>
+        <div className="flex items-center gap-2"><button onClick={()=>setMenuOpen(v=>!v)} type="button" aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2.5 text-sm font-medium text-white lg:hidden">Menu</button>
+        <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
       </div>
     </header>
     <div className="flex w-full flex-1 items-stretch">
-      <aside className="hidden w-[286px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
+      <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] duration-200 lg:block ${sidebarCollapsed?"w-[76px]":"w-[286px]"}`}>{nav}<button type="button" onClick={()=>setSidebarCollapsed(v=>!v)} aria-label={sidebarCollapsed?"Expandir menu lateral":"Recolher menu lateral"} title={sidebarCollapsed?"Expandir menu lateral":"Recolher menu lateral"} className="absolute right-[-13px] top-[55%] z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A] shadow-sm">{sidebarCollapsed?"›":"‹"}</button></aside>
       {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{nav}</aside>}
       <div className={`min-w-0 flex-1 px-5 pb-20 pt-5 sm:px-7 ${menuOpen?"hidden lg:block":""}`}>
-        {chosenArea&&<div className="mb-6 border-b border-[#E3E7F0]">
+        {chosenArea&&!chosen&&<div className="mb-6 border-b border-[#E3E7F0]">
           <div className="mb-2 flex items-center gap-2"><span className="text-[#6D35F5]"><AreaIcon index={Number(chosenArea.slice(0,2))}/></span><h2 className="text-base font-semibold">{chosenArea.slice(3)}</h2></div>
           <div role="tablist" aria-label={`Documentos de ${chosenArea.slice(3)}`} className="flex gap-2 overflow-x-auto pb-3">
             {areaDocs.map(doc=><button key={doc.code} type="button" role="tab" aria-selected={active===doc.code} onClick={()=>setActive(doc.code)}

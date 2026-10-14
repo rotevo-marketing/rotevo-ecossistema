@@ -9,7 +9,7 @@ function AreaIcon({index}:{index:number}) { const url=getIconPath(areaIcons[inde
 
 type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
 export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {
-  const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && selectedCodes.includes(d.code) && presentedCodes.includes(d.code));
+  const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && d.code!=="01.01" && selectedCodes.includes(d.code) && presentedCodes.includes(d.code));
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
   const [menuOpen,setMenuOpen] = useState(false);
@@ -17,7 +17,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   const chosen = docs.find(d=>d.code===active);
   const chosenArea = areas.includes(active) ? active : chosen?.area ?? null;
   const areaDocs = chosenArea ? docs.filter(d=>d.area===chosenArea) : [];
-  const selectArea=(area:string)=>{setActive(area);setMenuOpen(false);};
+  const selectArea=(area:string)=>{const first=docs.find(d=>d.area===area);setActive(first?.code ?? "dashboard");setMenuOpen(false);};
   const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1">
     <div className={`mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6 ${sidebarCollapsed?"lg:justify-center lg:px-0":""}`}>
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div>
@@ -33,7 +33,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   return <main className="ecosystem-presentation-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
     <style jsx global>{` .ecosystem-presentation-v2, .ecosystem-presentation-v2 h1, .ecosystem-presentation-v2 h2, .ecosystem-presentation-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B142A] text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-5 sm:px-8"><RotevoLogo variant="white" size={27}/>
+      <div className="flex w-full items-center justify-between gap-3 px-5 py-5"><RotevoLogo variant="white" size={27}/>
         <div className="flex items-center gap-2"><button onClick={()=>setMenuOpen(v=>!v)} type="button" aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2.5 text-sm font-medium text-white lg:hidden">Menu</button>
         <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
       </div>
@@ -42,7 +42,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
       <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] duration-200 lg:block ${sidebarCollapsed?"w-[76px]":"w-[286px]"}`}>{nav}<button type="button" onClick={()=>setSidebarCollapsed(v=>!v)} aria-label={sidebarCollapsed?"Expandir menu lateral":"Recolher menu lateral"} title={sidebarCollapsed?"Expandir menu lateral":"Recolher menu lateral"} className="absolute right-[-13px] top-[55%] z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A] shadow-sm">{sidebarCollapsed?"›":"‹"}</button></aside>
       {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{nav}</aside>}
       <div className={`min-w-0 flex-1 px-5 pb-20 pt-5 sm:px-7 ${menuOpen?"hidden lg:block":""}`}>
-        {chosenArea&&!chosen&&<div className="mb-6 border-b border-[#E3E7F0]">
+        {chosenArea&&<div className="mb-6 border-b border-[#E3E7F0]">
           <div className="mb-2 flex items-center gap-2"><span className="text-[#6D35F5]"><AreaIcon index={Number(chosenArea.slice(0,2))}/></span><h2 className="text-base font-semibold">{chosenArea.slice(3)}</h2></div>
           <div role="tablist" aria-label={`Documentos de ${chosenArea.slice(3)}`} className="flex gap-2 overflow-x-auto pb-3">
             {areaDocs.map(doc=><button key={doc.code} type="button" role="tab" aria-selected={active===doc.code} onClick={()=>setActive(doc.code)}
@@ -59,7 +59,6 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
           </div>
 
         </div>}
-        {chosenArea&&<section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><p className="text-xs text-[#697386]">Área estratégica</p><h1 className="mt-2 text-2xl font-bold">{chosenArea}</h1><div className="mt-5 divide-y divide-[#E3E7F0]">{docs.filter(d=>d.area===chosenArea).map(doc=><button key={doc.code} onClick={()=>setActive(doc.code)} className="block w-full cursor-pointer py-4 text-left text-sm hover:text-[#6D35F5]">{doc.code} · {doc.title} →</button>)}</div></section>}
         {chosen&&<article className="rounded-xl border border-[#E3E7F0] bg-white p-6 sm:p-9"><p className="text-xs text-[#697386]">{chosen.area} · {chosen.code}</p><h1 className="mt-2 text-3xl font-bold">{chosen.title}</h1><div className="mt-7 rounded-xl bg-[#F6F7FB] p-6 text-sm leading-6 text-[#525B70]">O conteúdo deste documento ainda não está integrado à apresentação. Quando sua produção estiver disponível, ele será apresentado aqui.</div><button type="button" onClick={()=>setActive("dashboard")} className="mt-6 cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm">Voltar ao Painel Executivo</button></article>}
       </div>
     </div>

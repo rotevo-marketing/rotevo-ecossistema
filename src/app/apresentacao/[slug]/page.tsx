@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { moduleCategories, planningModules } from "@/data/modules";
 import { MetodoFooter, MetodoLogo } from "@/Components/MetodoBrand";
+import { RotevoLogo } from "@/Components/RotevoLogo";
 import ResumoEstrategico from "@/Components/apresentacao/ResumoEstrategico";
 import EspecialistaPresentation from "@/Components/apresentacao/EspecialistaPresentation";
 import EmpresaPresentation from "@/Components/apresentacao/EmpresaPresentation";
@@ -712,6 +713,162 @@ function DetailMode({
   );
 }
 
+
+function LegacyPresentationV2({sections,clientName,projectTitle,coverImageUrl,moduleContent,isStrategist,clientSlug}:{
+ sections:PresentationSection[];clientName:string;projectTitle:string;coverImageUrl:string|null;
+ moduleContent:Record<string,unknown>;isStrategist:boolean;clientSlug:string;
+}) {
+ const [activeSlug,setActiveSlug]=useState("resumo-estrategico");
+ const [menuOpen,setMenuOpen]=useState(false);
+ const [collapsed,setCollapsed]=useState(false);
+ const allSections=[introSection,...sections];
+ const activeSection=allSections.find(section=>section.slug===activeSlug)??introSection;
+ const categories=[{name:"Painel Executivo",items:[introSection]},...moduleCategories.map(category=>({
+  name:category,items:sections.filter(section=>section.category===category)
+ })).filter(group=>group.items.length>0)];
+ const currentCategory=categories.find(group=>group.items.some(item=>item.slug===activeSlug))?.name??"Painel Executivo";
+ const [categorySelection,setCategorySelection]=useState<string|null>(null);
+ const activeCategory=categorySelection??currentCategory;
+ const categorySections=categories.find(group=>group.name===activeCategory)?.items??[];
+ function chooseCategory(category:string) {
+   setCategorySelection(category);
+   const first=categories.find(group=>group.name===category)?.items[0];
+   if(first)setActiveSlug(first.slug);
+   setMenuOpen(false);
+ }
+ const navigation=(<nav aria-label="Áreas do planejamento" className="space-y-2">
+  <div className={`mb-6 flex items-center gap-3 border-b border-white/15 pb-6 ${collapsed?"lg:justify-center":""}`}>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15">
+      {coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:
+       <span className="text-lg font-bold text-white">{clientName.charAt(0).toUpperCase()}</span>}
+    </div>
+    <div className={collapsed?"lg:hidden":""}><p className="text-sm font-semibold text-white">{clientName}</p><p className="text-xs text-[#BEC6D7]">Planejamento estratégico</p></div>
+  </div>
+  {categories.map((group,index)=><button key={group.name} type="button" onClick={()=>chooseCategory(group.name)}
+    title={group.name} aria-label={group.name}
+    className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${collapsed?"lg:justify-center lg:px-2":""} ${activeCategory===group.name?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
+    <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-current text-xs">{index===0?"⌂":String(index).padStart(2,"0")}</span>
+    <span className={collapsed?"lg:hidden":""}>{group.name}</span>
+  </button>)}
+ </nav>);
+ return <main className="legacy-presentation-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+  <style jsx global>{` .legacy-presentation-v2, .legacy-presentation-v2 h1, .legacy-presentation-v2 h2, .legacy-presentation-v2 h3 {font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
+  <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B142A] text-white">
+   <div className="flex w-full items-center justify-between px-5 py-5">
+    <RotevoLogo variant="white" size={27}/>
+    <div className="flex items-center gap-2">
+     <button type="button" onClick={()=>setMenuOpen(v=>!v)} aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
+     <Link className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium hover:bg-white/10" href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"}>{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link>
+    </div>
+   </div>
+  </header>
+  <div className="flex w-full flex-1">
+   <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] lg:block ${collapsed?"w-[76px]":"w-[286px]"}`}>
+    {navigation}
+    <button type="button" onClick={()=>setCollapsed(v=>!v)} title={collapsed?"Expandir menu":"Recolher menu"} aria-label={collapsed?"Expandir menu":"Recolher menu"}
+      className="absolute right-[-13px] top-[55%] z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A]">{collapsed?"›":"‹"}</button>
+   </aside>
+   {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{navigation}</aside>}
+   <div className={`min-w-0 flex-1 px-5 pb-16 pt-6 sm:px-7 ${menuOpen?"hidden lg:block":""}`}>
+    <div className="mb-6">
+      <p className="text-xs text-[#697386]">{projectTitle}</p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight">{activeCategory==="Painel Executivo"?"Visão geral estratégica":activeCategory}</h1>
+    </div>
+    {activeCategory!=="Painel Executivo"&&<div role="tablist" aria-label="Documentos da área" className="mb-6 flex gap-2 overflow-x-auto border-b border-[#E3E7F0] pb-3">
+      {categorySections.map(item=><button key={item.slug} type="button" role="tab" aria-selected={activeSlug===item.slug} onClick={()=>setActiveSlug(item.slug)}
+        className={`shrink-0 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-medium ${activeSlug===item.slug?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70]"}`}>{displayTitle(item)}</button>)}
+     </div>}
+    <div className="min-w-0 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
+      {activeCategory!=="Painel Executivo"&&<p className="mb-2 text-sm text-[#697386]">{activeCategory}</p>}
+      {activeCategory!=="Painel Executivo"&&<h2 className="mb-6 text-2xl font-bold">{displayTitle(activeSection)}</h2>}
+      {activeSection.slug === "resumo-estrategico" ? (
+              <ResumoEstrategico />
+            ) : activeSection.slug === "dna-do-especialista" ? (
+              <EspecialistaPresentation data={moduleContent["dna-do-especialista"]} />
+            ) : activeSection.slug === "dna-da-empresa" ? (
+              <EmpresaPresentation data={moduleContent["dna-da-empresa"]} />
+            ) : activeSection.slug === "dna-de-conteudo" ? (
+              <DnaConteudoPresentation data={moduleContent["dna-de-conteudo"]} />
+            ) : activeSection.slug === "tom-de-voz" ? (
+              <TomDeVozPresentation data={moduleContent["tom-de-voz"]} />
+            ) : activeSection.slug === "identidade-visual" ? (
+              <IdentidadeVisualPresentation data={moduleContent["identidade-visual"]} />
+            ) : activeSection.slug === "objetivos-do-projeto" ? (
+              <ObjetivosPresentation data={moduleContent["objetivos-do-projeto"]} />
+            ) : activeSection.slug === "referencias-e-concorrentes" ? (
+              <ReferenciasConcorrentesPresentation data={moduleContent["referencias-e-concorrentes"]} />
+            ) : activeSection.slug === "pesquisa-de-concorrencia" ? (
+              <PesquisaConcorrenciaPresentation data={moduleContent["pesquisa-de-concorrencia"]} />
+            ) : activeSection.slug === "analise-swot" ? (
+              <AnaliseSwotPresentation data={moduleContent["analise-swot"]} />
+            ) : activeSection.slug === "palavras-chave" ? (
+              <PalavrasChavePresentation data={moduleContent["palavras-chave"]} />
+            ) : activeSection.slug === "personas" ? (
+              <PersonasPresentation data={moduleContent["personas"]} />
+            ) : activeSection.slug === "jornada-de-compra" ? (
+              <JornadaCompraPresentation
+                legacyData={moduleContent["jornada-de-compra"]}
+                personaJourneysData={moduleContent["jornadas-por-persona"]}
+                personasData={moduleContent["personas"]}
+              />
+            ) : activeSection.slug === "canais-digitais-atuais" ? (
+              <CanaisDigitaisPresentation data={moduleContent["canais-digitais-atuais"]} />
+            ) : activeSection.slug === "funil-de-conteudo" ? (
+              <FunilConteudoPresentation data={moduleContent["funil-de-conteudo"]} />
+            ) : activeSection.slug === "linhas-editoriais" ? (
+              <LinhasEditoriaisPresentation data={moduleContent["linhas-editoriais"]} />
+            ) : activeSection.slug === "instagram" ? (
+              <InstagramPresentation data={moduleContent["instagram"]} />
+            ) : activeSection.slug === "tiktok" ? (
+              <TiktokPresentation data={moduleContent["tiktok"]} />
+            ) : activeSection.slug === "youtube" ? (
+              <YoutubePresentation data={moduleContent["youtube"]} />
+            ) : activeSection.slug === "facebook" ? (
+              <FacebookPresentation data={moduleContent["facebook"]} />
+            ) : activeSection.slug === "linkedin" ? (
+              <LinkedinPresentation data={moduleContent["linkedin"]} />
+            ) : activeSection.slug === "whatsapp" ? (
+              <WhatsappPresentation data={moduleContent["whatsapp"]} />
+            ) : activeSection.slug === "blog" ? (
+              <BlogPresentation data={moduleContent["blog"]} />
+            ) : activeSection.slug === "pinterest" ? (
+              <PinterestPresentation data={moduleContent["pinterest"]} />
+            ) : activeSection.slug === "podcasts" ? (
+              <PodcastsPresentation data={moduleContent["podcasts"]} />
+            ) : activeSection.slug === "lives" ? (
+              <LivesPresentation data={moduleContent["lives"]} />
+            ) : activeSection.slug === "materiais-educacionais" ? (
+              <MateriaisEducacionaisPresentation data={moduleContent["materiais-educacionais"]} />
+            ) : activeSection.slug === "estrategia-do-site" ? (
+              <EstrategiaSitePresentation data={moduleContent["estrategia-do-site"]} />
+            ) : activeSection.slug === "mapa-do-site" ? (
+              <MapaSitePresentation data={moduleContent["mapa-do-site"]} />
+            ) : activeSection.slug === "campanha-captacao-de-lead" ? (
+              <CampanhaCaptacaoLeadPresentation data={moduleContent["campanha-captacao-de-lead"]} />
+            ) : activeSection.slug === "campanha-conversao-de-vendas" ? (
+              <CampanhaConversaoVendasPresentation data={moduleContent["campanha-conversao-de-vendas"]} />
+            ) : activeSection.slug === "campanha-distribuicao-de-conteudo" ? (
+              <CampanhaDistribuicaoConteudoPresentation data={moduleContent["campanha-distribuicao-de-conteudo"]} />
+            ) : activeSection.slug === "fluxo-de-automacao" ? (
+              <FluxoAutomacaoPresentation data={moduleContent["fluxo-de-automacao"]} />
+            ) : activeSection.slug === "linha-do-tempo" ? (
+              <LinhaTempoPresentation data={moduleContent["linha-do-tempo"]} />
+            ) : activeSection.slug === "calendario-de-conteudo" ? (
+              <CalendarioConteudoPresentation data={moduleContent["calendario-de-conteudo"]} />
+            ) : activeSection.slug === "metricas-e-indicadores" ? (
+              <MetricasIndicadoresPresentation data={moduleContent["metricas-e-indicadores"]} />
+            ) : activeSection.slug === "orientacoes-adicionais" ? (
+              <OrientacoesAdicionaisPresentation data={moduleContent["orientacoes-adicionais"]} />
+            ) : (
+              <ModulePlaceholder section={activeSection} />
+            )}
+    </div>
+   </div>
+  </div>
+  <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+ </main>;
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ApresentacaoDinamicaPage() {
@@ -897,6 +1054,10 @@ export default function ApresentacaoDinamicaPage() {
     );
   }
 
+  return <LegacyPresentationV2 sections={sections} clientName={clientName} projectTitle={project.title} coverImageUrl={coverImageUrl}
+    moduleContent={moduleContent} isStrategist={isStrategist} clientSlug={client?.slug??""}/>;
+
+  /* Legacy layout retained temporarily for rollback.
   if (viewMode === "overview") {
     return (
       <OverviewMode
@@ -926,4 +1087,5 @@ export default function ApresentacaoDinamicaPage() {
       onBackToOverview={() => setViewMode("overview")}
     />
   );
+  */
 }

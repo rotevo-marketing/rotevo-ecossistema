@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027";
+
+// O Painel Executivo (00) é um dashboard padrão, não um módulo selecionável.
+const selectableDocuments = ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 "));
+const selectableAreas = ecosystemDocumentAreas.filter((area) => !area.startsWith("00 "));
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
@@ -68,7 +72,7 @@ export default function SelecionarModulosPage() {
   const [userEmail, setUserEmail] = useState("");
   const [taskExecution, setTaskExecution] = useState<string[]>([]);
   const [taskPresentation, setTaskPresentation] = useState<string[]>([]);
-  const [expandedAreas, setExpandedAreas] = useState<string[]>([ecosystemDocumentAreas[1] ?? ecosystemDocumentAreas[0]]);
+  const [expandedAreas, setExpandedAreas] = useState<string[]>([selectableAreas[0]]);
   const [search, setSearch] = useState("");
 
   const selectedCount = selectedModules.length;
@@ -138,7 +142,7 @@ export default function SelecionarModulosPage() {
   }
 
   function toggleArea(area: string) {
-    const codes = ecosystemDocuments.filter((task) => task.area === area).map((task) => task.code);
+    const codes = selectableDocuments.filter((task) => task.area === area).map((task) => task.code);
     const allSelected = codes.every((code) => taskExecution.includes(code));
     setTaskExecution((prev) => allSelected ? prev.filter((code) => !codes.includes(code)) : Array.from(new Set([...prev, ...codes])));
     if (allSelected) setTaskPresentation((prev) => prev.filter((code) => !codes.includes(code)));
@@ -240,8 +244,8 @@ export default function SelecionarModulosPage() {
           modules: selectedModuleRecords,
           ecosystem2027: {
             version: 1,
-            selectedDocumentCodes: ecosystemDocuments.filter((doc) => taskExecution.includes(doc.code)).map((doc) => doc.code),
-            presentedDocumentCodes: ecosystemDocuments.filter((doc) => taskPresentation.includes(doc.code)).map((doc) => doc.code),
+            selectedDocumentCodes: selectableDocuments.filter((doc) => taskExecution.includes(doc.code)).map((doc) => doc.code),
+            presentedDocumentCodes: selectableDocuments.filter((doc) => taskPresentation.includes(doc.code)).map((doc) => doc.code),
           },
           deliverySchedule: Object.keys(filledSchedule).length > 0 ? filledSchedule : null,
         },
@@ -260,7 +264,7 @@ export default function SelecionarModulosPage() {
   }
 
 
-  const visibleAreas = ecosystemDocumentAreas.filter((area) => {
+  const visibleAreas = selectableAreas.filter((area) => {
     const term = search.toLocaleLowerCase("pt-BR").trim();
     return !term || area.toLocaleLowerCase("pt-BR").includes(term) ||
       ecosystemDocuments.some((task) => task.area === area && (task.title.toLocaleLowerCase("pt-BR").includes(term) || task.code.includes(term)));
@@ -306,21 +310,21 @@ export default function SelecionarModulosPage() {
         {errorMessage && <div role="alert" className="mb-6 rounded-xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{errorMessage}</div>}
         {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando seleção de módulos...</div> : <>
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{ecosystemDocumentAreas.length}</strong></div>
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Documentos selecionados</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {ecosystemDocuments.length}</span></strong></div>
+            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{selectableAreas.length}</strong></div>
+            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Documentos selecionados</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {selectableDocuments.length}</span></strong></div>
             <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Visíveis ao cliente</span><strong className="mt-2 block text-2xl">{taskPresentation.length}</strong></div>
           </div>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <input aria-label="Buscar área ou tarefa" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar área, tarefa ou código..." className="w-full rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-sm outline-none focus:border-[#6D35F5] sm:max-w-md"/>
             <div className="flex gap-2">
-              <button type="button" onClick={() => {setTaskExecution(ecosystemDocuments.map((task) => task.code));setExpandedAreas(ecosystemDocumentAreas);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
+              <button type="button" onClick={() => {setTaskExecution(selectableDocuments.map((task) => task.code));setExpandedAreas(selectableAreas);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
               <button type="button" onClick={() => {setTaskExecution([]);setTaskPresentation([]);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Limpar seleção</button>
             </div>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="space-y-3">
               {visibleAreas.map((area) => {
-                const tasks = ecosystemDocuments.filter((task) => task.area === area);
+                const tasks = selectableDocuments.filter((task) => task.area === area);
                 const chosen = tasks.filter((task) => taskExecution.includes(task.code)).length;
                 const open = expandedAreas.includes(area) || !!search.trim();
                 const all = chosen === tasks.length;

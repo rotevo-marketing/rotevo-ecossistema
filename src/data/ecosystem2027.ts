@@ -758,3 +758,352 @@ export const ecosystemTasks: EcosystemTask[] = [
 export const ecosystemAreas = Array.from(
   new Map(ecosystemTasks.map((task) => [task.area, task.area])).values()
 );
+
+// Official presentation document titles from Notion Docs, not methodological task labels.
+// Codes follow the document database, which may group several methodological tasks.
+export type EcosystemDocument = { code: string; area: string; title: string; visibility: string | null };
+export const ecosystemDocuments: EcosystemDocument[] = [
+  {
+    "code": "01.01",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Diagnóstico Inicial do Projeto",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.02",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Perfil da Empresa",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.03",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Modelo de Negócio",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.04",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Histórico de Crescimento, Marketing e Vendas",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.05",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Recursos e Capacidade",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.06",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Maturidade do Negócio",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.07",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Sintomas e Causas",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.08",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Objetivos do Projeto",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "01.09",
+    "area": "01 Negócio e Diagnóstico",
+    "title": "Prioridades Iniciais, Riscos e Dependências",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "02.01",
+    "area": "02 Produto e Oferta",
+    "title": "Portfólio de Produtos e Serviços",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "02.02",
+    "area": "02 Produto e Oferta",
+    "title": "Competitividade e Evolução dos Produtos",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "02.03",
+    "area": "02 Produto e Oferta",
+    "title": "Arquitetura de Ofertas",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "02.04",
+    "area": "02 Produto e Oferta",
+    "title": "Proposta de Valor",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "02.05",
+    "area": "02 Produto e Oferta",
+    "title": "Precificação e Rentabilidade",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "03.01",
+    "area": "03 Mercado e Demanda",
+    "title": "Mercado e Demanda",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "03.02",
+    "area": "03 Mercado e Demanda",
+    "title": "Macroambiente e Microambiente",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "03.03",
+    "area": "03 Mercado e Demanda",
+    "title": "Concorrência e Benchmarking",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "03.04",
+    "area": "03 Mercado e Demanda",
+    "title": "Diferenciação e Oportunidades",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "03.05",
+    "area": "03 Mercado e Demanda",
+    "title": "Análise SWOT e SWOT Cruzada",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "04.01",
+    "area": "04 Público e Jornada",
+    "title": "Segmentação de Mercado",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "04.02",
+    "area": "04 Público e Jornada",
+    "title": "Cliente Ideal (ICP)",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "04.03",
+    "area": "04 Público e Jornada",
+    "title": "Valor Econômico dos Segmentos",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "04.04",
+    "area": "04 Público e Jornada",
+    "title": "Persona",
+    "visibility": null
+  },
+  {
+    "code": "04.05",
+    "area": "04 Público e Jornada",
+    "title": "Jornada de Compra",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "04.06",
+    "area": "04 Público e Jornada",
+    "title": "Jornada Pós-Compra",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "05.01",
+    "area": "05 Branding",
+    "title": "DNA da Empresa",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "05.02",
+    "area": "05 Branding",
+    "title": "DNA do Especialista",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "05.03",
+    "area": "05 Branding",
+    "title": "Posicionamento de Marca",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "05.04",
+    "area": "05 Branding",
+    "title": "Identidade de Marca",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "05.05",
+    "area": "05 Branding",
+    "title": "Comunicação e Autoridade",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "06.01",
+    "area": "06 Marketing e Canais",
+    "title": "Análise de Canais",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "06.02",
+    "area": "06 Marketing e Canais",
+    "title": "Estratégia de Canais",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "06.03",
+    "area": "06 Marketing e Canais",
+    "title": "SEO e Visibilidade em IA",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "06.04",
+    "area": "06 Marketing e Canais",
+    "title": "Estratégia e Mapa do Site",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "07.01",
+    "area": "07 Conteúdo e Distribuição",
+    "title": "DNA de Conteúdo",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "07.02",
+    "area": "07 Conteúdo e Distribuição",
+    "title": "Linhas Editoriais",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "07.03",
+    "area": "07 Conteúdo e Distribuição",
+    "title": "Funil de Conteúdo",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "07.04",
+    "area": "07 Conteúdo e Distribuição",
+    "title": "Distribuição de Conteúdo",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "07.05",
+    "area": "07 Conteúdo e Distribuição",
+    "title": "Calendário Editorial",
+    "visibility": "Condicional"
+  },
+  {
+    "code": "08.01",
+    "area": "08 Campanhas e Investimento",
+    "title": "Calendário Comercial",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "08.02",
+    "area": "08 Campanhas e Investimento",
+    "title": "Planejamento de Campanhas",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "08.03",
+    "area": "08 Campanhas e Investimento",
+    "title": "Plano de Investimento",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "08.04",
+    "area": "08 Campanhas e Investimento",
+    "title": "Resultados e Aprendizados",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "09.01",
+    "area": "09 Receita Funil e CS",
+    "title": "Funil de Marketing",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "09.02",
+    "area": "09 Receita Funil e CS",
+    "title": "Funil de Vendas",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "09.03",
+    "area": "09 Receita Funil e CS",
+    "title": "CRM e Atendimento Comercial",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "09.04",
+    "area": "09 Receita Funil e CS",
+    "title": "Customer Success",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "09.05",
+    "area": "09 Receita Funil e CS",
+    "title": "Retenção e Expansão",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "10.01",
+    "area": "10 Dados IA e Automação",
+    "title": "Gestão e Inteligência de Dados",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "10.02",
+    "area": "10 Dados IA e Automação",
+    "title": "Inteligência Artificial",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "10.03",
+    "area": "10 Dados IA e Automação",
+    "title": "Automações",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "11.01",
+    "area": "11 Métricas e Forecast",
+    "title": "Indicadores de Desempenho (KPIs)",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "11.02",
+    "area": "11 Métricas e Forecast",
+    "title": "Matemática Reversa de Crescimento",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "11.03",
+    "area": "11 Métricas e Forecast",
+    "title": "Projeções de Receita (Forecast)",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "12.01",
+    "area": "12 Execução e Governança",
+    "title": "Plano de Execução",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "12.02",
+    "area": "12 Execução e Governança",
+    "title": "Gestão de Riscos e Decisões",
+    "visibility": "Base do módulo"
+  },
+  {
+    "code": "12.03",
+    "area": "12 Execução e Governança",
+    "title": "Governança e Aprendizados",
+    "visibility": "Base do módulo"
+  }
+];
+export const ecosystemDocumentAreas = Array.from(new Set(ecosystemDocuments.map((doc) => doc.area)));

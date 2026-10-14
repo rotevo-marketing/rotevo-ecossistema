@@ -331,8 +331,8 @@ export default function SelecionarModulosPage() {
                 const partial = chosen > 0 && !all;
                 return <section key={area} className="overflow-hidden rounded-xl border border-[#E3E7F0] bg-white">
                   <div className="flex flex-wrap items-center gap-3 p-4 sm:p-5">
-                    <input type="checkbox" aria-label={`Selecionar todos os documentos de ${area}`} checked={all} ref={(element) => {if(element) element.indeterminate = partial;}} onChange={() => toggleArea(area)} className="h-5 w-5 accent-[#6D35F5]"/>
-                    <button type="button" aria-expanded={open} onClick={() => toggleExpanded(area)} className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
+                    <input type="checkbox" aria-label={`Selecionar todos os documentos de ${area}`} checked={all} ref={(element) => {if(element) element.indeterminate = partial;}} onChange={() => toggleArea(area)} className="h-5 w-5 cursor-pointer accent-[#6D35F5]"/>
+                    <button type="button" aria-expanded={open} onClick={() => toggleExpanded(area)} className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-3 text-left">
                       <span className="text-sm font-bold sm:text-base">{area}</span>
                       <span className="shrink-0 text-xs text-[#697386]">{chosen} / {tasks.length} <span aria-hidden="true" className="ml-2">{open ? "▲" : "▼"}</span></span>
                     </button>
@@ -347,7 +347,7 @@ export default function SelecionarModulosPage() {
                           <span className={task.visibility === "Condicional" ? "mt-1 inline-block text-[11px] text-[#4A5971]" : "mt-1 inline-block text-[11px] text-[#825E20]"}>{task.visibility || "Documento do planejamento"}</span>
                         </div>
                         <div className="text-center"><input type="checkbox" aria-label={`Executar ${task.code} ${task.title}`} checked={taskExecution.includes(task.code)} onChange={() => toggleTask(task.code,"execution")} className="h-5 w-5 accent-[#6D35F5]"/></div>
-                        <div className="text-center"><input type="checkbox" aria-label={`Exibir ${task.code} ${task.title}`} disabled={!taskExecution.includes(task.code)} checked={taskPresentation.includes(task.code)} onChange={() => toggleTask(task.code,"presentation")} className="h-5 w-5 accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30"/></div>
+                        <div className="text-center"><input type="checkbox" aria-label={`Exibir ${task.code} ${task.title}`} disabled={!taskExecution.includes(task.code)} checked={taskPresentation.includes(task.code)} onChange={() => toggleTask(task.code,"presentation")} className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30"/></div>
                       </div>
                     )}
                   </div>}
@@ -358,7 +358,7 @@ export default function SelecionarModulosPage() {
             <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir um documento, marque primeiro “Executar”. Os títulos seguem a base Docs do Notion. A seleção para execução e exibição é configurada por documento.</div>
             <div className="mt-7 flex flex-col gap-3 border-t border-[#E3E7F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-center text-sm font-medium">Voltar aos dados</Link>
-              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
+              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
             </div>
           </form>
         </>}

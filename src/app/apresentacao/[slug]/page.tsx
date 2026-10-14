@@ -45,6 +45,7 @@ import MetricasIndicadoresPresentation from "@/Components/apresentacao/MetricasI
 import OrientacoesAdicionaisPresentation from "@/Components/apresentacao/OrientacoesAdicionaisPresentation";
 import { ModuleIcon, ModuleCardIcon } from "@/Components/apresentacao/ModuleIcon";
 import { PresentationHeader } from "@/Components/apresentacao/PresentationHeader";
+import EcosystemPresentationOverview from "@/Components/apresentacao/EcosystemPresentationOverview";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ type ProjectData = {
   coverImageUrl?: string | null;
   moduleContent?: Record<string, unknown>;
   deliverySchedule?: Record<string, string> | null;
+  ecosystem2027?: { selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[]; version?: number };
 };
 
 type PlanningProject = {
@@ -876,6 +878,21 @@ export default function ApresentacaoDinamicaPage() {
         projectTitle={project.title}
         coverImageUrl={coverImageUrl}
         deliverySchedule={project.data?.deliverySchedule}
+      />
+    );
+  }
+
+  if (project.data?.ecosystem2027) {
+    return (
+      <EcosystemPresentationOverview
+        clientName={clientName}
+        projectTitle={project.title}
+        coverImageUrl={coverImageUrl}
+        clientSlug={client?.slug ?? ""}
+        projectSlug={project.slug}
+        isStrategist={isStrategist}
+        selectedCodes={project.data.ecosystem2027.selectedDocumentCodes ?? []}
+        presentedCodes={project.data.ecosystem2027.presentedDocumentCodes ?? []}
       />
     );
   }

@@ -37,7 +37,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
       </div>
     </header>
     <div className="mx-auto flex w-full max-w-7xl flex-1 items-stretch">
-      <aside className="hidden w-[276px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
+      <aside className="hidden w-[306px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
       {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{nav}</aside>}
       <div className={`min-w-0 flex-1 px-5 pb-20 pt-8 sm:px-8 ${menuOpen?"hidden lg:block":""}`}>
         <div className="mb-7 flex items-center gap-4 rounded-2xl border border-[#E3E7F0] bg-white p-5">

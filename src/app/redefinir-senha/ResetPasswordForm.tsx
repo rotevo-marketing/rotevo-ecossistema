@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AuthShell, authStyles as s } from "@/Components/auth/AuthShell";
 import { supabase } from "@/lib/supabase";
+import { PasswordField } from "@/Components/auth/PasswordField";
 
 export default function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -73,14 +74,8 @@ export default function ResetPasswordForm() {
         </div>
       ) : (
         <form onSubmit={submit} className={s.form} aria-busy={loading}>
-          <label htmlFor="new-password" className={s.field}>
-            Nova senha
-            <input id="new-password" type="password" className={s.input} autoComplete="new-password" minLength={8} required value={password} disabled={loading} onChange={e => setPassword(e.target.value)} />
-          </label>
-          <label htmlFor="confirm-password" className={s.field}>
-            Confirmar nova senha
-            <input id="confirm-password" type="password" className={s.input} autoComplete="new-password" minLength={8} required value={confirmation} disabled={loading} onChange={e => setConfirmation(e.target.value)} />
-          </label>
+          <PasswordField id="new-password" label="Nova senha" value={password} onChange={setPassword} newPassword disabled={loading} />
+          <PasswordField id="confirm-password" label="Confirmar nova senha" value={confirmation} onChange={setConfirmation} newPassword disabled={loading} />
           {error && <p role="alert" className={s.message + " " + s.error}>{error}</p>}
           <button type="submit" className={s.button} disabled={loading}>{loading ? "Salvando..." : "Salvar nova senha"}</button>
         </form>

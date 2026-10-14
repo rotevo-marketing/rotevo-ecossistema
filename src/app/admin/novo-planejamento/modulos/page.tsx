@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
-import { ecosystemTasks, ecosystemAreas } from "@/data/ecosystem2027";
+import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
@@ -68,7 +68,7 @@ export default function SelecionarModulosPage() {
   const [userEmail, setUserEmail] = useState("");
   const [taskExecution, setTaskExecution] = useState<string[]>([]);
   const [taskPresentation, setTaskPresentation] = useState<string[]>([]);
-  const [expandedAreas, setExpandedAreas] = useState<string[]>([ecosystemAreas[1] ?? ecosystemAreas[0]]);
+  const [expandedAreas, setExpandedAreas] = useState<string[]>([ecosystemDocumentAreas[1] ?? ecosystemDocumentAreas[0]]);
   const [search, setSearch] = useState("");
 
   const selectedCount = selectedModules.length;
@@ -138,7 +138,7 @@ export default function SelecionarModulosPage() {
   }
 
   function toggleArea(area: string) {
-    const codes = ecosystemTasks.filter((task) => task.area === area).map((task) => task.code);
+    const codes = ecosystemDocuments.filter((task) => task.area === area).map((task) => task.code);
     const allSelected = codes.every((code) => taskExecution.includes(code));
     setTaskExecution((prev) => allSelected ? prev.filter((code) => !codes.includes(code)) : Array.from(new Set([...prev, ...codes])));
     if (allSelected) setTaskPresentation((prev) => prev.filter((code) => !codes.includes(code)));
@@ -183,7 +183,7 @@ export default function SelecionarModulosPage() {
     }
 
     if (taskExecution.length === 0) {
-      setErrorMessage("Selecione pelo menos uma tarefa do Ecossistema.");
+      setErrorMessage("Selecione pelo menos um documento do Ecossistema.");
       return;
     }
 
@@ -240,8 +240,8 @@ export default function SelecionarModulosPage() {
           modules: selectedModuleRecords,
           ecosystem2027: {
             version: 1,
-            executedTaskCodes: ecosystemTasks.filter((task) => taskExecution.includes(task.code)).map((task) => task.code),
-            presentedTaskCodes: ecosystemTasks.filter((task) => taskPresentation.includes(task.code)).map((task) => task.code),
+            selectedDocumentCodes: ecosystemDocuments.filter((doc) => taskExecution.includes(doc.code)).map((doc) => doc.code),
+            presentedDocumentCodes: ecosystemDocuments.filter((doc) => taskPresentation.includes(doc.code)).map((doc) => doc.code),
           },
           deliverySchedule: Object.keys(filledSchedule).length > 0 ? filledSchedule : null,
         },
@@ -260,10 +260,10 @@ export default function SelecionarModulosPage() {
   }
 
 
-  const visibleAreas = ecosystemAreas.filter((area) => {
+  const visibleAreas = ecosystemDocumentAreas.filter((area) => {
     const term = search.toLocaleLowerCase("pt-BR").trim();
     return !term || area.toLocaleLowerCase("pt-BR").includes(term) ||
-      ecosystemTasks.some((task) => task.area === area && (task.title.toLocaleLowerCase("pt-BR").includes(term) || task.code.includes(term)));
+      ecosystemDocuments.some((task) => task.area === area && (task.title.toLocaleLowerCase("pt-BR").includes(term) || task.code.includes(term)));
   });
 
   return (
@@ -294,7 +294,7 @@ export default function SelecionarModulosPage() {
         <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">Escolher módulos</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Personalize as tarefas que serão executadas no planejamento e o que ficará disponível na apresentação do cliente.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Selecione os documentos que farão parte do planejamento e quais serão exibidos na apresentação do cliente.</p>
           </div>
           {draft && <div className="rounded-xl border border-[#E3E7F0] bg-white px-5 py-3 text-sm">
             <span className="block text-xs text-[#697386]">Projeto</span>
@@ -306,21 +306,21 @@ export default function SelecionarModulosPage() {
         {errorMessage && <div role="alert" className="mb-6 rounded-xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{errorMessage}</div>}
         {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando seleção de módulos...</div> : <>
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{ecosystemAreas.length}</strong></div>
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Tarefas para execução</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {ecosystemTasks.length}</span></strong></div>
+            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{ecosystemDocumentAreas.length}</strong></div>
+            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Documentos selecionados</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {ecosystemDocuments.length}</span></strong></div>
             <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Visíveis ao cliente</span><strong className="mt-2 block text-2xl">{taskPresentation.length}</strong></div>
           </div>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <input aria-label="Buscar área ou tarefa" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar área, tarefa ou código..." className="w-full rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-sm outline-none focus:border-[#6D35F5] sm:max-w-md"/>
             <div className="flex gap-2">
-              <button type="button" onClick={() => {setTaskExecution(ecosystemTasks.map((task) => task.code));setExpandedAreas(ecosystemAreas);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
+              <button type="button" onClick={() => {setTaskExecution(ecosystemDocuments.map((task) => task.code));setExpandedAreas(ecosystemDocumentAreas);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
               <button type="button" onClick={() => {setTaskExecution([]);setTaskPresentation([]);}} className="rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Limpar seleção</button>
             </div>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="space-y-3">
               {visibleAreas.map((area) => {
-                const tasks = ecosystemTasks.filter((task) => task.area === area);
+                const tasks = ecosystemDocuments.filter((task) => task.area === area);
                 const chosen = tasks.filter((task) => taskExecution.includes(task.code)).length;
                 const open = expandedAreas.includes(area) || !!search.trim();
                 const all = chosen === tasks.length;
@@ -335,12 +335,12 @@ export default function SelecionarModulosPage() {
                   </div>
                   {open && <div className="border-t border-[#E3E7F0] px-4 pb-3 pt-2 sm:px-5">
                     <div className="grid grid-cols-[1fr_82px_82px] items-center gap-2 border-b border-[#E3E7F0] py-3 text-xs font-semibold text-[#697386] sm:grid-cols-[1fr_112px_112px]">
-                      <span>Tarefa / classificação</span><span className="text-center">Executar</span><span className="text-center">Exibir</span>
+                      <span>Documento do Notion</span><span className="text-center">Executar</span><span className="text-center">Exibir</span>
                     </div>
                     {tasks.filter((task) => !search.trim() || area.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")) || task.title.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")) || task.code.includes(search)).map((task) =>
                       <div key={task.code} className="grid grid-cols-[1fr_82px_82px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_112px_112px]">
                         <div className="min-w-0"><div className="flex flex-wrap items-baseline gap-2"><span className="text-xs font-semibold text-[#697386]">{task.code}</span><span className="text-sm font-medium">{task.title}</span></div>
-                          <span className={task.application === "Obrigatória" ? "mt-1 inline-block text-[11px] text-[#4A5971]" : "mt-1 inline-block text-[11px] text-[#825E20]"}>{task.application} · {task.documentTemplate ? "Documento vinculado" : "Sem documento vinculado"}</span>
+                          <span className={task.visibility === "Condicional" ? "mt-1 inline-block text-[11px] text-[#4A5971]" : "mt-1 inline-block text-[11px] text-[#825E20]"}>{task.visibility || "Documento do planejamento"}</span>
                         </div>
                         <div className="text-center"><input type="checkbox" aria-label={`Executar ${task.code} ${task.title}`} checked={taskExecution.includes(task.code)} onChange={() => toggleTask(task.code,"execution")} className="h-5 w-5 accent-[#6D35F5]"/></div>
                         <div className="text-center"><input type="checkbox" aria-label={`Exibir ${task.code} ${task.title}`} disabled={!taskExecution.includes(task.code)} checked={taskPresentation.includes(task.code)} onChange={() => toggleTask(task.code,"presentation")} className="h-5 w-5 accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30"/></div>
@@ -349,9 +349,9 @@ export default function SelecionarModulosPage() {
                   </div>}
                 </section>;
               })}
-              {visibleAreas.length === 0 && <p className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhuma área ou tarefa encontrada.</p>}
+              {visibleAreas.length === 0 && <p className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhum documento encontrado.</p>}
             </div>
-            <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir uma tarefa, marque primeiro “Executar”. As classificações “Obrigatória” e “Condicional” são referências metodológicas, não bloqueios de seleção.</div>
+            <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir uma tarefa, marque primeiro “Executar”. Os títulos seguem a base Docs do Notion. A seleção para execução e exibição é configurada por documento.</div>
             <div className="mt-7 flex flex-col gap-3 border-t border-[#E3E7F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-center text-sm font-medium">Voltar aos dados</Link>
               <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>

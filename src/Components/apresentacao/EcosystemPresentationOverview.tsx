@@ -3,29 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
-// Ícones próprios em SVG: traço arredondado e uniforme, sem dependências externas.
-function AreaIcon({index}:{index:number}) {
-  const paths: Record<number, React.ReactNode> = {
-    0: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 15v-4m5 4V7m5 8v-6"/></>,
-    1: <><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 8h4M7 12h4M7 16h4M15 8h2m-2 4h2m-2 4h2"/></>,
-    2: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13c6 4 12 4 18 0"/></>,
-    3: <><path d="M3 18V7l6-4 6 4v11M9 3v15M3 11h12"/><circle cx="18" cy="16" r="3"/><path d="m20.5 18.5 2 2"/></>,
-    4: <><circle cx="9" cy="8" r="3"/><circle cx="18" cy="9" r="2.5"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3Zm12-7a5 5 0 0 1 6 5v2h-4"/></>,
-    5: <><path d="M12 3.5a8.5 8.5 0 1 0 0 17h1.5a2 2 0 0 0 1.7-3.1 1.8 1.8 0 0 1 1.5-2.8h1.3a3 3 0 0 0 3-3c0-4.5-4.1-8.1-9-8.1Z"/><circle cx="7.6" cy="11" r=".7"/><circle cx="10" cy="7.3" r=".7"/><circle cx="15" cy="7.8" r=".7"/><circle cx="18" cy="11.5" r=".7"/></>,
-    6: <><path d="m3 11 13-6v14L3 13v-2Z"/><path d="m7 14 1.5 5h3L10 16M19 8a5 5 0 0 1 0 8"/></>,
-    7: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></>,
-    8: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="m12 12 8-8"/></>,
-    9: <><path d="M3 5h18l-7.5 8v5l-3 2v-7L3 5Z"/></>,
-    10: <><path d="m13 2-9 11h7l-1 9 10-12h-7l0-8Z"/></>,
-    11: <><path d="M21 12a9 9 0 1 1-9-9v9h9Z"/><path d="M13 3a8 8 0 0 1 8 8h-8V3Z"/></>,
-    12: <><rect x="2.5" y="4" width="6" height="6" rx="1.5"/><rect x="15.5" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5.5 10v3h13v-3M12 13v2"/></>,
-    13: <><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-8"/></>,
-    14: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 10 1.5 1.5L12 9M14 10h3m-9 6 1.5 1.5L12 15m2 1h3"/></>,
-    15: <><path d="m3 11 13-6v14L3 13v-2Z"/><path d="M7 14l2 5h3l-2-4M19 8a5 5 0 0 1 0 8"/></>,
-    16: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></>,
-  };
-  return <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0">{paths[index] ?? paths[0]}</svg>;
-}
+import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
+const iconNames: RotevoIconName[] = ["layout-dashboard","report","shopping-bag","filter-2-search","user","shape","target-arrow","brand-instagram","speakerphone","chart-funnel","bolt","chart-pie","chart-dots-3","device-analytics","alert-square-rounded","timeline-event-text","calendar-heart"];
+function AreaIcon({index}:{index:number}) { return <RotevoTablerIcon name={iconNames[index] ?? "layout-dashboard"} size={26} stroke={2.3} className="h-[26px] w-[26px] shrink-0"/>; }
 
 type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
 export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {

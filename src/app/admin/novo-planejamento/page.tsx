@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MetodoFooter, MetodoLogo } from "@/Components/MetodoBrand";
+import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -57,6 +57,7 @@ export default function NovoPlanejamentoPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const clientSlug = useMemo(() => createSlug(clientName), [clientName]);
 
@@ -90,6 +91,7 @@ export default function NovoPlanejamentoPage() {
         return;
       }
 
+      setUserEmail(userData.user.email ?? "");
       setIsLoading(false);
     }
 
@@ -186,53 +188,36 @@ export default function NovoPlanejamentoPage() {
     router.push("/admin/novo-planejamento/modulos");
   }
 
-  if (isLoading) {
-    return (
-      <main className="min-h-screen bg-slate-100 text-slate-950">
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 lg:px-10">
-          <MetodoLogo variant="dark" />
-          <Link
-            href="/admin"
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-          >
-            Voltar
-          </Link>
-        </header>
-        <section className="mx-auto max-w-4xl px-6 py-10 lg:px-10">
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-slate-500">Carregando...</p>
-          </div>
-        </section>
-        <MetodoFooter />
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 lg:px-10">
-        <MetodoLogo variant="dark" />
-        <Link
-          href="/admin"
-          className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-        >
-          Voltar ao painel
-        </Link>
+    <main className="admin-new-project-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+      <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27} /></Link>
+            <span aria-hidden="true" className="hidden h-6 w-px bg-[#E3E7F0] sm:block" />
+            <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <div className="flex items-center gap-2" title={userEmail} aria-label={"Usuário conectado: " + userEmail}>
+                <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">{userEmail.charAt(0).toUpperCase()}</span>
+                <span className="hidden max-w-48 truncate text-xs text-[#525B70] md:block">{userEmail}</span>
+              </div>
+            )}
+            <Link href="/admin" className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium text-[#090D1C] transition hover:bg-[#F6F7FB]">Voltar ao painel</Link>
+          </div>
+        </div>
       </header>
 
-      <section className="mx-auto max-w-4xl px-6 pb-20 lg:px-10">
-        <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
-            Novo planejamento
-          </p>
-
-          <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-slate-950">
+      <style jsx global>{` .admin-new-project-v2, .admin-new-project-v2 h1, .admin-new-project-v2 h2, .admin-new-project-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
+      <section className="mx-auto max-w-4xl px-5 pb-20 pt-10 sm:px-8 lg:px-10">
+        <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8 lg:p-10">
+          <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">
             Criar novo projeto
           </h1>
 
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            Preencha as informações iniciais do cliente. Na próxima etapa, você
-            vai selecionar quais módulos farão parte do planejamento.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">
+            Preencha as informações iniciais do cliente para começar seu planejamento estratégico.
           </p>
 
           {errorMessage && (
@@ -241,7 +226,7 @@ export default function NovoPlanejamentoPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             {/* Nome do cliente */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -252,7 +237,7 @@ export default function NovoPlanejamentoPage() {
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Ex: Cliente Demo"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-black/10"
+                className="w-full rounded-xl border border-[#E3E7F0] px-4 py-3 outline-none transition focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15"
               />
               {clientSlug && (
                 <p className="mt-2 text-xs text-slate-400">
@@ -271,7 +256,7 @@ export default function NovoPlanejamentoPage() {
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 placeholder="Ex: Planejamento Estratégico 2026"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-black/10"
+                className="w-full rounded-xl border border-[#E3E7F0] px-4 py-3 outline-none transition focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15"
               />
               {projectSlug && (
                 <p className="mt-2 text-xs text-slate-400">
@@ -292,7 +277,7 @@ export default function NovoPlanejamentoPage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#CDD3E0] bg-[#F8F9FC] px-6 py-10 text-center transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isUploading ? (
                     <>
@@ -374,12 +359,12 @@ export default function NovoPlanejamentoPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Planejamento estratégico inicial do cliente."
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-black/10"
+                className="w-full rounded-xl border border-[#E3E7F0] px-4 py-3 outline-none transition focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15"
               />
             </div>
 
             {/* Info box */}
-            <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+            <div className="rounded-xl bg-[#F6F7FB] p-5 ring-1 ring-[#E3E7F0]">
               <p className="text-sm font-semibold text-slate-700">
                 Próxima etapa
               </p>
@@ -393,7 +378,7 @@ export default function NovoPlanejamentoPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href="/admin"
-                className="inline-flex items-center justify-center rounded-full bg-white px-7 py-3 text-sm font-semibold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-7 py-3 text-sm font-semibold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
               >
                 Cancelar
               </Link>
@@ -401,7 +386,7 @@ export default function NovoPlanejamentoPage() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-[#0B142A] px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Escolher módulos
               </button>
@@ -410,7 +395,12 @@ export default function NovoPlanejamentoPage() {
         </div>
       </section>
 
-      <MetodoFooter />
+      <footer className="bg-[#A7E000]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10">
+          <span>© 2026 Rotevo. Todos os direitos reservados.</span>
+          <span>Rotevo Estratégia &amp; Consultoria</span>
+        </div>
+      </footer>
     </main>
   );
 }

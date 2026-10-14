@@ -14,7 +14,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
   const chosen = docs.find(d=>d.code===active);
   const chosenArea = areas.includes(active) ? active : null;
   const toggleArea=(area:string)=>{setExpanded(old=>old.includes(area)?old.filter(a=>a!==area):[...old,area]);setActive(area);setMenuOpen(false);};
-  const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1">
+  const nav=(<nav aria-label="Navegação do planejamento" className="space-y-1"><div className="mb-6 flex items-center gap-3 border-b border-white/15 px-2 pb-6"><div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()}</span>}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{clientName}</p><p className="mt-1 text-xs text-[#BEC6D7]">Planejamento estratégico</p></div></div>
     <button type="button" onClick={()=>{setActive("dashboard");setMenuOpen(false);}} className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left text-sm font-semibold ${active==="dashboard"?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>Painel Executivo</button>
     <p className="px-3 pb-2 pt-5 text-xs font-semibold text-[#B5BED1]">Áreas estratégicas</p>
     {areas.map(area=><div key={area}>
@@ -40,10 +40,6 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
       <aside className="hidden w-[306px] shrink-0 bg-[#0B142A] px-4 py-7 lg:block">{nav}</aside>
       {menuOpen&&<aside className="w-full bg-[#0B142A] px-5 py-6 lg:hidden">{nav}</aside>}
       <div className={`min-w-0 flex-1 px-5 pb-20 pt-8 sm:px-8 ${menuOpen?"hidden lg:block":""}`}>
-        <div className="mb-7 flex items-center gap-4 rounded-2xl border border-[#E3E7F0] bg-white p-5">
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#EDF0F8]">{coverImageUrl?<img src={coverImageUrl} alt={clientName} className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center text-xl font-bold text-[#697386]">{clientName.charAt(0).toUpperCase()}</span>}</div>
-          <div className="min-w-0"><p className="text-xs text-[#697386]">Planejamento estratégico</p><p className="mt-1 text-lg font-bold">{projectTitle}</p><p className="text-sm text-[#525B70]">{clientName}</p></div>
-        </div>
         {active==="dashboard"&&<div className="space-y-6">
           <div><p className="text-xs font-semibold text-[#697386]">Painel Executivo</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Visão geral estratégica</h1><p className="mt-2 text-sm text-[#525B70]">Consolidação dos objetivos, prioridades, iniciativas e acompanhamento do planejamento.</p></div>
           {isStrategist&&<div className="rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm text-[#525B70]">Estrutura inicial do Painel Executivo. Os indicadores dependem da integração dos documentos e dos dados de acompanhamento.</div>}

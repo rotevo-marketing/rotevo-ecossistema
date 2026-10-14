@@ -509,7 +509,7 @@ export default function PlanejamentoClientePage() {
                   {successMessage}
                 </div>
               ) : null}
-            </div>
+            </div>}
 
             {!hasEcosystem && <div className="mt-8 space-y-10">
               {moduleCategories.map((category) => {

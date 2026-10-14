@@ -275,8 +275,7 @@ export default function AdminPage() {
       <section className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6D35F5]">Painel administrativo</p>
-            <h1 className="mt-2 text-[30px] leading-[38px] font-bold tracking-[-0.02em]">Planejamentos</h1>
+            <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#6D35F5]">Painel Administrativo</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
           </div>
           <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>

@@ -64,15 +64,15 @@ function getStatusClass(status: PlanningProject["status"]) {
   }
 
   if (status === "draft") {
-    return "bg-slate-100 text-slate-600";
+    return "bg-amber-100 text-amber-800";
   }
 
   if (status === "in_progress") {
-    return "bg-slate-100 text-slate-600";
+    return "bg-blue-100 text-blue-700";
   }
 
   if (status === "archived") {
-    return "bg-slate-200 text-slate-500";
+    return "bg-slate-200 text-slate-700";
   }
 
   return "bg-slate-100 text-slate-600";
@@ -407,7 +407,7 @@ export default function PlanejamentoClientePage() {
             <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F1F3F7]">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#F1F3F7]">
                     {coverImageUrl ? <img src={coverImageUrl} alt={client?.name ?? "Cliente"} className="h-full w-full object-cover"/> :
                       <div className="flex h-full w-full items-center justify-center text-xl font-bold text-[#697386]">{(client?.name ?? "C").charAt(0).toUpperCase()}</div>}
                   </div>
@@ -596,7 +596,6 @@ export default function PlanejamentoClientePage() {
                   <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Gerencie o escopo e a exibição dos documentos do Ecossistema 2027.</p></div>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => { setEditingScope(!editingScope); setDraftDocumentCodes(documentCodes); setDraftPresentedCodes(presentedCodes); setErrorMessage(""); }} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">{editingScope ? "Cancelar edição" : "Editar documentos"}</button>
-                    <Link href={`/admin/planejamentos/${clientSlug}/acesso`} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium">Configurar acesso</Link>
                   </div>
                 </div>
                 {editingScope ? <div className="mt-5">

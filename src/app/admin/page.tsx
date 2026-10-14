@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MetodoFooter, MetodoLogo } from "@/Components/MetodoBrand";
+import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
 
 type ClientRecord = {
@@ -83,6 +83,10 @@ export default function AdminPage() {
   const [isPublishingId, setIsPublishingId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const totalProjects = projects.length;
 
@@ -93,6 +97,12 @@ export default function AdminPage() {
   const publishedProjects = useMemo(() => {
     return projects.filter((project) => project.status === "published").length;
   }, [projects]);
+
+  const visibleProjects = useMemo(() => projects.filter((project) => {
+    if (statusFilter !== "all" && project.status !== statusFilter) return false;
+    const text = ((getProjectClient(project)?.name ?? "") + " " + project.title).toLocaleLowerCase("pt-BR");
+    return text.includes(searchTerm.trim().toLocaleLowerCase("pt-BR"));
+  }), [projects, statusFilter, searchTerm]);
 
   useEffect(() => {
     loadAdminData();
@@ -123,6 +133,8 @@ export default function AdminPage() {
       router.push("/estrategista/login");
       return;
     }
+
+    setUserEmail(userData.user.email ?? "");
 
     const { data, error } = await supabase
       .from("planning_projects")
@@ -229,258 +241,132 @@ export default function AdminPage() {
     setIsPublishingId("");
   }
 
+
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 lg:px-10">
-        <MetodoLogo variant="dark" />
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="cursor-pointer rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-          >
-            Sair
-          </button>
-
-          <Link
-            href="/admin/novo-planejamento"
-            className="rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
-          >
-            Criar novo planejamento
-          </Link>
+    <main className="admin-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+      <style jsx global>{`
+        .admin-v2,
+        .admin-v2 h1,
+        .admin-v2 h2,
+        .admin-v2 h3 {
+          font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
+        }
+      `}</style>
+      <header className="border-b border-[#E3E7F0] bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27} /></Link>
+            <span className="hidden h-6 w-px bg-[#E3E7F0] sm:block" />
+            <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <div className="flex items-center gap-2" title={userEmail} aria-label={"Usuário conectado: " + userEmail}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]" aria-hidden="true">
+                  {userEmail.charAt(0).toUpperCase()}
+                </span>
+                <span className="hidden max-w-48 truncate text-xs text-[#525B70] md:block">{userEmail}</span>
+              </div>
+            )}
+            <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-5 py-2.5 text-sm font-medium text-[#525B70] hover:bg-[#F6F7FB]">Sair</button>
+          </div>
         </div>
       </header>
-
-      <section className="mx-auto max-w-6xl px-6 pb-20 lg:px-10">
-        <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-200">
-          <div className="h-1 bg-slate-200" />
-          <div className="p-8 lg:p-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Painel administrativo
-            </p>
-
-            <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-slate-950">
-              Planejamentos
-            </h1>
-
-            <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-              Aqui você acessa todos os planejamentos criados, acompanha o status
-              dos projetos e cria novos planejamentos para clientes.
-            </p>
-
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
-                <div className="h-0.5 bg-slate-200" />
-                <div className="p-6">
-                  <p className="text-sm text-slate-500">Total de planejamentos</p>
-                  <strong className="mt-3 block text-4xl font-bold tracking-[-0.04em] text-slate-950">
-                    {isLoading ? "..." : totalProjects}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
-                <div className="h-0.5 bg-slate-200" />
-                <div className="p-6">
-                  <p className="text-sm text-slate-500">Em produção</p>
-                  <strong className="mt-3 block text-4xl font-bold tracking-[-0.04em] text-slate-950">
-                    {isLoading ? "..." : inProgressProjects}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
-                <div className="h-0.5 bg-slate-200" />
-                <div className="p-6">
-                  <p className="text-sm text-slate-500">Publicados</p>
-                  <strong className="mt-3 block text-4xl font-bold tracking-[-0.04em] text-slate-950">
-                    {isLoading ? "..." : publishedProjects}
-                  </strong>
-                </div>
-              </div>
+      <section className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">Painel Administrativo</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
+          </div>
+          <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Total de planejamentos", value: totalProjects },
+            { label: "Em produção", value: inProgressProjects },
+            { label: "Publicados", value: publishedProjects }
+          ].map((metric) => (
+            <div key={metric.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-6">
+              <p className="text-sm font-medium text-[#525B70]">{metric.label}</p>
+              <strong className="mt-3 block text-[34px] leading-10 font-bold tabular-nums">{isLoading ? "..." : metric.value}</strong>
+            </div>
+          ))}
+        </div>
+        <section aria-labelledby="projects-heading" className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-6 lg:p-8">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="projects-heading" className="text-2xl leading-8 font-bold tracking-[-0.02em]">Projetos recentes</h2>
+              <p className="mt-1 text-sm text-[#697386]">Localize, acompanhe e gerencie seus planejamentos.</p>
+            </div>
+            {!isLoading && <span className="shrink-0 text-xs text-[#697386]">{visibleProjects.length} de {projects.length}</span>}
+          </div>
+          <div className="mt-6 space-y-4">
+            <label htmlFor="admin-search" className="sr-only">Buscar cliente ou planejamento</label>
+            <input id="admin-search" type="search" placeholder="Buscar cliente ou planejamento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="min-h-11 w-full rounded-xl border border-[#E3E7F0] px-4 py-3 text-sm outline-none focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15" />
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar planejamentos">
+              {([{value:"all",label:"Todos"},{value:"draft",label:"Em produção"},{value:"published",label:"Publicados"}] as const).map((f) => (
+                <button key={f.value} type="button" aria-pressed={statusFilter===f.value} onClick={() => {setStatusFilter(f.value);setOpenMenuId(null);}} className={"cursor-pointer rounded-full border px-4 py-2 text-sm font-medium " + (statusFilter===f.value ? "border-[#6D35F5] bg-[#F0ECFF] text-[#5123C5]" : "border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]")}>{f.label}</button>
+              ))}
             </div>
           </div>
-        </div>
-
-        <div className="mt-10 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-2xl font-bold tracking-[-0.03em]">
-            Projetos recentes
-          </h2>
-          <p className="text-sm text-slate-500">
-            Clique em um planejamento para configurar os módulos.
-          </p>
-        </div>
-
-        {errorMessage ? (
-          <div className="mt-6 rounded-2xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        {successMessage ? (
-          <div className="mt-6 rounded-2xl bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-700">
-            {successMessage}
-          </div>
-        ) : null}
-
-        {isLoading ? (
-          <div className="mt-6 rounded-[1.5rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-slate-500">Carregando planejamentos...</p>
-          </div>
-        ) : null}
-
-        {!isLoading && projects.length === 0 ? (
-          <div className="mt-6 rounded-[1.5rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h3 className="text-xl font-bold">Nenhum planejamento encontrado</h3>
-            <p className="mt-2 text-slate-600">
-              Crie o primeiro planejamento para começar a usar a plataforma com
-              clientes reais.
-            </p>
-
-            <Link
-              href="/admin/novo-planejamento"
-              className="mt-6 inline-flex rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
-            >
-              Criar novo planejamento
-            </Link>
-          </div>
-        ) : null}
-
-        {!isLoading && projects.length > 0 ? (
-          <div className="mt-6 space-y-4">
-            {projects.map((project) => {
-              const client = getProjectClient(project);
-              const clientName = client?.name ?? "Cliente sem nome";
-              const clientSlug = client?.slug ?? "demo";
-              const coverImageUrl = project.data?.coverImageUrl ?? "";
-              const isDeleting = isDeletingId === project.id;
-              const isDemoProject = clientSlug === "demo";
-
-              return (
-                <article
-                  key={project.id}
-                  className="rounded-[1.5rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-slate-300 lg:p-7"
-                >
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-                    {/* Info area */}
-                    <div className="flex min-w-0 flex-1 items-start gap-4">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
-                        {coverImageUrl ? (
-                          <img
-                            src={coverImageUrl}
-                            alt={clientName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xl font-bold text-slate-400">
-                            {clientName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-xl font-bold tracking-[-0.03em]">
-                            {clientName}
-                          </h3>
-
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${getStatusClass(
-                              project.status
-                            )}`}
-                          >
-                            {getStatusLabel(project.status)}
-                          </span>
+          {errorMessage && <div role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{errorMessage}</div>}
+          {successMessage && <div role="status" className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{successMessage}</div>}
+          {isLoading && <p role="status" className="mt-6 text-sm text-[#697386]">Carregando planejamentos...</p>}
+          {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
+          {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
+          {!isLoading && visibleProjects.length>0 && (
+            <div className="mt-6 space-y-3">
+              {visibleProjects.map((project) => {
+                const client=getProjectClient(project);
+                const clientName=client?.name ?? "Cliente sem nome";
+                const clientSlug=client?.slug ?? "demo";
+                const imageUrl=project.data?.coverImageUrl ?? "";
+                const deleting=isDeletingId===project.id;
+                const publishing=isPublishingId===project.id;
+                const demo=clientSlug==="demo";
+                const menuOpen=openMenuId===project.id;
+                return (
+                  <article key={project.id} className="relative rounded-2xl border border-[#E3E7F0] bg-white p-4 hover:border-[#CDD3E0] sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">
+                          {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-cover" /> : <span aria-hidden="true">{clientName.split(" ").slice(0,2).map(w=>w.charAt(0).toUpperCase()).join("")}</span>}
                         </div>
-
-                        <p className="mt-1.5 text-sm font-medium text-slate-500">
-                          {project.title}
-                        </p>
-
-                        {project.description ? (
-                          <p className="mt-1.5 max-w-lg text-sm leading-6 text-slate-400">
-                            {project.description}
-                          </p>
-                        ) : null}
-
-                        <p className="mt-3 text-xs text-slate-400">
-                          Atualizado em {formatDate(project.updated_at)}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="break-words text-[17px] leading-6 font-bold">{clientName}</h3>
+                            <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
+                          </div>
+                          <p className="mt-1 break-words text-sm text-[#525B70]">{project.title}</p>
+                          {project.description && <p className="mt-1 line-clamp-2 text-xs text-[#697386]">{project.description}</p>}
+                          <p className="mt-2 text-xs text-[#697386]">Atualizado em {formatDate(project.updated_at)}</p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+                        <Link href={"/admin/planejamentos/"+clientSlug} className="inline-flex min-h-10 items-center rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#24304D]">Editar planejamento</Link>
+                        <div className="relative">
+                          <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#E3E7F0] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
+                          {menuOpen && (
+                            <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-xl">
+                              <Link href={"/apresentacao/"+project.slug} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Ver apresentação</Link>
+                              <Link href={"/admin/planejamentos/"+clientSlug+"/acesso"} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Configurar acesso</Link>
+                              {project.status==="draft" && <button type="button" disabled={publishing||deleting} onClick={()=>{setOpenMenuId(null);handlePublishProject(project,"published");}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">{publishing?"Publicando...":"Publicar"}</button>}
+                              {project.status==="published" && <button type="button" disabled={publishing||deleting} onClick={()=>{setOpenMenuId(null);handlePublishProject(project,"draft");}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">{publishing?"Atualizando...":"Voltar para rascunho"}</button>}
+                              <div className="my-1 border-t border-[#E3E7F0]" />
+                              <button type="button" disabled={deleting||demo} onClick={()=>{setOpenMenuId(null);handleDeleteProject(project);}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-40">{deleting?"Excluindo...":demo?"Modelo protegido":"Excluir"}</button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Actions area */}
-                    <div className="flex shrink-0 flex-col gap-2 lg:items-end">
-                      {/* Primary actions */}
-                      <div className="flex flex-wrap gap-2">
-                        <Link
-                          href={`/admin/planejamentos/${clientSlug}`}
-                          className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800"
-                        >
-                          Editar planejamento
-                        </Link>
-
-                        <Link
-                          href={`/apresentacao/${project.slug}`}
-                          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-                        >
-                          Ver apresentação
-                        </Link>
-                      </div>
-
-                      {/* Secondary + destructive */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          href={`/admin/planejamentos/${clientSlug}/acesso`}
-                          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-                        >
-                          Configurar acesso
-                        </Link>
-
-                        {project.status === "draft" && (
-                          <button
-                            type="button"
-                            onClick={() => handlePublishProject(project, "published")}
-                            disabled={isPublishingId === project.id || isDeleting}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            {isPublishingId === project.id ? "Publicando..." : "Publicar"}
-                          </button>
-                        )}
-
-                        {project.status === "published" && (
-                          <button
-                            type="button"
-                            onClick={() => handlePublishProject(project, "draft")}
-                            disabled={isPublishingId === project.id || isDeleting}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            {isPublishingId === project.id ? "Atualizando..." : "Voltar para rascunho"}
-                          </button>
-                        )}
-
-                        <div className="h-4 w-px bg-slate-200" />
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProject(project)}
-                          disabled={isDeleting || isDemoProject}
-                          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 ring-1 ring-red-100 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {isDeleting ? "Excluindo..." : isDemoProject ? "Modelo" : "Excluir"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </section>
-
-      <MetodoFooter />
+      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
     </main>
   );
 }

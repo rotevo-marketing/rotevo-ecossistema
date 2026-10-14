@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { MetodoFooter, MetodoLogo } from "@/Components/MetodoBrand";
+import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
 
 type ClientRecord = {
@@ -57,7 +57,7 @@ function CopyButton({ value, label }: { value: string; label?: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-700 active:bg-slate-200"
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#F6F7FB] px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-700 active:bg-slate-200"
     >
       {copied ? "Copiado!" : (label ?? "Copiar")}
     </button>
@@ -215,32 +215,29 @@ export default function AcessoClientePage() {
   const clientMessage = `Olá, ${client?.name ?? ""}.\nSeu acesso ao planejamento estratégico está disponível:\n\nURL: https://app.rotevo.com.br\nLogin: ${email}\nSenha provisória: ${password}`;
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8 lg:px-10">
-        <MetodoLogo variant="dark" />
-
-        <Link
-          href={`/admin/planejamentos/${clientSlug}`}
-          className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:ring-slate-300"
-        >
-          Voltar ao planejamento
-        </Link>
+    <main className="admin-access-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+      <style jsx global>{` .admin-access-v2, .admin-access-v2 h1, .admin-access-v2 h2, .admin-access-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
+      <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-4"><Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27}/></Link><span className="hidden h-6 w-px bg-[#E3E7F0] sm:block"/><span className="hidden text-sm text-[#697386] sm:block">Administração</span></div>
+          <Link href={`/admin/planejamentos/${clientSlug}`} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium text-[#090D1C] hover:bg-[#F6F7FB]">Voltar ao planejamento</Link>
+        </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-6 pb-24 lg:px-10">
+      <section className="mx-auto w-full max-w-6xl flex-1 px-5 pb-24 pt-9 sm:px-8 lg:px-10">
         {isLoading && (
-          <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
             <p className="text-slate-500">Carregando...</p>
           </div>
         )}
 
         {!isLoading && errorMessage && (
-          <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-red-500">Atenção</p>
+          <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <p className="text-sm font-bold text-red-600">Atenção</p>
             <h1 className="mt-4 text-2xl font-bold tracking-[-0.04em]">{errorMessage}</h1>
             <Link
               href="/admin"
-              className="mt-8 inline-flex rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+              className="mt-8 inline-flex rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
               Voltar ao painel
             </Link>
@@ -250,21 +247,18 @@ export default function AcessoClientePage() {
         {!isLoading && project && client && (
           <div className="space-y-6">
             {/* ── Header card ──────────────────────────────────────────────── */}
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
-                Acesso do cliente
-              </p>
-              <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em]">
+            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+              <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">
                 Configurar acesso
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                Crie o acesso do cliente diretamente por aqui. O usuário é criado no Supabase Auth e o perfil é configurado automaticamente — sem precisar acessar o painel do Supabase.
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">
+                Crie o acesso do cliente diretamente por aqui. O usuário é criado no Supabase Auth e o perfil é configurado automaticamente, sem necessidade de acessar o painel do Supabase.
               </p>
             </div>
 
             {/* ── Client data ───────────────────────────────────────────────── */}
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+              <p className="text-sm font-bold text-[#090D1C]">
                 Dados do cliente e planejamento
               </p>
 
@@ -283,12 +277,12 @@ export default function AcessoClientePage() {
             </div>
 
             {/* ── Credentials ──────────────────────────────────────────────── */}
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+              <p className="text-sm font-bold text-[#090D1C]">
                 Credenciais de acesso
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Defina o e-mail e a senha provisória. A senha não é salva em nenhum lugar — apenas exibida nesta tela durante a criação.
+                Defina o e-mail e a senha provisória. A senha não é armazenada pela plataforma. Ela é exibida nesta tela durante a criação do acesso.
               </p>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -303,7 +297,7 @@ export default function AcessoClientePage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="email@cliente.com"
                       disabled={createSuccess}
-                      className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10 disabled:opacity-60"
+                      className="flex-1 rounded-xl border border-[#E3E7F0] bg-[#F8F9FC] px-4 py-3 text-sm text-slate-950 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10 disabled:opacity-60"
                     />
                     {email && <CopyButton value={email} label="Copiar e-mail" />}
                   </div>
@@ -319,7 +313,7 @@ export default function AcessoClientePage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={createSuccess}
-                      className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-950 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10 disabled:opacity-60"
+                      className="flex-1 rounded-xl border border-[#E3E7F0] bg-[#F8F9FC] px-4 py-3 text-sm text-[#090D1C] focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10 disabled:opacity-60"
                     />
                     <CopyButton value={password} label="Copiar senha" />
                   </div>
@@ -337,7 +331,7 @@ export default function AcessoClientePage() {
                       type="button"
                       onClick={handleCreateAccess}
                       disabled={isCreating || !email || !password}
-                      className="cursor-pointer rounded-full bg-slate-950 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="cursor-pointer rounded-xl bg-[#0B142A] px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreating ? "Criando acesso..." : "Criar acesso automaticamente"}
                     </button>
@@ -391,8 +385,8 @@ export default function AcessoClientePage() {
             </div>
 
             {/* ── Client message ────────────────────────────────────────────── */}
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+              <p className="text-sm font-bold text-[#090D1C]">
                 Mensagem para o cliente
               </p>
               <p className="mt-2 text-sm text-slate-500">
@@ -409,7 +403,7 @@ export default function AcessoClientePage() {
             </div>
 
             {/* ── Manual fallback ───────────────────────────────────────────── */}
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
+            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
               <button
                 type="button"
                 onClick={() => setShowManual((v) => !v)}
@@ -431,7 +425,7 @@ export default function AcessoClientePage() {
                   {/* Step 1 */}
                   <div>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0B142A] text-sm font-bold text-white">
                         1
                       </span>
                       <h3 className="text-lg font-bold tracking-[-0.03em]">
@@ -482,7 +476,7 @@ export default function AcessoClientePage() {
                   {/* Step 2 */}
                   <div>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0B142A] text-sm font-bold text-white">
                         2
                       </span>
                       <h3 className="text-lg font-bold tracking-[-0.03em]">
@@ -500,7 +494,7 @@ export default function AcessoClientePage() {
                           value={uid}
                           onChange={(e) => setUid(e.target.value)}
                           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-950 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10"
+                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#090D1C] placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-black/10"
                         />
                         {uid.trim() && <CopyButton value={uid.trim()} label="Copiar UID" />}
                       </div>
@@ -510,7 +504,7 @@ export default function AcessoClientePage() {
                   {/* Step 3 */}
                   <div>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0B142A] text-sm font-bold text-white">
                         3
                       </span>
                       <h3 className="text-lg font-bold tracking-[-0.03em]">
@@ -546,7 +540,7 @@ export default function AcessoClientePage() {
         )}
       </section>
 
-      <MetodoFooter />
+      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
 }
@@ -569,7 +563,7 @@ function DataRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 py-4">
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        <p className="text-xs font-medium text-[#697386]">
           {label}
         </p>
         {badge ? (

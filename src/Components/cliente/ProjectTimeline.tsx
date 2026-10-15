@@ -9,6 +9,7 @@ export type ExecutionItem = {
   projectTitle?:string;
   phase?:string;
   owner?:string;
+  ownerUserId?:string;
   startDate?:string;
   dueDate?:string;
   status?:"planned"|"in_progress"|"blocked"|"completed"|"cancelled";

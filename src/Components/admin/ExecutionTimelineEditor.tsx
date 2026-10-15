@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
-type ProjectData = { executionTimeline?: ExecutionItem[]; [key:string]:unknown };
+type ProjectData = { executionTimeline?: ExecutionItem[] };
 type Props={ projectId:string; projectData:ProjectData; updatedAt:string; onSaved:(data:ProjectData,updatedAt:string)=>void };
 const blank:ExecutionItem={id:"",title:"",description:"",status:"planned",kind:"deliverable",owner:"",phase:"",startDate:"",dueDate:"",driveUrl:"",visibleToClient:true,dependencies:[]};
 const labels={planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"} as const;

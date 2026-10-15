@@ -6,10 +6,11 @@ import { supabase } from "@/lib/supabase";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
+import EditorialCalendar, {type EditorialItem} from "@/Components/cliente/EditorialCalendar";
 
 type Project = {
   id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
-  data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
+  data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
 };
 type MenuId="overview"|"planning"|"execution"|"content"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";
 type MenuItem={id:MenuId;name:string;icon:RotevoIconName};
@@ -135,7 +136,7 @@ export default function ClientAreaPage(){
        </div>:
        tab==="planning"?<Block title="Seus planejamentos" icon="report">{renderProjects()}</Block>:
        tab==="execution"?<ProjectTimeline projects={projects}/>:
-       tab==="content"?<Block title="Calendário e aprovações de conteúdo" icon="brand-instagram"><p className="text-sm text-[#525B70]">O calendário editorial terá visualizações mensal, semanal e em lista. Cada publicação poderá ter link para o arquivo no Drive, legenda, data, versão, status e registro de aprovação ou solicitação de ajuste.</p><div className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhum conteúdo cadastrado ainda. Não há aprovações pendentes registradas.</div></Block>:
+       tab==="content"?<EditorialCalendar projects={projects} clientView/> :
        <Block title={selected.name} icon={selected.icon}>
          <p className="text-sm leading-6 text-[#525B70]">{tab==="meetings"?"Histórico de reuniões, atas, gravações e encaminhamentos compartilhados com você.":tab==="onboarding"?"Etapas de entrada, materiais solicitados e informações necessárias ao início do trabalho.":tab==="contract"?"Contrato, escopo contratado, vigência e documentos vinculados ao seu projeto.":tab==="drive"?"Acesso às pastas autorizadas do Google Drive: identidade visual, fotos, vídeos, documentos e entregas.":tab==="finance"?"Informações financeiras do seu contrato, incluindo vencimentos, pagamentos e documentos disponíveis.":"Links de acesso às plataformas e planilhas autorizadas. As senhas não serão copiadas para a Rotevo."}</p>
          <div className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Esta área está preparada para receber links e informações liberados pela equipe Rotevo. Ainda não existem registros vinculados a esta seção.</div>

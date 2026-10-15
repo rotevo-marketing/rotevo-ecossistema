@@ -20,8 +20,9 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   setSaving(true);setError("");setSuccess("");
   // Compare-and-swap guards against overwriting changes made elsewhere.
   const nextData={...projectData,executionTimeline:next};
+  const nextUpdatedAt=new Date().toISOString();
   const {data,error:saveError}=await supabase.from("planning_projects")
-   .update({data:nextData}).eq("id",projectId).eq("updated_at",updatedAt)
+   .update({data:nextData,updated_at:nextUpdatedAt}).eq("id",projectId).eq("updated_at",updatedAt)
    .select("data,updated_at").maybeSingle();
   setSaving(false);
   if(saveError){setError(saveError.message||"Não foi possível salvar as entregas.");return;}

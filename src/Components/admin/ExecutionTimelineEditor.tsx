@@ -1,11 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
 type ProjectData = { executionTimeline?: ExecutionItem[] };
 type Props={ projectId:string; projectData:ProjectData; updatedAt:string; onSaved:(data:ProjectData,updatedAt:string)=>void };
-const blank:ExecutionItem={id:"",title:"",description:"",status:"planned",kind:"deliverable",owner:"",phase:"",startDate:"",dueDate:"",driveUrl:"",visibleToClient:true,dependencies:[]};
+const blank:ExecutionItem={id:"",title:"",description:"",status:"planned",kind:"deliverable",owner:"",ownerUserId:"",phase:"",startDate:"",dueDate:"",driveUrl:"",visibleToClient:true,dependencies:[]};
 const labels={planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"} as const;
 const kinds={deliverable:"Entrega",milestone:"Marco",task:"Tarefa"} as const;
 const validLink=(value:string)=>{if(!value.trim())return true;try{return new URL(value).protocol==="https:";}catch{return false;}};
@@ -14,6 +14,13 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
+ const [members,setMembers]=useState<{user_id:string;display_name:string;active:boolean}[]>([]);
+ const [teamReady,setTeamReady]=useState(false);
+ useEffect(()=>{let active=true;async function load(){
+  const {data,error}=await supabase.from("team_members").select("user_id,display_name,active").eq("active",true).order("display_name");
+  if(!active)return;
+  setTeamReady(!error);setMembers(error?[]:(data??[]));
+ }void load();return()=>{active=false};},[]);
  const items=useMemo(()=>Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"):[],[projectData]);
  async function persist(next:ExecutionItem[]){
   if(saving)return;
@@ -70,7 +77,12 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
          <select value={editing.status??"planned"} onChange={e=>setEditing({...editing,status:e.target.value as ExecutionItem["status"]})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm">{Object.entries(labels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select>
        </label>
        <label className="block text-xs font-medium">Responsável
-         <input value={editing.owner??""} maxLength={120} onChange={e=>setEditing({...editing,owner:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+         {teamReady&&members.length>0?
+          <select value={editing.ownerUserId||""} onChange={e=>{const member=members.find(m=>m.user_id===e.target.value);setEditing({...editing,ownerUserId:member?.user_id||"",owner:member?.display_name||""})}} className="mt-1 block w-full cursor-pointer rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm">
+           <option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}
+          </select>:
+          <input value={editing.owner??""} maxLength={120} onChange={e=>setEditing({...editing,owner:e.target.value,ownerUserId:""})} placeholder="Nome provisório (cadastro da equipe pendente)" className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+         }
        </label>
        <label className="block text-xs font-medium">Etapa ou fase
          <input value={editing.phase??""} maxLength={120} onChange={e=>setEditing({...editing,phase:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>

@@ -1,0 +1,97 @@
+"use client";
+import { useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
+
+type ProjectData = { executionTimeline?: ExecutionItem[]; [key:string]:unknown };
+type Props={ projectId:string; projectData:ProjectData; updatedAt:string; onSaved:(data:ProjectData,updatedAt:string)=>void };
+const blank:ExecutionItem={id:"",title:"",description:"",status:"planned",kind:"deliverable",owner:"",phase:"",startDate:"",dueDate:"",driveUrl:"",visibleToClient:true,dependencies:[]};
+const labels={planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"} as const;
+const kinds={deliverable:"Entrega",milestone:"Marco",task:"Tarefa"} as const;
+const validLink=(value:string)=>{if(!value.trim())return true;try{return new URL(value).protocol==="https:";}catch{return false;}};
+export default function ExecutionTimelineEditor({projectId,projectData,updatedAt,onSaved}:Props){
+ const [editing,setEditing]=useState<ExecutionItem|null>(null);
+ const [saving,setSaving]=useState(false);
+ const [error,setError]=useState("");
+ const [success,setSuccess]=useState("");
+ const items=useMemo(()=>Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"):[],[projectData]);
+ async function persist(next:ExecutionItem[]){
+  if(saving)return;
+  setSaving(true);setError("");setSuccess("");
+  // Compare-and-swap guards against overwriting changes made elsewhere.
+  const nextData={...projectData,executionTimeline:next};
+  const {data,error:saveError}=await supabase.from("planning_projects")
+   .update({data:nextData}).eq("id",projectId).eq("updated_at",updatedAt)
+   .select("data,updated_at").maybeSingle();
+  setSaving(false);
+  if(saveError){setError(saveError.message||"Não foi possível salvar as entregas.");return;}
+  if(!data){setError("O planejamento foi atualizado em outra sessão. Atualize a página antes de salvar para evitar sobrescrever alterações.");return;}
+  onSaved((data.data??nextData) as ProjectData,data.updated_at as string);
+  setEditing(null);setSuccess("Linha do tempo atualizada com sucesso.");
+ }
+ function saveItem(){
+  if(!editing)return;
+  const title=editing.title.trim();
+  if(title.length<3){setError("Informe um título com pelo menos 3 caracteres.");return;}
+  if(editing.startDate&&editing.dueDate&&editing.startDate>editing.dueDate){setError("O prazo não pode ser anterior ao início.");return;}
+  if(!validLink(editing.driveUrl??"")){setError("Use um endereço HTTPS válido para o material.");return;}
+  if(!editing.id&&typeof crypto==="undefined"){setError("Não foi possível gerar um identificador para a entrega.");return;}
+  const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient!==false};
+  const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
+  void persist(next);
+ }
+ function removeItem(item:ExecutionItem){
+  if(!window.confirm(`Excluir a entrega "${item.title}"? Esta ação não pode ser desfeita.`))return;
+  void persist(items.filter(i=>i.id!==item.id));
+ }
+ return <section className="mt-6 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
+   <div className="flex flex-wrap items-start justify-between gap-3">
+    <div><h2 className="text-xl font-bold">Execução do projeto</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Cadastre entregas, tarefas e marcos que devem compor a linha do tempo. A equipe gerencia; o cliente acompanha apenas os itens liberados.</p></div>
+    <button type="button" onClick={()=>{setEditing({...blank});setError("");setSuccess("")}} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white">Adicionar entrega</button>
+   </div>
+   {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+   {success&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
+   {items.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma entrega operacional cadastrada. Os marcos antigos continuarão disponíveis separadamente no portal.</p>:
+    <div className="mt-5 divide-y divide-[#E3E7F0]">{items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+     <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{item.title}</h3><p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===false?"Interno":"Visível ao cliente"}</p></div>
+     <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
+    </div>)}</div>}
+   {editing&&<div className="mt-5 rounded-2xl border border-[#D9D0F5] bg-[#FCFBFF] p-4 sm:p-5">
+     <h3 className="mb-4 text-base font-semibold">{editing.id?"Editar entrega":"Nova entrega"}</h3>
+     <div className="grid gap-4 sm:grid-cols-2">
+       <label className="block text-xs font-medium">Título da entrega *
+         <input value={editing.title} maxLength={140} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium">Tipo
+         <select value={editing.kind??"deliverable"} onChange={e=>setEditing({...editing,kind:e.target.value as ExecutionItem["kind"]})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm">{Object.entries(kinds).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select>
+       </label>
+       <label className="block text-xs font-medium">Situação
+         <select value={editing.status??"planned"} onChange={e=>setEditing({...editing,status:e.target.value as ExecutionItem["status"]})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm">{Object.entries(labels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select>
+       </label>
+       <label className="block text-xs font-medium">Responsável
+         <input value={editing.owner??""} maxLength={120} onChange={e=>setEditing({...editing,owner:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium">Etapa ou fase
+         <input value={editing.phase??""} maxLength={120} onChange={e=>setEditing({...editing,phase:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium">Data de início
+         <input type="date" value={editing.startDate??""} onChange={e=>setEditing({...editing,startDate:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium">Prazo
+         <input type="date" value={editing.dueDate??""} onChange={e=>setEditing({...editing,dueDate:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium">Link do material (HTTPS)
+         <input type="url" value={editing.driveUrl??""} onChange={e=>setEditing({...editing,driveUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+       <label className="block text-xs font-medium sm:col-span-2">Descrição
+         <textarea value={editing.description??""} maxLength={2000} rows={3} onChange={e=>setEditing({...editing,description:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
+       </label>
+     </div>
+     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient!==false} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Exibir entrega na Área do Cliente</label>
+     <div className="mt-5 flex flex-wrap justify-end gap-2">
+       <button type="button" disabled={saving} onClick={()=>{setEditing(null);setError("")}} className="cursor-pointer rounded-lg border border-[#D7DCE6] px-4 py-2.5 text-sm disabled:opacity-40">Cancelar</button>
+       <button type="button" disabled={saving} onClick={saveItem} className="cursor-pointer rounded-lg bg-[#0B142A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar entrega"}</button>
+     </div>
+   </div>}
+ </section>;
+}

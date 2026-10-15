@@ -1,5 +1,5 @@
 "use client";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
@@ -13,6 +13,19 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  const [saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const project=projects.find(p=>p.id===projectId);
  const items=useMemo(()=>Array.isArray(project?.data?.editorialCalendar)?project.data.editorialCalendar:[],[project]);
+ const [decisions,setDecisions]=useState<{content_id:string;content_version:string;decision:"approved"|"changes_requested"}[]>([]);
+ const [approvalError,setApprovalError]=useState(false);
+ useEffect(()=>{let mounted=true;async function load(){
+  if(!projectId){setDecisions([]);setApprovalError(false);return;}
+  const {data,error}=await supabase.from("editorial_approvals").select("content_id,content_version,decision").eq("project_id",projectId);
+  if(!mounted)return;
+  setApprovalError(!!error);setDecisions(error?[]:(data??[]) as typeof decisions);
+ }void load();return()=>{mounted=false};},[projectId]);
+ function displayStatus(item:EditorialItem){
+  const decision=decisions.find(x=>x.content_id===item.id&&x.content_version===(item.version??""));
+  return decision?editorialStatuses[decision.decision]:editorialStatuses[item.status]??item.status;
+ }
+
  async function persist(next:EditorialItem[]){
   if(!project||saving)return;
   setSaving(true);setError("");setNotice("");
@@ -44,7 +57,8 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
    </div>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-   {project&&<div className="mt-5 space-y-2">{items.length===0?<p className="text-sm text-[#697386]">Nenhum conteúdo cadastrado para este projeto.</p>:items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] p-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.publishDate} · {editorialStatuses[item.status]??item.status} · {item.visibleToClient?"Compartilhado":"Interno"}</p></div><button type="button" onClick={()=>{setEditing({...item});setError("");}} className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold">Editar</button></div>)}</div>}
+   {project&&approvalError&&<p className="mt-3 text-xs text-[#916000]">A sincronização do histórico de aprovações ainda depende da configuração do banco.</p>}
+   {project&&<div className="mt-5 space-y-2">{items.length===0?<p className="text-sm text-[#697386]">Nenhum conteúdo cadastrado para este projeto.</p>:items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] p-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.publishDate} · {displayStatus(item)} · {item.visibleToClient?"Compartilhado":"Interno"}</p></div><button type="button" onClick={()=>{setEditing({...item});setError("");}} className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold">Editar</button></div>)}</div>}
    {project&&editing&&<div className="mt-5 rounded-xl border border-[#DED4FA] bg-[#FCFBFF] p-4">
     <h3 className="text-base font-semibold">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">

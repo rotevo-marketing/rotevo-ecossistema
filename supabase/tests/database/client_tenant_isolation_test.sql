@@ -49,9 +49,9 @@ VALUES
  ('a0000000-0000-4000-8000-000000000001','Planejamento A','lab-plan-a','published','{"tenant":"A"}'::jsonb),
  ('b0000000-0000-4000-8000-000000000002','Planejamento B','lab-plan-b','published','{"tenant":"B"}'::jsonb);
 
-SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub',
  (SELECT id::text FROM auth.users WHERE email='cliente.teste@rotevo.invalid'),true);
+SET LOCAL ROLE authenticated;
 
 SELECT is((SELECT count(*) FROM public.clients WHERE slug='lab-tenant-a'),1::bigint,'A sees own client');
 SELECT is((SELECT count(*) FROM public.clients WHERE slug='lab-tenant-b'),0::bigint,'A cannot see client B');
@@ -60,8 +60,10 @@ SELECT is((SELECT count(*) FROM public.client_users WHERE client_id='b0000000-00
 SELECT is((SELECT count(*) FROM public.planning_projects WHERE slug='lab-plan-a'),1::bigint,'A sees own project');
 SELECT is((SELECT count(*) FROM public.planning_projects WHERE slug='lab-plan-b'),0::bigint,'A cannot see B project');
 
+RESET ROLE;
 SELECT set_config('request.jwt.claim.sub',
  (SELECT id::text FROM auth.users WHERE email='cliente.b@rotevo.invalid'),true);
+SET LOCAL ROLE authenticated;
 SELECT is((SELECT count(*) FROM public.clients WHERE slug='lab-tenant-b'),1::bigint,'B sees own client');
 SELECT is((SELECT count(*) FROM public.planning_projects WHERE slug='lab-plan-a'),0::bigint,'B cannot see project A');
 

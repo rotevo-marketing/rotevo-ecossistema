@@ -46,9 +46,9 @@ SELECT is_empty($$DELETE FROM public.planning_projects WHERE slug='lab-write-pla
 SELECT is_empty($$UPDATE public.client_users SET client_id='a1000000-0000-4000-8000-000000000001' WHERE client_id='b1000000-0000-4000-8000-000000000002' RETURNING id$$,'A cannot transfer B membership');
 
 -- INSERT is forbidden for clients; assert privilege-denied SQLSTATE.
-SELECT throws_ok($$INSERT INTO public.clients(name,slug) VALUES ('Invasao','lab-write-injection')$$,'42501','A cannot insert client');
+SELECT throws_ok($$INSERT INTO public.clients(name,slug) VALUES ('Invasao','lab-write-injection')$,'42501',NULL,'A cannot insert client');
 SELECT throws_ok($$INSERT INTO public.planning_projects(client_id,title,slug)
- VALUES ('b1000000-0000-4000-8000-000000000002','Invasao','lab-write-injection')$$,'42501','A cannot insert project for B');
+ VALUES ('b1000000-0000-4000-8000-000000000002','Invasao','lab-write-injection')$,'42501',NULL,'A cannot insert project for B');
 
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub',(SELECT id::text FROM auth.users WHERE email='cliente.b@rotevo.invalid'),true);

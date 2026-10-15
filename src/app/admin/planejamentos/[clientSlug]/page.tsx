@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
+import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
@@ -24,6 +25,7 @@ type ProjectData = {
     description: string;
   }[];
   moduleContent?: Record<string, unknown>;
+  executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[] };
 };
 
@@ -623,6 +625,7 @@ export default function PlanejamentoClientePage() {
         ) : null}
       </section>
 
+      {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?{...p,data,updated_at}:p)}/></section>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );

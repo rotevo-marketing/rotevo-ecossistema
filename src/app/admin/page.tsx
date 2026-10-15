@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview";
+import EditorialOperations from "@/Components/admin/EditorialOperations";
 import CentralTarefas from "@/Components/admin/CentralTarefas";
 import EditorialManager from "@/Components/admin/EditorialManager";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
@@ -304,7 +305,7 @@ export default function AdminPage() {
           </div>
           <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
         </div>
-        {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/></div>}
+        {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8 space-y-6"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/><EditorialOperations projects={projects} onOpenContent={()=>setWorkspaceTab("content")}/></div>}
         {workspaceTab==="projects" && <>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[

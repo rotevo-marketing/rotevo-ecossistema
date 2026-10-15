@@ -8,10 +8,11 @@ import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTabler
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import EditorialCalendar, {type EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import ClientAttention from "@/Components/cliente/ClientAttention";
+import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 
 type Project = {
   id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
-  data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
+  data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; onboardingChecklist?:OnboardingItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
 };
 type MenuId="overview"|"planning"|"execution"|"content"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";
 type MenuItem={id:MenuId;name:string;icon:RotevoIconName};
@@ -135,6 +136,7 @@ export default function ClientAreaPage(){
        tab==="planning"?<Block title="Seus planejamentos" icon="report">{renderProjects()}</Block>:
        tab==="execution"?<ProjectTimeline projects={projects}/>:
        tab==="content"?<EditorialCalendar projects={projects} clientView/> :
+       tab==="onboarding"?<Block title="Etapas do seu projeto" icon="alert-square-rounded"><div className="space-y-4">{projects.flatMap(p=>(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectTitle:p.title}))).length===0?<p className="text-sm text-[#697386]">Nenhuma etapa de onboarding foi compartilhada pela equipe até o momento.</p>:projects.map(p=><div key={p.id}><h3 className="mb-2 text-sm font-semibold">{p.title}</h3><div className="divide-y divide-[#E3E7F0]">{(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=><div key={i.id} className="flex items-center justify-between gap-2 py-3"><span className="text-sm">{i.done?"✓":"○"} {i.title}</span>{i.link&&i.link.startsWith("https://")&&<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6D35F5]">Abrir material ↗</a>}</div>)}</div></div>)}</div></Block> :
        <Block title={selected.name} icon={selected.icon}>
          <p className="text-sm leading-6 text-[#525B70]">{tab==="meetings"?"Histórico de reuniões, atas, gravações e encaminhamentos compartilhados com você.":tab==="onboarding"?"Etapas de entrada, materiais solicitados e informações necessárias ao início do trabalho.":tab==="contract"?"Contrato, escopo contratado, vigência e documentos vinculados ao seu projeto.":tab==="drive"?"Acesso às pastas autorizadas do Google Drive: identidade visual, fotos, vídeos, documentos e entregas.":tab==="finance"?"Informações financeiras do seu contrato, incluindo vencimentos, pagamentos e documentos disponíveis.":"Links de acesso às plataformas e planilhas autorizadas. As senhas não serão copiadas para a Rotevo."}</p>
          <div className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Esta área está preparada para receber links e informações liberados pela equipe Rotevo. Ainda não existem registros vinculados a esta seção.</div>

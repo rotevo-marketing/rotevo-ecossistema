@@ -89,8 +89,8 @@ USING (user_id = auth.uid());
 
 CREATE POLICY "Strategists can manage client users" ON public.client_users
 AS PERMISSIVE FOR ALL TO authenticated
-USING is_strategist()
-WITH CHECK is_strategist();
+USING (is_strategist())
+WITH CHECK (is_strategist());
 
 CREATE POLICY "Client users can read their client" ON public.clients
 AS PERMISSIVE FOR SELECT TO authenticated
@@ -98,8 +98,8 @@ USING (EXISTS ( SELECT 1 FROM client_users WHERE ((client_users.client_id = clie
 
 CREATE POLICY "Strategists can manage clients" ON public.clients
 AS PERMISSIVE FOR ALL TO authenticated
-USING is_strategist()
-WITH CHECK is_strategist();
+USING (is_strategist())
+WITH CHECK (is_strategist());
 
 CREATE POLICY "Strategists can read clients" ON public.clients
 AS PERMISSIVE FOR SELECT TO authenticated
@@ -123,8 +123,8 @@ USING (EXISTS ( SELECT 1 FROM profiles WHERE ((profiles.id = auth.uid()) AND (pr
 
 CREATE POLICY "Strategists can manage planning projects" ON public.planning_projects
 AS PERMISSIVE FOR ALL TO authenticated
-USING is_strategist()
-WITH CHECK is_strategist();
+USING (is_strategist())
+WITH CHECK (is_strategist());
 
 CREATE POLICY "Strategists can read planning projects" ON public.planning_projects
 AS PERMISSIVE FOR SELECT TO authenticated
@@ -141,8 +141,8 @@ USING (client_id = ( SELECT profiles.client_id FROM profiles WHERE ((profiles.id
 
 CREATE POLICY "Strategists can manage profiles" ON public.profiles
 AS PERMISSIVE FOR ALL TO authenticated
-USING is_strategist()
-WITH CHECK is_strategist();
+USING (is_strategist())
+WITH CHECK (is_strategist());
 
 CREATE POLICY "Users can read own profile" ON public.profiles
 AS PERMISSIVE FOR SELECT TO authenticated

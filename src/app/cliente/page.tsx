@@ -141,6 +141,6 @@ export default function ClientAreaPage(){
        </Block>}
      </div>
    </div>
-   <footer className="bg-[#A7E000]"><div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 text-xs font-medium text-[#090D1C] sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+   <footer className="mt-auto shrink-0 bg-[#A7E000]"><div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 text-xs font-medium text-[#090D1C] sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
  </main>;
 }

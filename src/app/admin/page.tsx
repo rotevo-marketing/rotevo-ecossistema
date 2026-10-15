@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
+import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
+import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview";
+import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import { supabase } from "@/lib/supabase";
 
 type ClientRecord = {
@@ -14,6 +17,7 @@ type ClientRecord = {
 
 type ProjectData = {
   coverImageUrl?: string | null;
+  executionTimeline?: ExecutionItem[];
   selectedModules?: string[];
   modules?: {
     title: string;
@@ -87,6 +91,9 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [workspaceTab,setWorkspaceTab]=useState("overview");
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
+  const [mobileMenu,setMobileMenu]=useState(false);
 
   const totalProjects = projects.length;
 
@@ -267,34 +274,34 @@ export default function AdminPage() {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
         }
       `}</style>
-      <header className="border-b border-[#E3E7F0] bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27} /></Link>
-            <span className="hidden h-6 w-px bg-[#E3E7F0] sm:block" />
-            <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {userEmail && (
-              <div className="flex items-center gap-2" title={userEmail} aria-label={"Usuário conectado: " + userEmail}>
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]" aria-hidden="true">
-                  {userEmail.charAt(0).toUpperCase()}
-                </span>
-                <span className="hidden max-w-48 truncate text-xs text-[#525B70] md:block">{userEmail}</span>
-              </div>
-            )}
-            <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-5 py-2.5 text-sm font-medium text-[#525B70] hover:bg-[#F6F7FB]">Sair</button>
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white">
+        <div className="flex w-full items-center justify-between gap-3 px-5 py-5">
+          <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="white" size={27}/></Link><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Painel do Estrategista</span></div>
+          <div className="flex items-center gap-2">{userEmail&&<span className="hidden max-w-48 truncate text-xs text-[#CAD3E2] md:inline">{userEmail}</span>}
+            <button type="button" onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
+            <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10">Sair</button>
           </div>
         </div>
       </header>
-      <section className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
+      <div className="flex min-h-[75vh]">
+      <aside className={`relative hidden shrink-0 bg-[#0B142A] px-3 py-6 lg:block ${sidebarCollapsed?"w-[76px]":"w-[260px]"}`}>
+        <nav aria-label="Menu do estrategista" className="space-y-1.5">
+          {([{id:"overview",label:"Visão geral",icon:"layout-dashboard"},{id:"clients",label:"Clientes",icon:"user"},{id:"projects",label:"Projetos",icon:"report"},{id:"tasks",label:"Tarefas",icon:"chart-dots-3"},{id:"content",label:"Conteúdo",icon:"brand-instagram"},{id:"meetings",label:"Reuniões",icon:"calendar-heart"},{id:"onboarding",label:"Onboarding",icon:"alert-square-rounded"},{id:"team",label:"Equipe",icon:"shape"},{id:"finance",label:"Financeiro",icon:"chart-pie"}] as {id:string;label:string;icon:RotevoIconName}[]).map(item=><button key={item.id} type="button" onClick={()=>setWorkspaceTab(item.id)} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><RotevoTablerIcon name={item.icon} size={25} stroke={2.3}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
+        </nav>
+        <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A]">{sidebarCollapsed?"›":"‹"}</button>
+      </aside>
+      {mobileMenu&&<aside className="w-full bg-[#0B142A] p-4 lg:hidden"><div className="space-y-2">{([{id:"overview",label:"Visão geral"},{id:"clients",label:"Clientes"},{id:"projects",label:"Projetos"},{id:"tasks",label:"Tarefas"},{id:"content",label:"Conteúdo"},{id:"meetings",label:"Reuniões"},{id:"onboarding",label:"Onboarding"},{id:"team",label:"Equipe"},{id:"finance",label:"Financeiro"}]).map(item=><button key={item.id} type="button" onClick={()=>{setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm text-white ${workspaceTab===item.id?"bg-[#6D35F5]":"hover:bg-white/10"}`}>{item.label}</button>)}</div></aside>}
+      <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
+      <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">Painel Administrativo</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
+            <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">{workspaceTab==="overview"?"Visão geral":workspaceTab==="projects"?"Projetos":workspaceTab==="tasks"?"Tarefas":workspaceTab==="clients"?"Clientes":workspaceTab==="content"?"Conteúdo":workspaceTab==="meetings"?"Reuniões":workspaceTab==="onboarding"?"Onboarding":workspaceTab==="team"?"Equipe":"Financeiro"}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar.</p>
           </div>
           <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
         </div>
+        {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/></div>}
+        {workspaceTab==="projects" && <>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             { label: "Total de planejamentos", value: totalProjects },
@@ -380,7 +387,13 @@ export default function AdminPage() {
             </div>
           )}
         </section>
+        </>}
+        {workspaceTab!=="projects" && workspaceTab!=="overview" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
+        {workspaceTab==="overview" && isLoading && <p className="mt-8 text-sm text-[#697386]">Carregando informações da operação...</p>}
+        {workspaceTab==="overview" && errorMessage && <p role="alert" className="mt-8 text-sm text-red-700">{errorMessage}</p>}
       </section>
+      </div>
+      </div>
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
     </main>
   );

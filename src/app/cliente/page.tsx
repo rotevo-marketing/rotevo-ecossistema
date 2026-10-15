@@ -7,6 +7,7 @@ import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import EditorialCalendar, {type EditorialItem} from "@/Components/cliente/EditorialCalendar";
+import ClientAttention from "@/Components/cliente/ClientAttention";
 
 type Project = {
   id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
@@ -110,10 +111,7 @@ export default function ClientAreaPage(){
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
        tab==="overview"?<div className="space-y-5">
-         <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-           <div className="mb-3 flex items-center gap-3"><span className="text-[#6D35F5]"><Icon name="alert-square-rounded"/></span><h2 className="text-base font-semibold">Precisamos da sua atenção</h2></div>
-           <p className="text-sm leading-6 text-[#525B70]">Nenhuma solicitação foi registrada neste portal até o momento. Quando houver materiais para aprovar ou informações a enviar, eles aparecerão aqui.</p>
-         </section>
+         <ClientAttention projects={projects} onOpenContent={()=>setTab("content")}/>
          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
            {[
              {label:"Planejamentos",value:String(projects.length),icon:"report" as RotevoIconName},

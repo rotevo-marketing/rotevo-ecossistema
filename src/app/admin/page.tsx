@@ -270,7 +270,7 @@ export default function AdminPage() {
 
 
   return (
-    <main className="admin-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{`
         .admin-v2,
         .admin-v2 h1,
@@ -288,7 +288,7 @@ export default function AdminPage() {
           </div>
         </div>
       </header>
-      <div className="flex min-h-[75vh]">
+      <div className="flex min-h-0 flex-1">
       <aside className={`relative hidden shrink-0 bg-[#0B142A] px-3 py-6 lg:block ${sidebarCollapsed?"w-[76px]":"w-[260px]"}`}>
         <nav aria-label="Menu do estrategista" className="space-y-1.5">
           {([{id:"overview",label:"Visão geral",icon:"layout-dashboard"},{id:"clients",label:"Clientes",icon:"user"},{id:"projects",label:"Projetos",icon:"report"},{id:"tasks",label:"Tarefas",icon:"chart-dots-3"},{id:"content",label:"Conteúdo",icon:"brand-instagram"},{id:"meetings",label:"Reuniões",icon:"calendar-heart"},{id:"onboarding",label:"Onboarding",icon:"alert-square-rounded"},{id:"team",label:"Equipe",icon:"shape"},{id:"finance",label:"Financeiro",icon:"chart-pie"}] as {id:string;label:string;icon:RotevoIconName}[]).map(item=><button key={item.id} type="button" onClick={()=>setWorkspaceTab(item.id)} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><RotevoTablerIcon name={item.icon} size={25} stroke={2.3}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
@@ -303,7 +303,7 @@ export default function AdminPage() {
             <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">{workspaceTab==="overview"?"Visão geral":workspaceTab==="projects"?"Projetos":workspaceTab==="tasks"?"Tarefas":workspaceTab==="clients"?"Clientes":workspaceTab==="content"?"Conteúdo":workspaceTab==="meetings"?"Reuniões":workspaceTab==="onboarding"?"Onboarding":workspaceTab==="team"?"Equipe":"Financeiro"}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar.</p>
           </div>
-          <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
+          {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
         </div>
         {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8 space-y-6"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/><EditorialOperations projects={projects} onOpenContent={()=>setWorkspaceTab("content")}/></div>}
         {workspaceTab==="projects" && <>
@@ -401,7 +401,7 @@ export default function AdminPage() {
       </section>
       </div>
       </div>
-      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
+      <footer className="mt-auto shrink-0 bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
     </main>
   );
 }

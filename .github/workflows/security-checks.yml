@@ -1,0 +1,82 @@
+name: Security checks (development)
+
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    name: Audit dependencies (report)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Production dependency audit (report only)
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit-production-ci.json
+          result=$?
+          set -e
+          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync("npm-audit-production-ci.json","utf8")); const v=a.metadata?.vulnerabilities || {}; console.log("Production dependency findings:",JSON.stringify(v)); if(a.error)console.log("Audit returned an error:",a.error.code || "unknown");'
+          echo "npm audit exit code: ${result} (advisory only; no auto-fixes)"
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-production
+          path: npm-audit-production-ci.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  typecheck:
+    name: TypeScript verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify TypeScript
+        run: npx tsc --noEmit

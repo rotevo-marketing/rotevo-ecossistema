@@ -39,16 +39,11 @@ SELECT set_config('request.jwt.claim.sub',(SELECT id::text FROM auth.users WHERE
 SET LOCAL ROLE authenticated;
 
 -- UPDATE/DELETE on another tenant's rows affect no rows, even though grants may be broad.
-SELECT is((WITH changed AS (UPDATE public.clients SET name='Invasao A' WHERE slug='lab-write-b' RETURNING id)
- SELECT count(*) FROM changed),0::bigint,'A cannot update client B');
-SELECT is((WITH removed AS (DELETE FROM public.clients WHERE slug='lab-write-b' RETURNING id)
- SELECT count(*) FROM removed),0::bigint,'A cannot delete client B');
-SELECT is((WITH changed AS (UPDATE public.planning_projects SET title='Invasao A' WHERE slug='lab-write-plan-b' RETURNING id)
- SELECT count(*) FROM changed),0::bigint,'A cannot update plan B');
-SELECT is((WITH removed AS (DELETE FROM public.planning_projects WHERE slug='lab-write-plan-b' RETURNING id)
- SELECT count(*) FROM removed),0::bigint,'A cannot delete plan B');
-SELECT is((WITH changed AS (UPDATE public.client_users SET client_id='a1000000-0000-4000-8000-000000000001' WHERE client_id='b1000000-0000-4000-8000-000000000002' RETURNING id)
- SELECT count(*) FROM changed),0::bigint,'A cannot transfer B membership');
+SELECT is_empty($$UPDATE public.clients SET name='Invasao A' WHERE slug='lab-write-b' RETURNING id$$,'A cannot update client B');
+SELECT is_empty($$DELETE FROM public.clients WHERE slug='lab-write-b' RETURNING id$$,'A cannot delete client B');
+SELECT is_empty($$UPDATE public.planning_projects SET title='Invasao A' WHERE slug='lab-write-plan-b' RETURNING id$$,'A cannot update plan B');
+SELECT is_empty($$DELETE FROM public.planning_projects WHERE slug='lab-write-plan-b' RETURNING id$$,'A cannot delete plan B');
+SELECT is_empty($$UPDATE public.client_users SET client_id='a1000000-0000-4000-8000-000000000001' WHERE client_id='b1000000-0000-4000-8000-000000000002' RETURNING id$$,'A cannot transfer B membership');
 
 -- INSERT is forbidden for clients; assert privilege-denied SQLSTATE.
 SELECT throws_ok($$INSERT INTO public.clients(name,slug) VALUES ('Invasao','lab-write-injection')$$,'42501','A cannot insert client');
@@ -58,16 +53,13 @@ SELECT throws_ok($$INSERT INTO public.planning_projects(client_id,title,slug)
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub',(SELECT id::text FROM auth.users WHERE email='cliente.b@rotevo.invalid'),true);
 SET LOCAL ROLE authenticated;
-SELECT is((WITH changed AS (UPDATE public.planning_projects SET title='Invasao B' WHERE slug='lab-write-plan-a' RETURNING id)
- SELECT count(*) FROM changed),0::bigint,'B cannot update plan A');
-SELECT is((WITH removed AS (DELETE FROM public.clients WHERE slug='lab-write-a' RETURNING id)
- SELECT count(*) FROM removed),0::bigint,'B cannot delete client A');
+SELECT is_empty($$UPDATE public.planning_projects SET title='Invasao B' WHERE slug='lab-write-plan-a' RETURNING id$$,'B cannot update plan A');
+SELECT is_empty($$DELETE FROM public.clients WHERE slug='lab-write-a' RETURNING id$$,'B cannot delete client A');
 
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE anon;
-SELECT is((WITH changed AS (UPDATE public.clients SET name='Anonimo' WHERE slug='lab-write-a' RETURNING id)
- SELECT count(*) FROM changed),0::bigint,'Anonymous cannot update clients');
+SELECT is_empty($$UPDATE public.clients SET name='Anonimo' WHERE slug='lab-write-a' RETURNING id$$,'Anonymous cannot update clients');
 
 RESET ROLE;
 SELECT * FROM finish();

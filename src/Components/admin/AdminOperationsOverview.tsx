@@ -41,9 +41,9 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
   </section>
   <div className="grid gap-5 xl:grid-cols-2">
    <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-    <div className="mb-4 flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Projetos em acompanhamento</h2><button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver todos →</button></div>
+    <div className="mb-4 flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Projetos recentes</h2><button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver todos →</button></div>
     {projects.length===0?<p className="text-sm text-[#697386]">Nenhum projeto cadastrado.</p>:<div className="divide-y divide-[#E3E7F0]">{projects.slice(0,6).map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <div><p className="text-sm font-semibold">{client(p)?.name??"Cliente sem nome"}</p><p className="mt-1 text-xs text-[#697386]">{p.title} · {status(p.status)}</p></div>
+      <div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#ECE8FA] text-sm font-semibold text-[#5830A7]">{p.data?.coverImageUrl?<img src={p.data.coverImageUrl} alt="" className="h-full w-full object-cover"/>:(client(p)?.name??"C").charAt(0).toUpperCase()}</div><div><p className="text-sm font-semibold">{client(p)?.name??"Cliente sem nome"}</p><p className="mt-1 text-xs text-[#697386]">{p.title} · {status(p.status)}</p></div></div>
       <Link href={`/admin/planejamentos/${client(p)?.slug??""}`} className="text-sm font-semibold text-[#6D35F5] hover:underline">Gerenciar →</Link>
     </div>)}</div>}
    </section>

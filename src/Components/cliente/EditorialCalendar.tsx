@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import EditorialDecision from "@/Components/cliente/EditorialDecision";
 export type EditorialItem={id:string;title:string;channel:string;format:string;publishDate:string;caption?:string;driveUrl?:string;version?:string;status:"idea"|"production"|"review"|"awaiting_client"|"changes_requested"|"approved"|"scheduled"|"published";visibleToClient?:boolean;reviewNotes?:string};
 export type EditorialProject={id:string;title:string;data:{editorialCalendar?:EditorialItem[]}|null};
 export const editorialStatuses:Record<EditorialItem["status"],string>={idea:"Ideia",production:"Em produção",review:"Revisão interna",awaiting_client:"Aguardando aprovação",changes_requested:"Ajustes solicitados",approved:"Aprovado",scheduled:"Agendado",published:"Publicado"};
@@ -53,7 +54,7 @@ export default function EditorialCalendar({projects,clientView=false}:{projects:
    {active.caption&&<p className="mt-3 whitespace-pre-wrap rounded-lg bg-[#F6F7FB] p-3 text-sm">{active.caption}</p>}
    {active.reviewNotes&&<p className="mt-3 text-sm text-[#525B70]">Observação: {active.reviewNotes}</p>}
    {safe(active.driveUrl)&&<a href={safe(active.driveUrl)!} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#6D35F5]"><RotevoTablerIcon name="brand-instagram" size={20}/>Abrir material no Drive ↗</a>}
-   {clientView&&active.status==="awaiting_client"&&<p className="mt-4 rounded-xl bg-[#FFF2DB] p-3 text-sm text-[#805400]">Este conteúdo aguarda sua aprovação. O registro seguro de aprovação será habilitado após a configuração das permissões.</p>}
+   {clientView&&<EditorialDecision projectId={active.projectId} item={active}/>}
   </section>}
  </div>;
 }

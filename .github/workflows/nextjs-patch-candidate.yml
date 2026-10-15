@@ -35,6 +35,9 @@ jobs:
       - name: Verify TypeScript
         run: npx tsc --noEmit
       - name: Build app without production credentials
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-not-a-real-token
         run: npm run build
       - name: Generate production dependency report
         if: always()

@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
+import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
 type Client={id:string;name:string;slug:string};
 type Project=EditorialProject & {updated_at:string;clients:Client|Client[]|null};
@@ -61,6 +62,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
     <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#0B142A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
    </div>}
   </section>
+  {project&&<EditorialApprovalsPanel projectId={project.id}/>}
   <EditorialCalendar projects={projects}/>
  </div>;
 }

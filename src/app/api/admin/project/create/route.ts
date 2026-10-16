@@ -24,6 +24,16 @@ export async function POST(req:NextRequest){
  (b.description!==null&&b.description!==undefined&&(typeof b.description!=="string"||b.description.length>2000))||
  b.status!=="draft"||!b.data||typeof b.data!=="object"||Array.isArray(b.data)||
  Object.keys(b).some(key=>!["client_id","title","slug","description","status","data"].includes(key)))return fail(400);
+ const payload=b.data as Record<string,unknown>;
+ const ecosystem=payload.ecosystem2027;
+ if(!ecosystem||typeof ecosystem!=="object"||Array.isArray(ecosystem)||payload.selectedModules!==undefined||payload.moduleContent!==undefined||payload.modules!==undefined)return fail(400);
+ const eco=ecosystem as Record<string,unknown>;
+ const selected=eco.selectedDocumentCodes,presented=eco.presentedDocumentCodes;
+ if(eco.version!==1||!Array.isArray(selected)||selected.length===0||selected.length>100||
+ !selected.every(code=>typeof code==="string"&&/^\\d{2}\\.\\d{2}$/.test(code))||
+ new Set(selected).size!==selected.length||!Array.isArray(presented)||presented.length>100||
+ !presented.every(code=>typeof code==="string"&&selected.includes(code))||
+ new Set(presented).size!==presented.length)return fail(400);
  const {data:client,error:clientError}=await admin.from("clients").select("id").eq("id",b.client_id).maybeSingle();
  if(clientError)return fail(503);
  if(!client)return fail(404);

@@ -100,3 +100,12 @@ test("document workspace supports lifecycle filtering without modifying project 
  assert.match(editor,/Filtrar por etapa/);
  assert.match(editor,/draftCount/);
 });
+
+test("document publication reporting aggregates real released snapshots by area",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/areaProgress/);
+ assert.match(editor,/overallProgress/);
+ assert.match(editor,/Progresso de publicação/);
+ assert.match(editor,/Acompanhar por área estratégica/);
+ assert.match(editor,/\.publishedAt/);
+});

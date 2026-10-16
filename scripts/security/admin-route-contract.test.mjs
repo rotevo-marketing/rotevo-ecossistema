@@ -241,3 +241,10 @@ test("strategist presentation is scoped to active assigned projects when team en
  before(presentationRoute,'.from("team_project_assignments")','.from("team_member_permissions")',"project assignment before read permission");
  before(presentationRoute,'.eq("permission","projects.read")','projectForPresentation(',"read authorization before presentation");
 });
+
+const clientAccessRoute=readFileSync(new URL("../../src/app/api/admin/create-client-access/route.ts",import.meta.url),"utf8");
+test("client account creation enforces active administrative status before privileged auth write",()=>{
+ before(clientAccessRoute,'ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED === "true"','.from("team_members")',"staged check");
+ before(clientAccessRoute,'member.role !== "admin"','.from("clients")',"admin authorization before target lookup");
+ before(clientAccessRoute,'member.role !== "admin"','auth.admin.createUser(',"admin authorization before account creation");
+});

@@ -96,8 +96,8 @@ jobs:
         run: node --test scripts/security/execution-dependencies.test.mjs
       - name: Reject orphaned legacy components
         run: node scripts/security/legacy-dependency-inventory.mjs --fail-on-orphans
-      - name: Inventory legacy runtime entry points
-        run: node scripts/security/legacy-entrypoint-inventory.mjs
+      - name: Prevent deprecated legacy runtime entry points
+        run: node scripts/security/legacy-entrypoint-inventory.mjs --fail-on-live-legacy
       - name: Inventory remaining direct planning project consumers
         run: node scripts/security/planning-project-consumer-inventory.mjs
       - name: Verify remote targets are blocked

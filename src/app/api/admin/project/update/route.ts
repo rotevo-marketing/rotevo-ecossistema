@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
+import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
 
 export const runtime = "nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível atualizar o projeto autorizado."},{status,headers:{"Cache-Control":"no-store"}});
@@ -33,7 +34,7 @@ export async function PATCH(req:NextRequest){
    .select("data,updated_at").eq("id",b.projectId).maybeSingle();
  if(existingError)return fail(503);
  if(!existing||existing.updated_at!==b.expectedUpdatedAt)return fail(409);
- if(!validEcosystemDocumentTransition(existing.data,b.data))return fail(400);
+ if(!validEcosystemDocumentTransition(existing.data,b.data)||!validExecutionDependencies(b.data))return fail(400);
  const nextAt=new Date().toISOString();
  const {data:updated,error:updateError}=await admin.from("planning_projects")
    .update({data:b.data,updated_at:nextAt}).eq("id",b.projectId)

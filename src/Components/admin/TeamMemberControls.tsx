@@ -4,7 +4,7 @@ import {supabase} from "@/lib/supabase";
 export type TeamProject={id:string;title:string};
 export type TeamPermission={user_id:string;permission:string};
 export type TeamAssignment={user_id:string;project_id:string};
-export type TeamCapabilities={invites:boolean;permissions:boolean;assignments:boolean;memberStatus:boolean};
+export type TeamCapabilities={invites:boolean;permissions:boolean;assignments:boolean;memberStatus:boolean;adminTransfer:boolean};
 type Props={
  userId:string;memberRole:string;active:boolean;
  projects:TeamProject[];assignments:TeamAssignment[];permissions:TeamPermission[];

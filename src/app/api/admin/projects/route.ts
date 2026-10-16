@@ -20,9 +20,28 @@ export async function GET(req:NextRequest){
    .select("role").eq("id",identity.user.id).maybeSingle();
  if(profileError)return fail(503);
  if(profile?.role!=="strategist")return fail(403);
- const {data:projects,error:projectsError}=await admin.from("planning_projects")
-   .select("id,title,slug,description,status,created_at,updated_at,data,clients(id,name,slug)")
-   .order("updated_at",{ascending:false});
+ let allowedProjectIds:string[]|null=null;
+ if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+  const {data:member,error:memberError}=await admin.from("team_members")
+   .select("role,active").eq("user_id",identity.user.id).maybeSingle();
+  if(memberError)return fail(503);
+  if(!member||member.active!==true)return fail(403);
+  if(member.role!=="admin"){
+   const {data:permission,error:permissionError}=await admin.from("team_member_permissions")
+    .select("permission").eq("user_id",identity.user.id).eq("permission","projects.read").maybeSingle();
+   if(permissionError)return fail(503);
+   if(!permission)return fail(403);
+   const {data:assignments,error:assignmentError}=await admin.from("team_project_assignments")
+    .select("project_id").eq("user_id",identity.user.id);
+   if(assignmentError)return fail(503);
+   allowedProjectIds=(assignments??[]).map(row=>row.project_id);
+   if(allowedProjectIds.length===0)return NextResponse.json({projects:[]},{headers:{"Cache-Control":"no-store"}});
+  }
+ }
+ let query=admin.from("planning_projects")
+   .select("id,title,slug,description,status,created_at,updated_at,data,clients(id,name,slug)");
+ if(allowedProjectIds!==null)query=query.in("id",allowedProjectIds);
+ const {data:projects,error:projectsError}=await query.order("updated_at",{ascending:false});
  if(projectsError)return fail(503);
  return NextResponse.json({projects:projects??[]},{headers:{"Cache-Control":"no-store"}});
 }

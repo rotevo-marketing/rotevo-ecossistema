@@ -27,5 +27,13 @@ export async function GET(req:NextRequest){
  if(assignmentsError)return fail(503);
  const {data:permissions,error:permissionsError}=await admin.from("team_member_permissions").select("user_id,permission");
  if(permissionsError)return fail(503);
- return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:members??[]},{headers:{"Cache-Control":"no-store"}});
+ const {data:projects,error:projectsError}=await admin.from("planning_projects").select("id,title").order("title");
+ if(projectsError)return fail(503);
+ const capabilities={
+  invites:process.env.ROTEVO_TEAM_INVITES_ENABLED==="true",
+  permissions:process.env.ROTEVO_TEAM_PERMISSIONS_ENABLED==="true",
+  assignments:process.env.ROTEVO_TEAM_ASSIGNMENTS_ENABLED==="true",
+  memberStatus:process.env.ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true"
+ };
+ return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:members??[],projects:projects??[],capabilities},{headers:{"Cache-Control":"no-store"}});
 }

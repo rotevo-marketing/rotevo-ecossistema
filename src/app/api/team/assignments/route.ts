@@ -35,12 +35,9 @@ export async function PATCH(req:NextRequest){
  const {data:project,error:projectError}=await admin.from("planning_projects").select("id").eq("id",projectId).maybeSingle();
  if(projectError)return fail(503,"Projeto indisponível.");
  if(!project)return fail(404,"Projeto não encontrado.");
- if(assigned){
-  const {error}=await admin.from("team_project_assignments").upsert({user_id:userId,project_id:projectId},{onConflict:"user_id,project_id"});
-  if(error)return fail(503,"Não foi possível atribuir o projeto.");
- }else{
-  const {error}=await admin.from("team_project_assignments").delete().eq("user_id",userId).eq("project_id",projectId);
-  if(error)return fail(503,"Não foi possível remover a atribuição.");
- }
+ const {error:mutationError}=await admin.rpc("rotevo_change_team_access",{
+  p_actor:identity.user.id,p_target:userId,p_action:"assignment",p_project:projectId,p_enabled:assigned
+ });
+ if(mutationError)return fail(503,"Não foi possível atualizar e auditar o vínculo.");
  return NextResponse.json({ok:true,userId,projectId,assigned},{headers:{"Cache-Control":"no-store"}});
 }

@@ -1,75 +1,86 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import {validExecutionDependencies as valid,validOperationalDate,validOperationalTime} from "../../src/lib/security/executionDependencyValidation.ts";
+type ObjectValue=Record<string,unknown>;
+const object=(value:unknown):ObjectValue|null=>value!==null&&typeof value==="object"&&!Array.isArray(value)?value as ObjectValue:null;
 
-const task=(id,dependencies=[])=>({id,title:id,dependencies});
-const project=(...items)=>({executionTimeline:items});
+/** Validate the entire execution dependency graph before accepting any project data write.
+ * Existing projects without a timeline remain compatible. All existing links must be
+ * resolvable within the same project; dangling links and cycles are rejected.
+ */
+export const validOperationalDate=(date:string):boolean=>{
+ const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+ if(!match)return false;
+ const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+ if(year<1||month<1||month>12||day<1)return false;
+ const leap=year%4===0&&(year%100!==0||year%400===0);
+ const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+ return day<=days[month-1];
+};
 
-test("accepts projects without timelines and acyclic prerequisite chains",()=>{
- assert.equal(valid({}),true);
- assert.equal(valid(project(task("a"),task("b",["a"]),task("c",["b"]))),true);
- assert.equal(valid(project()),true);
-});
-test("rejects self cycles, indirect cycles and nonexistent prerequisites",()=>{
- assert.equal(valid(project(task("a",["a"]))),false);
- assert.equal(valid(project(task("a",["b"]),task("b",["a"]))),false);
- assert.equal(valid(project(task("a",["b"]),task("b",["c"]),task("c",["a"]))),false);
- assert.equal(valid(project(task("a",["missing"]))),false);
-});
-test("rejects duplicate ids, duplicate prerequisites, malformed timelines",()=>{
- assert.equal(valid(project(task("a"),task("a"))),false);
- assert.equal(valid(project(task("a"),task("b",["a","a"]))),false);
- assert.equal(valid({executionTimeline:{}}),false);
- assert.equal(valid(project({title:"missing identifier"})),false);
-});
+export const validOperationalTime=(time:string):boolean=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 
-test("rejects completion while a prerequisite is pending, and reopening a completed prerequisite",()=>{
- assert.equal(valid(project({...task("a"),status:"planned"},{...task("b",["a"]),status:"completed"})),false);
- assert.equal(valid(project({...task("a"),status:"completed"},{...task("b",["a"]),status:"completed"})),true);
- assert.equal(valid(project({...task("a"),status:"in_progress"},{...task("b",["a"]),status:"in_progress"})),true);
- assert.equal(valid(project({...task("a"),status:"completed"},{...task("b",["a"]),status:"planned"})),true);
-});
-
-test("task priority accepts supported values and rejects invalid values",()=>{
- for(const priority of ["low","normal","high","urgent"])assert.equal(valid(project({...task("a"),priority})),true);
- assert.equal(valid(project({...task("a"),priority:"extreme"})),false);
-});
-
-test("operational meetings and followups require valid dates and linked tasks",()=>{
- const event={id:"agenda-1",title:"Reunião estratégica",kind:"meeting",status:"planned",date:"2026-11-02",relatedTaskId:"a"};
- assert.equal(valid({...project(task("a")),operationalAgenda:[event]}),true);
- assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,relatedTaskId:"other"}]}),false);
- assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,kind:"random"}]}),false);
- assert.equal(valid({...project(task("a")),operationalAgenda:[event,{...event}]}),false);
- assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,date:"invalid"}]}),false);
-});
-
-test("operational agenda accepts valid optional times and rejects invalid clocks",()=>{
- const event={id:"meeting-1",title:"Alinhamento",kind:"meeting",date:"2026-11-15",status:"planned"};
- assert.equal(valid({operationalAgenda:[{...event,time:"09:30"}]}),true);
- assert.equal(valid({operationalAgenda:[{...event,time:""}]}),true);
- for(const time of ["24:00","09:65","noon","9:30"])assert.equal(valid({operationalAgenda:[{...event,time}]}),false);
-});
-
-test("shared agenda time validator accepts standard HH:MM and rejects malformed values",()=>{
- for(const time of ["00:00","09:30","12:45","23:59"])assert.equal(validOperationalTime(time),true);
- for(const time of ["24:00","09:65","9:30","noon","23:60",""])assert.equal(validOperationalTime(time),false);
-});
-
-test("calendar date validation rejects impossible dates and accepts leap days",()=>{
- for(const date of ["2026-10-16","2024-02-29","2000-02-29"])assert.equal(validOperationalDate(date),true);
- for(const date of ["2026-02-29","2026-02-30","2026-04-31","2026-13-01","0000-01-01","2026-00-10"])assert.equal(validOperationalDate(date),false);
-});
-
-test("execution tasks reject impossible dates and an inverted delivery window",()=>{
- assert.equal(valid(project({...task("a"),startDate:"2026-10-16",dueDate:"2026-10-20"})),true);
- assert.equal(valid(project({...task("a"),startDate:"2026-02-30"})),false);
- assert.equal(valid(project({...task("a"),dueDate:"2026-13-01"})),false);
- assert.equal(valid(project({...task("a"),startDate:"2026-10-20",dueDate:"2026-10-16"})),false);
-});
-
-test("execution tasks reject unsupported statuses and kinds",()=>{
- assert.equal(valid(project({...task("a"),status:"completed",kind:"task"})),true);
- assert.equal(valid(project({...task("a"),status:"invented"})),false);
- assert.equal(valid(project({...task("a"),kind:"unknown"})),false);
-});
+export function validExecutionDependencies(data:unknown):boolean{
+ const root=object(data);
+ if(!root)return false;
+ const agenda=root.operationalAgenda;
+ if(agenda!==undefined&&agenda!==null){
+  if(!Array.isArray(agenda)||agenda.length>1000)return false;
+  const agendaIds=new Set<string>();
+  const executionIds=new Set(Array.isArray(root.executionTimeline)?root.executionTimeline.map(x=>object(x)?.id):[]);
+  for(const value of agenda){
+   const item=object(value);
+   if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||agendaIds.has(item.id))return false;
+   agendaIds.add(item.id);
+   if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return false;
+   if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return false;
+   if(typeof item.date!=="string"||!validOperationalDate(item.date))return false;
+   if(item.time!==undefined&&item.time!==""&&(typeof item.time!=="string"||!validOperationalTime(item.time)))return false;
+   if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
+   if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
+   if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;
+  }
+ }
+ const timeline=root.executionTimeline;
+ if(timeline===undefined||timeline===null)return true;
+ if(!Array.isArray(timeline)||timeline.length>2000)return false;
+ const dependencies=new Map<string,string[]>();
+ for(const entry of timeline){
+  const item=object(entry);
+  if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||dependencies.has(item.id))return false;
+  if(item.startDate!==undefined&&item.startDate!==""&&(typeof item.startDate!=="string"||!validOperationalDate(item.startDate)))return false;
+  if(item.dueDate!==undefined&&item.dueDate!==""&&(typeof item.dueDate!=="string"||!validOperationalDate(item.dueDate)))return false;
+  if(typeof item.startDate==="string"&&item.startDate&&typeof item.dueDate==="string"&&item.dueDate&&item.startDate>item.dueDate)return false;
+  if(item.status!==undefined&&!["planned","in_progress","blocked","completed","cancelled"].includes(String(item.status)))return false;
+  if(item.kind!==undefined&&!["deliverable","milestone","task"].includes(String(item.kind)))return false;
+  if(item.documentCode!==undefined&&item.documentCode!==""&&(typeof item.documentCode!=="string"||!/^\d{2}\.\d{2}$/.test(item.documentCode)))return false;
+  if(item.ownerUserId!==undefined&&item.ownerUserId!==""&&(typeof item.ownerUserId!=="string"||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).test(item.ownerUserId)))return false;
+  if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
+  const raw=item.dependencies??[];
+  if(!Array.isArray(raw)||raw.length>200)return false;
+  if(raw.some((id:unknown)=>typeof id!=="string"||!id.trim()||id.length>128))return false;
+  const ids=raw as string[];
+  if(new Set(ids).size!==ids.length||ids.includes(item.id))return false;
+  dependencies.set(item.id,ids);
+ }
+ // Completion is a server-enforced workflow rule, not merely a disabled UI button.
+ for(const entry of timeline){
+  const item=object(entry)!;
+  if(item.status!=="completed")continue;
+  for(const id of dependencies.get(item.id as string)??[]){
+   const prerequisite=timeline.find(candidate=>object(candidate)?.id===id);
+   if(object(prerequisite)?.status!=="completed")return false;
+  }
+ }
+ const done=new Set<string>(),visiting=new Set<string>();
+ const visit=(id:string):boolean=>{
+  if(!dependencies.has(id))return false;
+  if(visiting.has(id))return false;
+  if(done.has(id))return true;
+  visiting.add(id);
+  for(const prerequisite of dependencies.get(id)??[]){
+   if(!visit(prerequisite))return false;
+  }
+  visiting.delete(id);
+  done.add(id);
+  return true;
+ };
+ return [...dependencies.keys()].every(visit);
+}

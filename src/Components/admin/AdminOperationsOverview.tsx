@@ -6,7 +6,7 @@ import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
 export type OperationsProject = {
  id:string; title:string;slug:string;status:"draft"|"in_progress"|"published"|"archived";updated_at:string;
- data:{executionTimeline?:ExecutionItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string}>}}|null;
+ data:{executionTimeline?:ExecutionItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
  clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
 };
 const client=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
@@ -17,7 +17,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
  const documentSummary=useMemo(()=>projects.map(project=>{
    const eco=project.data?.ecosystem2027;
    const selected=[...new Set((eco?.selectedDocumentCodes??[]).filter(code=>/^\d{2}\.\d{2}$/.test(code)))];
-   const released=selected.filter(code=>typeof eco?.documents?.[code]?.publishedAt==="string").length;
+   const released=selected.filter(code=>typeof eco?.documents?.[code]?.publishedAt==="string"&&typeof eco?.documents?.[code]?.publishedContent==="string").length;
    const review=selected.filter(code=>eco?.documents?.[code]?.reviewStatus==="review").length;
    const tasks=(project.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string");
    const pending=tasks.filter(t=>t.status!=="completed"&&t.status!=="cancelled").length;

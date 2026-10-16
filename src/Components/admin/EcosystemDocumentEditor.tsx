@@ -97,6 +97,8 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
      <div><label htmlFor="rotevo-doc-body" className="mb-2 block text-sm font-semibold">Conteúdo estratégico</label>
       <textarea id="rotevo-doc-body" rows={14} value={content} onChange={e=>setContent(e.target.value)} placeholder="Insira aqui o documento estratégico estruturado..." className="min-h-72 w-full rounded-xl border border-[#E3E7F0] p-4 text-sm leading-6 outline-none focus:border-[#6D35F5]"/>
       <p className="mt-3 text-xs text-[#697386]">Etapa: {record?.reviewStatus==="approved"?"Aprovado":record?.reviewStatus==="review"?"Em revisão":"Em produção"} · Versão publicada: {record?.publishedAt?new Date(record.publishedAt).toLocaleDateString("pt-BR"):"Ainda não publicada"}</p>
+      {record?.publishedContent!==undefined&&<details className="mt-3 rounded-xl border border-[#E3E7F0] p-3"><summary className="cursor-pointer text-sm font-medium">Consultar última versão publicada (somente leitura)</summary><div className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#F6F7FB] p-4 text-sm leading-6 text-[#525B70]">{record.publishedContent}</div></details>}
+      {activeCode&&!eco?.presentedDocumentCodes?.includes(activeCode)&&<p className="mt-3 rounded-lg bg-[#F6F7FB] p-3 text-xs text-[#525B70]">Documento interno: mesmo após publicar sua versão, ele não aparecerá ao cliente enquanto não estiver marcado para exibição no escopo.</p>}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
        <span className="text-xs text-[#697386]">{content.length.toLocaleString("pt-BR")} caracteres · {content===savedContent?"Sem alterações":"Alterações não salvas"}</span>
        <div className="flex flex-wrap gap-2">

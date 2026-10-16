@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 -- Disposable PostgreSQL CI fixture. Never connect to a hosted Supabase database.
-CREATE ROLE authenticated NOLOGIN;
-CREATE ROLE anon NOLOGIN;
+CREATE DATABASE rotevo_team_security_test;
+\connect rotevo_team_security_test
 CREATE SCHEMA auth;
 CREATE TABLE auth.users (id uuid PRIMARY KEY);
 CREATE TABLE public.profiles (id uuid PRIMARY KEY REFERENCES auth.users(id), role text NOT NULL);

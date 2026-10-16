@@ -16,3 +16,13 @@ test("client project presentation rejects JSON without ecosystem2027",()=>{
  assert.match(projection,/if\(!ecosystem\)return null/);
  assert.doesNotMatch(projection,/moduleContent|scrubLegacy/);
 });
+
+test("new planning creation does not reference the old module registry",()=>{
+ const wizard=source("app/admin/novo-planejamento/modulos/page.tsx");
+ assert.doesNotMatch(wizard,/planningModules|selectedModules|moduleContent|selectedModuleRecords/);
+ assert.match(wizard,/ecosystem2027/);
+ const endpoint=source("app/api/admin/project/create/route.ts");
+ assert.match(endpoint,/payload\.selectedModules!==undefined/);
+ assert.match(endpoint,/payload\.moduleContent!==undefined/);
+ assert.match(endpoint,/selectedDocumentCodes/);
+});

@@ -45,6 +45,9 @@ export function validExecutionDependencies(data:unknown):boolean{
  for(const entry of timeline){
   const item=object(entry);
   if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||dependencies.has(item.id))return false;
+  if(item.startDate!==undefined&&item.startDate!==""&&(typeof item.startDate!=="string"||!validOperationalDate(item.startDate)))return false;
+  if(item.dueDate!==undefined&&item.dueDate!==""&&(typeof item.dueDate!=="string"||!validOperationalDate(item.dueDate)))return false;
+  if(typeof item.startDate==="string"&&item.startDate&&typeof item.dueDate==="string"&&item.dueDate&&item.startDate>item.dueDate)return false;
   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   const raw=item.dependencies??[];
   if(!Array.isArray(raw)||raw.length>200)return false;

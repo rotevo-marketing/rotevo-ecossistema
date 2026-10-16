@@ -63,3 +63,16 @@ test("client access: reconciliation marker is surfaced for failed rollback", () 
   assert.match(branch, /reconciliationRequired:\s*true/);
   assert.match(branch, /status:\s*500/);
 });
+
+const teamDirectory = readFileSync(new URL("../../src/Components/admin/TeamDirectory.tsx", import.meta.url), "utf8");
+test("team invitation rejects extra permission grants and malformed body shapes", () => {
+ assert.match(invite, /Array\.isArray\(input\)/);
+ assert.match(invite, /Object\.keys\(input\).*permissions|Object\.keys\(input\)/);
+ assert.match(invite, /Campos não autorizados/);
+ before(invite, "Campos não autorizados", "auth.admin.inviteUserByEmail(", "extra fields rejected before sending invitations");
+});
+test("team invitation requires active team admin, and UI stays read only", () => {
+ before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.inviteUserByEmail(", "team admin authorization");
+ assert.match(teamDirectory, /Convites em preparação/);
+ assert.doesNotMatch(teamDirectory, /inviteUserByEmail|\/api\/team\/invite/);
+});

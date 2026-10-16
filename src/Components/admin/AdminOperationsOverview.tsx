@@ -6,14 +6,24 @@ import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
 export type OperationsProject = {
  id:string; title:string;slug:string;status:"draft"|"in_progress"|"published"|"archived";updated_at:string;
- data:{executionTimeline?:ExecutionItem[];coverImageUrl?:string|null;operationalStatus?:string}|null;
+ data:{executionTimeline?:ExecutionItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string}>}}|null;
  clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
 };
 const client=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
 const status=(s:string)=>s==="draft"?"Em produção":s==="in_progress"?"Em andamento":s==="published"?"Publicado":"Arquivado";
 const date=(s:string)=>{const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);return p?`${p[3]}/${p[2]}/${p[1]}`:s;};
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 export default function AdminOperationsOverview({projects,onOpenProjects}:{projects:OperationsProject[];onOpenProjects:()=>void}){
+ const documentSummary=useMemo(()=>projects.map(project=>{
+   const eco=project.data?.ecosystem2027;
+   const selected=[...new Set((eco?.selectedDocumentCodes??[]).filter(code=>/^\\d{2}\\.\\d{2}$/.test(code)))];
+   const released=selected.filter(code=>typeof eco?.documents?.[code]?.publishedAt==="string").length;
+   const review=selected.filter(code=>eco?.documents?.[code]?.reviewStatus==="review").length;
+   const tasks=(project.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string");
+   const pending=tasks.filter(t=>t.status!=="completed"&&t.status!=="cancelled").length;
+   const overdue=tasks.filter(t=>t.dueDate&&t.dueDate<today()&&t.status!=="completed"&&t.status!=="cancelled").length;
+   return {project,selected:selected.length,released,review,pending,overdue};
+ }),[projects]);
  const records=useMemo(()=>projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string").map(t=>({...t,project:p,owner:t.owner?.trim()||"Não atribuído"}))),[projects]);
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
@@ -52,6 +62,10 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
     {upcoming.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhuma entrega futura com prazo cadastrado.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{upcoming.slice(0,6).map(t=><div key={t.project.id+":"+t.id} className="flex items-center justify-between gap-2 py-3"><div><p className="text-sm font-semibold">{t.title}</p><p className="text-xs text-[#697386]">{client(t.project)?.name??"Cliente"} · {t.owner}</p></div><span className="shrink-0 text-xs font-semibold text-[#525B70]">{date(t.dueDate??"")}</span></div>)}</div>}
    </section>
   </div>
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Acompanhamento por cliente e projeto</h2><p className="mt-1 text-sm text-[#697386]">Documentos estratégicos publicados, revisão e pendências de execução. Indicadores calculados a partir dos registros atuais.</p></div><button type="button" onClick={onOpenProjects} className="text-sm font-semibold text-[#6D35F5]">Ver todos os projetos →</button></div>
+   {documentSummary.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhum projeto para acompanhar.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{documentSummary.map(item=><div key={item.project.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] md:items-center"><div><p className="text-sm font-semibold">{client(item.project)?.name??"Cliente sem nome"}</p><p className="text-xs text-[#697386]">{item.project.title}</p></div><div className="text-xs"><strong className="block text-base">{item.released}/{item.selected}</strong>Publicados</div><div className="text-xs"><strong className="block text-base">{item.review}</strong>Em revisão</div><div className="text-xs"><strong className="block text-base">{item.pending}</strong>Entregas abertas</div><div className="text-xs"><strong className="block text-base">{item.overdue}</strong>Atrasadas</div><Link className="text-xs font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(item.project)?.slug??""}`}>Gerenciar →</Link></div>)}</div>}
+  </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne projetos e entregas já registrados na Rotevo. Calendário editorial, aprovações, reuniões, equipe e saúde automática de projetos serão conectados quando seus registros estiverem disponíveis. Nenhuma atividade ou indicador é simulado.</p>
   </section>

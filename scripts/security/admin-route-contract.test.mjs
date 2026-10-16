@@ -81,3 +81,16 @@ test("team invitations require an explicit server-side rollout flag",()=>{
  assert.match(invite, /ROTEVO_TEAM_INVITES_ENABLED !== "true"/);
  before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "auth.admin.inviteUserByEmail(", "invite must remain disabled by default");
 });
+
+const directoryRoute = readFileSync(new URL("../../src/app/api/team/directory/route.ts", import.meta.url), "utf8");
+test("team directory only returns data after verified strategist and active admin checks",()=>{
+ before(directoryRoute, 'if(!token?.startsWith("Bearer ")', "auth.getUser(token.slice(7))", "token required");
+ before(directoryRoute, "auth.getUser(token.slice(7))", 'profile?.role!=="strategist"', "verify session before role");
+ before(directoryRoute, 'profile?.role!=="strategist"', 'member?.role!=="admin"||member.active!==true', "strategist and active admin");
+ before(directoryRoute, 'member?.role!=="admin"||member.active!==true', '.from("team_members")\n  .select("user_id', "check role before directory query");
+ assert.match(directoryRoute, /Cache-Control.*no-store/);
+});
+test("team directory UI never reads membership table with browser credentials",()=>{
+ assert.match(teamDirectory, /fetch\("\/api\/team\/directory"/);
+ assert.doesNotMatch(teamDirectory, /supabase\.from\("team_members"\)/);
+});

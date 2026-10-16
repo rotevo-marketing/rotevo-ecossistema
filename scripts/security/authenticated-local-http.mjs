@@ -97,7 +97,53 @@ try {
   assert.equal(await post("/api/team/invite",clientJwt,safeInvite,probe),403,"client cannot trigger local invite probe");
   assert.equal(await post("/api/team/invite",inactiveJwt,safeInvite,probe),403,"inactive admin cannot trigger local invite probe");
   assert.equal(await post("/api/team/invite",activeJwt,safeInvite,probe),200,"active admin passes authorization with delivery disabled");
-  console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard");
+  // Local-only positive projection test with two synthetic tenants.
+  const tenantB=await makeUser("tenant-b");
+  const {error:tenantBProfileError}=await admin.from("profiles").insert({
+    id:tenantB.id,role:"client",full_name:"Synthetic B",email:tenantB.email
+  });
+  assert.ifError(tenantBProfileError);
+  const {data:tenants,error:tenantsError}=await admin.from("clients").insert([
+    {name:"Synthetic isolation A",slug:`ci-isolation-a-${process.pid}`},
+    {name:"Synthetic isolation B",slug:`ci-isolation-b-${process.pid}`}
+  ]).select("id");
+  assert.ifError(tenantsError);
+  assert.equal(tenants.length,2);
+  const [a,b]=tenants;
+  const {error:linkAError}=await admin.from("profiles").update({client_id:a.id}).eq("id",client.id);
+  assert.ifError(linkAError);
+  const {error:linkBError}=await admin.from("profiles").update({client_id:b.id}).eq("id",tenantB.id);
+  assert.ifError(linkBError);
+  const {error:projectsError}=await admin.from("planning_projects").insert([
+    {client_id:a.id,title:"Public A",slug:"ci-public-a",data:{
+      internalNotes:"PRIVATE_TENANT_A_SENTINEL",
+      editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
+                         {id:"e-hide",title:"Secret A",status:"review",visibleToClient:false}]
+    }},
+    {client_id:b.id,title:"Public B",slug:"ci-public-b",data:{internalNotes:"PRIVATE_TENANT_B_SENTINEL"}}
+  ]);
+  assert.ifError(projectsError);
+  async function getProjects(jwt) {
+    const response=await fetch(app.slice(0,-1)+"/api/client/projects",{
+      headers:jwt?{Authorization:`Bearer ${jwt}`}:{},redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  const allowed=await getProjects(clientJwt);
+  assert.equal(allowed.status,200,"client A projects GET");
+  assert.equal(JSON.parse(allowed.body).projects.length,1,"client A reads only one project");
+  assert.ok(allowed.body.includes("Public A"));
+  for(const privateValue of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","Public B","Secret A"])
+    assert.equal(allowed.body.includes(privateValue),false,`must never expose ${privateValue}`);
+  const bJwt=await token(tenantB.email);
+  const onlyB=await getProjects(bJwt);
+  assert.equal(onlyB.status,200);
+  assert.ok(onlyB.body.includes("Public B"));
+  assert.equal(onlyB.body.includes("Public A"),false);
+  assert.equal(onlyB.body.includes("PRIVATE_TENANT_B_SENTINEL"),false);
+  assert.equal((await getProjects(strategistJwt)).status,403,"strategist cannot use client portal endpoint");
+  assert.equal((await getProjects()).status,401,"unauthenticated denied");
+  console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard; client-project tenant isolation");
 } finally {
   for(const id of created.reverse()) {
     const {error}=await admin.auth.admin.deleteUser(id);

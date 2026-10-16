@@ -59,6 +59,8 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(editing.startDate&&editing.dueDate&&editing.startDate>editing.dueDate){setError("O prazo não pode ser anterior ao início.");return;}
   if(!validLink(editing.driveUrl??"")){setError("Use um endereço HTTPS válido para o material.");return;}
   if(editing.documentCode&&!strategicDocs.some(d=>d.code===editing.documentCode)){setError("Selecione um documento estratégico válido do projeto.");return;}
+  if(editing.status==="completed"&&(editing.dependencies??[]).some(id=>items.find(item=>item.id===id)?.status!=="completed")){setError("Conclua todos os pré-requisitos antes de finalizar esta entrega.");return;}
+  if(editing.status!=="completed"&&editing.id&&items.some(item=>item.status==="completed"&&(item.dependencies??[]).includes(editing.id))){setError("Esta entrega é pré-requisito de uma atividade concluída. Reabra a atividade dependente primeiro.");return;}
   const deps=editing.dependencies??[];
   if(deps.includes(editing.id)){setError("Uma entrega não pode depender de si mesma.");return;}
   if(deps.some(id=>!items.some(item=>item.id===id))){setError("Há dependências que não pertencem a este projeto.");return;}

@@ -36,3 +36,16 @@ test("current ecosystem document editor uses authorized version-checked endpoint
  assert.doesNotMatch(editor,/\.from\("planning_projects"\)/);
  assert.match(adminPage,/EcosystemDocumentEditor/);
 });
+
+test("only released snapshots flow to the customer and review steps stay explicit",()=>{
+ const projection=source("lib/security/projectForPresentation.ts");
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(projection,/doc\.publishedContent/);
+ assert.match(projection,/doc\.publishedAt/);
+ assert.doesNotMatch(projection,/\{content:doc\.content\}/);
+ assert.match(editor,/action:"save"\|"review"\|"approve"\|"publish"/);
+ assert.match(editor,/action==="publish"/);
+ assert.match(editor,/record\?\.reviewStatus!=="approved"/);
+ assert.match(editor,/publishedContent:savedContent/);
+ assert.match(editor,/reviewStatus:"draft"/);
+});

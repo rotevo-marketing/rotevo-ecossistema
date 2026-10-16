@@ -21,11 +21,17 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const selected=strings(ecosystem.selectedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code));
  const presented=new Set(strings(ecosystem.presentedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code)));
  const visible=row.status==="published"?selected.filter(code=>presented.has(code)):[];
+ const storedDocuments=object(ecosystem.documents)??{};
+ const documents=Object.fromEntries(visible.flatMap(code=>{
+  const doc=object(storedDocuments[code]);
+  if(!doc||typeof doc.content!=="string"||doc.content.length>200000)return [];
+  return [[code,{content:doc.content}]];
+ }));
  return {
   id:row.id,client_id:row.client_id,title:row.title,slug:row.slug,
   description:row.description,status:row.status,clients:row.clients,
   data:{coverImageUrl,deliverySchedule,
    ecosystem2027:{version:ecosystem.version===1?1:undefined,
-    selectedDocumentCodes:visible,presentedDocumentCodes:visible}}
+    selectedDocumentCodes:visible,presentedDocumentCodes:visible,documents}}
  };
 }

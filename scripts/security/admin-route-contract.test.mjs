@@ -150,3 +150,25 @@ test("member status requires verified administrator and explicit activation flag
  assert.match(memberStatusRoute,/\.eq\("active",target\.active\)/);
  assert.match(memberStatusRoute,/\.neq\("role","admin"\)/);
 });
+
+const teamMemberControls=readFileSync(new URL("../../src/Components/admin/TeamMemberControls.tsx",import.meta.url),"utf8");
+const teamInviteForm=readFileSync(new URL("../../src/Components/admin/TeamInviteForm.tsx",import.meta.url),"utf8");
+test("administrative team controls are gated by authenticated server rollout capabilities",()=>{
+ assert.match(directoryRoute,/ROTEVO_TEAM_PERMISSIONS_ENABLED==="true"/);
+ assert.match(directoryRoute,/ROTEVO_TEAM_ASSIGNMENTS_ENABLED==="true"/);
+ assert.match(directoryRoute,/ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true"/);
+ assert.match(directoryRoute,/ROTEVO_TEAM_INVITES_ENABLED==="true"/);
+ assert.match(teamDirectory,/capabilities\.invites&&<TeamInviteForm/);
+ assert.match(teamMemberControls,/if\(!editable\|\|!capabilities\.permissions/);
+ assert.match(teamMemberControls,/capabilities\.memberStatus/);
+ assert.match(teamMemberControls,/capabilities\.assignments/);
+ assert.match(teamMemberControls,/capabilities\.permissions/);
+});
+test("team editing requests use bearer token and never write Supabase tables in the browser",()=>{
+ assert.match(teamMemberControls,/supabase\.auth\.getSession\(\)/);
+ assert.match(teamInviteForm,/supabase\.auth\.getSession\(\)/);
+ assert.match(teamMemberControls,/Authorization:/);
+ assert.match(teamInviteForm,/Authorization:/);
+ assert.doesNotMatch(teamMemberControls,/supabase\.from\(/);
+ assert.doesNotMatch(teamInviteForm,/supabase\.from\(/);
+});

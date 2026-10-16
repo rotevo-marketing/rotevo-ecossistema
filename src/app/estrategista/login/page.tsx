@@ -56,6 +56,11 @@ export default function EstrategistaLoginPage() {
         .eq("id", loginData.user.id)
         .single();
 
+      if (!profileError && profile?.role === "staff") {
+        router.replace("/equipe/meu-acesso");
+        return;
+      }
+
       if (profileError || profile?.role !== "strategist") {
         await supabase.auth.signOut();
         setErrorMessage("Este usuário não tem permissão de estrategista.");

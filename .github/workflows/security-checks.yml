@@ -90,6 +90,8 @@ jobs:
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify administrative editors use authorized project writes
         run: node --test scripts/security/admin-project-editor-contract.test.mjs
+      - name: Verify restricted staff access boundaries
+        run: node --test scripts/security/staff-access-boundary.test.mjs
       - name: Verify corporate owner bootstrap guards
         run: node --test scripts/security/owner-bootstrap-contract.test.mjs
       - name: Verify release readiness security contracts

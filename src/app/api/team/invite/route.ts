@@ -23,11 +23,12 @@ export async function POST(req: NextRequest) {
   let input: unknown;
   try { input = await req.json(); } catch { return response("Dados inválidos.", 400); }
   if (!input || typeof input !== "object" || Array.isArray(input)) return response("Dados inválidos.", 400);
-  const { email, displayName, role } = input as Record<string, unknown>;
-  if (Object.keys(input).some(key => !["email", "displayName", "role"].includes(key))) return response("Campos não autorizados.", 400);
+  const { email, displayName, role, temporaryPassword } = input as Record<string, unknown>;
+  if (Object.keys(input).some(key => !["email", "displayName", "role", "temporaryPassword"].includes(key))) return response("Campos não autorizados.", 400);
   if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
       typeof displayName !== "string" || displayName.trim().length < 2 || displayName.length > 120 ||
-      typeof role !== "string" || !roles.has(role)) return response("Revise nome, e-mail e função.", 400);
+      typeof role !== "string" || !roles.has(role) ||
+      typeof temporaryPassword !== "string" || temporaryPassword.length < 12 || temporaryPassword.length > 128) return response("Revise nome, e-mail e função.", 400);
   const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const authClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: identity, error: identityError } = await authClient.auth.getUser(auth.slice(7));
@@ -52,17 +53,25 @@ export async function POST(req: NextRequest) {
   if (process.env.ROTEVO_TEAM_INVITES_ENABLED !== "true")
     return response("Convites de equipe aguardam homologação de permissões.", 503);
   const cleanEmail = email.trim().toLowerCase();
-  const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(cleanEmail, {
-    data: { full_name: displayName.trim() }
+  // Initial password is accepted only over the authenticated server route and never persisted in team metadata.
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email: cleanEmail,
+    password: temporaryPassword,
+    email_confirm: true,
+    user_metadata: { full_name: displayName.trim() },
+    app_metadata: { rotevo_password_reset_required: true }
   });
-  if (inviteError || !invite.user) return response("Não foi possível enviar o convite. Verifique se o usuário já possui uma conta.", 409);
+  if (createError || !created.user)
+    return response("Não foi possível cadastrar o usuário. Confirme se o e-mail já está em uso.",409);
   const { error: insertError } = await admin.from("team_members").insert({
-    user_id: invite.user.id, display_name: displayName.trim(), role, active: false
+    user_id: created.user.id, display_name: displayName.trim(), role, active: false
   });
   if (insertError) {
-    // The invited account stays inactive until the administrator reconciles membership.
-    return response("Convite enviado, mas o cadastro interno ficou pendente. Solicite revisão administrativa antes de habilitar o acesso.", 500);
+    // Compensate only the brand-new Auth identity. Never delete a pre-existing account.
+    const { error: rollbackError } = await admin.auth.admin.deleteUser(created.user.id);
+    if (rollbackError) return response("Cadastro incompleto: conta bloqueada e revisão administrativa necessária.",500);
+    return response("Não foi possível registrar o colaborador; a criação foi revertida.",503);
   }
-  return NextResponse.json({ ok: true, message: "Convite enviado. O acesso permanece inativo até a autorização administrativa." },
-    { status: 202, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, message: "Usuário cadastrado. O acesso permanece bloqueado até a ativação pelo administrador." },
+    { status: 201, headers: { "Cache-Control": "no-store" } });
 }

@@ -36,6 +36,13 @@ export async function POST(req:NextRequest){
  !presented.every(code=>typeof code==="string"&&selected.includes(code))||
  new Set(presented).size!==presented.length)return fail(400);
  if(!validEcosystemDocumentTransition({ecosystem2027:{version:1}},payload))return fail(400);
+ if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+  // New project has no assignment yet: only an active team administrator may create it.
+  const {data:member,error:memberError}=await admin.from("team_members")
+   .select("role,active").eq("user_id",identity.user.id).maybeSingle();
+  if(memberError)return fail(503);
+  if(!member||member.active!==true||member.role!=="admin")return fail(403);
+ }
  const {data:client,error:clientError}=await admin.from("clients").select("id").eq("id",b.client_id).maybeSingle();
  if(clientError)return fail(503);
  if(!client)return fail(404);

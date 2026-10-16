@@ -142,3 +142,9 @@ test("document-linked delivery summary includes overdue, pending and blocked ite
  assert.match(editor,/Indicadores das entregas relacionadas/);
  assert.match(editor,/entrega\(s\) aguardando desbloqueio/);
 });
+
+test("central task board exposes linked document code and searchable title",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/task\.documentCode/);
+ assert.match(board,/ecosystemDocuments\.find/);
+});

@@ -103,3 +103,19 @@ test("team directory reads assignments and permissions only after admin authoriz
  assert.match(teamDirectory,/data\?\.assignments/);
  assert.match(teamDirectory,/data\?\.permissions/);
 });
+
+const permissionRoute=readFileSync(new URL("../../src/app/api/team/permissions/route.ts",import.meta.url),"utf8");
+test("permission mutations require verified active admin and explicit rollout",()=>{
+ before(permissionRoute,'auth.getUser(bearer.slice(7))','profile?.role!=="strategist"',"verified user");
+ before(permissionRoute,'profile?.role!=="strategist"','caller?.role!=="admin"||caller.active!==true',"caller role");
+ before(permissionRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"',"active administrator required");
+ before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','.upsert({user_id:userId,permission}',"disabled by default");
+ before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','.delete().eq("user_id",userId)',"disabled before revocation");
+});
+test("permission mutations disallow self editing, inactive targets and admin role",()=>{
+ assert.match(permissionRoute,/userId===identity\.user\.id/);
+ assert.match(permissionRoute,/target\.active!==true/);
+ assert.match(permissionRoute,/target\.role==="admin"/);
+ assert.match(permissionRoute,/Object\.keys\(input\)/);
+ assert.doesNotMatch(permissionRoute,/team\.manage/);
+});

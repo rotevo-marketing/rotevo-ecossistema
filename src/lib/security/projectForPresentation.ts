@@ -17,16 +17,21 @@ const legacyFields=new Set([
  "competitors","targetAudience","audience","profile","expert","business",
  "secondaryIdeas","strategicDirection","positioning","differentials"
 ]);
-function scrubLegacy(value:unknown,depth=0):unknown{
+const allowedLegacyFieldsByModule:Record<string,Set<string>>={
+ empresa:new Set(["quemEAEmpresa","oQueFaz","historia","posicionamento","diferenciais","publico","problemasQueResolve","transformacao","propostaDeValor","missao","visao","valores","autoridade","percepcaoDesejada"]),
+ especialista:new Set(["quemEoQueFaz","especialidadesExpertise","trajetoriaProfissional","historiaPessoal","marcosConquistas","bandeirasCausas","propositoDigital","autodefinicao","comoGostariaDeSerVisto"])
+};
+function scrubLegacy(value:unknown,depth=0,moduleSlug="",parentKey=""):unknown{
  if(depth>14)return null;
  if(value===null||typeof value==="boolean"||typeof value==="number")return value;
  if(typeof value==="string")return value.slice(0,150000);
- if(Array.isArray(value))return value.slice(0,1000).map(item=>scrubLegacy(item,depth+1));
+ if(Array.isArray(value))return value.slice(0,1000).map(item=>scrubLegacy(item,depth+1,moduleSlug,parentKey));
  const obj=object(value);
  if(!obj)return null;
+ const allowed=parentKey==="fields"?(allowedLegacyFieldsByModule[moduleSlug]??new Set<string>()):legacyFields;
  return Object.fromEntries(Object.entries(obj)
-  .filter(([key])=>legacyFields.has(key))
-  .map(([key,item])=>[key,scrubLegacy(item,depth+1)]));
+  .filter(([key])=>allowed.has(key))
+  .map(([key,item])=>[key,scrubLegacy(item,depth+1,moduleSlug,key)]));
 }
 export type PresentationProjectRow={
  id:string;client_id:string;title:string;slug:string;description:string|null;status:string;
@@ -45,7 +50,7 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const selected=strings(d.selectedModules).filter(v=>/^[a-z0-9-]{1,100}$/.test(v)).slice(0,80);
  const rawContent=object(d.moduleContent)??{};
  const moduleContent=Object.fromEntries(selected.filter(key=>Object.hasOwn(rawContent,key))
-  .map(key=>[key,scrubLegacy(rawContent[key])]));
+  .map(key=>[key,scrubLegacy(rawContent[key],0,key)]));
  const eco=object(d.ecosystem2027);
  const presented=strings(eco?.presentedDocumentCodes).filter(v=>/^\d{2}\.\d{2}$/.test(v)).slice(0,57);
  const data={...base,selectedModules:selected,moduleContent,

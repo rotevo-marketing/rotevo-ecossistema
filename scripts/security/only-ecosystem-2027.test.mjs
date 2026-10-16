@@ -271,3 +271,15 @@ test("task hub supports authorized inline team reassignment and reprioritization
  assert.match(board,/Responsável por/);
  assert.match(board,/Prioridade de/);
 });
+
+test("operations overview integrates editorial calendar without inventing formal approval decisions",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(overview,/editorialCalendar/);
+ assert.match(overview,/Agenda editorial e aprovações/);
+ assert.match(overview,/awaitingApproval/);
+ assert.match(overview,/editorialOverdue/);
+ assert.match(overview,/nextEditorial/);
+ assert.match(overview,/awaitingEditorial/);
+ assert.match(overview,/pastEditorial/);
+ assert.match(overview,/As decisões formais do cliente são acompanhadas no painel de aprovações/);
+});

@@ -3,7 +3,9 @@
 [CmdletBinding()]
 param(
  [Parameter(Mandatory)][string]$ServiceFile,
- [Parameter(Mandatory)][string]$BackupRoot
+ [Parameter(Mandatory)][string]$BackupRoot,
+ # Copy the session-pooler host from the project's Connect panel; never guess it.
+ [ValidatePattern('^[a-z0-9-]+\.pooler\.supabase\.com$')][string]$ExpectedPoolerHost
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -16,11 +18,23 @@ foreach ($candidate in @($connectionPath,$destination)) {
  if ($candidate.Contains(',') -or $candidate.Contains('"')) { throw 'Unsupported mount path.' }
 }
 $config = Get-Content -LiteralPath $connectionPath -Raw
+$expectedHost = if ($ExpectedPoolerHost) { $ExpectedPoolerHost } else { 'db.kadvzjelkyfwouqmlxaa.supabase.co' }
+$expectedUser = if ($ExpectedPoolerHost) { 'postgres.kadvzjelkyfwouqmlxaa' } else { 'postgres' }
+$hostPattern = '(?m)^host\s*=\s*' + [regex]::Escape($expectedHost) + '\s*$'
+$userPattern = '(?m)^user\s*=\s*' + [regex]::Escape($expectedUser) + '\s*$'
 if ($config -notmatch '(?m)^\[rotevo\]\s*$' -or
- $config -notmatch '(?m)^host\s*=\s*db\.kadvzjelkyfwouqmlxaa\.supabase\.co\s*$' -or
+ $config -notmatch $hostPattern -or $config -notmatch $userPattern -or
+ $config -notmatch '(?m)^port\s*=\s*5432\s*$' -or
  $config -notmatch '(?m)^dbname\s*=\s*postgres\s*$' -or
  $config -notmatch '(?m)^sslmode\s*=\s*(require|verify-ca|verify-full)\s*$') {
- throw 'Use the verified project direct host, postgres database, SSL, and [rotevo] service.'
+ throw 'Use the verified direct/session-pooler host, project user, port 5432, postgres database, SSL, and [rotevo] service.'
+}
+if ([regex]::Matches($config,'(?m)^\[').Count -ne 1) { throw 'Use exactly one [rotevo] service section.' }
+foreach ($setting in @('host','hostaddr','port','user','dbname','sslmode','service','servicefile')) {
+ $occurrences = [regex]::Matches($config,'(?m)^' + $setting + '\s*=')
+ if ($occurrences.Count -gt 1 -or ($setting -in @('hostaddr','service','servicefile') -and $occurrences.Count -gt 0)) {
+  throw 'Duplicate or overriding connection settings are not allowed.'
+ }
 }
 # Fail closed if another ordinary Windows user can read the credential file.
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User

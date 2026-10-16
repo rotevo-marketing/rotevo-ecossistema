@@ -61,5 +61,7 @@ Nenhuma migração, bootstrap, criação/inativação de conta real, flag de pro
 - Workflow dedicado adicionado para repetir esse ciclo em Supabase descartável sem conexão com produção. O resultado local não substitui a confirmação desse novo workflow no GitHub, a homologação visual integral nem a restauração de dados reais.
 - Login local renderizado no navegador; o fluxo completo de interface de cadastro/troca ainda não foi homologado no navegador.
 - Backup de produção, restauração real, migração e bootstrap hospedados seguem pendentes da conexão privada e da recuperação comprovada.
+- Usuário informou que não possui/não sabe localizar a senha do banco. Revisão do código não encontrou conexão PostgreSQL direta no aplicativo, apenas Supabase API; isso não prova ausência de consumidores externos. Redefinição de senha não executada. Foi aberta a página de configurações do banco para o usuário.
+- Teste sem credenciais com `pg_isready` no Docker não recebeu resposta do endpoint direto. Exportador atualizado para aceitar Session pooler na porta 5432, com host copiado do painel e validado explicitamente, usuário contendo o ref do projeto e SSL. Nenhum host de pooler foi inventado; conexão real permanece sem teste.
 
 Referências: [RLS e TRUNCATE (PostgreSQL)](https://www.postgresql.org/docs/17/ddl-rowsecurity.html), [backup/restore Supabase](https://supabase.com/docs/guides/platform/migrating-within-supabase).

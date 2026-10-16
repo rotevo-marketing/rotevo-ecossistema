@@ -49,3 +49,12 @@ test("only released snapshots flow to the customer and review steps stay explici
  assert.match(editor,/publishedContent:savedContent/);
  assert.match(editor,/reviewStatus:"draft"/);
 });
+
+test("server validates all document transitions before changing project JSON",()=>{
+ const handler=source("app/api/admin/project/update/route.ts");
+ const guard=source("lib/security/ecosystemDocumentTransitions.ts");
+ assert.match(handler,/validEcosystemDocumentTransition\(existing\.data,b\.data\)/);
+ assert.match(guard,/status\(oldDoc\)==="draft"&&status\(nextDoc\)==="review"/);
+ assert.match(guard,/status\(oldDoc\)==="review"&&status\(nextDoc\)==="approved"/);
+ assert.match(guard,/nextDoc\.publishedContent!==oldDoc\.content/);
+});

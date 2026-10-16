@@ -19,6 +19,9 @@ export async function POST(req:NextRequest){
  if(Object.keys(obj).some(k=>k!=="newPassword")||typeof obj.newPassword!=="string"||
  obj.newPassword.length<12||obj.newPassword.length>128)return fail(400,"A nova senha deve ter de 12 a 128 caracteres.");
  const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:profile,error:profileError}=await admin.from("profiles").select("role").eq("id",identity.user.id).maybeSingle();
+ if(profileError)return fail(503,"Perfil indisponível.");
+ if(profile?.role!=="staff")return fail(403,"Conta não autorizada para este procedimento.");
  const {data:member,error:memberError}=await admin.from("team_members").select("user_id").eq("user_id",identity.user.id).maybeSingle();
  if(memberError)return fail(503,"Equipe indisponível.");
  if(!member)return fail(403,"Cadastro de equipe não encontrado.");

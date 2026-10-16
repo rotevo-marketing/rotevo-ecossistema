@@ -221,3 +221,12 @@ test("central task cards show incomplete dependencies from the same project's ti
  assert.match(board,/const waiting=prerequisites\.filter/);
  assert.match(board,/Pré-requisitos:/);
 });
+
+test("task completion UI enforces prerequisite constraints on both operational entry points",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ const timeline=source("Components/admin/ExecutionTimelineEditor.tsx");
+ assert.match(board,/Conclua os pré-requisitos pendentes/);
+ assert.match(board,/Reabra primeiro as atividades concluídas/);
+ assert.match(timeline,/Conclua todos os pré-requisitos/);
+ assert.match(timeline,/Reabra a atividade dependente primeiro/);
+});

@@ -55,11 +55,11 @@ test("team invitation refuses request without bearer token", async () => {
   // Missing local service-role env may fail closed with 503, never success.
   assert.ok([401, 503].includes(response.status), `expected 401/503, got ${response.status}`);
 });
-test("team invitation refuses invalid role", async () => {
+test("team invitation rejects an unauthenticated invalid-role request", async () => {
   const response = await post("/api/team/invite", {
     email: "never-invited@rotevo.invalid",
     displayName: "Teste Sem Token",
     role: "super_admin"
   });
-  assert.ok([400, 503].includes(response.status), `expected 400/503, got ${response.status}`);
+  assert.ok([401, 503].includes(response.status), `expected 401/503 before role validation, got ${response.status}`);
 });

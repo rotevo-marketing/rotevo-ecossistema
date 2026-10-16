@@ -230,34 +230,42 @@ export default function SelecionarModulosPage() {
       Object.entries(deliverySchedule).filter(([, v]) => v !== "")
     );
 
-    const { error: projectError } = await supabase
-      .from("planning_projects")
-      .insert({
-        client_id: client.id,
-        title: draft.projectTitle,
-        slug: finalProjectSlug,
-        description: draft.description || null,
-        status: "draft",
-        data: {
-          coverImageUrl: draft.coverImageUrl || null,
-          selectedModules,
-          modules: selectedModuleRecords,
-          ecosystem2027: {
-            version: 1,
-            selectedDocumentCodes: selectableDocuments.filter((doc) => taskExecution.includes(doc.code)).map((doc) => doc.code),
-            presentedDocumentCodes: selectableDocuments.filter((doc) => taskPresentation.includes(doc.code)).map((doc) => doc.code),
-          },
-          deliverySchedule: Object.keys(filledSchedule).length > 0 ? filledSchedule : null,
-        },
+    try {
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token)throw new Error("Sessão expirada. Entre novamente.");
+      const response=await fetch("/api/admin/project/create",{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+        body:JSON.stringify({
+          client_id:client.id,
+          title:draft.projectTitle,
+          slug:finalProjectSlug,
+          description:draft.description||null,
+          status:"draft",
+          data:{
+            coverImageUrl:draft.coverImageUrl||null,
+            selectedModules,
+            modules:selectedModuleRecords,
+            ecosystem2027:{
+              version:1,
+              selectedDocumentCodes:selectableDocuments.filter(doc=>taskExecution.includes(doc.code)).map(doc=>doc.code),
+              presentedDocumentCodes:selectableDocuments.filter(doc=>taskPresentation.includes(doc.code)).map(doc=>doc.code)
+            },
+            deliverySchedule:Object.keys(filledSchedule).length>0?filledSchedule:null
+          }
+        }),cache:"no-store"
       });
-
-    if (projectError) {
-      setErrorMessage(
-        projectError.message || "Não foi possível criar o planejamento."
-      );
+      if(response.status===409)throw new Error("Já existe um planejamento com esses identificadores.");
+      if(!response.ok)throw new Error("Não foi possível criar o planejamento autorizado.");
+      const result=await response.json();
+      if(typeof result?.project?.id!=="string")throw new Error("Não foi possível confirmar a criação do planejamento.");
+    }catch(error){
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível criar o planejamento.");
       setIsSaving(false);
       return;
     }
+    setIsSaving(false);
 
     window.localStorage.removeItem("metodo-epc-new-planning-draft");
     router.push("/admin");

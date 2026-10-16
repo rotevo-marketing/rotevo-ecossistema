@@ -166,6 +166,38 @@ jobs:
       - name: Verify production build with isolated configuration
         run: npm run build
 
+  profile-grants-isolated:
+    name: Profile privilege isolation (synthetic PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: rotevo_security_test
+        ports:
+          - 127.0.0.1:55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55432"
+      PGUSER: postgres
+      PGPASSWORD: isolated-test-only
+      PGDATABASE: rotevo_security_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated profile column grants
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-profile-grants-isolated.sql
+
   typecheck:
     name: TypeScript verification
     runs-on: ubuntu-latest

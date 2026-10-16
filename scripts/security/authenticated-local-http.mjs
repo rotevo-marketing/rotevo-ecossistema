@@ -147,7 +147,7 @@ try {
   const {error:projectsError}=await admin.from("planning_projects").insert([
     {client_id:a.id,title:"Public A",slug:"ci-public-a",status:"published",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
-      ecosystem2027:{version:1,selectedDocumentCodes:["01.02"],presentedDocumentCodes:["01.02"]},
+      ecosystem2027:{version:1,selectedDocumentCodes:["01.02","01.03"],presentedDocumentCodes:["01.02"],documents:{"01.02":{content:"APPROVED_ECOSYSTEM_DOCUMENT_SENTINEL",updatedAt:"2026-10-16T00:00:00Z"},"01.03":{content:"HIDDEN_UNPUBLISHED_DOCUMENT_SENTINEL",updatedAt:"2026-10-16T00:00:00Z"}}},
       selectedModules:["dna-da-empresa"],
       moduleContent:{"dna-da-empresa":{fields:{quemEAEmpresa:"PUBLISHED_MODULE_SENTINEL",internalCredentials:"HIDDEN_NESTED_SECRET"},privateToken:"HIDDEN_ROOT_SECRET"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
@@ -187,6 +187,8 @@ try {
   const presentedA=await presentation(clientJwt,"ci-public-a");
   assert.equal(presentedA.status,200,"own tenant presentation allowed");
   assert.ok(presentedA.body.includes("01.02"));
+  assert.ok(presentedA.body.includes("APPROVED_ECOSYSTEM_DOCUMENT_SENTINEL"),"approved ecosystem document must be visible");
+  assert.equal(presentedA.body.includes("HIDDEN_UNPUBLISHED_DOCUMENT_SENTINEL"),false,"unapproved document content must not leak");
   assert.equal(presentedA.body.includes("PUBLISHED_MODULE_SENTINEL"),false,"legacy document contents must not reach clients");
   for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL","HIDDEN_NESTED_SECRET","HIDDEN_ROOT_SECRET"]){
     assert.equal(presentedA.body.includes(hidden),false,`presentation must hide ${hidden}`);

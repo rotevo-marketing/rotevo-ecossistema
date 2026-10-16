@@ -15,7 +15,7 @@ const sourceText=new Map(sources.map(p=>[p,readFileSync(p,"utf8")]));
 const basename=p=>path.basename(p).replace(/\.(tsx?|jsx?|mjs)$/,"");
 const references=(p)=>{
  const base=basename(p),relative=path.relative(root,p).split(path.sep).join("/");
- return [...sourceText.entries()].filter(([other,text])=>other!==p&&(text.includes("@/"+relative.replace(/\.(tsx?|jsx?|mjs)$/,""))||text.includes("/"+base+'"')||text.includes("/"+base+"'"))).map(([other])=>path.relative(root,other).split(path.sep).join("/"));
+ return [...sourceText.entries()].filter(([other,text])=>other!==p&&(text.includes("@/"+relative.replace(/\.(tsx?|jsx?|mjs)$/,""))||text.includes("/"+base+'"')||text.includes("/"+base+"'")||text.includes("/"+base+"`"))).map(([other])=>path.relative(root,other).split(path.sep).join("/"));
 };
 const inventory=components.map(p=>({component:path.relative(root,p).split(path.sep).join("/"),importers:references(p)}));
 const unused=inventory.filter(x=>x.importers.length===0);

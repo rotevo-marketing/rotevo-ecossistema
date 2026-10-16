@@ -34,12 +34,9 @@ export async function PATCH(req:NextRequest){
  if(targetError)return fail(503,"Destinatário indisponível.");
  if(!target||target.active!==true)return fail(409,"Colaborador não encontrado ou inativo.");
  if(target.role==="admin")return fail(403,"Permissões de administradores exigem fluxo separado.");
- if(enabled){
-  const {error}=await admin.from("team_member_permissions").upsert({user_id:userId,permission},{onConflict:"user_id,permission"});
-  if(error)return fail(503,"Não foi possível conceder a permissão.");
- }else{
-  const {error}=await admin.from("team_member_permissions").delete().eq("user_id",userId).eq("permission",permission);
-  if(error)return fail(503,"Não foi possível revogar a permissão.");
- }
+ const {error:mutationError}=await admin.rpc("rotevo_change_team_access",{
+  p_actor:identity.user.id,p_target:userId,p_action:"permission",p_permission:permission,p_enabled:enabled
+ });
+ if(mutationError)return fail(503,"Não foi possível atualizar e auditar a permissão.");
  return NextResponse.json({ok:true,userId,permission,enabled},{headers:{"Cache-Control":"no-store"}});
 }

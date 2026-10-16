@@ -61,14 +61,24 @@ export default function ClientAreaPage(){
    if(!profile){await supabase.auth.signOut();router.replace("/");return;}
    if(profile.role==="strategist"){router.replace("/admin");return;}
    if(profile.role!=="client"||!profile.client_id){await supabase.auth.signOut();router.replace("/");return;}
-   const [clientResult,projectResult]=await Promise.all([
+   const {data:sessionData}=await supabase.auth.getSession();
+   const token=sessionData.session?.access_token;
+   if(!token){if(mounted){setError("Sessão expirada. Faça login novamente.");setLoading(false);}return;}
+   const [clientResult,projectResponse]=await Promise.all([
      supabase.from("clients").select("name").eq("id",profile.client_id).single(),
-     supabase.from("planning_projects").select("id,title,slug,description,status,updated_at,data").eq("client_id",profile.client_id).order("updated_at",{ascending:false})
+     fetch("/api/client/projects",{headers:{Authorization:`Bearer ${token}`},cache:"no-store"})
+       .catch(()=>null)
    ]);
    if(!mounted)return;
    setClientName(clientResult.data?.name??"");
-   if(projectResult.error)setError("Não foi possível carregar as informações do projeto.");
-   else setProjects((projectResult.data??[]) as Project[]);
+   if(!projectResponse?.ok){setError("Não foi possível carregar as informações do projeto.");}
+   else{
+     const payload:unknown=await projectResponse.json().catch(()=>null);
+     if(!mounted)return;
+     if(payload && typeof payload==="object" && "projects" in payload && Array.isArray(payload.projects))
+       setProjects(payload.projects as Project[]);
+     else setError("Não foi possível carregar as informações do projeto.");
+   }
    setLoading(false);
  }load();return()=>{mounted=false};},[router]);
  async function logout(){await supabase.auth.signOut();router.replace("/");}

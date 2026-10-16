@@ -156,7 +156,8 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error:
-          "Usuário criado no Auth mas o UID não foi retornado. Verifique o painel do Supabase e crie o profile manualmente.",
+          "O serviço de autenticação não retornou o identificador da conta. Interrompa novas tentativas e solicite reconciliação administrativa antes de continuar.",
+        reconciliationRequired: true,
       },
       { status: 500 }
     );

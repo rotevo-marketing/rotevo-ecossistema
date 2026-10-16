@@ -135,3 +135,10 @@ test("document workspace displays only execution items linked to its active docu
  assert.match(editor,/Entregas vinculadas a este documento/);
  assert.match(editor,/Nenhuma entrega vinculada até agora/);
 });
+
+test("document-linked delivery summary includes overdue, pending and blocked items",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ for(const name of ["linkedPending","linkedCompleted","linkedBlocked","linkedOverdue"])assert.match(editor,new RegExp(name));
+ assert.match(editor,/Indicadores das entregas relacionadas/);
+ assert.match(editor,/entrega\(s\) aguardando desbloqueio/);
+});

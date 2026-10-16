@@ -67,6 +67,7 @@ test("project deletion checks strategist permission, version and confirmation",(
  const auth=source.indexOf("auth.getUser("),role=source.indexOf('profile?.role!=="strategist"'),write=source.indexOf('.from("planning_projects").delete()');
  assert.ok(auth>=0&&role>auth&&write>role);
  assert.match(source,/b\.confirmed!==true/);
+ assert.match(source,/\[0-9a-f\]\{8\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{12\}/);
  assert.match(source,/\.eq\("updated_at",b\.expectedUpdatedAt\)/);
  assert.match(source,/if\(!deleted\)return fail\(409\)/);
 });

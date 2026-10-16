@@ -88,6 +88,8 @@ jobs:
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify administrative editors use authorized project writes
         run: node --test scripts/security/admin-project-editor-contract.test.mjs
+      - name: Enforce Ecossistema 2027 as the only presentation
+        run: node --test scripts/security/only-ecosystem-2027.test.mjs
       - name: Inventory remaining direct planning project consumers
         run: node scripts/security/planning-project-consumer-inventory.mjs
       - name: Verify remote targets are blocked

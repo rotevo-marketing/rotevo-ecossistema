@@ -23,6 +23,12 @@ export async function GET(req:NextRequest){
  if(permissionError)return fail(503);
  const permitted=(permissions??[]).map(p=>p.permission as string);
  const ids=(assignments??[]).map(p=>p.project_id as string);
- // Never send project content, client details or project names via this endpoint.
- return NextResponse.json({displayName:member.display_name,role:member.role,permissions:permitted,assignedProjectCount:ids.length},{headers:{"Cache-Control":"no-store"}});
+ // Project titles are metadata, never documents or client details, and are returned only with explicit read permission.
+ let projects:{id:string;title:string}[]=[];
+ if(permitted.includes("projects.read")&&ids.length>0){
+  const {data:rows,error:projectsError}=await admin.from("planning_projects").select("id,title").in("id",ids);
+  if(projectsError)return fail(503);
+  projects=(rows??[]).map(p=>({id:p.id,title:p.title}));
+ }
+ return NextResponse.json({displayName:member.display_name,role:member.role,permissions:permitted,assignedProjectCount:ids.length,projects},{headers:{"Cache-Control":"no-store"}});
 }

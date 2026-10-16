@@ -170,14 +170,25 @@ export default function SelecionarModulosPage() {
     setIsSaving(true);
     setErrorMessage("");
 
-    const { data: client, error: clientError } = await supabase
-      .from("clients")
-      .upsert(
-        { name: draft.clientName, slug: draft.clientSlug },
-        { onConflict: "slug" }
-      )
-      .select("id, name, slug")
-      .single();
+    // Reuse an existing customer without overwriting their registered name or contact details.
+    const existing = await supabase.from("clients")
+      .select("id,name,slug").eq("slug",draft.clientSlug).maybeSingle();
+    let client = existing.data;
+    let clientError = existing.error;
+    if (!client && !clientError) {
+      const inserted = await supabase.from("clients")
+        .insert({name:draft.clientName,slug:draft.clientSlug})
+        .select("id,name,slug").single();
+      client=inserted.data;
+      clientError=inserted.error;
+      // Two concurrent creations may race; reuse the customer created first.
+      if (clientError?.code==="23505") {
+        const raced = await supabase.from("clients")
+          .select("id,name,slug").eq("slug",draft.clientSlug).maybeSingle();
+        client=raced.data;
+        clientError=raced.error;
+      }
+    }
 
     if (clientError || !client) {
       setErrorMessage(

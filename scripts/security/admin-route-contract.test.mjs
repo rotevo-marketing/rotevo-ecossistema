@@ -33,8 +33,8 @@ test("client access: target exists before Auth creation", () => {
 });
 test("client access: profile failure triggers only new-user compensation", () => {
   const onFailure = client.slice(client.indexOf("if (upsertError) {"), client.indexOf("// ── 10. Success"));
-  assert.match(onFailure, /auth\.admin\.deleteUser\(userId\)/);
-  assert.match(onFailure, /if \(rollbackError\)/);
+  assert.match(onFailure, /compensateNewClientAccount\(supabaseAdmin, userId\)/);
+  assert.match(onFailure, /if \(rollback\.reconciliationRequired\)/);
   assert.match(onFailure, /reconciliationRequired:\s*true/);
   assert.match(onFailure, /status:\s*500/);
 });

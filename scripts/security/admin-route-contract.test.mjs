@@ -119,3 +119,15 @@ test("permission mutations disallow self editing, inactive targets and admin rol
  assert.match(permissionRoute,/Object\.keys\(input\)/);
  assert.doesNotMatch(permissionRoute,/team\.manage/);
 });
+
+const assignmentRoute=readFileSync(new URL("../../src/app/api/team/assignments/route.ts",import.meta.url),"utf8");
+test("project assignment writes require administrator approval and rollout",()=>{
+ before(assignmentRoute,'auth.getUser(bearer.slice(7))','caller?.role!=="admin"||caller.active!==true',"identity before admin");
+ before(assignmentRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"',"active admin before feature gate");
+ before(assignmentRoute,'ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"','.from("team_project_assignments").upsert(',"disabled by default");
+ before(assignmentRoute,'.from("planning_projects").select("id")','.from("team_project_assignments").upsert(',"project must exist");
+ assert.match(assignmentRoute,/userId===identity\.user\.id/);
+ assert.match(assignmentRoute,/target\.active!==true/);
+ assert.match(assignmentRoute,/target\.role==="admin"/);
+ assert.match(assignmentRoute,/Object\.keys\(input\)/);
+});

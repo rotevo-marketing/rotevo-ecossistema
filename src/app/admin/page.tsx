@@ -242,22 +242,26 @@ export default function AdminPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error } = await supabase
-      .from("planning_projects")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", project.id);
-
-    if (error) {
-      setErrorMessage(error.message || "Não foi possível atualizar o status.");
+    try {
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token)throw new Error("Sessão expirada.");
+      const response=await fetch("/api/admin/project/status",{
+        method:"PATCH",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+        body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,status:newStatus}),cache:"no-store"
+      });
+      if(response.status===409)throw new Error("O planejamento foi modificado em outra sessão. Recarregue antes de alterar o status.");
+      if(!response.ok)throw new Error("Não foi possível atualizar o status autorizado.");
+      const result=await response.json();
+      if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Resposta inválida ao atualizar o status.");
+      setProjects(current=>current.map(p=>p.id===project.id?{...p,status:newStatus,updated_at:result.project.updated_at}:p));
+    }catch(error){
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível atualizar o status.");
       setIsPublishingId("");
       return;
     }
 
-    setProjects((current) =>
-      current.map((p) =>
-        p.id === project.id ? { ...p, status: newStatus } : p
-      )
-    );
     setSuccessMessage(
       newStatus === "published"
         ? "Apresentação publicada com sucesso."

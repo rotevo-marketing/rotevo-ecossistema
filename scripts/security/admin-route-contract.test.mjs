@@ -267,3 +267,16 @@ test("team mutations use one server-only transaction with an audit entry",()=>{
  assert.match(transactionalTeamAudit,/team_audit_events/);
  assert.match(transactionalTeamAudit,/p_expected_active/);
 });
+
+const transferRoute=readFileSync(new URL("../../src/app/api/team/admin/transfer/route.ts",import.meta.url),"utf8");
+const transferUi=readFileSync(new URL("../../src/Components/admin/TeamAdminTransferForm.tsx",import.meta.url),"utf8");
+test("administrator succession is gated, confirmed and audited atomically",()=>{
+ before(transferRoute,'auth.getUser(token.slice(7))','caller?.role!=="admin"||caller.active!==true',"verified active admin");
+ before(transferRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED!=="true"',"approval flag");
+ before(transferRoute,'ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED!=="true"','admin.rpc("rotevo_transfer_team_admin"',"mutation blocked by default");
+ assert.match(transferRoute,/confirmation!=="TRANSFERIR_ADMIN"/);
+ assert.match(transferUi,/confirmation!=="TRANSFERIR_ADMIN"/);
+ assert.match(teamDirectory,/capabilities\.adminTransfer&&<TeamAdminTransferForm/);
+ assert.match(directoryRoute,/ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED==="true"/);
+ assert.match(transactionalTeamAudit,/administrator_transferred/);
+});

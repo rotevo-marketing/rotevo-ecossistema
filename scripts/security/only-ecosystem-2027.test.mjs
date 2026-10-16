@@ -73,3 +73,9 @@ test("document workspace provides search and lifecycle progress visibility",()=>
  assert.match(editor,/approvedCount/);
  assert.match(editor,/publishedCount/);
 });
+
+test("obsolete dynamic legacy module editor is no longer a route",()=>{
+ assert.equal(existsSync(fileURLToPath(new URL("../../src/app/admin/planejamentos/[clientSlug]/modulos/[moduleSlug]/page.tsx",import.meta.url))),false);
+ const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ assert.match(page,/EcosystemDocumentEditor/);
+});

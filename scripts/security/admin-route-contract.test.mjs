@@ -26,3 +26,15 @@ test("team invite: role allowlist excludes admin and input cannot grant project"
   assert.match(invite, /new Set\(\["strategist",\s*"project_manager",\s*"producer",\s*"finance"\]\)/);
   assert.doesNotMatch(invite, /const\s*\{[^}]*\b(projectId|clientId|permissions)\b/);
 });
+
+test("client access: target exists before Auth creation", () => {
+  before(client, '.from("clients")', "auth.admin.createUser(", "target client lookup must happen before creating account");
+  assert.match(client, /if \(targetClientError \|\| !targetClient\)/);
+});
+test("client access: profile failure triggers only new-user compensation", () => {
+  const onFailure = client.slice(client.indexOf("if (upsertError) {"), client.indexOf("// ── 10. Success"));
+  assert.match(onFailure, /auth\.admin\.deleteUser\(userId\)/);
+  assert.match(onFailure, /if \(rollbackError\)/);
+  assert.match(onFailure, /reconciliationRequired:\s*true/);
+  assert.match(onFailure, /status:\s*500/);
+});

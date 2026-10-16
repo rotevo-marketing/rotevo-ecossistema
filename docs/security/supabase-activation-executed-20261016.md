@@ -4,7 +4,7 @@ Data: 16/10/2026. Projeto: `kadvzjelkyfwouqmlxaa`. Branch: `feature/admin-v2-red
 
 ## Resultado
 
-**Backup privado, restauração, ensaio das migrações e ativação do banco concluídos. A publicação da interface de Gestão de Usuários no domínio oficial permanece pendente.**
+**Backup privado, restauração, ensaio das migrações, ativação do banco e publicação da Gestão de Usuários no domínio oficial concluídos.**
 
 Administrador principal configurado e verificado: **Otávio Silva — contato@rotevo.com.br**, membro `admin` ativo. As 12 identidades e credenciais de usuários existentes foram preservadas.
 
@@ -35,10 +35,21 @@ Migração registrada: **`20261016221513_activate_team_users_secure_20261016`**.
 - Verificação: 12 Auth users, 12 perfis, 1 cliente, 1 projeto, 38 objetos Storage e 1 administrador de equipe ativo.
 - As quatro tabelas públicas existentes e os dados do Storage permaneceram idênticos ao backup. Três tabelas Auth mostraram atividade normal durante a verificação: refresh_tokens passou de 89 para 90; sessions manteve 26; users manteve 12. Comparação adicional confirmou todos os campos de identidade e hashes de senha de Auth users preservados, excluindo apenas last_sign_in_at/updated_at. Não houve redefinição de senha de usuário da plataforma.
 
+## Publicação e validação final
+
+- Entrega incremental integrada à `main` pelo [PR #2](https://github.com/rotevo-marketing/rotevo-ecossistema/pull/2), commit `f3fc3a903c15713899dcd84f61bcf418b3452b42`. O restante do redesign permanece separado.
+- Vercel: `dpl_Cjx1f83nvhg5nq2WjietVpH9FXQe`, estado READY, domínio `app.rotevo.com.br`, sem erro de alias. Build remoto e TypeScript aprovados.
+- Build local de produção aprovado; as 38 verificações HTTP autenticadas passaram novamente nesta versão compilada. As identidades sintéticas locais foram removidas.
+- Cadastro, permissões, vínculos e estado do membro habilitados exclusivamente no ambiente production. Transferência de administração desabilitada. Exigência global de associação à equipe desabilitada para manter o acesso do estrategista legado existente; APIs novas continuam exigindo administrador ativo.
+- As sete APIs públicas de equipe recusaram requisições sem login com HTTP 401. Nenhuma identidade de teste foi criada no projeto hospedado.
+- O proprietário entrou pessoalmente na plataforma. A página `/admin/equipe` confirmou Otávio Silva como administrador ativo, botão Novo usuário habilitado e formulário com nome, e-mail, quatro funções e senha temporária.
+- Conferência final do banco: 12 usuários, 12 perfis, 1 cliente, 1 projeto e 38 objetos Storage. Hash do backup PostgreSQL reconferido contra o manifesto privado.
+- Retorno da aplicação disponível pela implantação anterior `dpl_6in2DbPJnSeD49oJsMd197TDvvXg`, sem desfazer tabelas ou restaurar o banco sobre dados em uso.
+
 ## Pendências e limites
 
-1. A produção Vercel em `app.rotevo.com.br` ainda executa a branch `main`, commit `ef48701c2091aeb0384b57c4b8624cb413b0a1d7`, que não contém a rota de diretório de equipe. A implantação de produção, chaves de serviço e flags Vercel não foram alteradas nesta execução. Não declarar a interface publicada ou cadastro operacionalmente liberado.
-2. Preparar publicação coordenada da aplicação e ativação gradual das flags, com teste visual autenticado do proprietário. A branch inclui outras mudanças de redesign; não promover o conjunto inteiro sem avaliar esse escopo.
+1. Próximo passo operacional: o administrador cadastrar o primeiro colaborador real, transmitir a senha temporária por canal seguro e conceder consulta e projetos após a troca de senha. Não foram inventados colaboradores nem enviados convites nesta execução.
+2. Homologação de mutações e primeiro acesso realizada com contas sintéticas locais; em produção foram conferidos o diretório autenticado, o formulário e os bloqueios anônimos. Não afirmar que um colaborador real já concluiu o primeiro acesso.
 3. O portal atual de staff oferece resumo e títulos de projetos atribuídos. Edição de documentos por esses papéis não foi liberada. Estrategistas legados existentes continuam com seus acessos amplos; não usar esse perfil para novos colaboradores limitados.
 4. Advisors restantes: `is_strategist()` SECURITY DEFINER autenticada (necessária ao RLS legado), proteção contra senhas vazadas desativada e aviso informativo de auditoria sem política de navegador (bloqueio deliberado). [Função autenticada](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [senhas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), [auditoria sem política](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 5. Histórico antigo de propostas contém versões de oito dígitos repetidas. O lote foi aplicado uma única vez como migração registrada acima. Não usar db push indiscriminadamente antes de reconciliar essas propostas com o histórico remoto.

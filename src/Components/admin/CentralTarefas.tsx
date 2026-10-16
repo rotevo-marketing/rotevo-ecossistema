@@ -28,9 +28,18 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   (customer==="all"||project.id===customer)&&(responsible==="all"||(responsible==="unassigned"?!task.owner?.trim():task.owner?.trim()===responsible))&&
   (status==="all"||(task.status??"planned")===status)&&
   (documentScope==="all"||(documentScope==="linked"?!!task.documentCode:!task.documentCode))&&
-  (deadline==="all"||(deadline==="undated"?!task.dueDate:deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&!["completed","cancelled"].includes(task.status??"planned"):deadline==="today"?task.dueDate===today():!!task.dueDate&&task.dueDate>today()))&&
+  (deadline==="all"||(deadline==="undated"?!task.dueDate:deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&!["completed","cancelled"].includes(task.status??"planned"):deadline==="today"?task.dueDate===today()&&!["completed","cancelled"].includes(task.status??"planned"):!!task.dueDate&&task.dueDate>today()&&!["completed","cancelled"].includes(task.status??"planned")))&&
   (`${task.title} ${client?.name??""} ${project.title} ${task.owner??""} ${task.documentCode??""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))))
- .sort((a,b)=>(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999")),[tasks,customer,responsible,status,search,deadline,documentScope]);
+ .sort((a,b)=>{
+   const rank=(task:ExecutionItem)=>{
+    if(task.status==="completed"||task.status==="cancelled")return 4;
+    if(task.dueDate&&task.dueDate<today())return 0;
+    if(task.status==="blocked")return 1;
+    if(task.dueDate===today())return 2;
+    return 3;
+   };
+   return rank(a.task)-rank(b.task)||(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999");
+  }),[tasks,customer,responsible,status,search,deadline,documentScope]);
  async function change(project:TaskProject,task:ExecutionItem,next:Status){
   if(working)return;
   setWorking(task.id);setError("");setMessage("");

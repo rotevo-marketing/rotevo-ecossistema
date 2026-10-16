@@ -32,6 +32,10 @@ export async function POST(req: NextRequest) {
   const authClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: identity, error: identityError } = await authClient.auth.getUser(auth.slice(7));
   if (identityError || !identity.user) return response("Sessão inválida.", 401);
+  const { data: profile, error: profileError } = await admin.from("profiles")
+    .select("role").eq("id",identity.user.id).maybeSingle();
+  if (profileError) return response("Perfil indisponível.",503);
+  if (profile?.role !== "strategist") return response("Acesso restrito.",403);
   const { data: member, error: membershipError } = await admin.from("team_members")
     .select("role,active").eq("user_id", identity.user.id).maybeSingle();
   if (membershipError) return response("Controle de permissões ainda não está configurado.", 503);

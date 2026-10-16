@@ -4,7 +4,7 @@ import {useEffect,useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
-type DocumentRecord={content:string;updatedAt:string};
+type DocumentRecord={content:string;updatedAt:string;reviewStatus?:"draft"|"review"|"approved";publishedContent?:string;publishedAt?:string};
 type Eco={version?:number;selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,DocumentRecord>};
 type ProjectData={ecosystem2027?:Eco;[key:string]:unknown};
 type Props={projectId:string;projectData:ProjectData;updatedAt:string;onSaved:(data:ProjectData,updatedAt:string)=>void};
@@ -16,22 +16,29 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const [code,setCode]=useState("");
  const active=documents.find(d=>d.code===code)??documents[0];
  const activeCode=active?.code??"";
- const savedContent=activeCode?eco?.documents?.[activeCode]?.content??"":"";
+ const record=activeCode?eco?.documents?.[activeCode]:undefined;
+ const savedContent=record?.content??"";
  const [content,setContent]=useState(savedContent);
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
  useEffect(()=>{setContent(savedContent);setError("");setSuccess("");},[activeCode,savedContent]);
- async function save(){
-  if(!activeCode||saving||content===savedContent)return;
+ async function persist(action:"save"|"review"|"approve"|"publish"){
+  if(!activeCode||saving)return;
+  if(action==="publish"&&(record?.reviewStatus!=="approved"||content!==savedContent)){setError("Aprove e salve a versão atual antes de publicar.");return;}
+  if(action==="approve"&&(record?.reviewStatus!=="review"||content!==savedContent)){setError("Envie a versão salva para revisão antes de aprovar.");return;}
+  if(action==="review"&&content!==savedContent){setError("Salve as alterações antes de solicitar revisão.");return;}
+  if(action==="save"&&content===savedContent)return;
   if(content.length>200000){setError("O documento excede o limite de 200 mil caracteres.");return;}
   setSaving(true);setError("");setSuccess("");
   try{
    const {data:session,error:sessionError}=await supabase.auth.getSession();
    const token=session.session?.access_token;
    if(sessionError||!token)throw new Error("Sessão expirada.");
+   const now=new Date().toISOString();
+   const nextRecord:DocumentRecord=action==="publish"?{...record,content:savedContent,updatedAt:record?.updatedAt??now,reviewStatus:"approved",publishedContent:savedContent,publishedAt:now}:action==="approve"?{...record,content:savedContent,updatedAt:record?.updatedAt??now,reviewStatus:"approved"}:action==="review"?{...record,content:savedContent,updatedAt:record?.updatedAt??now,reviewStatus:"review"}:{...record,content,updatedAt:now,reviewStatus:"draft"};
    const nextData:ProjectData={...projectData,ecosystem2027:{...eco,documents:{
-     ...(eco?.documents??{}),[activeCode]:{content,updatedAt:new Date().toISOString()}
+     ...(eco?.documents??{}),[activeCode]:nextRecord
    }}};
    const response=await fetch("/api/admin/project/update",{
     method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
@@ -42,7 +49,7 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
    const result=await response.json();
    if(!result?.project?.updated_at||!result?.project?.data)throw new Error("Resposta de salvamento inválida.");
    onSaved(result.project.data as ProjectData,result.project.updated_at as string);
-   setSuccess("Documento salvo.");
+   setSuccess(action==="publish"?"Versão aprovada publicada para apresentação.":action==="approve"?"Versão aprovada.":action==="review"?"Documento enviado para revisão.":"Rascunho salvo; versão publicada anterior preservada.");
   }catch(e){setError(e instanceof Error?e.message:"Erro ao salvar.");}
   finally{setSaving(false);}
  }
@@ -50,7 +57,7 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  return <section className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:px-10">
   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
    <h2 className="text-xl font-bold text-[#090D1C]">Documentos do Ecossistema 2027</h2>
-   <p className="mt-2 text-sm text-[#697386]">Edite o conteúdo de cada documento selecionado. O conteúdo é interno e não é enviado à apresentação do cliente nesta etapa.</p>
+   <p className="mt-2 text-sm text-[#697386]">Edite, revise e aprove cada documento. A apresentação utiliza somente a versão explicitamente publicada; alterações no rascunho não modificam o conteúdo já entregue ao cliente.</p>
    {documents.length===0?<p className="mt-5 text-sm text-[#697386]">Selecione documentos para começar.</p>:<>
     <div className="mt-5 grid gap-4 md:grid-cols-[270px_1fr]">
      <div><label htmlFor="rotevo-doc-code" className="mb-2 block text-sm font-semibold">Documento</label>
@@ -61,9 +68,15 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
      </div>
      <div><label htmlFor="rotevo-doc-body" className="mb-2 block text-sm font-semibold">Conteúdo estratégico</label>
       <textarea id="rotevo-doc-body" rows={14} value={content} onChange={e=>setContent(e.target.value)} placeholder="Insira aqui o documento estratégico estruturado..." className="min-h-72 w-full rounded-xl border border-[#E3E7F0] p-4 text-sm leading-6 outline-none focus:border-[#6D35F5]"/>
+      <p className="mt-3 text-xs text-[#697386]">Etapa: {record?.reviewStatus==="approved"?"Aprovado":record?.reviewStatus==="review"?"Em revisão":"Em produção"} · Versão publicada: {record?.publishedAt?new Date(record.publishedAt).toLocaleDateString("pt-BR"):"Ainda não publicada"}</p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
        <span className="text-xs text-[#697386]">{content.length.toLocaleString("pt-BR")} caracteres · {content===savedContent?"Sem alterações":"Alterações não salvas"}</span>
-       <button type="button" onClick={save} disabled={saving||content===savedContent} className="rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar documento"}</button>
+       <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={()=>persist("save")} disabled={saving||content===savedContent} className="rounded-xl bg-[#0B142A] px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">Salvar rascunho</button>
+        <button type="button" onClick={()=>persist("review")} disabled={saving||content!==savedContent||record?.reviewStatus!=="draft"||!content.trim()} className="rounded-xl border border-[#E3E7F0] px-4 py-3 text-sm font-medium disabled:opacity-40">Enviar para revisão</button>
+        <button type="button" onClick={()=>persist("approve")} disabled={saving||content!==savedContent||record?.reviewStatus!=="review"} className="rounded-xl border border-[#E3E7F0] px-4 py-3 text-sm font-medium disabled:opacity-40">Aprovar</button>
+        <button type="button" onClick={()=>persist("publish")} disabled={saving||content!==savedContent||record?.reviewStatus!=="approved"||!content.trim()} className="rounded-xl bg-[#A7E000] px-4 py-3 text-sm font-semibold text-[#090D1C] disabled:opacity-40">Publicar versão</button>
+       </div>
       </div>
      </div>
     </div>

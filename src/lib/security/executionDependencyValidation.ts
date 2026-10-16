@@ -5,6 +5,16 @@ const object=(value:unknown):ObjectValue|null=>value!==null&&typeof value==="obj
  * Existing projects without a timeline remain compatible. All existing links must be
  * resolvable within the same project; dangling links and cycles are rejected.
  */
+export const validOperationalDate=(date:string):boolean=>{
+ const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+ if(!match)return false;
+ const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+ if(year<1||month<1||month>12||day<1)return false;
+ const leap=year%4===0&&(year%100!==0||year%400===0);
+ const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+ return day<=days[month-1];
+};
+
 export const validOperationalTime=(time:string):boolean=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 
 export function validExecutionDependencies(data:unknown):boolean{
@@ -21,7 +31,7 @@ export function validExecutionDependencies(data:unknown):boolean{
    agendaIds.add(item.id);
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return false;
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return false;
-   if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date+"T12:00:00")))return false;
+   if(typeof item.date!=="string"||!validOperationalDate(item.date))return false;
    if(item.time!==undefined&&item.time!==""&&(typeof item.time!=="string"||!validOperationalTime(item.time)))return false;
    if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;

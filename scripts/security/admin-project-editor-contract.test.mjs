@@ -7,6 +7,7 @@ const files=[
  "Components/admin/ExecutionTimelineEditor.tsx",
  "Components/admin/ProjectOnboarding.tsx",
  "Components/admin/EditorialManager.tsx",
+ "Components/admin/CentralTarefas.tsx",
  "app/admin/planejamentos/[clientSlug]/page.tsx",
  "app/admin/planejamentos/[clientSlug]/modulos/[moduleSlug]/page.tsx"
 ];
@@ -68,4 +69,18 @@ test("project deletion checks strategist permission, version and confirmation",(
  assert.match(source,/b\.confirmed!==true/);
  assert.match(source,/\.eq\("updated_at",b\.expectedUpdatedAt\)/);
  assert.match(source,/if\(!deleted\)return fail\(409\)/);
+});
+
+test("presentation never fetches raw project JSON directly from browser",()=>{
+ const view=readFileSync(new URL("app/apresentacao/[slug]/page.tsx",root),"utf8");
+ assert.match(view,/\/api\/presentation\/project/);
+ assert.doesNotMatch(view,/\.from\("planning_projects"\)/);
+ const endpoint=readFileSync(new URL("app/api/presentation/project/route.ts",root),"utf8");
+ const token=endpoint.indexOf("auth.getUser("),role=endpoint.indexOf('.from("profiles")'),project=endpoint.indexOf('.from("planning_projects")');
+ assert.ok(token>=0&&role>token&&project>role);
+ assert.match(endpoint,/profile\.client_id!==project\.client_id/);
+ assert.match(endpoint,/projectForPresentation/);
+ const projection=readFileSync(new URL("lib/security/projectForPresentation.ts",root),"utf8");
+ assert.match(projection,/selected\.filter\(key=>Object\.hasOwn\(rawContent,key\)\)/);
+ assert.match(projection,/presentedDocumentCodes:presented/);
 });

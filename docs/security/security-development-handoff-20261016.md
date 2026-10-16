@@ -39,3 +39,24 @@ Resultados de CI confirmam apenas versões verificadas; mudanças posteriores pr
 Antes de recomendar GO, completar a regressão funcional dos consumidores remanescentes, rever dependências vulneráveis, preparar SHA candidato e realizar aprovação específica para alterações do Supabase e Vercel.
 
 Fontes internas: `production-security-gate-20261015.md`, `planning-json-admin-compatibility-matrix-20261015.md`, `hosted-database-readonly-inventory-20261016.md`, `dependency-audit-review-20261016.md`, `production-security-rollout-plan-20261016.md`.
+
+
+## Continuidade adicional desta conversa
+
+- Criação de planejamentos passou para `POST /api/admin/project/create`, com autenticação Supabase, papel de estrategista, cliente-alvo existente, validação do payload e tratamento de duplicação.
+- Publicação/retorno ao rascunho passaram para `PATCH /api/admin/project/status`, com comparação de `updated_at`.
+- Exclusão na interface administrativa passou para `DELETE /api/admin/project/delete`, com confirmação explícita na UI, JWT, perfil de estrategista e comparação de versão. O teste integrado de exclusão ainda está sob investigação até que o último CI conclua.
+- `CentralTarefas` passou a atualizar tarefas pela API administrativa versionada, eliminando sua escrita direta do JSON.
+- A apresentação `/apresentacao/[slug]` passou a consultar `GET /api/presentation/project`, com restrição por perfil/vínculo empresarial. Clientes recebem apenas módulos selecionados e, na estrutura 2027, códigos apresentados; estrategistas podem consultar o conjunto administrativo. **Pendente:** revisão campo a campo do conteúdo legado selecionado antes de declarar a projeção totalmente segura em produção.
+- `scripts/security/planning-project-consumer-inventory.mjs` foi adicionado à CI para detectar acessos brutos ao JSON a partir de componentes de navegador. O workflow `38892508296` concluiu com sucesso (11 referências diretas remanescentes, todas inspecionadas pela regra atual, sem violação reportada).
+- Testes HTTP locais ampliados: criação de planejamento, publicação, exclusão, autorização por papel, isolamento de apresentação entre empresas, conteúdo publicado e comportamento de rascunho.
+
+### Validações deste complemento
+
+- `38892508296`: segurança/TypeScript/contratos, sucesso.
+- `38892730897`: segurança/TypeScript/contratos, sucesso.
+- `38892730909`: laboratório HTTP Supabase mais recente, **em execução na última consulta**; não declarar aprovação antes de conferir conclusão. Execuções intermediárias anteriores identificaram falhas nos fixtures e no cenário de exclusão, corrigidas ou sob investigação.
+
+### Gate ainda obrigatório
+
+Não implantar em produção até: laboratório mais recente passar, testes funcionais do fluxo legado de apresentação, revisão de conteúdo legado campo a campo, triagem/resolução de dependências vulneráveis, ensaio de reversão e autorização específica de migrações/grants e deploy. O Supabase hospedado permanece sem as novas restrições.

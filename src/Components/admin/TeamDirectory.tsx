@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import TeamMemberControls,{type TeamCapabilities,type TeamProject} from "./TeamMemberControls";
+import TeamInviteForm from "./TeamInviteForm";
 type Assignment={user_id:string;project_id:string};
 type Permission={user_id:string;permission:string};
 type Member={user_id:string;display_name:string;job_title:string|null;avatar_url:string|null;role:string;active:boolean};
@@ -29,6 +30,7 @@ export default function TeamDirectory(){
  }void load();return()=>{active=false};},[refresh]);
  return <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6">
   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Equipe Rotevo</h2><p className="mt-2 text-sm text-[#525B70]">Colaboradores, funções e responsabilidades, com controle de acesso por projeto.</p></div><span className="rounded-lg bg-[#F1F2F6] px-3 py-2 text-xs font-medium text-[#697386]">Convites em preparação</span></div>
+  {capabilities.invites&&<TeamInviteForm onInvited={async()=>{setRefresh(n=>n+1)}}/>}
   {loading?<p className="mt-5 text-sm text-[#697386]">Carregando equipe...</p>:unavailable?
    <p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Não foi possível consultar o diretório da equipe. O acesso exige um administrador ativo e a estrutura de permissões homologada; nenhum cadastro foi alterado.</p>:
    members.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhum membro cadastrado na nova estrutura. Os usuários e logins atuais permanecem inalterados.</p>:

@@ -87,3 +87,9 @@ test("member activation API refuses anonymous writes",async()=>{
  assert.equal(new URL(response.url).origin,origin);
  assert.ok([401,503].includes(response.status),`expected 401/503, got ${response.status}`);
 });
+
+test("administrative succession refuses anonymous requests",async()=>{
+ const response=await fetch(origin+"/api/team/admin/transfer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({targetUserId:"00000000-0000-4000-8000-000000000001",confirmation:"TRANSFERIR_ADMIN"}),redirect:"error",signal:AbortSignal.timeout(5000)});
+ assert.equal(new URL(response.url).origin,origin);
+ assert.ok([401,503].includes(response.status),`expected 401/503, got ${response.status}`);
+});

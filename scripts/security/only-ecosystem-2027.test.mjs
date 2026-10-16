@@ -239,3 +239,12 @@ test("project operational overview shows work with missing owners and unmet prer
  assert.match(overview,/aguardando pré-requisitos/);
  assert.match(overview,/atividade\(s\) sem responsável/);
 });
+
+test("central task board filters waiting and satisfied prerequisites without losing reset",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/prerequisiteScope/);
+ assert.match(board,/Filtrar pré-requisitos/);
+ assert.match(board,/Aguardando pré-requisitos/);
+ assert.match(board,/Pré-requisitos atendidos/);
+ assert.match(board,/setPrerequisiteScope\("all"\)/);
+});

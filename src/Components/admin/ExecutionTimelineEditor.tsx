@@ -79,6 +79,8 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   void persist(next);
  }
  function removeItem(item:ExecutionItem){
+  const agenda=projectData as ProjectData & {operationalAgenda?:{relatedTaskId?:string;title?:string}[]};
+  if(agenda.operationalAgenda?.some(event=>event.relatedTaskId===item.id)){setError("Esta atividade possui reuniões ou acompanhamentos vinculados. Remova o vínculo na agenda antes de excluir.");return;}
   if(items.some(row=>(row.dependencies??[]).includes(item.id))){setError("Esta entrega é pré-requisito de outra. Remova os vínculos antes de excluí-la.");return;}
   if(!window.confirm(`Excluir a entrega "${item.title}"? Esta ação não pode ser desfeita.`))return;
   void persist(items.filter(i=>i.id!==item.id));

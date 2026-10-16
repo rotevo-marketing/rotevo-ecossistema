@@ -30,7 +30,7 @@ export async function POST(req:NextRequest){
  const eco=ecosystem as Record<string,unknown>;
  const selected=eco.selectedDocumentCodes,presented=eco.presentedDocumentCodes;
  if(eco.version!==1||!Array.isArray(selected)||selected.length===0||selected.length>100||
- !selected.every(code=>typeof code==="string"&&/^\\d{2}\\.\\d{2}$/.test(code))||
+ !selected.every(code=>typeof code==="string"&&/^\d{2}\.\d{2}$/.test(code))||
  new Set(selected).size!==selected.length||!Array.isArray(presented)||presented.length>100||
  !presented.every(code=>typeof code==="string"&&selected.includes(code))||
  new Set(presented).size!==presented.length)return fail(400);

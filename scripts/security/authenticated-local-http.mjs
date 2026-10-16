@@ -148,7 +148,7 @@ try {
     {client_id:a.id,title:"Public A",slug:"ci-public-a",status:"published",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
       selectedModules:["empresa"],
-      moduleContent:{empresa:{fields:{text:"PUBLISHED_MODULE_SENTINEL",internalCredentials:"HIDDEN_NESTED_SECRET"},privateToken:"HIDDEN_ROOT_SECRET"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
+      moduleContent:{empresa:{fields:{quemEAEmpresa:"PUBLISHED_MODULE_SENTINEL",internalCredentials:"HIDDEN_NESTED_SECRET"},privateToken:"HIDDEN_ROOT_SECRET"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
                          {id:"e-hide",title:"Secret A",status:"review",visibleToClient:false}]
     }},

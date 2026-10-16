@@ -80,3 +80,24 @@ test("execution tasks reject invalid document codes and assigned user IDs",()=>{
  assert.equal(valid(project({...task("a"),ownerUserId:"not-a-uuid"})),false);
  assert.equal(valid(project({...task("a"),ownerUserId:""})),true);
 });
+
+test("operational agenda must keep references to existing tasks after deletion",()=>{
+ const event={id:"event-1",title:"Revisão semanal",kind:"followup",date:"2026-10-20",status:"planned",relatedTaskId:"task-1"};
+ assert.equal(valid({...project(task("task-1")),operationalAgenda:[event]}),true);
+ assert.equal(valid({...project(),operationalAgenda:[event]}),false);
+ assert.equal(valid({operationalAgenda:[event]}),false);
+ assert.equal(valid({...project(task("task-1")),operationalAgenda:[{...event,relatedTaskId:""}]}),true);
+});
+
+test("agenda and timeline reject malformed collections and duplicate identifiers",()=>{
+ const event={id:"event-1",title:"Reunião semanal",kind:"meeting",date:"2026-10-20",status:"planned"};
+ assert.equal(valid({operationalAgenda:{}}),false);
+ assert.equal(valid({operationalAgenda:[event,{...event,title:"Outra reunião"}]}),false);
+ assert.equal(valid(project(task("task-1"),task("task-1"))),false);
+});
+
+test("independent projects may reuse local task ids without affecting each other",()=>{
+ assert.equal(valid(project(task("one"),task("two",["one"]))),true);
+ assert.equal(valid(project(task("one"))),true);
+ assert.equal(valid(project(task("two",["one"]))),false);
+});

@@ -13,6 +13,7 @@ export default function TeamDirectory(){
  const [expanded,setExpanded]=useState<string|null>(null);
  const [projects,setProjects]=useState<TeamProject[]>([]),[capabilities,setCapabilities]=useState<TeamCapabilities>({invites:false,permissions:false,assignments:false,memberStatus:false,adminTransfer:false});
  const [refresh,setRefresh]=useState(0);
+ const [showCreate,setShowCreate]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[loading,setLoading]=useState(true),[unavailable,setUnavailable]=useState(false);
  useEffect(()=>{let active=true;async function load(){
    let next:Member[]=[];let nextAssignments:Assignment[]=[];let nextPermissions:Permission[]=[];let failed=false;

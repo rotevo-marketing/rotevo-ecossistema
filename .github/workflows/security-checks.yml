@@ -143,6 +143,29 @@ jobs:
             kill "$(cat /tmp/rotevo-next-test.pid)" || true
           fi
 
+  build:
+    name: Production build verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify production build with isolated configuration
+        run: npm run build
+
   typecheck:
     name: TypeScript verification
     runs-on: ubuntu-latest

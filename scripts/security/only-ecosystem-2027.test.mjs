@@ -248,3 +248,14 @@ test("central task board filters waiting and satisfied prerequisites without los
  assert.match(board,/Pré-requisitos atendidos/);
  assert.match(board,/setPrerequisiteScope\("all"\)/);
 });
+
+test("operational management connects task priorities to editor, task board and team workload",()=>{
+ const timeline=source("Components/admin/ExecutionTimelineEditor.tsx");
+ const board=source("Components/admin/CentralTarefas.tsx");
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(timeline,/Prioridade/);
+ assert.match(board,/Filtrar prioridade/);
+ assert.match(board,/setPriorityScope\("all"\)/);
+ assert.match(overview,/Distribuição da carga por responsável/);
+ assert.match(overview,/Não representa horas trabalhadas/);
+});

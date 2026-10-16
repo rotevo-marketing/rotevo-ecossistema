@@ -145,7 +145,7 @@ try {
   const {error:linkBError}=await admin.from("profiles").update({client_id:b.id}).eq("id",tenantB.id);
   assert.ifError(linkBError);
   const {error:projectsError}=await admin.from("planning_projects").insert([
-    {client_id:a.id,title:"Public A",slug:"ci-public-a",data:{
+    {client_id:a.id,title:"Public A",slug:"ci-public-a",status:"published",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
       selectedModules:["empresa"],
       moduleContent:{empresa:{publicText:"PUBLISHED_MODULE_SENTINEL"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
@@ -189,6 +189,9 @@ try {
   for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL"]){
     assert.equal(presentedA.body.includes(hidden),false,`presentation must hide ${hidden}`);
   }
+  const draftB=await presentation(bJwt,"ci-public-b");
+  assert.equal(draftB.status,200,"draft tenant can see safe project header");
+  assert.equal(draftB.body.includes("PRIVATE_TENANT_B_SENTINEL"),false,"draft must never expose internal JSON");
   const presentedAdmin=await presentation(strategistJwt,"ci-public-a");
   assert.equal(presentedAdmin.status,200,"strategist presentation available");
   assert.ok(presentedAdmin.body.includes("HIDDEN_MODULE_SENTINEL"),"strategist retains internal presentation view");

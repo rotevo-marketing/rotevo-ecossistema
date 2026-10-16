@@ -217,3 +217,12 @@ test("invitation authorization checks trusted strategist profile before membersh
  before(invite, 'member.role !== "admin" || member.active !== true', 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "active team admin before rollout");
  before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', 'auth.admin.inviteUserByEmail(', "rollout before email side-effect");
 });
+
+const singleProjectRoute=readFileSync(new URL("../../src/app/api/admin/project/route.ts",import.meta.url),"utf8");
+test("single project API enforces team read access before returning private project data",()=>{
+ before(singleProjectRoute,'ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"','.from("team_project_assignments")',"flag guards project assignment");
+ before(singleProjectRoute,'member.active!==true','.from("team_project_assignments")',"inactive members denied");
+ before(singleProjectRoute,'.eq("permission","projects.read")','.from("planning_projects")',"read permission before reading project");
+ assert.match(singleProjectRoute,/if\(!assignment\)return fail\(403\)/);
+ assert.match(singleProjectRoute,/if\(!permission\)return fail\(403\)/);
+});

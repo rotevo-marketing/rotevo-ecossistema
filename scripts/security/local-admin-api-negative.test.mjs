@@ -93,3 +93,26 @@ test("administrative succession refuses anonymous requests",async()=>{
  assert.equal(new URL(response.url).origin,origin);
  assert.ok([401,503].includes(response.status),`expected 401/503, got ${response.status}`);
 });
+
+test("general homologation rejects anonymous project data access across all administrative routes",async()=>{
+ const checks=[
+  {path:"/api/admin/projects",method:"GET"},
+  {path:"/api/admin/project?id=00000000-0000-4000-8000-000000000001",method:"GET"},
+  {path:"/api/presentation/project?id=00000000-0000-4000-8000-000000000001",method:"GET"},
+  {path:"/api/admin/project/update",method:"PATCH"},
+  {path:"/api/admin/project/status",method:"PATCH"},
+  {path:"/api/admin/project/delete",method:"DELETE"},
+  {path:"/api/admin/project/create",method:"POST"}
+ ];
+ for(const check of checks){
+  const response=await fetch(origin+check.path,{
+   method:check.method,
+   headers:{"Content-Type":"application/json"},
+   ...(check.method==="GET"?{}:{body:JSON.stringify({projectId:"00000000-0000-4000-8000-000000000001"})}),
+   signal:AbortSignal.timeout(10000),redirect:"error"
+  });
+  assert.equal(new URL(response.url).origin,origin);
+  assert.ok([400,401,403,404,405,503].includes(response.status),`unexpected status for ${check.method} ${check.path}: ${response.status}`);
+  assert.notEqual(response.status,200,`anonymous request succeeded: ${check.path}`);
+ }
+});

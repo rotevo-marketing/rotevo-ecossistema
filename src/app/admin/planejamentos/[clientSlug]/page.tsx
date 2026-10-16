@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
+import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
 import ProjectOnboarding, {type OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
@@ -28,7 +29,7 @@ type ProjectData = {
   moduleContent?: Record<string, unknown>;
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   onboardingChecklist?: OnboardingItem[];
-  ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[] };
+  ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[]; documents?: Record<string,{content:string;updatedAt:string}> };
 };
 
 type PlanningProject = {
@@ -651,6 +652,7 @@ export default function PlanejamentoClientePage() {
         ) : null}
       </section>
 
+      {project && !isLoading && hasEcosystem && <EcosystemDocumentEditor projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?{...p,data,updated_at}:p)}/>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><ProjectOnboarding projectId={project.id} data={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?{...p,data,updated_at}:p)}/></section>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?{...p,data,updated_at}:p)}/></section>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>

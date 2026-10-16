@@ -102,6 +102,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED === "true") {
+    const { data: member, error: memberError } = await supabaseAdmin.from("team_members")
+      .select("role,active").eq("user_id", callerId).maybeSingle();
+    if (memberError) return NextResponse.json({ success:false,error:"Permissões indisponíveis." },{status:503});
+    if (!member || member.active !== true || member.role !== "admin")
+      return NextResponse.json({ success:false,error:"Apenas administradores ativos podem criar acessos de clientes." },{status:403});
+  }
+
   // Verify that the target client exists before performing any privileged Auth write.
   // Avoid creating orphaned accounts for invalid or missing client records.
   const { data: targetClient, error: targetClientError } = await supabaseAdmin

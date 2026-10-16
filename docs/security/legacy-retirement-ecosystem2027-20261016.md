@@ -30,3 +30,10 @@ Não foram excluídos registros reais, buckets de armazenamento, contas do Supab
 - O painel de planejamento não contém mais estado e handlers de seleção dos módulos anteriores.
 - A rota dinâmica do editor legado foi excluída da branch de desenvolvimento, preservando o novo `EcosystemDocumentEditor`.
 - Próxima investigação: referências a componentes legados nas demais rotas e remoção de arquivos sem consumidores comprovados, sem apagar históricos de migração do banco.
+
+## Inventário adicional da limpeza
+
+- Removido o arquivo de origem de demonstração `src/app/apresentacao/demo/page.old.tsx` (não utilizado como rota do Next.js, aproximadamente 661 KB).
+- Incluído `scripts/security/legacy-dependency-inventory.mjs` no pipeline para levantar consumidores de componentes antigos sem excluí-los automaticamente.
+- Cinco formulários candidatos foram temporariamente retirados, porém as regressões de TypeScript revelaram dependências compartilhadas nas apresentações legadas. **Todos os cinco foram restaurados** e a verificação de exclusão foi limitada ao antigo arquivo de demonstração. Portanto, esses componentes ainda exigem aposentadoria em conjunto com as apresentações que os importam.
+- O próximo lote deverá analisar o grafo de imports e retirar pares forma/apresentação apenas quando ambos estiverem isolados dos fluxos atuais.

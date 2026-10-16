@@ -2172,32 +2172,35 @@ function isProjectObjectivesData(
       },
     };
 
-    const { error } = await supabase
-      .from("planning_projects")
-      .update({
-        data: nextData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
-
-    if (error) {
-      setErrorMessage(error.message || "Não foi possível salvar este módulo.");
+    try {
+      const saved=await authorizedProjectRequest("PATCH",project.id,nextData,project.updated_at);
+      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+      setSuccessMessage("Módulo salvo com sucesso.");
+    }catch(error){
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível salvar este módulo.");
       setIsSaving(false);
       return;
     }
-
-    setProject({
-      ...project,
-      data: nextData,
-      updated_at: new Date().toISOString(),
-    });
-
-    setSuccessMessage("Módulo salvo com sucesso.");
     setIsSaving(false);
 
     window.setTimeout(() => {
       setSuccessMessage("");
     }, 2800);
+  }
+
+  async function authorizedProjectRequest(method:"GET"|"PATCH", projectId:string, data?:ProjectData, expectedUpdatedAt?:string):Promise<{data:ProjectData;updated_at:string}> {
+    const {data:session,error:sessionError}=await supabase.auth.getSession();
+    const token=session.session?.access_token;
+    if(sessionError||!token)throw new Error("Sessão expirada. Entre novamente para continuar.");
+    const response=await fetch(method==="GET"?`/api/admin/project?id=${encodeURIComponent(projectId)}`:"/api/admin/project/update",{
+      method,headers:{"Authorization":`Bearer ${token}`,...(method==="PATCH"?{"Content-Type":"application/json"}:{})},
+      ...(method==="PATCH"?{body:JSON.stringify({projectId,expectedUpdatedAt,data})}:{}),cache:"no-store"
+    });
+    if(response.status===409)throw new Error("O projeto foi atualizado em outra sessão. Recarregue a página antes de salvar.");
+    if(!response.ok)throw new Error("Não foi possível acessar o projeto. Confira suas permissões.");
+    const result=await response.json();
+    if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Resposta administrativa inválida.");
+    return {data:(result.project.data??{}) as ProjectData,updated_at:result.project.updated_at};
   }
 
   async function preparePersonasForJourneys() {
@@ -2206,15 +2209,13 @@ function isProjectObjectivesData(
     setIsPreparingPersonas(true);
     setPreparePersonasError("");
 
-    const { data: freshRow, error: fetchError } = await supabase
-      .from("planning_projects")
-      .select("data")
-      .eq("id", project.id)
-      .single();
+    let freshRow: {data:ProjectData;updated_at:string};
+    try {
+      freshRow=await authorizedProjectRequest("GET",project.id);
+    }catch(fetchError){
 
-    if (fetchError || !freshRow) {
       setPreparePersonasError(
-        fetchError?.message || "Não foi possível buscar os dados atuais do planejamento."
+        fetchError instanceof Error ? fetchError.message : "Não foi possível buscar os dados atuais do planejamento."
       );
       setIsPreparingPersonas(false);
       return;
@@ -2278,24 +2279,15 @@ function isProjectObjectivesData(
       },
     };
 
-    const { error: saveError } = await supabase
-      .from("planning_projects")
-      .update({
-        data: nextData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
-
-    if (saveError) {
-      setPreparePersonasError(
-        saveError.message || "Não foi possível salvar as personas preparadas."
-      );
+    try {
+      const saved=await authorizedProjectRequest("PATCH",project.id,nextData,freshRow.updated_at);
+      setPersonasData({ personas: preparedPersonas });
+      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+    }catch(saveError){
+      setPreparePersonasError(saveError instanceof Error?saveError.message:"Não foi possível salvar as personas preparadas.");
       setIsPreparingPersonas(false);
       return;
     }
-
-    setPersonasData({ personas: preparedPersonas });
-    setProject({ ...project, data: nextData });
     setIsPreparingPersonas(false);
   }
 
@@ -2313,15 +2305,13 @@ function isProjectObjectivesData(
     setIsSavingPersonaJourneys(true);
     setPersonaJourneysSaveError("");
 
-    const { data: freshRow, error: fetchError } = await supabase
-      .from("planning_projects")
-      .select("data")
-      .eq("id", project.id)
-      .single();
+    let freshRow: {data:ProjectData;updated_at:string};
+    try {
+      freshRow=await authorizedProjectRequest("GET",project.id);
+    }catch(fetchError){
 
-    if (fetchError || !freshRow) {
       setPersonaJourneysSaveError(
-        fetchError?.message ||
+        fetchError instanceof Error ? fetchError.message :
           "Não foi possível buscar os dados atuais do planejamento."
       );
       setIsSavingPersonaJourneys(false);
@@ -2574,25 +2564,15 @@ function isProjectObjectivesData(
       },
     };
 
-    const { error: saveError } = await supabase
-      .from("planning_projects")
-      .update({
-        data: nextData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
-
-    if (saveError) {
-      setPersonaJourneysSaveError(
-        saveError.message ||
-          "Não foi possível salvar as jornadas por persona."
-      );
+    try {
+      const saved=await authorizedProjectRequest("PATCH",project.id,nextData,freshRow.updated_at);
+      setPersonaJourneysData(mutated);
+      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+    }catch(saveError){
+      setPersonaJourneysSaveError(saveError instanceof Error?saveError.message:"Não foi possível salvar as jornadas por persona.");
       setIsSavingPersonaJourneys(false);
       return false;
     }
-
-    setPersonaJourneysData(mutated);
-    setProject({ ...project, data: nextData });
     setPersonaJourneysSaveError("");
     setIsSavingPersonaJourneys(false);
     return true;

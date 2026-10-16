@@ -178,3 +178,11 @@ test("admin publication progress requires both published content and publication
  const overview=source("Components/admin/AdminOperationsOverview.tsx");
  assert.match(overview,/typeof eco\?\.documents\?\.\[code\]\?\.publishedAt==="string"&&typeof eco\?\.documents\?\.\[code\]\?\.publishedContent==="string"/);
 });
+
+test("operations task hub filters deadlines and strategic references without changing project data",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ for(const token of ["documentScope","deadline","Filtrar prazo","Filtrar vínculo estratégico","Limpar filtros"])assert.ok(board.includes(token),token);
+ assert.match(board,/task\.dueDate<today\(\)/);
+ assert.match(board,/\!\["completed","cancelled"\]\.includes/);
+ assert.match(board,/setDocumentScope\("all"\)/);
+});

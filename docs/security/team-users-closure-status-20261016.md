@@ -93,3 +93,14 @@ A documentação do Supabase Auth esclarece que logout global revoga sessões/to
 6. Validar controles de sessão, trilha de auditoria, projeto e cliente em uso real antes de produção.
 
 A aprovação dos 6 jobs do GitHub Actions não equivale à ativação ou homologação completa dos papéis de equipe.
+
+## Fechamento da revisão final do código e preparação do Supabase
+
+- Pipeline [#38943350946](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/38943350946): **6 de 6 jobs com sucesso**, incluindo o teste PostgreSQL isolado de auditoria e negações após sucessão de administrador.
+- Cenários negativos acrescentados: antigo administrador não pode modificar o administrador atual após transferência; self-edit de permissões é recusado; tentativas negadas não alteram tabelas de concessões ou trilha de auditoria.
+- Pré-verificação sem escrita do banco hospedado confirmou ausência das quatro tabelas novas (equipe, vínculos, permissões e auditoria), compatível com o estado de implantação pendente.
+- Checklist de ativação centralizado em `docs/security/rotevo-supabase-activation-plan.md` e verificação consultiva em `supabase/checks/team-activation-readiness-readonly.sql`.
+- Não houve escrita no Supabase hospedado, migração, provisionamento de identidades, ativação de flags ou deploy no domínio oficial.
+- Pendências fora da validação possível neste lote: testes E2E autenticados reais, compatibilidade dos novos papéis e consumidores diretos de Supabase, aprovação de produção, migração e verificação pós-implantação. Essas pendências **não** devem ser consideradas aprovadas pelo CI.
+
+**Resultado:** revisão de código e preparação de ativação entregues; homologação dirigida do esquema/auditoria aprovada em ambiente sintético; liberação completa operacional permanece condicionada à aplicação autorizada e testes direcionados com contas de teste controladas.

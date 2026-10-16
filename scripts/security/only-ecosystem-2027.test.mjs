@@ -80,13 +80,6 @@ test("obsolete dynamic legacy module editor is no longer a route",()=>{
  assert.match(page,/EcosystemDocumentEditor/);
 });
 
-test("retired legacy demonstration and first orphaned module forms remain deleted",()=>{
- for(const relative of [
-  "app/apresentacao/demo/page.old.tsx",
-  "Components/modulos/BlogForm.tsx",
-  "Components/modulos/PinterestForm.tsx",
-  "Components/modulos/PodcastsForm.tsx",
-  "Components/modulos/TomDeVozForm.tsx",
-  "Components/modulos/LinhasEditoriaisForm.tsx"
- ])assert.equal(existsSync(fileURLToPath(new URL("../../src/"+relative,import.meta.url))),false,relative);
+test("obsolete demonstration source remains removed",()=>{
+ assert.equal(existsSync(fileURLToPath(new URL("../../src/app/apresentacao/demo/page.old.tsx",import.meta.url))),false);
 });

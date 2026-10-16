@@ -78,3 +78,31 @@ BEGIN
   RAISE EXCEPTION 'Audited team mutations did not persist';
  END IF;
 END $assert$;
+
+-- Succession must be atomic and preserve an active administrator.
+INSERT INTO public.profiles(id,role) VALUES
+ ('11111111-1111-4111-8111-111111111111','strategist'),
+ ('22222222-2222-4222-8222-222222222222','strategist');
+SELECT public.rotevo_change_team_access(
+ '11111111-1111-4111-8111-111111111111',
+ '22222222-2222-4222-8222-222222222222','status',null,null,true,false
+);
+SELECT public.rotevo_transfer_team_admin(
+ '11111111-1111-4111-8111-111111111111',
+ '22222222-2222-4222-8222-222222222222'
+);
+DO $assert$
+BEGIN
+ IF has_function_privilege('authenticated','public.rotevo_transfer_team_admin(uuid,uuid)','EXECUTE') THEN
+  RAISE EXCEPTION 'Authenticated client can invoke admin succession directly';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.team_members WHERE role='admin' and user_id='22222222-2222-4222-8222-222222222222' and active=true) THEN
+  RAISE EXCEPTION 'Incoming administrator was not activated';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.team_members WHERE role='strategist' and user_id='11111111-1111-4111-8111-111111111111') THEN
+  RAISE EXCEPTION 'Outgoing administrator was not demoted';
+ END IF;
+ IF (SELECT count(*) FROM public.team_audit_events WHERE action='administrator_transferred')<>1 THEN
+  RAISE EXCEPTION 'Missing administrative succession audit record';
+ END IF;
+END $assert$;

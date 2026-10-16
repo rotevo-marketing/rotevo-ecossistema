@@ -60,3 +60,12 @@ test("project create and status routes authenticate before privileged writes",()
  assert.match(create,/if\(!client\)return fail\(404\)/);
  assert.match(create,/createError\.code==="23505"\?409:503/);
 });
+
+test("project deletion checks strategist permission, version and confirmation",()=>{
+ const source=readFileSync(new URL("app/api/admin/project/delete/route.ts",root),"utf8");
+ const auth=source.indexOf("auth.getUser("),role=source.indexOf('profile?.role!=="strategist"'),write=source.indexOf('.from("planning_projects").delete()');
+ assert.ok(auth>=0&&role>auth&&write>role);
+ assert.match(source,/b\.confirmed!==true/);
+ assert.match(source,/\.eq\("updated_at",b\.expectedUpdatedAt\)/);
+ assert.match(source,/if\(!deleted\)return fail\(409\)/);
+});

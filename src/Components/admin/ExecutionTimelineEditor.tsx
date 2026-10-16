@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
+import {validOperationalDate} from "@/lib/security/executionDependencyValidation";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
 type ProjectData = { executionTimeline?: ExecutionItem[]; ecosystem2027?:{selectedDocumentCodes?:string[]} };
@@ -57,6 +58,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(!["low","normal","high","urgent"].includes(editing.priority??"normal")){setError("Prioridade inválida.");return;}
   const title=editing.title.trim();
   if(title.length<3){setError("Informe um título com pelo menos 3 caracteres.");return;}
+  if((editing.startDate&&!validOperationalDate(editing.startDate))||(editing.dueDate&&!validOperationalDate(editing.dueDate))){setError("Informe datas válidas para o cronograma.");return;}
   if(editing.startDate&&editing.dueDate&&editing.startDate>editing.dueDate){setError("O prazo não pode ser anterior ao início.");return;}
   if(!validLink(editing.driveUrl??"")){setError("Use um endereço HTTPS válido para o material.");return;}
   if(editing.documentCode&&!strategicDocs.some(d=>d.code===editing.documentCode)){setError("Selecione um documento estratégico válido do projeto.");return;}

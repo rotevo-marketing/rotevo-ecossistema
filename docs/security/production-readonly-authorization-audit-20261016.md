@@ -20,3 +20,7 @@
 6. Construir casos pgTAP para recusar mudança de função de um usuário autenticado, troca de `client_id` e acesso indevido a projetos.
 
 A presente auditoria consistiu exclusivamente em leitura dos catálogos e metadados, sem escrita/DDL ou alteração de clientes.
+
+## Confirmação adicional via funções de privilégio (somente leitura)
+
+Consulta catalográfica com `has_table_privilege` e `has_column_privilege` confirmou: `authenticated` possui UPDATE de tabela `profiles`, UPDATE da coluna `role` e UPDATE da coluna `client_id` (`true` nos três casos). O papel `anon` também possui UPDATE na coluna `role` conforme `has_column_privilege`, porém políticas RLS continuam sendo barreira adicional. **Não foi executada atualização ou tentativa de exploração**. É prioritário homologar e aplicar bloqueios de coluna mediante autorização de produção.

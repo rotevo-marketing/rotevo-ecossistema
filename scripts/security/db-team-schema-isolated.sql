@@ -115,8 +115,8 @@ BEGIN
  SELECT count(*) INTO before_permissions FROM public.team_member_permissions;
  BEGIN
   PERFORM public.rotevo_change_team_access(
-   '22222222-2222-4222-8222-222222222222',
    '11111111-1111-4111-8111-111111111111',
+   '22222222-2222-4222-8222-222222222222',
    'permission','finance.write',null,true,null
   );
   RAISE EXCEPTION 'Nonadmin changed administrator access';
@@ -133,8 +133,8 @@ BEGIN
  END;
  BEGIN
   PERFORM public.rotevo_change_team_access(
-   '22222222-2222-4222-8222-222222222222',
    '11111111-1111-4111-8111-111111111111',
+   '22222222-2222-4222-8222-222222222222',
    'status',null,null,false,false
   );
   RAISE EXCEPTION 'Former admin could alter an admin';

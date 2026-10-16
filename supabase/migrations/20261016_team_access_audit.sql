@@ -4,7 +4,7 @@ create table if not exists public.team_audit_events (
  id bigint generated always as identity primary key,
  actor_user_id uuid not null references auth.users(id),
  target_user_id uuid not null references auth.users(id),
- action text not null check(action in ('permission_granted','permission_revoked','project_assigned','project_unassigned','member_activated','member_deactivated')),
+ action text not null check(action in ('permission_granted','permission_revoked','project_assigned','project_unassigned','member_activated','member_deactivated','administrator_transferred')),
  detail jsonb not null default '{}'::jsonb,
  occurred_at timestamptz not null default now()
 );
@@ -70,3 +70,38 @@ begin
 end $$;
 revoke all on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean,boolean) from public, anon, authenticated;
 grant execute on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean,boolean) to service_role;
+
+-- Staged one-step admin succession. Promotes replacement before demoting outgoing admin.
+create or replace function public.rotevo_transfer_team_admin(p_actor uuid,p_target uuid)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+declare actor_role text; target_role text; target_active boolean;
+begin
+ if p_actor is null or p_target is null or p_actor=p_target then
+  raise exception 'invalid administrator succession' using errcode='42501';
+ end if;
+ select role into actor_role from public.team_members
+  where user_id=p_actor and role='admin' and active=true for update;
+ if actor_role is distinct from 'admin' then
+  raise exception 'active administrator required' using errcode='42501';
+ end if;
+ if not exists(select 1 from public.profiles where id=p_actor and role='strategist') then
+  raise exception 'verified strategist profile required' using errcode='42501';
+ end if;
+ select role,active into target_role,target_active from public.team_members
+  where user_id=p_target for update;
+ if not found or target_role='admin' or target_active is distinct from true then
+  raise exception 'active nonadministrator replacement required' using errcode='42501';
+ end if;
+ if not exists(select 1 from public.profiles where id=p_target and role='strategist') then
+  raise exception 'replacement requires strategist profile' using errcode='42501';
+ end if;
+ update public.team_members set role='admin',updated_at=now() where user_id=p_target;
+ update public.team_members set role='strategist',updated_at=now() where user_id=p_actor;
+ insert into public.team_audit_events(actor_user_id,target_user_id,action,detail)
+  values(p_actor,p_target,'administrator_transferred',jsonb_build_object('outgoing_admin',p_actor,'incoming_admin',p_target));
+ return jsonb_build_object('ok',true);
+end $$;
+revoke all on function public.rotevo_transfer_team_admin(uuid,uuid) from public, anon, authenticated;
+grant execute on function public.rotevo_transfer_team_admin(uuid,uuid) to service_role;

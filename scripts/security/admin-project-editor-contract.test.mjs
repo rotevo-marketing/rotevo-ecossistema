@@ -82,6 +82,7 @@ test("presentation never fetches raw project JSON directly from browser",()=>{
  assert.match(endpoint,/profile\.client_id!==project\.client_id/);
  assert.match(endpoint,/projectForPresentation/);
  const projection=readFileSync(new URL("lib/security/projectForPresentation.ts",root),"utf8");
- assert.match(projection,/selected\.filter\(key=>Object\.hasOwn\(rawContent,key\)\)/);
- assert.match(projection,/presentedDocumentCodes:presented/);
+ assert.match(projection,/if\(!ecosystem\)return null/);
+ assert.match(projection,/presentedDocumentCodes:visible/);
+ assert.doesNotMatch(projection,/scrubLegacy|moduleContent/);
 });

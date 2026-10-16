@@ -4,10 +4,11 @@ import Link from "next/link";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import type { EditorialItem } from "@/Components/cliente/EditorialCalendar";
+import type { AgendaItem } from "@/Components/admin/OperationalAgenda";
 
 export type OperationsProject = {
  id:string; title:string;slug:string;status:"draft"|"in_progress"|"published"|"archived";updated_at:string;
- data:{executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
+ data:{executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];operationalAgenda?:AgendaItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
  clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
 };
 const client=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
@@ -54,6 +55,10 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
  const awaitingApproval=editorial.filter(item=>item.status==="awaiting_client"&&item.visibleToClient===true);
  const editorialOverdue=editorial.filter(item=>item.publishDate<today()&&!["published","idea"].includes(item.status));
  const nextEditorial=editorial.filter(item=>item.publishDate>=today()&&item.status!=="published").sort((a,b)=>a.publishDate.localeCompare(b.publishDate)).slice(0,6);
+ const commitments=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.operationalAgenda)?p.data.operationalAgenda:[]).filter(x=>x&&typeof x.date==="string"&&typeof x.title==="string").map(x=>({...x,project:p}))),[projects]);
+ const plannedCommitments=commitments.filter(x=>x.status==="planned");
+ const overdueCommitments=plannedCommitments.filter(x=>x.date<today());
+ const nextCommitments=plannedCommitments.filter(x=>x.date>=today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
  const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
@@ -91,6 +96,11 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
     {upcoming.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhuma entrega futura com prazo cadastrado.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{upcoming.slice(0,6).map(t=><div key={t.project.id+":"+t.id} className="flex items-center justify-between gap-2 py-3"><div><p className="text-sm font-semibold">{t.title}</p><p className="text-xs text-[#697386]">{client(t.project)?.name??"Cliente"} · {t.owner}</p></div><span className="shrink-0 text-xs font-semibold text-[#525B70]">{date(t.dueDate??"")}</span></div>)}</div>}
    </section>
   </div>
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+   <h2 className="text-lg font-semibold">Reuniões e acompanhamentos</h2><p className="mt-1 text-sm text-[#697386]">Compromissos registrados na agenda operacional dos projetos.</p>
+   <div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Agendados</p><p className="mt-2 text-2xl font-semibold">{plannedCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Pendentes com data vencida</p><p className="mt-2 text-2xl font-semibold">{overdueCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Reuniões registradas</p><p className="mt-2 text-2xl font-semibold">{commitments.filter(x=>x.kind==="meeting").length}</p></div></div>
+   <h3 className="mt-5 text-sm font-semibold">Próximos compromissos</h3>{nextCommitments.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhum compromisso futuro pendente.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextCommitments.map(x=><div key={x.project.id+":"+x.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{x.title}</p><p className="text-xs text-[#697386]">{client(x.project)?.name??"Cliente"} · {x.owner||"Sem responsável"}</p></div><span className="text-xs font-medium">{date(x.date)}</span></div>)}</div>}
+  </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <h2 className="text-lg font-semibold">Agenda editorial e aprovações</h2>
    <p className="mt-1 text-sm text-[#697386]">Visão dos conteúdos registrados nos projetos. As decisões formais do cliente são acompanhadas no painel de aprovações.</p>

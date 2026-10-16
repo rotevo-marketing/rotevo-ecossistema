@@ -45,11 +45,21 @@ export default function EstrategistaLoginPage() {
         return;
       }
 
+      if(loginData.user.app_metadata?.rotevo_password_reset_required===true){
+        router.replace("/primeiro-acesso");
+        return;
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", loginData.user.id)
         .single();
+
+      if (!profileError && profile?.role === "staff") {
+        router.replace("/equipe/meu-acesso");
+        return;
+      }
 
       if (profileError || profile?.role !== "strategist") {
         await supabase.auth.signOut();

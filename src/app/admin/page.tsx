@@ -278,7 +278,10 @@ export default function AdminPage() {
             <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">Painel Administrativo</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe os projetos e organize seus planejamentos estratégicos em um só lugar.</p>
           </div>
-          <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/admin/equipe" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E3E7F0] bg-white px-5 py-3 text-sm font-semibold">Gestão de usuários</Link>
+            <Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>
+          </div>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[

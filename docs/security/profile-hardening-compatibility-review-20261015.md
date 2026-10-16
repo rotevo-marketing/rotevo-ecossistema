@@ -19,3 +19,14 @@ A migração proposta `supabase/migrations/20261015_harden_profile_authorization
 
 ## Gate para produção
 Não executar migração até revisar fluxos de cadastro/edição, conferir grants e policies de produção por leitura autorizada, demonstrar rollback e obter autorização explícita. Não habilitar convites nem realizar deployment como parte deste documento.
+
+## Revisão complementar de telas (2026-10-15)
+Arquivos efetivamente examinados:
+- `src/app/admin/page.tsx`: consulta `profiles` para autorização; alteração observada é de `planning_projects`, não de `profiles`.
+- `src/app/cliente/page.tsx`: consulta `profiles.role` e `profiles.client_id`; não grava em `profiles` no trecho inspecionado.
+- `src/app/estrategista/login/page.tsx`: autenticação e consulta de perfil; nenhuma atualização de `profiles` identificada.
+- `src/app/admin/planejamentos/[clientSlug]/page.tsx`: consulta `profiles`; operações de UPDATE encontradas em outras entidades, como `planning_projects`.
+- `src/Components/admin/ProjectOnboarding.tsx`: atualização de `planning_projects`, não do perfil.
+Na amostra acima, nenhuma dependência de UPDATE amplo do papel `authenticated` em `public.profiles` foi encontrada. **Esta constatação é limitada aos arquivos lidos e não substitui pesquisa exaustiva nem testes de produção.**
+
+Pendente para decisão de implantação: testar regressão completa da rota `create-client-access` no cenário de criação autorizada sem efeitos externos, incluindo compensação, e analisar caminho de manutenção SQL da tela de acesso.

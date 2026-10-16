@@ -72,6 +72,8 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   const overdue=!!task.dueDate&&task.dueDate<today()&&open;
   const dueToday=task.dueDate===today()&&open;
   const blocked=task.status==="blocked";
+  const prerequisites=(task.dependencies??[]).flatMap(id=>(project.data?.executionTimeline??[]).filter(item=>item.id===id));
+  const waiting=prerequisites.filter(item=>item.status!=="completed");
   return <article key={project.id+":"+task.id} className="rounded-xl border border-[#E3E7F0] bg-white p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="min-w-0"><h3 className="text-sm font-semibold">{task.title}</h3>
@@ -81,6 +83,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386]">
       <span>Prazo: {date(task.dueDate)}</span><span>Responsável: {task.owner?.trim()||"Não atribuído"}</span>
       <span>{task.visibleToClient===false?"Uso interno":"Visível ao cliente"}</span>
+      {prerequisites.length>0&&<span>Pré-requisitos: {prerequisites.length} · {waiting.length?`${waiting.length} pendente(s)`:"Concluídos"}</span>}
     </div>
     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF0F5] pt-3">
       <label className="text-xs font-medium text-[#525B70]">Situação

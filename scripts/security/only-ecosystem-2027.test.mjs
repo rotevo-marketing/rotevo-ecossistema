@@ -158,3 +158,11 @@ test("admin operations summary connects published 2027 documents and delivery de
  assert.match(panel,/Entregas abertas/);
  assert.match(panel,/Atrasadas/);
 });
+
+test("admin overview computes per-project publication rate and blocked deliverables without inferred records",()=>{
+ const panel=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(panel,/selected\.length\?Math\.round\(released\/selected\.length\*100\):0/);
+ assert.match(panel,/t\.status==="blocked"/);
+ assert.match(panel,/Progresso dos documentos de/);
+ assert.match(panel,/Sem documentos/);
+});

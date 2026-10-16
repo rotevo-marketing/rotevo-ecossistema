@@ -23,7 +23,7 @@ export async function PATCH(req:NextRequest){
  typeof b.projectId!=="string"||!uuid.test(b.projectId)||
  typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt))||
  (b.status!=="draft"&&b.status!=="published"))return fail(400);
- const access=await mayMutateProject(admin,identity.user.id,b.projectId);
+ const access=await mayMutateProject(admin,identity.user.id,b.projectId,true);
  if(!access.allowed)return fail(access.status);
  const {data:updated,error:updateError}=await admin.from("planning_projects")
  .update({status:b.status,updated_at:new Date().toISOString()})

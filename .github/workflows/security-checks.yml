@@ -62,6 +62,22 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  local-test-guards:
+    name: Test API runner isolation guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify remote targets are blocked
+        run: node --test scripts/security/local-admin-api-guard.test.mjs
+
   typecheck:
     name: TypeScript verification
     runs-on: ubuntu-latest

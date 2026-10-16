@@ -30,6 +30,24 @@ export async function PATCH(req:NextRequest){
    .select("role").eq("id",identity.user.id).maybeSingle();
  if(profileError)return fail(503);
  if(profile?.role!=="strategist")return fail(403);
+ // Rollout gate: old strategist sessions remain compatible until the new policies are approved.
+ // When enabled, an inactive staff account or a team member lacking project access fails closed.
+ if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+  const {data:member,error:memberError}=await admin.from("team_members")
+   .select("role,active").eq("user_id",identity.user.id).maybeSingle();
+  if(memberError)return fail(503);
+  if(!member||member.active!==true)return fail(403);
+  if(member.role!=="admin"){
+   const {data:assignment,error:assignmentError}=await admin.from("team_project_assignments")
+    .select("project_id").eq("user_id",identity.user.id).eq("project_id",b.projectId).maybeSingle();
+   if(assignmentError)return fail(503);
+   if(!assignment)return fail(403);
+   const {data:permission,error:permissionError}=await admin.from("team_member_permissions")
+    .select("permission").eq("user_id",identity.user.id).eq("permission","projects.write").maybeSingle();
+   if(permissionError)return fail(503);
+   if(!permission)return fail(403);
+  }
+ }
  const {data:existing,error:existingError}=await admin.from("planning_projects")
    .select("data,updated_at").eq("id",b.projectId).maybeSingle();
  if(existingError)return fail(503);

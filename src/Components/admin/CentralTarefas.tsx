@@ -19,6 +19,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  const [search,setSearch]=useState(""),[view,setView]=useState<"list"|"board">("list");
  const [deadline,setDeadline]=useState<"all"|"overdue"|"today"|"upcoming"|"undated">("all");
  const [documentScope,setDocumentScope]=useState<"all"|"linked"|"unlinked">("all");
+ const [prerequisiteScope,setPrerequisiteScope]=useState<"all"|"waiting"|"ready">("all");
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[message,setMessage]=useState("");
  const tasks=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.executionTimeline)?p.data.executionTimeline:[])
  .filter(t=>t&&typeof t.id==="string"&&typeof t.title==="string")
@@ -28,6 +29,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   (customer==="all"||project.id===customer)&&(responsible==="all"||(responsible==="unassigned"?!task.owner?.trim():task.owner?.trim()===responsible))&&
   (status==="all"||(task.status??"planned")===status)&&
   (documentScope==="all"||(documentScope==="linked"?!!task.documentCode:!task.documentCode))&&
+  (prerequisiteScope==="all"||(prerequisiteScope==="waiting"?(task.dependencies??[]).some(id=>project.data?.executionTimeline?.find(item=>item.id===id)?.status!=="completed"):(task.dependencies??[]).every(id=>project.data?.executionTimeline?.find(item=>item.id===id)?.status==="completed")))&&
   (deadline==="all"||(deadline==="undated"?!task.dueDate:deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&!["completed","cancelled"].includes(task.status??"planned"):deadline==="today"?task.dueDate===today()&&!["completed","cancelled"].includes(task.status??"planned"):!!task.dueDate&&task.dueDate>today()&&!["completed","cancelled"].includes(task.status??"planned")))&&
   (`${task.title} ${client?.name??""} ${project.title} ${task.owner??""} ${task.documentCode??""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))))
  .sort((a,b)=>{
@@ -39,7 +41,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     return 3;
    };
    return rank(a.task)-rank(b.task)||(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999");
-  }),[tasks,customer,responsible,status,search,deadline,documentScope]);
+  }),[tasks,customer,responsible,status,search,deadline,documentScope,prerequisiteScope]);
  async function change(project:TaskProject,task:ExecutionItem,next:Status){
   const timeline=project.data?.executionTimeline??[];
   if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos pendentes antes de finalizar esta tarefa.");return;}
@@ -119,7 +121,8 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
    <div className="mt-3 flex flex-wrap gap-3">
     <select aria-label="Filtrar prazo" value={deadline} onChange={e=>setDeadline(e.target.value as typeof deadline)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os prazos</option><option value="overdue">Atrasadas em aberto</option><option value="today">Vencem hoje</option><option value="upcoming">Prazos futuros</option><option value="undated">Sem prazo</option></select>
     <select aria-label="Filtrar vínculo estratégico" value={documentScope} onChange={e=>setDocumentScope(e.target.value as typeof documentScope)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os vínculos</option><option value="linked">Com documento 2027</option><option value="unlinked">Sem documento vinculado</option></select>
-    <button type="button" onClick={()=>{setCustomer("all");setResponsible("all");setStatus("all");setDeadline("all");setDocumentScope("all");setSearch("");}} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm font-medium">Limpar filtros</button>
+    <select aria-label="Filtrar pré-requisitos" value={prerequisiteScope} onChange={e=>setPrerequisiteScope(e.target.value as typeof prerequisiteScope)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os pré-requisitos</option><option value="waiting">Aguardando pré-requisitos</option><option value="ready">Pré-requisitos atendidos</option></select>
+    <button type="button" onClick={()=>{setCustomer("all");setResponsible("all");setStatus("all");setDeadline("all");setDocumentScope("all");setPrerequisiteScope("all");setSearch("");}} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm font-medium">Limpar filtros</button>
    </div>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {message&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}

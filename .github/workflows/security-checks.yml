@@ -90,6 +90,8 @@ jobs:
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify administrative editors use authorized project writes
         run: node --test scripts/security/admin-project-editor-contract.test.mjs
+      - name: Verify corporate owner bootstrap guards
+        run: node --test scripts/security/owner-bootstrap-contract.test.mjs
       - name: Verify release readiness security contracts
         run: node --test scripts/security/release-readiness-contract.test.mjs
       - name: Enforce Ecossistema 2027 as the only presentation

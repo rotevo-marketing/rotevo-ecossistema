@@ -49,7 +49,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
  const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
- const attention=[...overdue,...active.filter(t=>t.status==="blocked")].filter((item,index,array)=>array.findIndex(t=>t.id===item.id&&t.project.id===item.project.id)===index).slice(0,5);
+ const attention=[...overdue,...active.filter(t=>t.status==="blocked"||t.priority==="urgent")].filter((item,index,array)=>array.findIndex(t=>t.id===item.id&&t.project.id===item.project.id)===index).sort((a,b)=>Number(!!b.dueDate&&b.dueDate<today())-Number(!!a.dueDate&&a.dueDate<today())||Number(b.status==="blocked")-Number(a.status==="blocked")||Number(b.priority==="urgent")-Number(a.priority==="urgent")).slice(0,8);
  const cards:{title:string;value:string;icon:RotevoIconName;description:string}[]=[
   {title:"Projetos cadastrados",value:String(projects.length),icon:"report",description:"Planejamentos e projetos existentes"},
   {title:"Entregas em aberto",value:String(active.length),icon:"chart-dots-3",description:"Itens da execução cadastrados"},
@@ -62,7 +62,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
    <p className="mt-3 text-sm text-[#525B70]">{card.title}</p><p className="mt-1 text-3xl font-semibold tabular-nums">{card.value}</p><p className="mt-2 text-xs text-[#697386]">{card.description}</p>
   </div>)}</div>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Prioridades da operação</h2><p className="mt-1 text-sm text-[#697386]">Entregas em atraso ou bloqueadas nos projetos cadastrados.</p></div>
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Prioridades da operação</h2><p className="mt-1 text-sm text-[#697386]">Entregas em atraso, bloqueadas ou urgentes nos projetos cadastrados.</p></div>
     <button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></div>
    {attention.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhuma entrega atrasada ou bloqueada registrada até o momento. Aprovações e reuniões serão integradas nas próximas etapas.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{attention.map(t=><div key={t.project.id+":"+t.id} className="flex flex-wrap items-center justify-between gap-2 py-3">

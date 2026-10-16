@@ -29,6 +29,23 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
    return {project,selected:selected.length,released,review,pending,overdue,blocked,unassigned,waitingPrerequisites,progress};
  }),[projects]);
  const records=useMemo(()=>projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string").map(t=>({...t,project:p,owner:t.owner?.trim()||"Não atribuído"}))),[projects]);
+ const ownership=useMemo(()=>{
+  const map=new Map<string,{name:string;open:number;overdue:number;blocked:number;urgent:number}>();
+  for(const project of projects){
+   for(const task of project.data?.executionTimeline??[]){
+    if(!task||task.status==="completed"||task.status==="cancelled")continue;
+    const name=task.owner?.trim()||"Não atribuído";
+    const key=task.ownerUserId||name;
+    const record=map.get(key)??{name,open:0,overdue:0,blocked:0,urgent:0};
+    record.open++;
+    if(task.dueDate&&task.dueDate<today())record.overdue++;
+    if(task.status==="blocked")record.blocked++;
+    if(task.priority==="urgent")record.urgent++;
+    map.set(key,record);
+   }
+  }
+  return [...map.values()].sort((a,b)=>b.open-a.open||a.name.localeCompare(b.name,"pt-BR"));
+ },[projects]);
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
  const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
@@ -69,6 +86,11 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Acompanhamento por cliente e projeto</h2><p className="mt-1 text-sm text-[#697386]">Documentos estratégicos publicados, revisão e pendências de execução. Indicadores calculados a partir dos registros atuais.</p></div><button type="button" onClick={onOpenProjects} className="text-sm font-semibold text-[#6D35F5]">Ver todos os projetos →</button></div>
    {documentSummary.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhum projeto para acompanhar.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{documentSummary.map(item=><div key={item.project.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] md:items-center"><div><p className="text-sm font-semibold">{client(item.project)?.name??"Cliente sem nome"}</p><p className="text-xs text-[#697386]">{item.project.title}</p><div className="mt-2 flex items-center gap-2"><progress aria-label={`Progresso dos documentos de ${item.project.title}`} max={100} value={item.progress} className="h-2 w-full max-w-36 accent-[#6D35F5]"/><span className="text-xs tabular-nums text-[#525B70]">{item.selected?`${item.progress}%`:"Sem documentos"}</span></div>{item.blocked>0&&<p className="mt-1 text-xs text-amber-800">{item.blocked} entrega(s) bloqueada(s)</p>}{item.unassigned>0&&<p className="mt-1 text-xs text-[#525B70]">{item.unassigned} atividade(s) sem responsável</p>}{item.waitingPrerequisites>0&&<p className="mt-1 text-xs text-amber-800">{item.waitingPrerequisites} aguardando pré-requisitos</p>}</div><div className="text-xs"><strong className="block text-base">{item.released}/{item.selected}</strong>Publicados</div><div className="text-xs"><strong className="block text-base">{item.review}</strong>Em revisão</div><div className="text-xs"><strong className="block text-base">{item.pending}</strong>Entregas abertas</div><div className="text-xs"><strong className="block text-base">{item.overdue}</strong>Atrasadas</div><Link className="text-xs font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(item.project)?.slug??""}`}>Gerenciar →</Link></div>)}</div>}
+  </section>
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+   <h2 className="text-lg font-semibold">Distribuição da carga por responsável</h2>
+   <p className="mt-1 text-sm text-[#697386]">Quantidade de tarefas em aberto por membro da equipe, incluindo urgências, atrasos e bloqueios. Não representa horas trabalhadas.</p>
+   {ownership.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhuma atividade em aberto.</p>:<div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-[#E3E7F0] text-xs text-[#697386]"><th className="py-3 pr-4">Responsável</th><th className="px-3 py-3">Em aberto</th><th className="px-3 py-3">Atrasadas</th><th className="px-3 py-3">Bloqueadas</th><th className="px-3 py-3">Urgentes</th></tr></thead><tbody>{ownership.map(item=><tr key={item.name} className="border-b border-[#F0F1F5]"><th className="py-3 pr-4 font-medium">{item.name}</th><td className="px-3 py-3 tabular-nums">{item.open}</td><td className="px-3 py-3 tabular-nums">{item.overdue}</td><td className="px-3 py-3 tabular-nums">{item.blocked}</td><td className="px-3 py-3 tabular-nums">{item.urgent}</td></tr>)}</tbody></table></div>}
   </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne projetos e entregas já registrados na Rotevo. Calendário editorial, aprovações, reuniões, equipe e saúde automática de projetos serão conectados quando seus registros estiverem disponíveis. Nenhuma atividade ou indicador é simulado.</p>

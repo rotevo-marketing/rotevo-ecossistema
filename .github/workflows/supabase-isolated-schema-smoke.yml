@@ -80,6 +80,7 @@ jobs:
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
           export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
+          export ROTEVO_LOCAL_INVITE_AUTH_PROBE="YES_LOCAL_ONLY"
           cd "$GITHUB_WORKSPACE"
           npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/next-test.log" 2>&1 &
           next_pid=$!

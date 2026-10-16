@@ -251,11 +251,12 @@ try {
   }
   const newProjectPayload={
     client_id:a.id,title:"Local authorized project",slug:`local-project-${process.pid}`,
-    description:null,status:"draft",data:{internalNotes:"CREATION_PRIVATE_SENTINEL"}
+    description:null,status:"draft",data:{internalNotes:"CREATION_PRIVATE_SENTINEL",ecosystem2027:{version:1,selectedDocumentCodes:["01.02"],presentedDocumentCodes:[]}}
   };
   assert.equal((await adminMutation("/api/admin/project/create","POST",null,newProjectPayload)).status,401,"anonymous creation denied");
   assert.equal((await adminMutation("/api/admin/project/create","POST",clientJwt,newProjectPayload)).status,403,"client creation denied");
   assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,{...newProjectPayload,client_id:"00000000-0000-4000-8000-000000000001"})).status,404,"missing tenant must not create project");
+  assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,{...newProjectPayload,data:{selectedModules:["empresa"]}})).status,400,"legacy-only project creation rejected");
   const createdProjectResponse=await adminMutation("/api/admin/project/create","POST",strategistJwt,newProjectPayload);
   assert.equal(createdProjectResponse.status,201,"strategist creates synthetic project");
   const createdProjectId=JSON.parse(createdProjectResponse.body).project.id;

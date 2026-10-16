@@ -34,3 +34,12 @@ test("task priority accepts supported values and rejects invalid values",()=>{
  for(const priority of ["low","normal","high","urgent"])assert.equal(valid(project({...task("a"),priority})),true);
  assert.equal(valid(project({...task("a"),priority:"extreme"})),false);
 });
+
+test("operational meetings and followups require valid dates and linked tasks",()=>{
+ const event={id:"agenda-1",title:"Reunião estratégica",kind:"meeting",status:"planned",date:"2026-11-02",relatedTaskId:"a"};
+ assert.equal(valid({...project(task("a")),operationalAgenda:[event]}),true);
+ assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,relatedTaskId:"other"}]}),false);
+ assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,kind:"random"}]}),false);
+ assert.equal(valid({...project(task("a")),operationalAgenda:[event,{...event}]}),false);
+ assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,date:"invalid"}]}),false);
+});

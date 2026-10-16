@@ -914,16 +914,20 @@ export default function ApresentacaoDinamicaPage() {
       const isStrat = profile.role === "strategist";
       setIsStrategist(isStrat);
 
-      // 3. Load project
-      const { data, error } = await supabase
-        .from("planning_projects")
-        .select(
-          `id, title, slug, description, status, data, client_id, clients (id, name, slug)`
-        )
-        .eq("slug", slug)
-        .single();
-
-      if (error || !data) {
+      // 3. Load the role-appropriate presentation, never raw JSON via browser REST.
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token){router.push("/");return;}
+      let data:PlanningProject;
+      try{
+        const response=await fetch(`/api/presentation/project?slug=${encodeURIComponent(slug)}`,{
+          headers:{Authorization:`Bearer ${token}`},cache:"no-store"
+        });
+        if(!response.ok)throw new Error("Apresentação indisponível ou não autorizada.");
+        const result=await response.json();
+        if(!result?.project||result.project.slug!==slug)throw new Error("Resposta de apresentação inválida.");
+        data=result.project as PlanningProject;
+      }catch{
         setNotFound(true);
         setIsLoading(false);
         return;

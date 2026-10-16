@@ -213,3 +213,11 @@ test("execution editor enforces same-project acyclic task prerequisites",()=>{
  assert.match(editor,/Esta entrega é pré-requisito de outra/);
  assert.match(editor,/const reaches=/);
 });
+
+test("central task cards show incomplete dependencies from the same project's timeline",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/const prerequisites=/);
+ assert.match(board,/project\.data\?\.executionTimeline/);
+ assert.match(board,/const waiting=prerequisites\.filter/);
+ assert.match(board,/Pré-requisitos:/);
+});

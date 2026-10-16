@@ -3,10 +3,11 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
+import type { EditorialItem } from "@/Components/cliente/EditorialCalendar";
 
 export type OperationsProject = {
  id:string; title:string;slug:string;status:"draft"|"in_progress"|"published"|"archived";updated_at:string;
- data:{executionTimeline?:ExecutionItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
+ data:{executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
  clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
 };
 const client=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
@@ -46,6 +47,10 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
   }
   return [...map.values()].sort((a,b)=>b.open-a.open||a.name.localeCompare(b.name,"pt-BR"));
  },[projects]);
+ const editorial=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[]).filter(item=>item&&typeof item.title==="string"&&typeof item.publishDate==="string").map(item=>({...item,project:p}))),[projects]);
+ const awaitingApproval=editorial.filter(item=>item.status==="awaiting_client"&&item.visibleToClient===true);
+ const editorialOverdue=editorial.filter(item=>item.publishDate<today()&&!["published","idea"].includes(item.status));
+ const nextEditorial=editorial.filter(item=>item.publishDate>=today()&&item.status!=="published").sort((a,b)=>a.publishDate.localeCompare(b.publishDate)).slice(0,6);
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
  const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
@@ -84,6 +89,13 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
    </section>
   </div>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+   <h2 className="text-lg font-semibold">Agenda editorial e aprovações</h2>
+   <p className="mt-1 text-sm text-[#697386]">Visão dos conteúdos registrados nos projetos. As decisões formais do cliente são acompanhadas no painel de aprovações.</p>
+   <div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Conteúdos cadastrados</p><p className="mt-2 text-2xl font-semibold">{editorial.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Em solicitação de aprovação</p><p className="mt-2 text-2xl font-semibold">{awaitingApproval.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Datas editoriais vencidas</p><p className="mt-2 text-2xl font-semibold">{editorialOverdue.length}</p></div></div>
+   <h3 className="mt-5 text-sm font-semibold">Próximas publicações previstas</h3>
+   {nextEditorial.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhuma publicação futura pendente registrada.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextEditorial.map(item=><div key={item.project.id+":"+item.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="text-xs text-[#697386]">{client(item.project)?.name??"Cliente"} · {item.channel} · {item.status}</p></div><span className="text-xs font-medium">{date(item.publishDate)}</span></div>)}</div>}
+  </section>
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Acompanhamento por cliente e projeto</h2><p className="mt-1 text-sm text-[#697386]">Documentos estratégicos publicados, revisão e pendências de execução. Indicadores calculados a partir dos registros atuais.</p></div><button type="button" onClick={onOpenProjects} className="text-sm font-semibold text-[#6D35F5]">Ver todos os projetos →</button></div>
    {documentSummary.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhum projeto para acompanhar.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{documentSummary.map(item=><div key={item.project.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] md:items-center"><div><p className="text-sm font-semibold">{client(item.project)?.name??"Cliente sem nome"}</p><p className="text-xs text-[#697386]">{item.project.title}</p><div className="mt-2 flex items-center gap-2"><progress aria-label={`Progresso dos documentos de ${item.project.title}`} max={100} value={item.progress} className="h-2 w-full max-w-36 accent-[#6D35F5]"/><span className="text-xs tabular-nums text-[#525B70]">{item.selected?`${item.progress}%`:"Sem documentos"}</span></div>{item.blocked>0&&<p className="mt-1 text-xs text-amber-800">{item.blocked} entrega(s) bloqueada(s)</p>}{item.unassigned>0&&<p className="mt-1 text-xs text-[#525B70]">{item.unassigned} atividade(s) sem responsável</p>}{item.waitingPrerequisites>0&&<p className="mt-1 text-xs text-amber-800">{item.waitingPrerequisites} aguardando pré-requisitos</p>}</div><div className="text-xs"><strong className="block text-base">{item.released}/{item.selected}</strong>Publicados</div><div className="text-xs"><strong className="block text-base">{item.review}</strong>Em revisão</div><div className="text-xs"><strong className="block text-base">{item.pending}</strong>Entregas abertas</div><div className="text-xs"><strong className="block text-base">{item.overdue}</strong>Atrasadas</div><Link className="text-xs font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(item.project)?.slug??""}`}>Gerenciar →</Link></div>)}</div>}
   </section>
@@ -93,7 +105,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
    {ownership.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhuma atividade em aberto.</p>:<div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-[#E3E7F0] text-xs text-[#697386]"><th className="py-3 pr-4">Responsável</th><th className="px-3 py-3">Em aberto</th><th className="px-3 py-3">Atrasadas</th><th className="px-3 py-3">Bloqueadas</th><th className="px-3 py-3">Urgentes</th></tr></thead><tbody>{ownership.map(item=><tr key={item.name} className="border-b border-[#F0F1F5]"><th className="py-3 pr-4 font-medium">{item.name}</th><td className="px-3 py-3 tabular-nums">{item.open}</td><td className="px-3 py-3 tabular-nums">{item.overdue}</td><td className="px-3 py-3 tabular-nums">{item.blocked}</td><td className="px-3 py-3 tabular-nums">{item.urgent}</td></tr>)}</tbody></table></div>}
   </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne projetos e entregas já registrados na Rotevo. Calendário editorial, aprovações, reuniões, equipe e saúde automática de projetos serão conectados quando seus registros estiverem disponíveis. Nenhuma atividade ou indicador é simulado.</p>
+   <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne projetos e entregas já registrados na Rotevo. A agenda editorial já utiliza registros dos projetos. Aprovações formais usam registros de decisão separados; reuniões e saúde automática de projetos dependem de uma fonte de dados validada. Nenhuma atividade ou indicador é simulado.</p>
   </section>
  </div>;
 }

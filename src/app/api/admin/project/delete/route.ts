@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 export const runtime="nodejs";
-const fail=(status:number)=>NextResponse.json({error:"Não foi possível excluir o planejamento autorizado."},{status,headers:{"Cache-Control":"no-store"}});
+const fail=(status:number,code?:string)=>NextResponse.json({error:"Não foi possível excluir o planejamento autorizado.",...(code?{code}:{})},{status,headers:{"Cache-Control":"no-store"}});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // This endpoint requires explicit project deletion confirmation in the calling UI.
 export async function DELETE(req:NextRequest){
@@ -16,12 +16,12 @@ export async function DELETE(req:NextRequest){
  const {data:profile,error:profileError}=await admin.from("profiles").select("role").eq("id",identity.user.id).maybeSingle();
  if(profileError)return fail(503);
  if(profile?.role!=="strategist")return fail(403);
- let raw:unknown;try{raw=await req.json();}catch{return fail(400);}
- if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+ let raw:unknown;try{raw=await req.json();}catch{return fail(400,"INVALID_JSON");}
+ if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400,"INVALID_BODY");
  const b=raw as Record<string,unknown>;
  if(Object.keys(b).some(k=>!["projectId","expectedUpdatedAt","confirmed"].includes(k))||
  b.confirmed!==true||typeof b.projectId!=="string"||!uuid.test(b.projectId)||
- typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt)))return fail(400);
+ typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt)))return fail(400,"INVALID_FIELDS");
  const {data:deleted,error:deleteError}=await admin.from("planning_projects").delete()
  .eq("id",b.projectId).eq("updated_at",b.expectedUpdatedAt).select("id").maybeSingle();
  if(deleteError)return fail(503);

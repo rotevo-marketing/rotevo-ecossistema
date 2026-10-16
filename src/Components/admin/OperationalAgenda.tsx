@@ -1,7 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
-import {validOperationalTime} from "@/lib/security/executionDependencyValidation";
+import {validOperationalDate,validOperationalTime} from "@/lib/security/executionDependencyValidation";
 
 export type AgendaItem={id:string;title:string;kind:"meeting"|"followup"|"checkpoint";date:string;time?:string;status:"planned"|"completed"|"cancelled";notes?:string;owner?:string;relatedTaskId?:string};
 type Data={operationalAgenda?:AgendaItem[];executionTimeline?:{id:string;title:string}[]};
@@ -32,7 +32,7 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
   if(!editing)return;
   const title=editing.title.trim();
   if(title.length<3||title.length>140){setError("Informe um título entre 3 e 140 caracteres.");return;}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(editing.date)||Number.isNaN(new Date(editing.date+"T12:00:00").getTime())){setError("Informe uma data válida.");return;}
+  if(!validOperationalDate(editing.date)){setError("Informe uma data válida.");return;}
   if(editing.time&&!validOperationalTime(editing.time)){setError("Informe um horário válido.");return;}
   if(editing.relatedTaskId&&!tasks.some(t=>t.id===editing.relatedTaskId)){setError("A atividade vinculada não pertence ao projeto.");return;}
   const value={...editing,id:editing.id||crypto.randomUUID(),title,notes:(editing.notes??"").trim(),owner:(editing.owner??"").trim()};

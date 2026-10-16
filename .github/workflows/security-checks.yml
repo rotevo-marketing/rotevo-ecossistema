@@ -77,6 +77,8 @@ jobs:
           node-version: "24"
       - name: Check authorization schema readiness without a database
         run: node --test scripts/security/auth-schema-preflight.test.mjs
+      - name: Simulate Auth rollback outcomes without database
+        run: node --test scripts/security/client-account-rollback.test.mjs
       - name: Verify API authorization order contracts
         run: node --test scripts/security/admin-route-contract.test.mjs
       - name: Verify remote targets are blocked

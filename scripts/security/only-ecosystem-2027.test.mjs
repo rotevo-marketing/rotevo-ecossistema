@@ -65,3 +65,11 @@ test("current project admin contains no legacy module selection state",()=>{
  assert.match(page,/EcosystemDocumentEditor/);
  assert.match(page,/selectedDocumentCodes/);
 });
+
+test("document workspace provides search and lifecycle progress visibility",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/visibleDocuments/);
+ assert.match(editor,/reviewedCount/);
+ assert.match(editor,/approvedCount/);
+ assert.match(editor,/publishedCount/);
+});

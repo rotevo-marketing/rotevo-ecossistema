@@ -10,6 +10,7 @@ on:
       - 'docs/security/lab-legacy-baseline-local-only.sql'
       - 'docs/security/tests/**'
       - 'scripts/security/authenticated-local-http.mjs'
+      - 'supabase/migrations/20261015_harden_profile_authorization.sql'
 
 permissions:
   contents: read
@@ -35,11 +36,13 @@ jobs:
           mkdir -p supabase/migrations
           cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_team_roles.sql" supabase/migrations/20261015000001_team_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_harden_profile_authorization.sql" supabase/migrations/20261015000002_profile_hardening_fixture.sql
           mkdir -p supabase/tests/database
           cp "$GITHUB_WORKSPACE/docs/security/tests/legacy-profile-privileges-local.test.sql" supabase/tests/database/legacy_profile_privileges_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_isolation_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-write-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_write_isolation_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-team-roles-local.test.sql" supabase/tests/database/synthetic_team_roles_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/staged-profile-hardening-local.test.sql" supabase/tests/database/staged_profile_hardening_test.sql
           cat > supabase/tests/database/schema_smoke.sql <<'SQL'
           BEGIN;
           CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;

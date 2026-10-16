@@ -283,3 +283,15 @@ test("operations overview integrates editorial calendar without inventing formal
  assert.match(overview,/pastEditorial/);
  assert.match(overview,/As decisões formais do cliente são acompanhadas no painel de aprovações/);
 });
+
+test("operational meetings integrate authorized project editor and admin overview",()=>{
+ const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ const agenda=source("Components/admin/OperationalAgenda.tsx");
+ const dashboard=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(page,/OperationalAgenda projectId=/);
+ assert.match(agenda,/\/api\/admin\/project\/update/);
+ assert.match(agenda,/expectedUpdatedAt:updatedAt/);
+ assert.match(agenda,/Reuniões e acompanhamento/);
+ assert.match(dashboard,/Próximos compromissos/);
+ assert.match(dashboard,/overdueCommitments/);
+});

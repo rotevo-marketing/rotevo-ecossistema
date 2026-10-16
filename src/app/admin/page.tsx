@@ -215,13 +215,21 @@ export default function AdminPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error } = await supabase
-      .from("planning_projects")
-      .delete()
-      .eq("id", project.id);
-
-    if (error) {
-      setErrorMessage(error.message || "Não foi possível excluir o planejamento.");
+    try {
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token)throw new Error("Sessão expirada.");
+      const response=await fetch("/api/admin/project/delete",{
+        method:"DELETE",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+        body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,confirmed:true}),
+        cache:"no-store"
+      });
+      if(response.status===409)throw new Error("Este planejamento foi alterado ou excluído em outra sessão. Recarregue a página.");
+      if(!response.ok)throw new Error("Não foi possível excluir o planejamento autorizado.");
+      const result=await response.json();
+      if(result?.deletedId!==project.id)throw new Error("Não foi possível confirmar a exclusão.");
+    }catch(error){
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível excluir o planejamento.");
       setIsDeletingId("");
       return;
     }

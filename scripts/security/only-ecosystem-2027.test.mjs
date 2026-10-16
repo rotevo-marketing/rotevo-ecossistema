@@ -166,3 +166,10 @@ test("admin overview computes per-project publication rate and blocked deliverab
  assert.match(panel,/Progresso dos documentos de/);
  assert.match(panel,/Sem documentos/);
 });
+
+test("operations dashboard counts valid 2027 document codes with the actual digit regex",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(overview,/filter\(code=>\/\^\\d\{2\}\\\.\\d\{2\}\$\/\.test\(code\)\)/);
+ assert.doesNotMatch(overview,/filter\(code=>\/\^\\\\d/);
+ assert.equal(/^\d{2}\.\d{2}$/.test("07.01"),true);
+});

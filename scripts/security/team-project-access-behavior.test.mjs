@@ -60,3 +60,17 @@ test("project authorization denies database failures and allows active administr
   else process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED=prior;
  }
 });
+
+test("project lifecycle actions require administrator even if writer has project grant",async()=>{
+ const old=process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED;
+ process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true";
+ try{
+  const writer=database({team_members:{role:"producer",active:true},team_project_assignments:{project_id:projectId},team_member_permissions:{permission:"projects.write"}});
+  assert.deepEqual(await mayMutateProject(writer.client,userId,projectId,true),{allowed:false,status:403});
+  const admin=database({team_members:{role:"admin",active:true}});
+  assert.deepEqual(await mayMutateProject(admin.client,userId,projectId,true),{allowed:true,status:200});
+ }finally{
+  if(old===undefined)delete process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED;
+  else process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED=old;
+ }
+});

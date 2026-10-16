@@ -157,6 +157,25 @@ try {
   assert.equal(strategistProject.status,200,"strategist can read project");
   assert.ok(strategistProject.body.includes("PRIVATE_TENANT_A_SENTINEL"),"internal JSON available only to authorized strategist");
   assert.equal((await adminRead(strategistJwt,"invalid-id")).status,400,"invalid UUID denied");
+  async function patchProject(jwt,payload){
+    const response=await fetch(app.slice(0,-1)+"/api/admin/project/update",{
+      method:"PATCH",headers:jwt?{"Authorization":`Bearer ${jwt}`,"Content-Type":"application/json"}:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  const original=JSON.parse(strategistProject.body).project;
+  const candidate={projectId,expectedUpdatedAt:original.updated_at,data:{internalNotes:"PRIVATE_UPDATED_BY_STRATEGIST"}};
+  assert.equal((await patchProject(null,candidate)).status,401,"anonymous project edit rejected");
+  assert.equal((await patchProject(clientJwt,candidate)).status,403,"client project edit rejected");
+  assert.equal((await patchProject(bJwt,candidate)).status,403,"other tenant project edit rejected");
+  const changed=await patchProject(strategistJwt,candidate);
+  assert.equal(changed.status,200,"strategist can save a version-checked document");
+  assert.equal(JSON.parse(changed.body).project.data.internalNotes,"PRIVATE_UPDATED_BY_STRATEGIST");
+  assert.equal((await patchProject(strategistJwt,candidate)).status,409,"stale edit must not overwrite newer version");
+  const clientAfterUpdate=await getProjects(clientJwt);
+  assert.equal(clientAfterUpdate.status,200);
+  assert.equal(clientAfterUpdate.body.includes("PRIVATE_UPDATED_BY_STRATEGIST"),false,"private update must never appear to client");
   console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard; client-project tenant isolation");
 } finally {
   for(const id of created.reverse()) {

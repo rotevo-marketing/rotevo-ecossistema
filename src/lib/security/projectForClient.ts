@@ -3,7 +3,6 @@ type RecordObject = Record<string, unknown>;
 const object = (v: unknown): RecordObject | null => v && typeof v === "object" && !Array.isArray(v) ? v as RecordObject : null;
 const str = (v: unknown) => typeof v === "string" ? v : undefined;
 const https = (v: unknown) => { const s=str(v); if (!s) return undefined; try { return new URL(s).protocol === "https:" ? s : undefined; } catch { return undefined; } };
-const strings = (v: unknown) => Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 const fields = (o: RecordObject, names: readonly string[]) => Object.fromEntries(
   names.filter(k => typeof o[k] === "string").map(k => [k,o[k]])
 );
@@ -13,7 +12,8 @@ function publishedArray(v: unknown, names: readonly string[], allowLink=false) {
     const item=object(value);
     if (!item || item.visibleToClient !== true || typeof item.id !== "string" || typeof item.title !== "string") return [];
     const projected: RecordObject = {...fields(item,names), id:item.id, title:item.title, visibleToClient:true};
-    if (allowLink) { const link=https(item.driveUrl ?? item.link); if (link) projected.driveUrl=link; }
+    if (allowLink) { const link=https(item.driveUrl ?? item.link); if (link) { projected.driveUrl=link; projected.link=link; } }
+    if (names.includes("done")) projected.done=item.done === true;
     return [projected];
   });
 }
@@ -33,8 +33,7 @@ export function projectForClient(project:PrivateProjectRow) {
         ["phase","status","kind","startDate","dueDate","description"],true),
       editorialCalendar:publishedArray(data.editorialCalendar,
         ["channel","format","publishDate","caption","version","status"],true),
-      onboardingChecklist:publishedArray(data.onboardingChecklist,["done"],true)
-        .map(item=>({...item,done:false})),
+      onboardingChecklist:publishedArray(data.onboardingChecklist,["done"],true),
     }
   };
 }

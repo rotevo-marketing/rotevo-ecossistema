@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 
-type ProjectData = { executionTimeline?: ExecutionItem[] };
+type ProjectData = { executionTimeline?: ExecutionItem[]; ecosystem2027?:{selectedDocumentCodes?:string[]} };
 type Props={ projectId:string; projectData:ProjectData; updatedAt:string; onSaved:(data:ProjectData,updatedAt:string)=>void };
 const blank:ExecutionItem={id:"",title:"",description:"",status:"planned",kind:"deliverable",owner:"",ownerUserId:"",phase:"",startDate:"",dueDate:"",driveUrl:"",visibleToClient:true,dependencies:[]};
 const labels={planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"} as const;
@@ -21,6 +22,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(!active)return;
   setTeamReady(!error);setMembers(error?[]:(data??[]));
  }void load();return()=>{active=false};},[]);
+ const strategicDocs=ecosystemDocuments.filter(d=>projectData.ecosystem2027?.selectedDocumentCodes?.includes(d.code));
  const items=useMemo(()=>Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"):[],[projectData]);
  async function persist(next:ExecutionItem[]){
   if(saving)return;
@@ -56,6 +58,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(title.length<3){setError("Informe um título com pelo menos 3 caracteres.");return;}
   if(editing.startDate&&editing.dueDate&&editing.startDate>editing.dueDate){setError("O prazo não pode ser anterior ao início.");return;}
   if(!validLink(editing.driveUrl??"")){setError("Use um endereço HTTPS válido para o material.");return;}
+  if(editing.documentCode&&!strategicDocs.some(d=>d.code===editing.documentCode)){setError("Selecione um documento estratégico válido do projeto.");return;}
   if(!editing.id&&typeof crypto==="undefined"){setError("Não foi possível gerar um identificador para a entrega.");return;}
   const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient!==false};
   const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
@@ -74,7 +77,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
    {success&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
    {items.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma entrega operacional cadastrada. Os marcos antigos continuarão disponíveis separadamente no portal.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-     <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{item.title}</h3><p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===false?"Interno":"Visível ao cliente"}</p></div>
+     <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#6D35F5]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===false?"Interno":"Visível ao cliente"}</p></div>
      <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
     </div>)}</div>}
    {editing&&<div className="mt-5 rounded-2xl border border-[#D9D0F5] bg-[#FCFBFF] p-4 sm:p-5">
@@ -96,6 +99,9 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
           </select>:
           <input value={editing.owner??""} maxLength={120} onChange={e=>setEditing({...editing,owner:e.target.value,ownerUserId:""})} placeholder="Nome provisório (cadastro da equipe pendente)" className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
          }
+       </label>
+       <label className="block text-xs font-medium sm:col-span-2">Documento estratégico relacionado
+         <select value={editing.documentCode??""} onChange={e=>setEditing({...editing,documentCode:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"><option value="">Não vincular documento</option>{strategicDocs.map(doc=><option key={doc.code} value={doc.code}>{doc.code} — {doc.title}</option>)}</select>
        </label>
        <label className="block text-xs font-medium">Etapa ou fase
          <input value={editing.phase??""} maxLength={120} onChange={e=>setEditing({...editing,phase:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>

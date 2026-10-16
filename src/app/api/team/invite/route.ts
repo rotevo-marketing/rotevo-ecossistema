@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
     .select("role,active").eq("user_id", identity.user.id).maybeSingle();
   if (membershipError) return response("Controle de permissões ainda não está configurado.", 503);
   if (!member || member.role !== "admin" || member.active !== true) return response("Acesso restrito a administradores.", 403);
+  // Detached CI-only authorization probe: never call Supabase invite/email APIs.
+  // All three exact conditions must hold; impossible with a hosted Supabase URL.
+  if (process.env.ROTEVO_LOCAL_INVITE_AUTH_PROBE === "YES_LOCAL_ONLY" &&
+      url === "http://127.0.0.1:54321" &&
+      req.headers.get("x-rotevo-local-probe") === "authorized-no-send") {
+    return NextResponse.json({ authorized: true, delivery: "disabled" },
+      { status: 200, headers: { "Cache-Control": "no-store" } });
+  }
   const cleanEmail = email.trim().toLowerCase();
   const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(cleanEmail, {
     data: { full_name: displayName.trim() }

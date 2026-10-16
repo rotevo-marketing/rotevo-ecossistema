@@ -295,3 +295,12 @@ test("operational meetings integrate authorized project editor and admin overvie
  assert.match(dashboard,/Próximos compromissos/);
  assert.match(dashboard,/overdueCommitments/);
 });
+
+test("operational agenda timestamps and task deletion retain linked meeting integrity",()=>{
+ const agenda=source("Components/admin/OperationalAgenda.tsx");
+ const execution=source("Components/admin/ExecutionTimelineEditor.tsx");
+ assert.match(agenda,/Horário \(opcional\)/);
+ assert.match(agenda,/a\.date\+"T"\+/);
+ assert.match(execution,/agenda\.operationalAgenda\?\.some/);
+ assert.match(execution,/Remova o vínculo na agenda antes de excluir/);
+});

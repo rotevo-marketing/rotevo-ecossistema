@@ -32,3 +32,25 @@
 - `docs/security/team-authorization-test-matrix.md`
 - `docs/security/team-permissions-rollout-checklist.md`
 - `supabase/tests/database/team_authorization_hardening_test.sql`
+
+## Complemento de fechamento — rotas e testes da rodada
+
+- Consulta de um projeto em `GET /api/admin/project`: verificação de equipe ativa, vínculo ao projeto e `projects.read`, por flag de rollout.
+- Criação de planejamento em `POST /api/admin/project/create`: exige administrador ativo no novo modelo; somente quando a flag é habilitada.
+- Apresentação de projeto para estrategista: autorização por projeto e permissão `projects.read` no modo novo, preservando a verificação separada do cliente.
+- Criação de conta de cliente: exige administrador ativo após o rollout, antes de `auth.admin.createUser`.
+- Simulação comportamental da função `mayMutateProject`: membro inativo, ausência de vínculo e permissão, erros de banco e administrador ativo, adicionada ao pipeline.
+- [GitHub Actions #38940968231](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/38940968231): seis jobs aprovados, incluindo TypeScript, build, banco PostgreSQL sintético e testes de autorização.
+
+### Pendências que NÃO são resolvidas apenas por CI
+
+1. A produção mantém grants de UPDATE para `profiles.role` e `profiles.client_id`. A correção está testada em PostgreSQL descartável, mas não implantada.
+2. As tabelas de equipe propostas não existem no banco hospedado. O rollout permanece desabilitado.
+3. As contas de novos papéis ainda dependem do filtro legado `profiles.role=strategist`. Migrar os fluxos de autenticação e navegação exige revisão de compatibilidade.
+4. **Auditoria administrativa:** falta trilha de eventos persistida e transacional para concessão, revogação, ativação, convites e vínculos; não ativar mutações sem ela.
+5. **Sessões revogadas:** `team_members.active=false` bloqueará as novas rotas sob enforcement, mas não encerra automaticamente sessões já abertas nem bloqueia caminhos legados sem migração.
+6. **Último administrador:** as APIs atuais não permitem editar outros administradores nem a própria situação, portanto não há fluxo de transferência/remoção de administradores; definir procedimento seguro antes de liberar isso.
+7. Identidades artificiais/RLS: o teste de esquema e grants foi executado; a matriz de políticas com diferentes usuários e projetos ainda não tem evidência de execução completa.
+8. Revisão das demais superfícies de escrita/leitura no cliente, conteúdo, calendário, publicação e acesso direto ao Supabase permanece necessária.
+
+**Não liberar produção:** apenas reavaliar quando migrations, atores administrativos, auditoria e suíte autenticada isolada estiverem testados e aprovados.

@@ -22,3 +22,10 @@ test("rejects duplicate ids, duplicate prerequisites, malformed timelines",()=>{
  assert.equal(valid({executionTimeline:{}}),false);
  assert.equal(valid(project({title:"missing identifier"})),false);
 });
+
+test("rejects completion while a prerequisite is pending, and reopening a completed prerequisite",()=>{
+ assert.equal(valid(project({...task("a"),status:"planned"},{...task("b",["a"]),status:"completed"})),false);
+ assert.equal(valid(project({...task("a"),status:"completed"},{...task("b",["a"]),status:"completed"})),true);
+ assert.equal(valid(project({...task("a"),status:"in_progress"},{...task("b",["a"]),status:"in_progress"})),true);
+ assert.equal(valid(project({...task("a"),status:"completed"},{...task("b",["a"]),status:"planned"})),true);
+});

@@ -104,3 +104,12 @@ test("new operational owner assignments require an active team member on server"
  assert.ok(route.indexOf('if(profile?.role!=="strategist")')<route.indexOf("const changedOwners="));
  assert.ok(route.indexOf("const changedOwners=")<route.indexOf('.update({data:b.data,updated_at:nextAt})'));
 });
+
+test("creating a planning project never overwrites an existing client profile",()=>{
+ const code=readFileSync(new URL("app/admin/novo-planejamento/modulos/page.tsx",root),"utf8");
+ assert.match(code,/const existing = await supabase\.from\("clients"\)/);
+ assert.match(code,/\.eq\("slug",draft\.clientSlug\)\.maybeSingle\(\)/);
+ assert.doesNotMatch(code,/\.from\("clients"\)\s*\.upsert\(/);
+ assert.match(code,/if \(!client && !clientError\)/);
+ assert.match(code,/clientError\?\.code==="23505"/);
+});

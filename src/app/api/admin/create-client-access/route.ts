@@ -1,3 +1,4 @@
+import { compensateNewClientAccount } from "@/lib/security/compensateNewClientAccount";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -177,12 +178,12 @@ export async function POST(request: NextRequest) {
   if (upsertError) {
     // Compensate only the account created in this request, never a pre-existing user.
     // Auth and public tables do not share an atomic transaction here.
-    const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    if (rollbackError) {
+    const rollback = await compensateNewClientAccount(supabaseAdmin, userId);
+    if (rollback.reconciliationRequired) {
       console.error("Falha ao reverter criação de acesso após erro no profile.", {
         userId,
         profileError: upsertError.message,
-        rollbackError: rollbackError.message,
+        rollbackError: rollback.error,
       });
       return NextResponse.json(
         {

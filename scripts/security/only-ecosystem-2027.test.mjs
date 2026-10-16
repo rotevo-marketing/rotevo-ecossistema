@@ -109,3 +109,11 @@ test("document publication reporting aggregates real released snapshots by area"
  assert.match(editor,/Acompanhar por área estratégica/);
  assert.match(editor,/\.publishedAt/);
 });
+
+test("strategist can inspect released text without accidentally exposing internal-only documents",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/Consultar última versão publicada/);
+ assert.match(editor,/record\.publishedContent/);
+ assert.match(editor,/presentedDocumentCodes\?\.includes\(activeCode\)/);
+ assert.match(editor,/Documento interno/);
+});

@@ -84,6 +84,8 @@ jobs:
         run: node --test scripts/security/client-account-rollback.test.mjs
       - name: Verify API authorization order contracts
         run: node --test scripts/security/admin-route-contract.test.mjs
+      - name: Verify project authorization decisions with isolated fixtures
+        run: node --test scripts/security/team-project-access-behavior.test.mjs
       - name: Verify client-project JSON projection is allowlisted
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify administrative editors use authorized project writes

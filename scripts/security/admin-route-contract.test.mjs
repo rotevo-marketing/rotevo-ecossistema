@@ -290,3 +290,17 @@ test("administrator-created staff account begins inactive and temporary credenti
  assert.match(teamInviteForm,/type="password"/);
  assert.match(teamInviteForm,/temporaryPassword/);
 });
+
+const firstPasswordRoute=readFileSync(new URL("../../src/app/api/team/first-password/route.ts",import.meta.url),"utf8");
+const firstPasswordPage=readFileSync(new URL("../../src/app/primeiro-acesso/page.tsx",import.meta.url),"utf8");
+const strategistLogin=readFileSync(new URL("../../src/app/estrategista/login/page.tsx",import.meta.url),"utf8");
+test("temporary-password change only targets the authenticated user and clears the mandatory reset flag",()=>{
+ before(firstPasswordRoute,'auth.getUser(token.slice(7))','admin.auth.admin.updateUserById(',"verify JWT first");
+ assert.match(firstPasswordRoute,/identity\.user\.app_metadata\?\.rotevo_password_reset_required!==true/);
+ assert.match(firstPasswordRoute,/\.from\("team_members"\)/);
+ assert.match(firstPasswordRoute,/updateUserById\(identity\.user\.id/);
+ assert.match(firstPasswordRoute,/rotevo_password_reset_required:false/);
+ assert.doesNotMatch(firstPasswordRoute,/const\s*\{\s*(?:userId|targetUserId)\s*\}\s*=\s*obj/);
+ assert.match(firstPasswordPage,/autocomplete|autoComplete="new-password"/);
+ assert.match(strategistLogin,/router\.replace\("\/primeiro-acesso"\)/);
+});

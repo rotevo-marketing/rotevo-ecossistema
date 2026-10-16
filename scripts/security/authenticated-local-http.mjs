@@ -39,22 +39,35 @@ async function post(path,jwt,payload) {
 try {
   const client = await makeUser("client");
   const inactive = await makeUser("inactive-admin");
+  const strategist = await makeUser("strategist");
+  const active = await makeUser("active-admin");
   const {error:profileError} = await admin.from("profiles").insert([
     {id:client.id,role:"client",full_name:"Fictitious client",email:client.email},
-    {id:inactive.id,role:"client",full_name:"Fictitious inactive admin",email:inactive.email}
+    {id:inactive.id,role:"client",full_name:"Fictitious inactive admin",email:inactive.email},
+    {id:strategist.id,role:"strategist",full_name:"Fictitious strategist",email:strategist.email},
+    {id:active.id,role:"client",full_name:"Fictitious active admin",email:active.email}
   ]);
   assert.ifError(profileError);
-  const {error:teamError}=await admin.from("team_members").insert({
-    user_id:inactive.id,display_name:"Fictitious inactive admin",role:"admin",active:false
-  });
+  const {error:teamError}=await admin.from("team_members").insert([
+    {user_id:inactive.id,display_name:"Fictitious inactive admin",role:"admin",active:false},
+    {user_id:active.id,display_name:"Fictitious active admin",role:"admin",active:true}
+  ]);
   assert.ifError(teamError);
   const clientJwt=await token(client.email);
   const inactiveJwt=await token(inactive.email);
+  const strategistJwt=await token(strategist.email);
+  const activeJwt=await token(active.email);
   const payload={email:"never-create@rotevo.invalid",password:"LocalOnly!123456",fullName:"Not Created",clientId:"00000000-0000-4000-8000-000000000001"};
   assert.equal(await post("/api/admin/create-client-access",clientJwt,payload),403,"client must not create access");
   assert.equal(await post("/api/team/invite",clientJwt,{email:"never-invite@rotevo.invalid",displayName:"Fictitious Invitee",role:"producer"}),403,"client cannot invite");
   assert.equal(await post("/api/team/invite",inactiveJwt,{email:"never-invite@rotevo.invalid",displayName:"Fictitious Invitee",role:"producer"}),403,"inactive admin cannot invite");
-  console.log("PASS: client create=403, client invite=403, inactive admin invite=403");
+  // A valid strategist must get beyond permission checks but never create an account:
+  // the requested tenant does not exist in this disposable fixture.
+  assert.equal(await post("/api/admin/create-client-access",strategistJwt,payload),404,"strategist passes role gate and rejects missing tenant");
+  // An active admin passes role authorization, but a role outside the allow-list is rejected.
+  // This request must never contact Auth invite or send an email.
+  assert.equal(await post("/api/team/invite",activeJwt,{email:"never-invite@rotevo.invalid",displayName:"Fictitious Invitee",role:"superadmin"}),400,"admin cannot assign forbidden role");
+  console.log("PASS: client and inactive admin denials; strategist target guard; forbidden invite role");
 } finally {
   for(const id of created.reverse()) {
     const {error}=await admin.auth.admin.deleteUser(id);

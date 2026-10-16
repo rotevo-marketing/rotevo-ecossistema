@@ -162,7 +162,6 @@ export default function PlanejamentoClientePage() {
           status,
           created_at,
           updated_at,
-          data,
           clients!inner (
             id,
             name,
@@ -182,14 +181,31 @@ export default function PlanejamentoClientePage() {
         return;
       }
 
-      const foundProject = (data?.[0] ?? null) as unknown as PlanningProject | null;
+      const projectMetadata = (data?.[0] ?? null) as unknown as PlanningProject | null;
 
-      if (!foundProject) {
+      if (!projectMetadata) {
         setErrorMessage("Planejamento não encontrado para este cliente.");
         setIsLoading(false);
         return;
       }
 
+      let foundProject:PlanningProject;
+      try {
+        const {data:session,error:sessionError}=await supabase.auth.getSession();
+        const token=session.session?.access_token;
+        if(sessionError||!token)throw new Error("Sessão expirada.");
+        const response=await fetch(`/api/admin/project?id=${encodeURIComponent(projectMetadata.id)}`,{
+          headers:{Authorization:`Bearer ${token}`},cache:"no-store"
+        });
+        if(!response.ok)throw new Error("Não foi possível carregar os documentos do planejamento autorizado.");
+        const loaded=await response.json();
+        if(!loaded?.project||loaded.project.id!==projectMetadata.id)throw new Error("Resposta administrativa inválida.");
+        foundProject={...projectMetadata,data:(loaded.project.data??{}) as ProjectData,updated_at:loaded.project.updated_at};
+      }catch(error){
+        setErrorMessage(error instanceof Error?error.message:"Não foi possível carregar este planejamento.");
+        setIsLoading(false);
+        return;
+      }
       setProject(foundProject);
       setDraftDocumentCodes(foundProject.data?.ecosystem2027?.selectedDocumentCodes ?? []);
       setDraftPresentedCodes(foundProject.data?.ecosystem2027?.presentedDocumentCodes ?? []);

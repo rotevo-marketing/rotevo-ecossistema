@@ -1,0 +1,18 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {existsSync,readFileSync} from "node:fs";
+import {fileURLToPath} from "node:url";
+const source=(relative)=>readFileSync(fileURLToPath(new URL("../../src/"+relative,import.meta.url)),"utf8");
+test("obsolete demo routes do not ship",()=>{
+ assert.equal(existsSync(fileURLToPath(new URL("../../src/app/admin/planejamentos/demo",import.meta.url))),false);
+});
+test("presentation renders only Ecosystem 2027",()=>{
+ const page=source("app/apresentacao/[slug]/page.tsx");
+ assert.match(page,/EcosystemPresentationOverview/);
+ assert.doesNotMatch(page,/LegacyPresentationV2|LegacyPresentation|moduleContent/);
+});
+test("client project presentation rejects JSON without ecosystem2027",()=>{
+ const projection=source("lib/security/projectForPresentation.ts");
+ assert.match(projection,/if\(!ecosystem\)return null/);
+ assert.doesNotMatch(projection,/moduleContent|scrubLegacy/);
+});

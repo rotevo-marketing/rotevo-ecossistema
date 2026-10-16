@@ -32,9 +32,10 @@ export async function PATCH(req:NextRequest){
  if(targetError)return fail(503,"Colaborador indisponível.");
  if(!target)return fail(404,"Colaborador não encontrado.");
  if(target.role==="admin")return fail(403,"Administradores exigem fluxo separado.");
- const {data:updated,error:updateError}=await admin.from("team_members")
-  .update({active}).eq("user_id",userId).eq("active",target.active).neq("role","admin").select("user_id,active").maybeSingle();
- if(updateError)return fail(503,"Não foi possível atualizar o membro.");
- if(!updated)return fail(409,"Colaborador alterado por outra sessão. Recarregue os dados.");
- return NextResponse.json({ok:true,userId,active:updated.active},{headers:{"Cache-Control":"no-store"}});
+ const {error:mutationError}=await admin.rpc("rotevo_change_team_access",{
+  p_actor:identity.user.id,p_target:userId,p_action:"status",
+  p_enabled:active,p_expected_active:target.active
+ });
+ if(mutationError)return fail(mutationError.code==="40001"?409:503,"Não foi possível atualizar e auditar o membro.");
+ return NextResponse.json({ok:true,userId,active},{headers:{"Cache-Control":"no-store"}});
 }

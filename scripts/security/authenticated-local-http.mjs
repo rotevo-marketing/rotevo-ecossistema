@@ -256,7 +256,9 @@ try {
   assert.equal((await adminMutation("/api/admin/project/delete","DELETE",null,deletePayload)).status,401,"anonymous delete denied");
   assert.equal((await adminMutation("/api/admin/project/delete","DELETE",clientJwt,deletePayload)).status,403,"client delete denied");
   assert.equal((await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,{...deletePayload,confirmed:false})).status,400,"unconfirmed delete denied");
-  assert.equal((await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,{...deletePayload,expectedUpdatedAt:beforeStatus.updated_at})).status,409,"stale deletion denied");
+  const staleDeletion=await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,{...deletePayload,expectedUpdatedAt:beforeStatus.updated_at});
+  console.log("Local stale deletion diagnostic",JSON.stringify({status:staleDeletion.status,body:staleDeletion.body,expectedIsDate:Number.isFinite(Date.parse(beforeStatus.updated_at)),versionChanged:beforeStatus.updated_at!==latest.updated_at}));
+  assert.equal(staleDeletion.status,409,"stale deletion denied");
   const deleted=await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,deletePayload);
   assert.equal(deleted.status,200,"authorized confirmed project deletion");
   assert.equal(JSON.parse(deleted.body).deletedId,createdProjectId);

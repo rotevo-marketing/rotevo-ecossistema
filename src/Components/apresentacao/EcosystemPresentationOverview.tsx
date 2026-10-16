@@ -7,8 +7,8 @@ import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTabler
 const iconNames: RotevoIconName[] = ["layout-dashboard","report","shopping-bag","filter-2-search","user","shape","target-arrow","brand-instagram","speakerphone","chart-funnel","bolt","chart-pie","chart-dots-3","device-analytics","alert-square-rounded","timeline-event-text","calendar-heart"];
 function AreaIcon({index}:{index:number}) { return <RotevoTablerIcon name={iconNames[index] ?? "layout-dashboard"} size={26} stroke={2.3} className="h-[26px] w-[26px] shrink-0"/>; }
 
-type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
-export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {
+type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[]; documents?:Record<string,{content:string}> };
+export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes,documents}:Props) {
   const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && d.code!=="01.01" && selectedCodes.includes(d.code) && presentedCodes.includes(d.code));
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
@@ -59,7 +59,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
           </div>
 
         </div>}
-        {chosen&&<article className="rounded-xl border border-[#E3E7F0] bg-white p-6 sm:p-9"><p className="text-xs text-[#697386]">{chosen.area}</p><h1 className="mt-2 text-3xl font-bold">{chosen.title}</h1><div className="mt-7 rounded-xl bg-[#F6F7FB] p-6 text-sm leading-6 text-[#525B70]">O conteúdo deste documento ainda não está integrado à apresentação. Quando sua produção estiver disponível, ele será apresentado aqui.</div><button type="button" onClick={()=>setActive("dashboard")} className="mt-6 cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm">Voltar ao Painel Executivo</button></article>}
+        {chosen&&<article className="rounded-xl border border-[#E3E7F0] bg-white p-6 sm:p-9"><p className="text-xs text-[#697386]">{chosen.area}</p><h1 className="mt-2 text-3xl font-bold">{chosen.title}</h1><div className="mt-7 whitespace-pre-wrap break-words rounded-xl bg-[#F6F7FB] p-6 text-sm leading-7 text-[#525B70]">{documents?.[chosen.code]?.content?.trim()||"Este documento ainda não possui conteúdo disponibilizado para apresentação."}</div><button type="button" onClick={()=>setActive("dashboard")} className="mt-6 cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm">Voltar ao Painel Executivo</button></article>}
       </div>
     </div>
     <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>

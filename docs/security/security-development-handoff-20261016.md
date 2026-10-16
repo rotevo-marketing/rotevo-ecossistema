@@ -60,3 +60,19 @@ Fontes internas: `production-security-gate-20261015.md`, `planning-json-admin-co
 ### Gate ainda obrigatório
 
 Não implantar em produção até: laboratório mais recente passar, testes funcionais do fluxo legado de apresentação, revisão de conteúdo legado campo a campo, triagem/resolução de dependências vulneráveis, ensaio de reversão e autorização específica de migrações/grants e deploy. O Supabase hospedado permanece sem as novas restrições.
+
+
+## Atualização: dependências protegidas e build validado
+
+- Candidato Tiptap 3.32.0 coordenado passou em `38894000688` (instalação, TypeScript, auditoria 0).
+- Manifesto e lockfile foram efetivamente incorporados na branch de desenvolvimento pelo workflow `38894325744`; `@tiptap/core`, `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, extensões Link/Underline foram alinhados a `^3.32.0`.
+- A auditoria `npm audit --omit=dev` passou de informativa para bloqueante, via `security-checks.yml`.
+- `38894517055`: CI de segurança após atualização do lockfile, **sucesso** (incluindo auditoria sem falhas, TypeScript e regras de autorização).
+- `38894546393`: build Next.js com variáveis fictícias, TypeScript e auditoria de dependências em ambiente isolado, **sucesso**.
+- **Importante:** ausência de vulnerabilidades reportadas na auditoria não substitui a análise de segurança e testes funcionais do editor. Nenhuma publicação, alteração do Supabase hospedado ou usuário real foi realizada nesta rodada.
+
+### Pendente para produção
+1. Rever a projeção de conteúdo legado da apresentação **campo a campo**. Atualmente os módulos marcados para exibição podem conter subcampos não revisados; não classificar o endpoint como totalmente seguro para público externo.
+2. Verificar compatibilidade da revogação de leitura de `planning_projects.data` para todos os consumidores, incluindo páginas de metadados.
+3. Reexecutar testes e rollback dos grants restritivos de `profiles`, do JSON e da função `is_strategist()` em laboratório, antes de preparar proposta de migração.
+4. Aprovação específica para alterações em banco hospedado, Vercel e configurações Supabase Auth.

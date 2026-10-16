@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
+import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível criar o planejamento autorizado."},{status,headers:{"Cache-Control":"no-store"}});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,6 +35,7 @@ export async function POST(req:NextRequest){
  new Set(selected).size!==selected.length||!Array.isArray(presented)||presented.length>100||
  !presented.every(code=>typeof code==="string"&&selected.includes(code))||
  new Set(presented).size!==presented.length)return fail(400);
+ if(!validEcosystemDocumentTransition({ecosystem2027:{version:1}},payload))return fail(400);
  const {data:client,error:clientError}=await admin.from("clients").select("id").eq("id",b.client_id).maybeSingle();
  if(clientError)return fail(503);
  if(!client)return fail(404);

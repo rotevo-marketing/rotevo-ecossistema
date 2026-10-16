@@ -8,6 +8,23 @@ const object=(value:unknown):ObjectValue|null=>value!==null&&typeof value==="obj
 export function validExecutionDependencies(data:unknown):boolean{
  const root=object(data);
  if(!root)return false;
+ const agenda=root.operationalAgenda;
+ if(agenda!==undefined&&agenda!==null){
+  if(!Array.isArray(agenda)||agenda.length>1000)return false;
+  const agendaIds=new Set<string>();
+  const executionIds=new Set(Array.isArray(root.executionTimeline)?root.executionTimeline.map(x=>object(x)?.id):[]);
+  for(const value of agenda){
+   const item=object(value);
+   if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||agendaIds.has(item.id))return false;
+   agendaIds.add(item.id);
+   if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return false;
+   if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return false;
+   if(typeof item.date!=="string"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date+"T12:00:00")))return false;
+   if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
+   if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
+   if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;
+  }
+ }
  const timeline=root.executionTimeline;
  if(timeline===undefined||timeline===null)return true;
  if(!Array.isArray(timeline)||timeline.length>2000)return false;

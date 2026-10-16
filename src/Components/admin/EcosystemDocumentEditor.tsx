@@ -35,7 +35,7 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const overallProgress=documents.length?Math.round(publishedCount/documents.length*100):0;
  const active=documents.find(d=>d.code===code)??documents[0];
  const activeCode=active?.code??"";
- const linkedDeliveries=Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter((item):item is {id:string;title:string;documentCode?:string;status?:string;dueDate?:string;visibleToClient?:boolean}=>!!item&&typeof item==="object"&&typeof item.id==="string"&&typeof item.title==="string"&&item.documentCode===activeCode):[];
+ const linkedDeliveries=Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter(item=>!!item&&typeof item==="object"&&typeof item.id==="string"&&typeof item.title==="string"&&item.documentCode===activeCode):[];
  const record=activeCode?eco?.documents?.[activeCode]:undefined;
  const savedContent=record?.content??"";
  const [content,setContent]=useState(savedContent);

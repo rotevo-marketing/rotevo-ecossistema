@@ -310,3 +310,12 @@ test("staff identities never inherit legacy strategist database authorization",(
  assert.match(invite,/profileInsertError/);
  assert.match(invite,/admin\.auth\.admin\.deleteUser\(created\.user\.id\)/);
 });
+
+test("first access never changes password of a strategist or client account",()=>{
+ assert.match(firstPasswordRoute,/profile\?\.role!=="staff"/);
+ assert.match(firstPasswordRoute,/\.select\("role"\)\.eq\("id",identity\.user\.id\)/);
+});
+test("failed employee profile insert cannot falsely report a successful rollback",()=>{
+ assert.match(invite,/if \(profileInsertError\) \{/);
+ assert.match(invite,/if \(rollbackError\) return response\("Cadastro incompleto/);
+});

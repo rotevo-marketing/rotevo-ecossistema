@@ -6,7 +6,7 @@ import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 type DocumentRecord={content:string;updatedAt:string;reviewStatus?:"draft"|"review"|"approved";publishedContent?:string;publishedAt?:string};
 type Eco={version?:number;selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,DocumentRecord>};
-type ProjectData={ecosystem2027?:Eco;[key:string]:unknown};
+type ProjectData={ecosystem2027?:Eco;executionTimeline?:{id:string;title:string;documentCode?:string;status?:string;dueDate?:string;visibleToClient?:boolean}[];[key:string]:unknown};
 type Props={projectId:string;projectData:ProjectData;updatedAt:string;onSaved:(data:ProjectData,updatedAt:string)=>void};
 
 export default function EcosystemDocumentEditor({projectId,projectData,updatedAt,onSaved}:Props){
@@ -34,6 +34,7 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const overallProgress=documents.length?Math.round(publishedCount/documents.length*100):0;
  const active=documents.find(d=>d.code===code)??documents[0];
  const activeCode=active?.code??"";
+ const linkedDeliveries=Array.isArray(projectData.executionTimeline)?projectData.executionTimeline.filter((item):item is {id:string;title:string;documentCode?:string;status?:string;dueDate?:string;visibleToClient?:boolean}=>!!item&&typeof item==="object"&&typeof item.id==="string"&&typeof item.title==="string"&&item.documentCode===activeCode):[];
  const record=activeCode?eco?.documents?.[activeCode]:undefined;
  const savedContent=record?.content??"";
  const [content,setContent]=useState(savedContent);
@@ -94,7 +95,7 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
       {(search.trim()||statusFilter!=="all")&&<div className="mt-3 max-h-44 space-y-1 overflow-y-auto rounded-xl border border-[#E3E7F0] p-2" aria-label="Resultados da busca">{visibleDocuments.length===0?<p className="p-2 text-xs text-[#697386]">Nenhum documento encontrado.</p>:visibleDocuments.map(doc=><button key={doc.code} type="button" onClick={()=>{if(content!==savedContent&&!window.confirm("Descartar alterações não salvas?"))return;setCode(doc.code);}} className={`block w-full rounded-lg px-3 py-2 text-left text-xs ${doc.code===activeCode?"bg-[#F0ECFF] font-bold":"hover:bg-[#F6F7FB]"}`}>{doc.code} — {doc.title}</button>)}</div>}
 
      </div>
-     <div><label htmlFor="rotevo-doc-body" className="mb-2 block text-sm font-semibold">Conteúdo estratégico</label>
+     <div><div className="mb-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4"><h3 className="text-sm font-bold">Entregas vinculadas a este documento</h3><p className="mt-1 text-xs text-[#697386]">As atividades são gerenciadas no cronograma de execução abaixo.</p>{linkedDeliveries.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhuma entrega vinculada até agora.</p>:<ul className="mt-3 space-y-2">{linkedDeliveries.map(item=><li key={item.id} className="rounded-lg border border-[#E3E7F0] bg-white p-3"><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{({planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"} as Record<string,string>)[item.status??"planned"]??"A definir"} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===false?"Interno":"Visível ao cliente"}</p></li>)}</ul>}</div><label htmlFor="rotevo-doc-body" className="mb-2 block text-sm font-semibold">Conteúdo estratégico</label>
       <textarea id="rotevo-doc-body" rows={14} value={content} onChange={e=>setContent(e.target.value)} placeholder="Insira aqui o documento estratégico estruturado..." className="min-h-72 w-full rounded-xl border border-[#E3E7F0] p-4 text-sm leading-6 outline-none focus:border-[#6D35F5]"/>
       <p className="mt-3 text-xs text-[#697386]">Etapa: {record?.reviewStatus==="approved"?"Aprovado":record?.reviewStatus==="review"?"Em revisão":"Em produção"} · Versão publicada: {record?.publishedAt?new Date(record.publishedAt).toLocaleDateString("pt-BR"):"Ainda não publicada"}</p>
       {record?.publishedContent!==undefined&&<details className="mt-3 rounded-xl border border-[#E3E7F0] p-3"><summary className="cursor-pointer text-sm font-medium">Consultar última versão publicada (somente leitura)</summary><div className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#F6F7FB] p-4 text-sm leading-6 text-[#525B70]">{record.publishedContent}</div></details>}

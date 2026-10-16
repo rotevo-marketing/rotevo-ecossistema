@@ -175,11 +175,27 @@ export async function POST(request: NextRequest) {
   );
 
   if (upsertError) {
+    // Compensate only the account created in this request, never a pre-existing user.
+    // Auth and public tables do not share an atomic transaction here.
+    const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (rollbackError) {
+      console.error("Falha ao reverter criação de acesso após erro no profile.", {
+        userId,
+        profileError: upsertError.message,
+        rollbackError: rollbackError.message,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Não foi possível concluir o acesso e a reversão automática falhou. Solicite revisão administrativa antes de tentar novamente.",
+          reconciliationRequired: true,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      {
-        success: false,
-        error: `Usuário criado no Auth (UID: ${userId}), mas houve erro ao criar o profile: ${upsertError.message}. Crie o profile manualmente usando o UID informado.`,
-      },
+      { success: false, error: "Não foi possível concluir o cadastro. A criação da conta foi revertida; tente novamente após revisar os dados." },
       { status: 500 }
     );
   }

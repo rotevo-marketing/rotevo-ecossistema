@@ -9,7 +9,7 @@ const files=[
  "Components/admin/EditorialManager.tsx",
  "Components/admin/CentralTarefas.tsx",
  "app/admin/planejamentos/[clientSlug]/page.tsx",
- "app/admin/planejamentos/[clientSlug]/modulos/[moduleSlug]/page.tsx"
+ "Components/admin/EcosystemDocumentEditor.tsx"
 ];
 
 test("all migrated editors write project JSON via authorized API",()=>{

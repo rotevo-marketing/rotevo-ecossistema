@@ -59,12 +59,24 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(editing.startDate&&editing.dueDate&&editing.startDate>editing.dueDate){setError("O prazo não pode ser anterior ao início.");return;}
   if(!validLink(editing.driveUrl??"")){setError("Use um endereço HTTPS válido para o material.");return;}
   if(editing.documentCode&&!strategicDocs.some(d=>d.code===editing.documentCode)){setError("Selecione um documento estratégico válido do projeto.");return;}
+  const deps=editing.dependencies??[];
+  if(deps.includes(editing.id)){setError("Uma entrega não pode depender de si mesma.");return;}
+  if(deps.some(id=>!items.some(item=>item.id===id))){setError("Há dependências que não pertencem a este projeto.");return;}
+  const adjacency=new Map(items.map(item=>[item.id,item.id===editing.id?deps:(item.dependencies??[])]));
+  const reaches=(id:string,target:string,visited=new Set<string>()):boolean=>{
+   if(id===target)return true;
+   if(visited.has(id))return false;
+   visited.add(id);
+   return (adjacency.get(id)??[]).some(next=>reaches(next,target,visited));
+  };
+  if(editing.id&&deps.some(id=>reaches(id,editing.id))){setError("Dependência circular detectada. Revise a sequência das entregas.");return;}
   if(!editing.id&&typeof crypto==="undefined"){setError("Não foi possível gerar um identificador para a entrega.");return;}
   const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient!==false};
   const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
   void persist(next);
  }
  function removeItem(item:ExecutionItem){
+  if(items.some(row=>(row.dependencies??[]).includes(item.id))){setError("Esta entrega é pré-requisito de outra. Remova os vínculos antes de excluí-la.");return;}
   if(!window.confirm(`Excluir a entrega "${item.title}"? Esta ação não pode ser desfeita.`))return;
   void persist(items.filter(i=>i.id!==item.id));
  }
@@ -103,6 +115,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
        <label className="block text-xs font-medium sm:col-span-2">Documento estratégico relacionado
          <select value={editing.documentCode??""} onChange={e=>setEditing({...editing,documentCode:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"><option value="">Não vincular documento</option>{strategicDocs.map(doc=><option key={doc.code} value={doc.code}>{doc.code} — {doc.title}</option>)}</select>
        </label>
+       <fieldset className="sm:col-span-2 rounded-xl border border-[#D7DCE6] p-3"><legend className="px-1 text-xs font-semibold">Pré-requisitos desta entrega</legend><p className="mb-2 text-xs text-[#697386]">Selecione atividades que devem ser concluídas primeiro.</p><div className="grid gap-2 sm:grid-cols-2">{items.filter(item=>item.id!==editing.id).map(item=><label key={item.id} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={(editing.dependencies??[]).includes(item.id)} onChange={e=>setEditing({...editing,dependencies:e.target.checked?[...(editing.dependencies??[]),item.id]:(editing.dependencies??[]).filter(id=>id!==item.id)})}/>{item.title}</label>)}</div>{items.filter(item=>item.id!==editing.id).length===0&&<p className="text-xs text-[#697386]">Nenhuma outra atividade cadastrada.</p>}</fieldset>
        <label className="block text-xs font-medium">Etapa ou fase
          <input value={editing.phase??""} maxLength={120} onChange={e=>setEditing({...editing,phase:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
        </label>

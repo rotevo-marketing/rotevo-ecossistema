@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027";
 
@@ -63,7 +62,6 @@ export default function SelecionarModulosPage() {
   const router = useRouter();
 
   const [draft, setDraft] = useState<NewPlanningDraft | null>(null);
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule>(EMPTY_SCHEDULE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +73,6 @@ export default function SelecionarModulosPage() {
   const [expandedAreas, setExpandedAreas] = useState<string[]>([selectableAreas[0]]);
   const [search, setSearch] = useState("");
 
-  const selectedCount = selectedModules.length;
 
   const finalProjectSlug = useMemo(() => {
     if (!draft) return "";
@@ -119,9 +116,6 @@ export default function SelecionarModulosPage() {
 
       setUserEmail(userData.user.email ?? "");
       setDraft(storedDraft);
-      setSelectedModules(
-        planningModules.filter((m) => m.presentation).map((m) => m.slug)
-      );
       setIsLoading(false);
     }
 
@@ -152,24 +146,6 @@ export default function SelecionarModulosPage() {
     setExpandedAreas((prev) => prev.includes(area) ? prev.filter((item) => item !== area) : [...prev, area]);
   }
 
-  function toggleModule(moduleSlug: string) {
-    setSelectedModules((current) =>
-      current.includes(moduleSlug)
-        ? current.filter((s) => s !== moduleSlug)
-        : [...current, moduleSlug]
-    );
-  }
-
-  function selectAllModules() {
-    setSelectedModules(
-      planningModules.filter((m) => m.presentation).map((m) => m.slug)
-    );
-  }
-
-  function clearModules() {
-    setSelectedModules([]);
-  }
-
   function updateScheduleDate(key: ScheduleKey, value: string) {
     setDeliverySchedule((prev) => ({ ...prev, [key]: value }));
   }
@@ -188,11 +164,6 @@ export default function SelecionarModulosPage() {
 
     if (taskExecution.length === 0) {
       setErrorMessage("Selecione pelo menos um documento do Ecossistema.");
-      return;
-    }
-
-    if (selectedModules.length === 0) {
-      setErrorMessage("Selecione pelo menos um módulo para o planejamento.");
       return;
     }
 
@@ -216,15 +187,6 @@ export default function SelecionarModulosPage() {
       return;
     }
 
-    const selectedModuleRecords = planningModules
-      .filter((m) => selectedModules.includes(m.slug))
-      .map((m) => ({
-        title: m.title,
-        slug: m.slug,
-        category: m.category,
-        description: m.description,
-      }));
-
     // Only save schedule keys that have a date filled
     const filledSchedule = Object.fromEntries(
       Object.entries(deliverySchedule).filter(([, v]) => v !== "")
@@ -245,8 +207,6 @@ export default function SelecionarModulosPage() {
           status:"draft",
           data:{
             coverImageUrl:draft.coverImageUrl||null,
-            selectedModules,
-            modules:selectedModuleRecords,
             ecosystem2027:{
               version:1,
               selectedDocumentCodes:selectableDocuments.filter(doc=>taskExecution.includes(doc.code)).map(doc=>doc.code),

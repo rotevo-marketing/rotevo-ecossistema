@@ -60,3 +60,10 @@ test("calendar date validation rejects impossible dates and accepts leap days",(
  for(const date of ["2026-10-16","2024-02-29","2000-02-29"])assert.equal(validOperationalDate(date),true);
  for(const date of ["2026-02-29","2026-02-30","2026-04-31","2026-13-01","0000-01-01","2026-00-10"])assert.equal(validOperationalDate(date),false);
 });
+
+test("execution tasks reject impossible dates and an inverted delivery window",()=>{
+ assert.equal(valid(project({...task("a"),startDate:"2026-10-16",dueDate:"2026-10-20"})),true);
+ assert.equal(valid(project({...task("a"),startDate:"2026-02-30"})),false);
+ assert.equal(valid(project({...task("a"),dueDate:"2026-13-01"})),false);
+ assert.equal(valid(project({...task("a"),startDate:"2026-10-20",dueDate:"2026-10-16"})),false);
+});

@@ -13,7 +13,7 @@ revoke all on public.team_audit_events from public, anon, authenticated;
 -- No SELECT, INSERT, UPDATE or DELETE policy for user clients.
 create or replace function public.rotevo_change_team_access(
  p_actor uuid, p_target uuid, p_action text, p_permission text default null,
- p_project uuid default null, p_enabled boolean default null
+ p_project uuid default null, p_enabled boolean default null, p_expected_active boolean default null
 ) returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp
 as $$
@@ -56,7 +56,10 @@ begin
   end if;
   insert into public.team_audit_events(actor_user_id,target_user_id,action,detail)
    values(p_actor,p_target,case when p_enabled then 'project_assigned' else 'project_unassigned' end,jsonb_build_object('project_id',p_project));
- elsif p_action='status' and p_permission is null and p_project is null and p_enabled is not null then
+ elsif p_action='status' and p_permission is null and p_project is null and p_enabled is not null and p_expected_active is not null then
+  if target_active is distinct from p_expected_active then
+   raise exception 'member status changed concurrently' using errcode='40001';
+  end if;
   update public.team_members set active=p_enabled,updated_at=now() where user_id=p_target;
   insert into public.team_audit_events(actor_user_id,target_user_id,action,detail)
    values(p_actor,p_target,case when p_enabled then 'member_activated' else 'member_deactivated' end,'{}'::jsonb);
@@ -65,5 +68,5 @@ begin
  end if;
  return jsonb_build_object('ok',true);
 end $$;
-revoke all on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean) from public, anon, authenticated;
-grant execute on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean) to service_role;
+revoke all on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean,boolean) from public, anon, authenticated;
+grant execute on function public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean,boolean) to service_role;

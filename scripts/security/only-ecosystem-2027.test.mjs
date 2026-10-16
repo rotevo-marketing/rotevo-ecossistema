@@ -117,3 +117,13 @@ test("strategist can inspect released text without accidentally exposing interna
  assert.match(editor,/presentedDocumentCodes\?\.includes\(activeCode\)/);
  assert.match(editor,/Documento interno/);
 });
+
+test("operational delivery may reference only a selected Ecossistema document",()=>{
+ const editor=source("Components/admin/ExecutionTimelineEditor.tsx");
+ const timeline=source("Components/cliente/ProjectTimeline.tsx");
+ assert.match(editor,/strategicDocs/);
+ assert.match(editor,/editing\.documentCode/);
+ assert.match(editor,/Selecione um documento estratégico válido do projeto/);
+ assert.match(editor,/Documento estratégico relacionado/);
+ assert.match(timeline,/documentCode\?:string/);
+});

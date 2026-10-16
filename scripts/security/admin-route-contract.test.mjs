@@ -73,7 +73,7 @@ test("team invitation rejects extra permission grants and malformed body shapes"
 });
 test("team invitation requires active team admin, and UI stays read only", () => {
  before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.createUser(", "team admin authorization");
- assert.match(teamDirectory, /Convites em preparação/);
+ assert.match(teamDirectory, /Novo usuário/);
  assert.doesNotMatch(teamDirectory, /inviteUserByEmail|\/api\/team\/invite/);
 });
 
@@ -158,7 +158,7 @@ test("administrative team controls are gated by authenticated server rollout cap
  assert.match(directoryRoute,/ROTEVO_TEAM_ASSIGNMENTS_ENABLED==="true"/);
  assert.match(directoryRoute,/ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true"/);
  assert.match(directoryRoute,/ROTEVO_TEAM_INVITES_ENABLED==="true"/);
- assert.match(teamDirectory,/capabilities\.invites&&<TeamInviteForm/);
+ assert.match(teamDirectory,/capabilities\.invites&&showCreate&&<TeamInviteForm/);
  assert.match(teamMemberControls,/if\(!editable\|\|!capabilities\.permissions/);
  assert.match(teamMemberControls,/capabilities\.memberStatus/);
  assert.match(teamMemberControls,/capabilities\.assignments/);

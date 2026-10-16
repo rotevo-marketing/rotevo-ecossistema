@@ -148,7 +148,7 @@ try {
     {client_id:a.id,title:"Public A",slug:"ci-public-a",status:"published",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
       selectedModules:["empresa"],
-      moduleContent:{empresa:{publicText:"PUBLISHED_MODULE_SENTINEL"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
+      moduleContent:{empresa:{fields:{text:"PUBLISHED_MODULE_SENTINEL",internalCredentials:"HIDDEN_NESTED_SECRET"},privateToken:"HIDDEN_ROOT_SECRET"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
                          {id:"e-hide",title:"Secret A",status:"review",visibleToClient:false}]
     }},
@@ -186,7 +186,7 @@ try {
   const presentedA=await presentation(clientJwt,"ci-public-a");
   assert.equal(presentedA.status,200,"own tenant presentation allowed");
   assert.ok(presentedA.body.includes("PUBLISHED_MODULE_SENTINEL"));
-  for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL"]){
+  for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL","HIDDEN_NESTED_SECRET","HIDDEN_ROOT_SECRET"]){
     assert.equal(presentedA.body.includes(hidden),false,`presentation must hide ${hidden}`);
   }
   const draftB=await presentation(bJwt,"ci-public-b");

@@ -76,3 +76,8 @@ test("team invitation requires active team admin, and UI stays read only", () =>
  assert.match(teamDirectory, /Convites em preparação/);
  assert.doesNotMatch(teamDirectory, /inviteUserByEmail|\/api\/team\/invite/);
 });
+
+test("team invitations require an explicit server-side rollout flag",()=>{
+ assert.match(invite, /ROTEVO_TEAM_INVITES_ENABLED !== "true"/);
+ before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "auth.admin.inviteUserByEmail(", "invite must remain disabled by default");
+});

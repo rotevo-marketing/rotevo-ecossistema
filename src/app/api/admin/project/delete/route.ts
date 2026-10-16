@@ -2,7 +2,7 @@ import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 export const runtime="nodejs";
 const fail=(status:number,code?:string)=>NextResponse.json({error:"Não foi possível excluir o planejamento autorizado.",...(code?{code}:{})},{status,headers:{"Cache-Control":"no-store"}});
-const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // This endpoint requires explicit project deletion confirmation in the calling UI.
 export async function DELETE(req:NextRequest){
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,secret=process.env.SUPABASE_SERVICE_ROLE_KEY;

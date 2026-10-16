@@ -19,7 +19,7 @@ export function validExecutionDependencies(data:unknown):boolean{
    agendaIds.add(item.id);
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return false;
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return false;
-   if(typeof item.date!=="string"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date+"T12:00:00")))return false;
+   if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date+"T12:00:00")))return false;
    if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;

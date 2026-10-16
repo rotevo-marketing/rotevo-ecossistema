@@ -43,3 +43,17 @@ test("proposed team schema does not expose browser-side writes",()=>{
  assert.match(team,/revoke all on public\.team_members,public\.team_project_assignments,public\.team_member_permissions from anon/i);
  assert.doesNotMatch(team,/grant\s+(insert|update|delete|all)\s+on\s+public\.team_members\s+to\s+authenticated/i);
 });
+
+test("team membership schema only grants read access to authenticated sessions",()=>{
+ assert.match(team,/grant select on public\.team_members,public\.team_project_assignments,public\.team_member_permissions to authenticated/i);
+ assert.match(team,/revoke all on public\.team_members,public\.team_project_assignments,public\.team_member_permissions from anon/i);
+ for(const name of ["team_members","team_project_assignments","team_member_permissions"]){
+  assert.match(team,new RegExp("alter table public\\."+name+" enable row level security","i"));
+ }
+ assert.match(team,/p\.role='strategist'/);
+ assert.match(team,/p\.id=\(select auth\.uid\(\)\)/);
+});
+test("team policy proposal does not silently grant browser modification rights",()=>{
+ assert.doesNotMatch(team,/grant\s+(?:update|delete|insert|all)\s+on\s+public\.team_(?:members|project_assignments|member_permissions)\s+to\s+authenticated/i);
+ assert.doesNotMatch(team,/create\s+policy[^;]+\bfor\s+(?:insert|update|delete|all)\b/gi);
+});

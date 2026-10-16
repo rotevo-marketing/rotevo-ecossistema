@@ -230,3 +230,12 @@ test("task completion UI enforces prerequisite constraints on both operational e
  assert.match(timeline,/Conclua todos os pré-requisitos/);
  assert.match(timeline,/Reabra a atividade dependente primeiro/);
 });
+
+test("project operational overview shows work with missing owners and unmet prerequisites",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(overview,/const unassigned=tasks\.filter/);
+ assert.match(overview,/!t\.owner\?\.trim\(\)&&!t\.ownerUserId/);
+ assert.match(overview,/const waitingPrerequisites=tasks\.filter/);
+ assert.match(overview,/aguardando pré-requisitos/);
+ assert.match(overview,/atividade\(s\) sem responsável/);
+});

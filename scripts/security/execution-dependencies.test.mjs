@@ -29,3 +29,8 @@ test("rejects completion while a prerequisite is pending, and reopening a comple
  assert.equal(valid(project({...task("a"),status:"in_progress"},{...task("b",["a"]),status:"in_progress"})),true);
  assert.equal(valid(project({...task("a"),status:"completed"},{...task("b",["a"]),status:"planned"})),true);
 });
+
+test("task priority accepts supported values and rejects invalid values",()=>{
+ for(const priority of ["low","normal","high","urgent"])assert.equal(valid(project({...task("a"),priority})),true);
+ assert.equal(valid(project({...task("a"),priority:"extreme"})),false);
+});

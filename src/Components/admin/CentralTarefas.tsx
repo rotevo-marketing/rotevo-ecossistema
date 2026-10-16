@@ -1,5 +1,5 @@
 "use client";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
@@ -22,6 +22,13 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  const [prerequisiteScope,setPrerequisiteScope]=useState<"all"|"waiting"|"ready">("all");
  const [priorityScope,setPriorityScope]=useState<"all"|"urgent"|"high"|"normal"|"low">("all");
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[message,setMessage]=useState("");
+ const [members,setMembers]=useState<{user_id:string;display_name:string}[]>([]);
+ const [teamReady,setTeamReady]=useState(false);
+ useEffect(()=>{let mounted=true;async function load(){
+  const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");
+  if(!mounted)return;
+  setTeamReady(!error);setMembers(error?[]:(data??[]));
+ }void load();return()=>{mounted=false;};},[]);
  const tasks=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.executionTimeline)?p.data.executionTimeline:[])
  .filter(t=>t&&typeof t.id==="string"&&typeof t.title==="string")
  .map(t=>({task:t,project:p,client:getClient(p)}))),[projects]);
@@ -45,13 +52,14 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
    const weight:Record<string,number>={urgent:0,high:1,normal:2,low:3};
    return rank(a.task)-rank(b.task)||(weight[a.task.priority??"normal"]??2)-(weight[b.task.priority??"normal"]??2)||(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999");
   }),[tasks,customer,responsible,status,search,deadline,documentScope,prerequisiteScope,priorityScope]);
- async function change(project:TaskProject,task:ExecutionItem,next:Status){
+ async function updateTask(project:TaskProject,task:ExecutionItem,patch:Partial<ExecutionItem>){
+  const next=patch.status??task.status??"planned";
   const timeline=project.data?.executionTimeline??[];
   if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos pendentes antes de finalizar esta tarefa.");return;}
   if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as atividades concluídas que dependem desta tarefa.");return;}
   if(working)return;
   setWorking(task.id);setError("");setMessage("");
-  const nextData={...(project.data??{}),executionTimeline:(project.data?.executionTimeline??[]).map(t=>t.id===task.id?{...t,status:next}:t)};
+  const nextData={...(project.data??{}),executionTimeline:(project.data?.executionTimeline??[]).map(t=>t.id===task.id?{...t,...patch}:t)};
   try {
     const {data:session,error:sessionError}=await supabase.auth.getSession();
     const token=session.session?.access_token;
@@ -72,7 +80,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     return;
   }
   setWorking("");
-  setMessage("Situação atualizada. O cliente visualizará a alteração nos itens autorizados.");
+  setMessage("Atividade atualizada com sucesso.");
  }
  const tile=(entry:typeof tasks[number])=>{
   const {task,project,client}=entry;
@@ -96,11 +104,21 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF0F5] pt-3">
       <label className="text-xs font-medium text-[#525B70]">Situação
         <select aria-label={`Situação de ${task.title}`} value={task.status??"planned"} disabled={!!working}
-          onChange={e=>void change(project,task,e.target.value as Status)}
+          onChange={e=>void updateTask(project,task,{status:e.target.value as Status})}
           className="ml-2 cursor-pointer rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
           {columns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </label>
+      <label className="text-xs font-medium text-[#525B70]">Prioridade
+        <select aria-label={`Prioridade de ${task.title}`} value={task.priority??"normal"} disabled={!!working} onChange={e=>void updateTask(project,task,{priority:e.target.value as ExecutionItem["priority"]})} className="ml-2 rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
+          <option value="low">Baixa</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option>
+        </select>
+      </label>
+      {teamReady&&members.length>0&&<label className="text-xs font-medium text-[#525B70]">Atribuir
+        <select aria-label={`Responsável por ${task.title}`} value={task.ownerUserId&&members.some(m=>m.user_id===task.ownerUserId)?task.ownerUserId:""} disabled={!!working} onChange={e=>{const member=members.find(m=>m.user_id===e.target.value);void updateTask(project,task,{ownerUserId:member?.user_id??"",owner:member?.display_name??""});}} className="ml-2 max-w-44 rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
+          <option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}
+        </select>
+      </label>}
       {client?.slug?<Link href={`/admin/planejamentos/${client.slug}`} className="text-xs font-semibold text-[#6D35F5] hover:underline">Abrir projeto →</Link>:null}
     </div>
   </article>;

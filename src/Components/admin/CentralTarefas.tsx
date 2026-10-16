@@ -3,6 +3,7 @@ import {useMemo,useState} from "react";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 
 type Client={id:string;name:string;slug:string};
@@ -10,7 +11,7 @@ export type TaskProject={id:string;title:string;updated_at:string;data:{executio
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
 const columns:{id:Status;name:string}[]=[{id:"planned",name:"Planejado"},{id:"in_progress",name:"Em andamento"},{id:"blocked",name:"Aguardando"},{id:"completed",name:"Concluído"},{id:"cancelled",name:"Cancelado"}];
 const label=(s?:string)=>columns.find(c=>c.id===s)?.name??"Planejado";
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 const getClient=(p:TaskProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
 const date=(value?:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(value??"");return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem prazo";};
 export default function CentralTarefas({projects,onChanged}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void}){
@@ -24,7 +25,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
   (customer==="all"||project.id===customer)&&(responsible==="all"||(responsible==="unassigned"?!task.owner?.trim():task.owner?.trim()===responsible))&&
   (status==="all"||(task.status??"planned")===status)&&
-  (`${task.title} ${client?.name??""} ${project.title} ${task.owner??""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))))
+  (`${task.title} ${client?.name??""} ${project.title} ${task.owner??""} ${task.documentCode??""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))))
  .sort((a,b)=>(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999")),[tasks,customer,responsible,status,search]);
  async function change(project:TaskProject,task:ExecutionItem,next:Status){
   if(working)return;
@@ -58,7 +59,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   return <article key={project.id+":"+task.id} className="rounded-xl border border-[#E3E7F0] bg-white p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="min-w-0"><h3 className="text-sm font-semibold">{task.title}</h3>
-      <p className="mt-1 text-xs text-[#697386]">{client?.name??"Cliente sem nome"} · {project.title}</p></div>
+      <p className="mt-1 text-xs text-[#697386]">{client?.name??"Cliente sem nome"} · {project.title}</p>{task.documentCode&&<p className="mt-1 text-xs font-medium text-[#6D35F5]">{task.documentCode} — {ecosystemDocuments.find(d=>d.code===task.documentCode)?.title??"Documento estratégico"}</p>}</div>
       {overdue&&<span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Atrasada</span>}
     </div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386]">

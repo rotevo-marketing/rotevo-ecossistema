@@ -183,3 +183,12 @@ test("staged project writes enforce active team status, project assignment and w
  assert.match(projectUpdateRoute,/if\(!assignment\)return fail\(403\)/);
  assert.match(projectUpdateRoute,/if\(!permission\)return fail\(403\)/);
 });
+
+const projectsListRoute=readFileSync(new URL("../../src/app/api/admin/projects/route.ts",import.meta.url),"utf8");
+test("staged project listing enforces active membership, read permission and project filtering",()=>{
+ before(projectsListRoute,'profile?.role!=="strategist"','ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"',"legacy role before feature gate");
+ before(projectsListRoute,'member.active!==true','.eq("permission","projects.read")',"active membership checked");
+ before(projectsListRoute,'.eq("permission","projects.read")','.from("team_project_assignments")',"read grant before assignment enumeration");
+ assert.match(projectsListRoute,/query=query\.in\("id",allowedProjectIds\)/);
+ assert.match(projectsListRoute,/allowedProjectIds\.length===0/);
+});

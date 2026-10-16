@@ -22,10 +22,48 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','c1000000-0000-4000-8000-000000000001',true);
 SELECT set_config('request.jwt.claim.role','authenticated',true);
 
-SELECT is((WITH changed AS (UPDATE public.planning_projects SET title='tampered' WHERE id='d3000000-0000-4000-8000-000000000002' RETURNING id) SELECT count(*)::integer FROM changed),0,'client A cannot update client B project');
-SELECT is((WITH removed AS (DELETE FROM public.planning_projects WHERE id='d3000000-0000-4000-8000-000000000002' RETURNING id) SELECT count(*)::integer FROM removed),0,'client A cannot delete client B project');
-SELECT is((WITH changed AS (UPDATE public.planning_projects SET title='tampered own' WHERE id='c3000000-0000-4000-8000-000000000001' RETURNING id) SELECT count(*)::integer FROM changed),0,'client A cannot update own project under baseline');
-SELECT is((WITH changed AS (UPDATE public.clients SET name='tampered' WHERE id='d2000000-0000-4000-8000-000000000002' RETURNING id) SELECT count(*)::integer FROM changed),0,'client A cannot update other client organization');
-SELECT is((WITH changed AS (UPDATE public.profiles SET full_name='Wrong person' WHERE id='d1000000-0000-4000-8000-000000000002' RETURNING id) SELECT count(*)::integer FROM changed),0,'client A cannot update client B profile');
+-- Switch to the synthetic client's JWT context for each attempt,
+-- then check the unchanged records using the test owner to avoid
+-- confusing RLS-hidden rows with successful write isolation.
+UPDATE public.planning_projects SET title='tampered'
+  WHERE id='d3000000-0000-4000-8000-000000000002';
+RESET ROLE;
+SELECT is((SELECT title FROM public.planning_projects
+  WHERE id='d3000000-0000-4000-8000-000000000002'), 'Synthetic project B',
+  'client A cannot update client B project');
+SET LOCAL ROLE authenticated;
+
+DELETE FROM public.planning_projects
+  WHERE id='d3000000-0000-4000-8000-000000000002';
+RESET ROLE;
+SELECT is((SELECT count(*)::integer FROM public.planning_projects
+  WHERE id='d3000000-0000-4000-8000-000000000002'), 1,
+  'client A cannot delete client B project');
+SET LOCAL ROLE authenticated;
+
+UPDATE public.planning_projects SET title='tampered own'
+  WHERE id='c3000000-0000-4000-8000-000000000001';
+RESET ROLE;
+SELECT is((SELECT title FROM public.planning_projects
+  WHERE id='c3000000-0000-4000-8000-000000000001'), 'Synthetic project A',
+  'client A cannot update own project under baseline');
+SET LOCAL ROLE authenticated;
+
+UPDATE public.clients SET name='tampered'
+  WHERE id='d2000000-0000-4000-8000-000000000002';
+RESET ROLE;
+SELECT is((SELECT name FROM public.clients
+  WHERE id='d2000000-0000-4000-8000-000000000002'), 'Fictitious B',
+  'client A cannot update other client organization');
+SET LOCAL ROLE authenticated;
+
+UPDATE public.profiles SET full_name='Wrong person'
+  WHERE id='d1000000-0000-4000-8000-000000000002';
+RESET ROLE;
+SELECT is((SELECT full_name FROM public.profiles
+  WHERE id='d1000000-0000-4000-8000-000000000002'), NULL::text,
+  'client A cannot update client B profile');
+SET LOCAL ROLE authenticated;
+
 SELECT * FROM finish();
 ROLLBACK;

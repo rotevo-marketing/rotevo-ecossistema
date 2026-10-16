@@ -33,7 +33,8 @@ export async function GET(req:NextRequest){
   invites:process.env.ROTEVO_TEAM_INVITES_ENABLED==="true",
   permissions:process.env.ROTEVO_TEAM_PERMISSIONS_ENABLED==="true",
   assignments:process.env.ROTEVO_TEAM_ASSIGNMENTS_ENABLED==="true",
-  memberStatus:process.env.ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true"
+  memberStatus:process.env.ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true",
+  adminTransfer:process.env.ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED==="true"
  };
  return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:members??[],projects:projects??[],capabilities},{headers:{"Cache-Control":"no-store"}});
 }

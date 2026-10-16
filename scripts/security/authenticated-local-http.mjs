@@ -260,6 +260,8 @@ try {
   assert.equal((await adminMutation("/api/admin/project/create","POST",clientJwt,newProjectPayload)).status,403,"client creation denied");
   assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,{...newProjectPayload,client_id:"00000000-0000-4000-8000-000000000001"})).status,404,"missing tenant must not create project");
   assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,{...newProjectPayload,data:{selectedModules:["empresa"]}})).status,400,"legacy-only project creation rejected");
+  const forgedCreation={...newProjectPayload,data:{ecosystem2027:{version:1,selectedDocumentCodes:["01.02"],presentedDocumentCodes:["01.02"],documents:{"01.02":{content:"FORGED",updatedAt:"2026-10-16T12:00:00Z",reviewStatus:"approved",publishedContent:"FORGED",publishedAt:"2026-10-16T12:00:00Z"}}}}};
+  assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,forgedCreation)).status,400,"creation cannot bypass document review with a prepublished snapshot");
   const createdProjectResponse=await adminMutation("/api/admin/project/create","POST",strategistJwt,newProjectPayload);
   assert.equal(createdProjectResponse.status,201,"strategist creates synthetic project");
   const createdProjectId=JSON.parse(createdProjectResponse.body).project.id;

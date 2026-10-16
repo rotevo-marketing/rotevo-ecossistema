@@ -19,9 +19,10 @@ export async function DELETE(req:NextRequest){
  let raw:unknown;try{raw=await req.json();}catch{return fail(400,"INVALID_JSON");}
  if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400,"INVALID_BODY");
  const b=raw as Record<string,unknown>;
- if(Object.keys(b).some(k=>!["projectId","expectedUpdatedAt","confirmed"].includes(k))||
- b.confirmed!==true||typeof b.projectId!=="string"||!uuid.test(b.projectId)||
- typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt)))return fail(400,"INVALID_FIELDS");
+ if(Object.keys(b).some(k=>!["projectId","expectedUpdatedAt","confirmed"].includes(k)))return fail(400,"UNKNOWN_KEYS");
+ if(b.confirmed!==true)return fail(400,"NOT_CONFIRMED");
+ if(typeof b.projectId!=="string"||!uuid.test(b.projectId))return fail(400,"INVALID_PROJECT_ID");
+ if(typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt)))return fail(400,"INVALID_EXPECTED_VERSION");
  const {data:deleted,error:deleteError}=await admin.from("planning_projects").delete()
  .eq("id",b.projectId).eq("updated_at",b.expectedUpdatedAt).select("id").maybeSingle();
  if(deleteError)return fail(503);

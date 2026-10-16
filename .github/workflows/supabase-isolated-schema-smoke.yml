@@ -45,6 +45,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/docs/security/tests/staged-profile-hardening-local.test.sql" supabase/tests/database/staged_profile_hardening_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/planning-data-json-exposure-local.test.sql" supabase/tests/database/planning_data_json_exposure_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/planning-data-column-grant-proposal-local.test.sql" supabase/tests/database/planning_data_column_grant_proposal_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/is-strategist-execute-grants-local.test.sql" supabase/tests/database/is_strategist_execute_grants_test.sql
           cat > supabase/tests/database/schema_smoke.sql <<'SQL'
           BEGIN;
           CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;

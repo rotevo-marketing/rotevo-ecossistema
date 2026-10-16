@@ -110,6 +110,36 @@ try {
   assert.ifError(tenantsError);
   assert.equal(tenants.length,2);
   const [a,b]=tenants;
+  // Successful client account creation is tested only against synthetic local tenant A.
+  const createdClientEmail=`ci-new-client-${process.pid}@rotevo.invalid`;
+  const successfulCreate=await fetch(app.slice(0,-1)+"/api/admin/create-client-access",{
+    method:"POST",redirect:"error",
+    headers:{"Authorization":`Bearer ${strategistJwt}`,"Content-Type":"application/json"},
+    body:JSON.stringify({email:createdClientEmail,password:testPassword,fullName:"New synthetic client",clientId:a.id}),
+    signal:AbortSignal.timeout(15000)
+  });
+  assert.equal(successfulCreate.status,200,"strategist can create synthetic client account");
+  const createdResult=await successfulCreate.json();
+  assert.equal(createdResult.success,true);
+  assert.ok(createdResult.userId,"successful creation must report new auth user ID");
+  created.push(createdResult.userId);
+  const {data:newProfile,error:newProfileError}=await admin.from("profiles")
+    .select("role,client_id,email,full_name").eq("id",createdResult.userId).single();
+  assert.ifError(newProfileError);
+  assert.equal(newProfile.role,"client");
+  assert.equal(newProfile.client_id,a.id);
+  assert.equal(newProfile.email,createdClientEmail);
+  assert.equal(newProfile.full_name,"New synthetic client");
+  const duplicateCreate=await post("/api/admin/create-client-access",strategistJwt,{
+    email:createdClientEmail,password:testPassword,fullName:"Duplicate synthetic client",clientId:a.id
+  });
+  assert.equal(duplicateCreate,409,"duplicate account creation must not silently overwrite profile");
+  const {data:unchangedProfile,error:unchangedError}=await admin.from("profiles")
+    .select("role,client_id,full_name").eq("id",createdResult.userId).single();
+  assert.ifError(unchangedError);
+  assert.equal(unchangedProfile.role,"client");
+  assert.equal(unchangedProfile.client_id,a.id);
+  assert.equal(unchangedProfile.full_name,"New synthetic client");
   const {error:linkAError}=await admin.from("profiles").update({client_id:a.id}).eq("id",client.id);
   assert.ifError(linkAError);
   const {error:linkBError}=await admin.from("profiles").update({client_id:b.id}).eq("id",tenantB.id);

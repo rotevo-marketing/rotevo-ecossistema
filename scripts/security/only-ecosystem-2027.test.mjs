@@ -26,3 +26,13 @@ test("new planning creation does not reference the old module registry",()=>{
  assert.match(endpoint,/payload\.moduleContent!==undefined/);
  assert.match(endpoint,/selectedDocumentCodes/);
 });
+
+test("current ecosystem document editor uses authorized version-checked endpoint",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ const adminPage=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ assert.match(editor,/ecosystem2027/);
+ assert.match(editor,/\/api\/admin\/project\/update/);
+ assert.match(editor,/expectedUpdatedAt:updatedAt/);
+ assert.doesNotMatch(editor,/\.from\("planning_projects"\)/);
+ assert.match(adminPage,/EcosystemDocumentEditor/);
+});

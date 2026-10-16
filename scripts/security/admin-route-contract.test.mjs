@@ -38,3 +38,10 @@ test("client access: profile failure triggers only new-user compensation", () =>
   assert.match(onFailure, /reconciliationRequired:\s*true/);
   assert.match(onFailure, /status:\s*500/);
 });
+
+test("client access: missing Auth UID requires explicit reconciliation and prevents profile write", () => {
+  const missing = client.slice(client.indexOf("if (!userId) {"), client.indexOf("// ── 9. Upsert client profile"));
+  assert.match(missing, /reconciliationRequired:\s*true/);
+  assert.match(missing, /status:\s*500/);
+  before(client, "if (!userId) {", '.from("profiles").upsert(', "missing UID guard precedes profile update");
+});

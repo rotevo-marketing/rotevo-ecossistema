@@ -1,3 +1,4 @@
+import {mayMutateProject} from "@/lib/security/teamProjectAuthorization";
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 export const runtime="nodejs";
@@ -23,6 +24,8 @@ export async function DELETE(req:NextRequest){
  if(b.confirmed!==true)return fail(400,"NOT_CONFIRMED");
  if(typeof b.projectId!=="string"||!uuid.test(b.projectId))return fail(400,"INVALID_PROJECT_ID");
  if(typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt)))return fail(400,"INVALID_EXPECTED_VERSION");
+ const access=await mayMutateProject(admin,identity.user.id,b.projectId);
+ if(!access.allowed)return fail(access.status);
  const {data:deleted,error:deleteError}=await admin.from("planning_projects").delete()
  .eq("id",b.projectId).eq("updated_at",b.expectedUpdatedAt).select("id").maybeSingle();
  if(deleteError)return fail(503);

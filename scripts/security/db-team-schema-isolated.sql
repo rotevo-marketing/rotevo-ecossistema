@@ -33,3 +33,48 @@ BEGIN
   END IF;
 END LOOP;
 END $assert$;
+
+-- Audit migration in the same disposable database; no hosted connections.
+CREATE ROLE service_role NOLOGIN;
+\i supabase/migrations/20261016_team_access_audit.sql
+DO $assert$
+BEGIN
+ IF has_function_privilege('authenticated','public.rotevo_change_team_access(uuid,uuid,text,text,uuid,boolean,boolean)','EXECUTE') THEN
+  RAISE EXCEPTION 'Browser role can execute team mutation function';
+ END IF;
+ IF has_table_privilege('authenticated','public.team_audit_events','SELECT') THEN
+  RAISE EXCEPTION 'Browser role can read restricted audit trail';
+ END IF;
+END $assert$;
+INSERT INTO auth.users VALUES
+ ('11111111-1111-4111-8111-111111111111'),
+ ('22222222-2222-4222-8222-222222222222');
+INSERT INTO public.team_members(user_id,display_name,role,active) VALUES
+ ('11111111-1111-4111-8111-111111111111','Audit Admin','admin',true),
+ ('22222222-2222-4222-8222-222222222222','Audit Target','producer',true);
+INSERT INTO public.planning_projects(id) VALUES ('33333333-3333-4333-8333-333333333333');
+SELECT public.rotevo_change_team_access(
+ '11111111-1111-4111-8111-111111111111',
+ '22222222-2222-4222-8222-222222222222','permission','projects.read',null,true,null
+);
+SELECT public.rotevo_change_team_access(
+ '11111111-1111-4111-8111-111111111111',
+ '22222222-2222-4222-8222-222222222222','assignment',null,
+ '33333333-3333-4333-8333-333333333333',true,null
+);
+SELECT public.rotevo_change_team_access(
+ '11111111-1111-4111-8111-111111111111',
+ '22222222-2222-4222-8222-222222222222','status',null,null,false,true
+);
+DO $assert$
+BEGIN
+ IF (SELECT count(*) FROM public.team_audit_events)<>3 THEN
+  RAISE EXCEPTION 'Missing transactional audit records';
+ END IF;
+ IF EXISTS(SELECT 1 FROM public.team_members WHERE display_name='Audit Target' AND active=true) THEN
+  RAISE EXCEPTION 'Member deactivation failed';
+ END IF;
+ IF (SELECT count(*) FROM public.team_member_permissions)<>1 OR (SELECT count(*) FROM public.team_project_assignments)<>1 THEN
+  RAISE EXCEPTION 'Audited team mutations did not persist';
+ END IF;
+END $assert$;

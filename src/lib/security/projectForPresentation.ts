@@ -18,8 +18,8 @@ const legacyFields=new Set([
  "secondaryIdeas","strategicDirection","positioning","differentials"
 ]);
 const allowedLegacyFieldsByModule:Record<string,Set<string>>={
- empresa:new Set(["quemEAEmpresa","oQueFaz","historia","posicionamento","diferenciais","publico","problemasQueResolve","transformacao","propostaDeValor","missao","visao","valores","autoridade","percepcaoDesejada"]),
- especialista:new Set(["quemEoQueFaz","especialidadesExpertise","trajetoriaProfissional","historiaPessoal","marcosConquistas","bandeirasCausas","propositoDigital","autodefinicao","comoGostariaDeSerVisto"])
+ "dna-da-empresa":new Set(["quemEAEmpresa","oQueFaz","historia","posicionamento","diferenciais","publico","problemasQueResolve","transformacao","propostaDeValor","missao","visao","valores","autoridade","percepcaoDesejada"]),
+ "dna-do-especialista":new Set(["quemEoQueFaz","especialidadesExpertise","trajetoriaProfissional","historiaPessoal","marcosConquistas","bandeirasCausas","propositoDigital","autodefinicao","comoGostariaDeSerVisto"])
 };
 function scrubLegacy(value:unknown,depth=0,moduleSlug="",parentKey=""):unknown{
  if(depth>14)return null;

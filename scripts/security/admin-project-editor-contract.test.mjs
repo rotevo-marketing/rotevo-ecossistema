@@ -86,3 +86,12 @@ test("presentation never fetches raw project JSON directly from browser",()=>{
  assert.match(projection,/presentedDocumentCodes:visible/);
  assert.doesNotMatch(projection,/scrubLegacy|moduleContent/);
 });
+
+test("strategist project writes enforce acyclic dependency validation on server",()=>{
+ const endpoint=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ assert.match(endpoint,/validExecutionDependencies\(b\.data\)/);
+ const auth=endpoint.indexOf("auth.auth.getUser(");
+ const validation=endpoint.indexOf("validExecutionDependencies(b.data)");
+ const update=endpoint.indexOf('.update({data:b.data,updated_at:nextAt})');
+ assert.ok(validation>auth&&update>validation,"dependency validation must run before privileged write");
+});

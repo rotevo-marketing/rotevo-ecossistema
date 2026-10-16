@@ -210,3 +210,10 @@ test("shared project guard fails closed for inactive and unassigned members",()=
  assert.match(sharedProjectAuth,/projects\.write/);
  assert.match(sharedProjectAuth,/status:503/);
 });
+
+test("invitation authorization checks trusted strategist profile before membership or email",()=>{
+ before(invite, 'auth.getUser(auth.slice(7))', '.from("profiles")', "verified JWT before profile");
+ before(invite, 'profile?.role !== "strategist"', '.from("team_members")', "strategist role before team membership");
+ before(invite, 'member.role !== "admin" || member.active !== true', 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "active team admin before rollout");
+ before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', 'auth.admin.inviteUserByEmail(', "rollout before email side-effect");
+});

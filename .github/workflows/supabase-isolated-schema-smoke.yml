@@ -33,6 +33,7 @@ jobs:
           mkdir -p supabase/migrations
           cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
           mkdir -p supabase/tests/database
+          cp "$GITHUB_WORKSPACE/docs/security/tests/legacy-profile-privileges-local.test.sql" supabase/tests/database/legacy_profile_privileges_test.sql
           cat > supabase/tests/database/schema_smoke.sql <<'SQL'
           BEGIN;
           CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;

@@ -25,11 +25,11 @@ for(const x of found)console.log(`${x.path}:${x.line} ${x.context}`);
 console.log(`TOTAL_DIRECT_TABLE_CALLS=${found.length}`);
 const unsafe=found.filter(entry=>{
  const src=readFileSync(resolve(process.cwd(),entry.path),"utf8");
- if(!/^\\s*(?:\\uFEFF)?["']use client["'];?/m.test(src))return false;
- const lines=src.split(/\\r?\\n/);
+ if(!/^\s*(?:\uFEFF)?["']use client["'];?/m.test(src))return false;
+ const lines=src.split(/\r?\n/);
  const call=lines.slice(entry.line-1,entry.line+18).join(" ");
- const directWrite=/\\.update\\(\\s*\\{\\s*data\\s*:/.test(call)||/\\.insert\\(\\s*\\{[^}]*\\bdata\\s*:/.test(call);
- const directRead=/\\.select\\(\\s*[`"'][^)]*\\bdata\\b/.test(call);
+ const directWrite=/\.update\(\s*\{\s*data\s*:/.test(call)||/\.insert\(\s*\{[^}]*\bdata\s*:/.test(call);
+ const directRead=/\.select\(\s*[`"'][^)]*\bdata\b/.test(call);
  return directWrite||directRead;
 });
 for(const item of unsafe)console.error(`UNSAFE_BROWSER_PROJECT_JSON_ACCESS ${item.path}:${item.line}`);

@@ -402,7 +402,7 @@ export default function PlanejamentoClientePage() {
                 </div> : <div className="mt-5 space-y-4">
                   {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Visível ao cliente" : "Uso interno"}</span></div>)}</div></section>)}
                 </div>}
-                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A edição e a apresentação do conteúdo dos novos documentos serão integradas na próxima etapa. A seleção aqui altera somente o escopo do projeto.</div>}
+                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Abaixo, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
               </div>
             </div>}
           </>

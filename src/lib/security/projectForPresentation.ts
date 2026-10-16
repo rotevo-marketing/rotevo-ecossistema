@@ -24,8 +24,8 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const storedDocuments=object(ecosystem.documents)??{};
  const documents=Object.fromEntries(visible.flatMap(code=>{
   const doc=object(storedDocuments[code]);
-  if(!doc||typeof doc.content!=="string"||doc.content.length>200000)return [];
-  return [[code,{content:doc.content}]];
+  if(!doc||typeof doc.publishedContent!=="string"||doc.publishedContent.length>200000||!doc.publishedAt)return [];
+  return [[code,{content:doc.publishedContent}]];
  }));
  return {
   id:row.id,client_id:row.client_id,title:row.title,slug:row.slug,

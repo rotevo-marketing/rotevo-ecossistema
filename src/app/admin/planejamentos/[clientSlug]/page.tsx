@@ -1,9 +1,8 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
@@ -19,14 +18,6 @@ type ClientRecord = {
 
 type ProjectData = {
   coverImageUrl?: string | null;
-  selectedModules?: string[];
-  modules?: {
-    title: string;
-    slug: string;
-    category: string;
-    description: string;
-  }[];
-  moduleContent?: Record<string, unknown>;
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   onboardingChecklist?: OnboardingItem[];
   ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[]; documents?: Record<string,{content:string;updatedAt:string}> };
@@ -83,12 +74,6 @@ function getStatusClass(status: PlanningProject["status"]) {
   return "bg-slate-100 text-slate-600";
 }
 
-function getDefaultSelectedModules() {
-  return planningModules
-    .filter((module) => module.presentation)
-    .map((module) => module.slug);
-}
-
 export default function PlanejamentoClientePage() {
   const router = useRouter();
   const params = useParams();
@@ -97,7 +82,6 @@ export default function PlanejamentoClientePage() {
     typeof params.clientSlug === "string" ? params.clientSlug : "";
 
   const [project, setProject] = useState<PlanningProject | null>(null);
-  const [selectedModuleSlugs, setSelectedModuleSlugs] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -109,13 +93,6 @@ export default function PlanejamentoClientePage() {
   const [draftPresentedCodes, setDraftPresentedCodes] = useState<string[]>([]);
 
   const client = project ? getProjectClient(project) : null;
-
-  const selectedModules = useMemo(() => {
-    return planningModules.filter(
-      (module) =>
-        module.presentation && selectedModuleSlugs.includes(module.slug)
-    );
-  }, [selectedModuleSlugs]);
 
   const coverImageUrl = project?.data?.coverImageUrl || "";
   const hasEcosystem = !!project?.data?.ecosystem2027;
@@ -211,14 +188,6 @@ export default function PlanejamentoClientePage() {
       setDraftDocumentCodes(foundProject.data?.ecosystem2027?.selectedDocumentCodes ?? []);
       setDraftPresentedCodes(foundProject.data?.ecosystem2027?.presentedDocumentCodes ?? []);
 
-      const storedSelectedModules = foundProject.data?.selectedModules;
-
-      if (storedSelectedModules?.length) {
-        setSelectedModuleSlugs(storedSelectedModules);
-      } else {
-        setSelectedModuleSlugs(getDefaultSelectedModules());
-      }
-
       setIsLoading(false);
     }
 
@@ -226,28 +195,6 @@ export default function PlanejamentoClientePage() {
       loadProject();
     }
   }, [clientSlug, router]);
-
-  function toggleModule(moduleSlug: string) {
-    setSuccessMessage("");
-
-    setSelectedModuleSlugs((currentModules) => {
-      if (currentModules.includes(moduleSlug)) {
-        return currentModules.filter((slug) => slug !== moduleSlug);
-      }
-
-      return [...currentModules, moduleSlug];
-    });
-  }
-
-  function selectAllModules() {
-    setSuccessMessage("");
-    setSelectedModuleSlugs(getDefaultSelectedModules());
-  }
-
-  function clearModules() {
-    setSuccessMessage("");
-    setSelectedModuleSlugs([]);
-  }
 
   async function saveAuthorizedProjectData(current: PlanningProject, nextData: ProjectData): Promise<{data: ProjectData; updated_at: string}> {
     const {data:session,error:sessionError}=await supabase.auth.getSession();
@@ -264,46 +211,6 @@ export default function PlanejamentoClientePage() {
     const result=await response.json();
     if(!result?.project||typeof result.project.updated_at!=="string") throw new Error("Não foi possível confirmar a gravação.");
     return {data:result.project.data as ProjectData,updated_at:result.project.updated_at};
-  }
-
-  async function saveModuleSelection() {
-    if (!project) {
-      return;
-    }
-
-    if (selectedModuleSlugs.length === 0) {
-      setErrorMessage("Selecione pelo menos um módulo para este planejamento.");
-      return;
-    }
-
-    setIsSaving(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    const selectedModuleRecords = planningModules
-      .filter((module) => selectedModuleSlugs.includes(module.slug))
-      .map((module) => ({
-        title: module.title,
-        slug: module.slug,
-        category: module.category,
-        description: module.description,
-      }));
-
-    const nextData: ProjectData = {
-      ...(project.data ?? {}),
-      selectedModules: selectedModuleSlugs,
-      modules: selectedModuleRecords,
-    };
-
-    try {
-      const saved = await saveAuthorizedProjectData(project,nextData);
-      setProject({...project,data:saved.data,updated_at:saved.updated_at});
-      setSuccessMessage("Seleção de módulos salva com sucesso.");
-    } catch (error) {
-      setErrorMessage(error instanceof Error?error.message:"Não foi possível salvar a seleção de módulos.");
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   function toggleScopeDocument(code: string, kind: "include" | "present") {

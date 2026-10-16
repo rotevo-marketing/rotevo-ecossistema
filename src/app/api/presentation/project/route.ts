@@ -24,5 +24,7 @@ export async function GET(req:NextRequest){
  if(projectError)return fail(503);
  if(!project)return fail(404);
  if(profile.role==="client"&&(!profile.client_id||profile.client_id!==project.client_id))return fail(404);
- return NextResponse.json({project:projectForPresentation(project as PresentationProjectRow,profile.role==="strategist")},{headers:{"Cache-Control":"no-store"}});
+ const projected=projectForPresentation(project as PresentationProjectRow,profile.role==="strategist");
+ if(!projected)return fail(404);
+ return NextResponse.json({project:projected},{headers:{"Cache-Control":"no-store"}});
 }

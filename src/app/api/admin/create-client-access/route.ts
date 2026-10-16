@@ -101,6 +101,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Verify that the target client exists before performing any privileged Auth write.
+  // Avoid creating orphaned accounts for invalid or missing client records.
+  const { data: targetClient, error: targetClientError } = await supabaseAdmin
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  if (targetClientError || !targetClient) {
+    return NextResponse.json(
+      { success: false, error: "Cliente não encontrado ou indisponível para criar acesso." },
+      { status: targetClientError ? 503 : 404 }
+    );
+  }
+
   // ── 8. Create auth user for the client ────────────────────────────────────
   const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,

@@ -131,3 +131,11 @@ test("project assignment writes require administrator approval and rollout",()=>
  assert.match(assignmentRoute,/target\.role==="admin"/);
  assert.match(assignmentRoute,/Object\.keys\(input\)/);
 });
+
+test("team directory exposes read-only member detail without enabling permission editing",()=>{
+ assert.match(teamDirectory,/Ver atribuições e permissões/);
+ assert.match(teamDirectory,/aria-expanded/);
+ assert.match(teamDirectory,/permissions\.filter\(p=>p\.user_id===m\.user_id\)/);
+ assert.match(teamDirectory,/assignments\.filter\(a=>a\.user_id===m\.user_id\)/);
+ assert.doesNotMatch(teamDirectory,/fetch\("\/api\/team\/(?:permissions|assignments)"/);
+});

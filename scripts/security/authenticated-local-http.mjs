@@ -143,6 +143,20 @@ try {
   assert.equal(onlyB.body.includes("PRIVATE_TENANT_B_SENTINEL"),false);
   assert.equal((await getProjects(strategistJwt)).status,403,"strategist cannot use client portal endpoint");
   assert.equal((await getProjects()).status,401,"unauthenticated denied");
+  const projectId=JSON.parse(allowed.body).projects[0].id;
+  async function adminRead(jwt,id) {
+    const response=await fetch(app.slice(0,-1)+"/api/admin/project?id="+encodeURIComponent(id),{
+      headers:jwt?{Authorization:`Bearer ${jwt}`}:{},redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  assert.equal((await adminRead(clientJwt,projectId)).status,403,"client must not read internal administrator project");
+  assert.equal((await adminRead(bJwt,projectId)).status,403,"client from another tenant must not read administrator project");
+  assert.equal((await adminRead(null,projectId)).status,401,"anonymous admin read rejected");
+  const strategistProject=await adminRead(strategistJwt,projectId);
+  assert.equal(strategistProject.status,200,"strategist can read project");
+  assert.ok(strategistProject.body.includes("PRIVATE_TENANT_A_SENTINEL"),"internal JSON available only to authorized strategist");
+  assert.equal((await adminRead(strategistJwt,"invalid-id")).status,400,"invalid UUID denied");
   console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard; client-project tenant isolation");
 } finally {
   for(const id of created.reverse()) {

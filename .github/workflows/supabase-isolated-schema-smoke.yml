@@ -10,6 +10,8 @@ on:
       - 'docs/security/lab-legacy-baseline-local-only.sql'
       - 'docs/security/tests/**'
       - 'scripts/security/authenticated-local-http.mjs'
+      - 'src/app/api/admin/project/create/route.ts'
+      - 'src/app/api/presentation/project/route.ts'
       - 'supabase/migrations/20261015_harden_profile_authorization.sql'
 
 permissions:

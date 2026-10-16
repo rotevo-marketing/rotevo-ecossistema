@@ -80,6 +80,50 @@ jobs:
       - name: Verify remote targets are blocked
         run: node --test scripts/security/local-admin-api-guard.test.mjs
 
+  http-negative:
+    name: Anonymous HTTP rejection (isolated Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+      ROTEVO_LOCAL_APP_URL: http://127.0.0.1:3000/
+      ROTEVO_LOCAL_API_TESTS: YES_LOCAL_ONLY
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Start Next.js on loopback only
+        shell: bash
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > /tmp/rotevo-next-test.log 2>&1 &
+          echo $! > /tmp/rotevo-next-test.pid
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -n 80 /tmp/rotevo-next-test.log
+          exit 1
+      - name: Reject unauthenticated HTTP operations
+        run: node --test scripts/security/local-admin-api-negative.test.mjs
+      - name: Stop isolated server
+        if: always()
+        run: |
+          if test -f /tmp/rotevo-next-test.pid; then
+            kill "$(cat /tmp/rotevo-next-test.pid)" || true
+          fi
+
   typecheck:
     name: TypeScript verification
     runs-on: ubuntu-latest

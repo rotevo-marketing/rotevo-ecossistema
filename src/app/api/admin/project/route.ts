@@ -27,6 +27,19 @@ export async function GET(req:NextRequest) {
     .select("role").eq("id",identity.user.id).maybeSingle();
   if(profileError) return fail(503);
   if(profile?.role!=="strategist") return fail(403);
+  if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+    const {data:member,error:memberError}=await admin.from("team_members").select("role,active").eq("user_id",identity.user.id).maybeSingle();
+    if(memberError)return fail(503);
+    if(!member||member.active!==true)return fail(403);
+    if(member.role!=="admin"){
+      const {data:assignment,error:assignmentError}=await admin.from("team_project_assignments").select("project_id").eq("user_id",identity.user.id).eq("project_id",projectId).maybeSingle();
+      if(assignmentError)return fail(503);
+      if(!assignment)return fail(403);
+      const {data:permission,error:permissionError}=await admin.from("team_member_permissions").select("permission").eq("user_id",identity.user.id).eq("permission","projects.read").maybeSingle();
+      if(permissionError)return fail(503);
+      if(!permission)return fail(403);
+    }
+  }
   const {data:project,error:projectError}=await admin.from("planning_projects")
     .select("id,client_id,title,slug,description,status,updated_at,data")
     .eq("id",projectId).maybeSingle();

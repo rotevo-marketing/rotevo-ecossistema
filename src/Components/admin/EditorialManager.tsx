@@ -29,13 +29,23 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  async function persist(next:EditorialItem[]){
   if(!project||saving)return;
   setSaving(true);setError("");setNotice("");
-  const payload={...(project.data??{}),editorialCalendar:next},nextAt=new Date().toISOString();
-  const {data,error:err}=await supabase.from("planning_projects").update({data:payload,updated_at:nextAt}).eq("id",project.id).eq("updated_at",project.updated_at).select("data,updated_at").maybeSingle();
-  setSaving(false);
-  if(err){setError(err.message);return;}
-  if(!data){setError("Esse projeto foi modificado em outra sessão. Atualize a página para evitar sobrescrever informações.");return;}
-  onChanged(project.id,data.data as Project["data"],data.updated_at as string);
-  setEditing(null);setNotice("Conteúdo atualizado com sucesso.");
+  const payload={...(project.data??{}),editorialCalendar:next};
+  try {
+   const {data:session,error:authError}=await supabase.auth.getSession();
+   const token=session.session?.access_token;
+   if(authError||!token){setError("Sessão expirada. Entre novamente para salvar.");return;}
+   const response=await fetch("/api/admin/project/update",{
+    method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+    body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:payload}),cache:"no-store"
+   });
+   if(response.status===409){setError("Esse projeto foi modificado em outra sessão. Atualize a página para evitar sobrescrever informações.");return;}
+   if(!response.ok){setError("Não foi possível salvar o conteúdo. Confira as permissões.");return;}
+   const result=await response.json();
+   if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar a atualização do conteúdo.");return;}
+   onChanged(project.id,result.project.data as Project["data"],result.project.updated_at);
+   setEditing(null);setNotice("Conteúdo atualizado com sucesso.");
+  }catch{setError("Falha de conexão ao salvar o conteúdo.");}
+  finally{setSaving(false);}
  }
  function save(){
   if(!editing||!project)return;

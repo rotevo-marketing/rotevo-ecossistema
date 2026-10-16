@@ -59,12 +59,15 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  }
  const tile=(entry:typeof tasks[number])=>{
   const {task,project,client}=entry;
-  const overdue=task.dueDate&&task.dueDate<today()&&task.status!=="completed"&&task.status!=="cancelled";
+  const open=task.status!=="completed"&&task.status!=="cancelled";
+  const overdue=!!task.dueDate&&task.dueDate<today()&&open;
+  const dueToday=task.dueDate===today()&&open;
+  const blocked=task.status==="blocked";
   return <article key={project.id+":"+task.id} className="rounded-xl border border-[#E3E7F0] bg-white p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="min-w-0"><h3 className="text-sm font-semibold">{task.title}</h3>
       <p className="mt-1 text-xs text-[#697386]">{client?.name??"Cliente sem nome"} · {project.title}</p>{task.documentCode&&<p className="mt-1 text-xs font-medium text-[#6D35F5]">{task.documentCode} — {ecosystemDocuments.find(d=>d.code===task.documentCode)?.title??"Documento estratégico"}</p>}</div>
-      {overdue&&<span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Atrasada</span>}
+      <div className="flex flex-wrap gap-2">{overdue&&<span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Atrasada</span>}{dueToday&&<span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">Vence hoje</span>}{blocked&&<span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">Bloqueada</span>}</div>
     </div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386]">
       <span>Prazo: {date(task.dueDate)}</span><span>Responsável: {task.owner?.trim()||"Não atribuído"}</span>
@@ -83,8 +86,8 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   </article>;
  };
  return <div className="mt-7 space-y-5">
-  <div className="grid gap-3 sm:grid-cols-3">
-   {[{name:"Todas as tarefas",count:tasks.length},{name:"Em andamento",count:tasks.filter(t=>t.task.status==="in_progress").length},{name:"Atrasadas",count:tasks.filter(t=>t.task.dueDate&&t.task.dueDate<today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length}].map(metric=>
+  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+   {[{name:"Todas as tarefas",count:tasks.length},{name:"Em andamento",count:tasks.filter(t=>t.task.status==="in_progress").length},{name:"Atrasadas",count:tasks.filter(t=>t.task.dueDate&&t.task.dueDate<today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Vencem hoje",count:tasks.filter(t=>t.task.dueDate===today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Bloqueadas",count:tasks.filter(t=>t.task.status==="blocked").length}].map(metric=>
     <div key={metric.name} className={`rounded-2xl border p-5 ${metric.name==="Todas as tarefas"?"border-[#BDE7CB] bg-[#EAF8EF]":metric.name==="Em andamento"?"border-[#F3D5AD] bg-[#FFF1DC]":"border-[#F3C6C7] bg-[#FFF0F0]"}`}><p className="text-sm text-[#525B70]">{metric.name}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{metric.count}</p></div>)}
   </div>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5">

@@ -67,3 +67,9 @@ test("execution tasks reject impossible dates and an inverted delivery window",(
  assert.equal(valid(project({...task("a"),dueDate:"2026-13-01"})),false);
  assert.equal(valid(project({...task("a"),startDate:"2026-10-20",dueDate:"2026-10-16"})),false);
 });
+
+test("execution tasks reject unsupported statuses and kinds",()=>{
+ assert.equal(valid(project({...task("a"),status:"completed",kind:"task"})),true);
+ assert.equal(valid(project({...task("a"),status:"invented"})),false);
+ assert.equal(valid(project({...task("a"),kind:"unknown"})),false);
+});

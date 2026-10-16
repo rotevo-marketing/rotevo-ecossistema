@@ -30,16 +30,26 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   if(working)return;
   setWorking(task.id);setError("");setMessage("");
   const nextData={...(project.data??{}),executionTimeline:(project.data?.executionTimeline??[]).map(t=>t.id===task.id?{...t,status:next}:t)};
-  const updatedAt=new Date().toISOString();
-  const {data,resultError}=await (async()=>{
-    const res=await supabase.from("planning_projects").update({data:nextData,updated_at:updatedAt})
-       .eq("id",project.id).eq("updated_at",project.updated_at).select("data,updated_at").maybeSingle();
-    return {data:res.data,resultError:res.error};
-  })();
+  try {
+    const {data:session,error:sessionError}=await supabase.auth.getSession();
+    const token=session.session?.access_token;
+    if(sessionError||!token)throw new Error("Sessão expirada. Entre novamente.");
+    const response=await fetch("/api/admin/project/update",{
+      method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+      body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:nextData}),
+      cache:"no-store"
+    });
+    if(response.status===409)throw new Error("O projeto foi atualizado em outra sessão. Atualize a página antes de alterar o status.");
+    if(!response.ok)throw new Error("Não foi possível atualizar a tarefa autorizada.");
+    const result=await response.json();
+    if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Não foi possível confirmar a alteração.");
+    onChanged(project.id,result.project.data as TaskProject["data"],result.project.updated_at);
+  }catch(e){
+    setError(e instanceof Error?e.message:"Não foi possível atualizar a tarefa.");
+    setWorking("");
+    return;
+  }
   setWorking("");
-  if(resultError){setError(resultError.message);return;}
-  if(!data){setError("O projeto foi atualizado em outra sessão. Atualize a página antes de alterar o status.");return;}
-  onChanged(project.id,data.data as TaskProject["data"],data.updated_at as string);
   setMessage("Situação atualizada. O cliente visualizará a alteração nos itens autorizados.");
  }
  const tile=(entry:typeof tasks[number])=>{

@@ -139,3 +139,14 @@ test("team directory exposes read-only member detail without enabling permission
  assert.match(teamDirectory,/assignments\.filter\(a=>a\.user_id===m\.user_id\)/);
  assert.doesNotMatch(teamDirectory,/fetch\("\/api\/team\/(?:permissions|assignments)"/);
 });
+
+const memberStatusRoute=readFileSync(new URL("../../src/app/api/team/members/status/route.ts",import.meta.url),"utf8");
+test("member status requires verified administrator and explicit activation flag",()=>{
+ before(memberStatusRoute,'auth.getUser(bearer.slice(7))','caller?.role!=="admin"||caller.active!==true',"verified caller");
+ before(memberStatusRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_MEMBER_STATUS_ENABLED!=="true"',"active admin");
+ before(memberStatusRoute,'ROTEVO_TEAM_MEMBER_STATUS_ENABLED!=="true"','.update({active})',"disabled by default");
+ assert.match(memberStatusRoute,/userId===identity\.user\.id/);
+ assert.match(memberStatusRoute,/target\.role==="admin"/);
+ assert.match(memberStatusRoute,/\.eq\("active",target\.active\)/);
+ assert.match(memberStatusRoute,/\.neq\("role","admin"\)/);
+});

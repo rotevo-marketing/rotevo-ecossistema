@@ -21,7 +21,7 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
    try{return new URL(link).protocol!=="https:";}catch{return true;}
   })){setError("Os links das etapas devem ser URLs HTTPS válidas.");return;}
   setSaving(true);setError("");
-  const value={...data,onboardingChecklist:draft.map(x=>({...x,title:x.title.trim()}))};
+  const value={...data,onboardingChecklist:draft.map(x=>({...x,title:x.title.trim(),link:x.link?.trim()||undefined}))};
   try {
    const {data:session,error:authError}=await supabase.auth.getSession();
    const token=session.session?.access_token;

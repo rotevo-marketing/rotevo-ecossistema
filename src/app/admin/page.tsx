@@ -156,26 +156,22 @@ export default function AdminPage() {
     setUserEmail(userData.user.email ?? "");
     const projectsStartedAt = performance.now();
 
-    const { data, error } = await supabase
-      .from("planning_projects")
-      .select(
-        `
-        id,
-        title,
-        slug,
-        description,
-        status,
-        created_at,
-        updated_at,
-        data,
-        clients (
-          id,
-          name,
-          slug
-        )
-      `
-      )
-      .order("updated_at", { ascending: false });
+    let data:PlanningProject[]|null=null;
+    let error:Error|null=null;
+    try {
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token)throw new Error("Sessão expirada.");
+      const response=await fetch("/api/admin/projects",{
+        headers:{Authorization:`Bearer ${token}`},cache:"no-store"
+      });
+      if(!response.ok)throw new Error("Consulta administrativa não autorizada.");
+      const result=await response.json();
+      if(!Array.isArray(result?.projects))throw new Error("Resposta administrativa inválida.");
+      data=result.projects as PlanningProject[];
+    }catch(cause){
+      error=cause instanceof Error?cause:new Error("Não foi possível carregar os planejamentos.");
+    }
 
     const projectsDurationMs = Math.round(performance.now() - projectsStartedAt);
     console.info("[Rotevo] Tempos de carregamento do painel (ms)", {

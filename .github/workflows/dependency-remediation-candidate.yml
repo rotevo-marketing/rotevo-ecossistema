@@ -1,0 +1,57 @@
+name: Dependency remediation candidate (isolated)
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - '.github/workflows/dependency-remediation-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lockfile-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install existing locked baseline
+        run: npm ci --no-audit --no-fund
+      - name: Propose only semver-compatible audit fixes
+        shell: bash
+        run: |
+          set +e
+          npm audit fix --package-lock-only --no-fund --no-force > /tmp/rotevo-audit-fix.log 2>&1
+          code=$?
+          set -e
+          echo "Audit fix exit code: $code"
+          cat /tmp/rotevo-audit-fix.log | tail -n 60
+          git diff --stat -- package-lock.json
+      - name: Validate candidate dependency installation
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript candidate verification
+        run: npx tsc --noEmit
+      - name: Write candidate audit report
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > dependency-audit-after-candidate.json
+          code=$?
+          set -e
+          node -e 'const a=require("./dependency-audit-after-candidate.json");console.log("Candidate vulnerabilities:",JSON.stringify(a.metadata?.vulnerabilities||{}));'
+          echo "Audit exit code: $code (report only)"
+      - name: Upload candidate for manual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-remediation-candidate
+          path: |
+            package-lock.json
+            dependency-audit-after-candidate.json
+          retention-days: 7
+          if-no-files-found: warn

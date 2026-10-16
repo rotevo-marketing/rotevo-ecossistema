@@ -36,3 +36,8 @@ Antes de habilitar qualquer flag em produção:
 - obter autorização específica para migração/deploy.
 
 **Estado: desenvolvimento e testes automatizados do lote concluídos; homologação funcional de segurança e ativação permanecem pendentes.**
+
+
+## Complemento: homologação PostgreSQL sintética
+
+Foi acrescentado o job `Profile privilege isolation (synthetic PostgreSQL)` ao workflow `security-checks.yml`, executado exclusivamente em PostgreSQL 17 descartável (porta local 55432, credenciais artificiais, sem secrets hospedados). O arquivo `scripts/security/db-profile-grants-isolated.sql` reproduz os grants vulneráveis em um perfil sintético, aplica `20261015_harden_profile_authorization.sql` e valida a revogação de UPDATE de `role`, `client_id`, `email` e a manutenção de UPDATE de `full_name`. A execução [#38937259033](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/38937259033) confirmou sucesso nesse novo job. Este teste **não cobre RLS real, sessões nem a aplicação em produção**, que permanecem pendentes.

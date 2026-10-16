@@ -35,6 +35,7 @@ jobs:
           mkdir -p supabase/tests/database
           cp "$GITHUB_WORKSPACE/docs/security/tests/legacy-profile-privileges-local.test.sql" supabase/tests/database/legacy_profile_privileges_test.sql
           cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_isolation_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-write-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_write_isolation_test.sql
           cat > supabase/tests/database/schema_smoke.sql <<'SQL'
           BEGIN;
           CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;

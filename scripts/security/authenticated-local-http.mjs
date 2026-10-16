@@ -53,6 +53,19 @@ try {
     {user_id:active.id,display_name:"Fictitious active admin",role:"admin",active:true}
   ]);
   assert.ifError(teamError);
+  // End-to-end permitted write: ordinary user may edit only their own display name.
+  const {error:signInError}=await anonClient.auth.signInWithPassword({email:client.email,password:testPassword});
+  assert.ifError(signInError);
+  const {data:edited,error:editError}=await anonClient.from("profiles")
+    .update({full_name:"Fictitious client updated"}).eq("id",client.id).select("full_name").single();
+  assert.ifError(editError);
+  assert.equal(edited.full_name,"Fictitious client updated","own display name update should work");
+  const {data:confirmed,error:confirmationError}=await admin.from("profiles")
+    .select("full_name,role").eq("id",client.id).single();
+  assert.ifError(confirmationError);
+  assert.equal(confirmed.full_name,"Fictitious client updated");
+  assert.equal(confirmed.role,"client","display name edit must not change role");
+  await anonClient.auth.signOut();
   const clientJwt=await token(client.email);
   const inactiveJwt=await token(inactive.email);
   const strategistJwt=await token(strategist.email);
@@ -72,7 +85,7 @@ try {
   assert.equal(await post("/api/team/invite",clientJwt,safeInvite,probe),403,"client cannot trigger local invite probe");
   assert.equal(await post("/api/team/invite",inactiveJwt,safeInvite,probe),403,"inactive admin cannot trigger local invite probe");
   assert.equal(await post("/api/team/invite",activeJwt,safeInvite,probe),200,"active admin passes authorization with delivery disabled");
-  console.log("PASS: client and inactive admin denied; active admin authorized without invite delivery; strategist target guard");
+  console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard");
 } finally {
   for(const id of created.reverse()) {
     const {error}=await admin.auth.admin.deleteUser(id);

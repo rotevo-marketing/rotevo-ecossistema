@@ -1,3 +1,4 @@
+import {mayMutateProject} from "@/lib/security/teamProjectAuthorization";
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 export const runtime="nodejs";
@@ -22,6 +23,8 @@ export async function PATCH(req:NextRequest){
  typeof b.projectId!=="string"||!uuid.test(b.projectId)||
  typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt))||
  (b.status!=="draft"&&b.status!=="published"))return fail(400);
+ const access=await mayMutateProject(admin,identity.user.id,b.projectId);
+ if(!access.allowed)return fail(access.status);
  const {data:updated,error:updateError}=await admin.from("planning_projects")
  .update({status:b.status,updated_at:new Date().toISOString()})
  .eq("id",b.projectId).eq("updated_at",b.expectedUpdatedAt)

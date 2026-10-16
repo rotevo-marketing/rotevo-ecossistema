@@ -147,6 +147,7 @@ try {
   const {error:projectsError}=await admin.from("planning_projects").insert([
     {client_id:a.id,title:"Public A",slug:"ci-public-a",status:"published",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
+      ecosystem2027:{version:1,selectedDocumentCodes:["01.02"],presentedDocumentCodes:["01.02"]},
       selectedModules:["dna-da-empresa"],
       moduleContent:{"dna-da-empresa":{fields:{quemEAEmpresa:"PUBLISHED_MODULE_SENTINEL",internalCredentials:"HIDDEN_NESTED_SECRET"},privateToken:"HIDDEN_ROOT_SECRET"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
@@ -185,16 +186,16 @@ try {
   assert.equal((await presentation(bJwt,"ci-public-a")).status,404,"other tenant presentation hidden");
   const presentedA=await presentation(clientJwt,"ci-public-a");
   assert.equal(presentedA.status,200,"own tenant presentation allowed");
-  assert.ok(presentedA.body.includes("PUBLISHED_MODULE_SENTINEL"));
+  assert.ok(presentedA.body.includes("01.02"));
+  assert.equal(presentedA.body.includes("PUBLISHED_MODULE_SENTINEL"),false,"legacy document contents must not reach clients");
   for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL","HIDDEN_NESTED_SECRET","HIDDEN_ROOT_SECRET"]){
     assert.equal(presentedA.body.includes(hidden),false,`presentation must hide ${hidden}`);
   }
   const draftB=await presentation(bJwt,"ci-public-b");
-  assert.equal(draftB.status,200,"draft tenant can see safe project header");
-  assert.equal(draftB.body.includes("PRIVATE_TENANT_B_SENTINEL"),false,"draft must never expose internal JSON");
+  assert.equal(draftB.status,404,"legacy projects are no longer presented");
   const presentedAdmin=await presentation(strategistJwt,"ci-public-a");
   assert.equal(presentedAdmin.status,200,"strategist presentation available");
-  assert.ok(presentedAdmin.body.includes("HIDDEN_MODULE_SENTINEL"),"strategist retains internal presentation view");
+  assert.ok(presentedAdmin.body.includes("HIDDEN_MODULE_SENTINEL"),"strategist retains internal project inspection for current ecosystem");
   const projectId=JSON.parse(allowed.body).projects[0].id;
   async function adminList(jwt){
     const response=await fetch(app.slice(0,-1)+"/api/admin/projects",{

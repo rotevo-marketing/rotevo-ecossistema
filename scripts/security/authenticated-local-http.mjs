@@ -29,9 +29,9 @@ async function token(email) {
   assert.ok(data.session?.access_token);
   return data.session.access_token;
 }
-async function post(path,jwt,payload) {
+async function post(path,jwt,payload,headers={}) {
   const res=await fetch(app.slice(0,-1)+path,{
-    method:"POST",redirect:"error",headers:{"Content-Type":"application/json",Authorization:`Bearer ${jwt}`},
+    method:"POST",redirect:"error",headers:{"Content-Type":"application/json",Authorization:`Bearer ${jwt}`,...headers},
     body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)
   });
   return res.status;
@@ -67,7 +67,12 @@ try {
   // An active admin passes role authorization, but a role outside the allow-list is rejected.
   // This request must never contact Auth invite or send an email.
   assert.equal(await post("/api/team/invite",activeJwt,{email:"never-invite@rotevo.invalid",displayName:"Fictitious Invitee",role:"superadmin"}),400,"admin cannot assign forbidden role");
-  console.log("PASS: client and inactive admin denials; strategist target guard; forbidden invite role");
+  const safeInvite={email:"never-invite@rotevo.invalid",displayName:"Fictitious Invitee",role:"producer"};
+  const probe={"x-rotevo-local-probe":"authorized-no-send"};
+  assert.equal(await post("/api/team/invite",clientJwt,safeInvite,probe),403,"client cannot trigger local invite probe");
+  assert.equal(await post("/api/team/invite",inactiveJwt,safeInvite,probe),403,"inactive admin cannot trigger local invite probe");
+  assert.equal(await post("/api/team/invite",activeJwt,safeInvite,probe),200,"active admin passes authorization with delivery disabled");
+  console.log("PASS: client and inactive admin denied; active admin authorized without invite delivery; strategist target guard");
 } finally {
   for(const id of created.reverse()) {
     const {error}=await admin.auth.admin.deleteUser(id);

@@ -172,3 +172,14 @@ test("team editing requests use bearer token and never write Supabase tables in 
  assert.doesNotMatch(teamMemberControls,/supabase\.from\(/);
  assert.doesNotMatch(teamInviteForm,/supabase\.from\(/);
 });
+
+const projectUpdateRoute=readFileSync(new URL("../../src/app/api/admin/project/update/route.ts",import.meta.url),"utf8");
+test("staged project writes enforce active team status, project assignment and write permission",()=>{
+ before(projectUpdateRoute,'profile?.role!=="strategist"','ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"',"legacy role before gate");
+ before(projectUpdateRoute,'ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"','.from("team_project_assignments")',"rollout gate before project ACL");
+ before(projectUpdateRoute,'member.active!==true','.from("team_project_assignments")',"inactive users denied");
+ before(projectUpdateRoute,'.from("team_project_assignments")','.from("team_member_permissions")',"project assignment before write grant");
+ before(projectUpdateRoute,'.eq("permission","projects.write")','.from("planning_projects")',"write grant before project data");
+ assert.match(projectUpdateRoute,/if\(!assignment\)return fail\(403\)/);
+ assert.match(projectUpdateRoute,/if\(!permission\)return fail\(403\)/);
+});

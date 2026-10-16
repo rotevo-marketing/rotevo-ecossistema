@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
     id: created.user.id, full_name: displayName.trim(), email: cleanEmail, role: "staff"
   });
   if (profileInsertError) {
-    await admin.auth.admin.deleteUser(created.user.id);
+    const { error: rollbackError } = await admin.auth.admin.deleteUser(created.user.id);
+    if (rollbackError) return response("Cadastro incompleto: acesso bloqueado e revisão administrativa necessária.",500);
     return response("Não foi possível configurar o perfil limitado; cadastro revertido.",503);
   }
   const { error: insertError } = await admin.from("team_members").insert({

@@ -250,8 +250,16 @@ try {
   const {data:afterStatus,error:afterStatusError}=await admin.from("planning_projects").select("status").eq("id",createdProjectId).single();
   assert.ifError(afterStatusError);
   assert.equal(afterStatus.status,"published");
-  const {error:cleanupProjectError}=await admin.from("planning_projects").delete().eq("id",createdProjectId);
-  assert.ifError(cleanupProjectError);
+  const {data:latest,error:latestError}=await admin.from("planning_projects").select("updated_at").eq("id",createdProjectId).single();
+  assert.ifError(latestError);
+  const deletePayload={projectId:createdProjectId,expectedUpdatedAt:latest.updated_at,confirmed:true};
+  assert.equal((await adminMutation("/api/admin/project/delete","DELETE",null,deletePayload)).status,401,"anonymous delete denied");
+  assert.equal((await adminMutation("/api/admin/project/delete","DELETE",clientJwt,deletePayload)).status,403,"client delete denied");
+  assert.equal((await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,{...deletePayload,confirmed:false})).status,400,"unconfirmed delete denied");
+  assert.equal((await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,{...deletePayload,expectedUpdatedAt:beforeStatus.updated_at})).status,409,"stale deletion denied");
+  const deleted=await adminMutation("/api/admin/project/delete","DELETE",strategistJwt,deletePayload);
+  assert.equal(deleted.status,200,"authorized confirmed project deletion");
+  assert.equal(JSON.parse(deleted.body).deletedId,createdProjectId);
   console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard; client-project tenant isolation");
 } finally {
   for(const id of created.reverse()) {

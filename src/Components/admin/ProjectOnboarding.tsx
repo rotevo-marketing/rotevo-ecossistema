@@ -15,6 +15,11 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
  async function save(){
   if(saving)return;
   if(draft.some(x=>x.title.trim().length<3)){setError("Informe uma descrição válida para cada etapa.");return;}
+  if(draft.some(x=>{
+   const link=x.link?.trim();
+   if(!link)return false;
+   try{return new URL(link).protocol!=="https:";}catch{return true;}
+  })){setError("Os links das etapas devem ser URLs HTTPS válidas.");return;}
   setSaving(true);setError("");
   const value={...data,onboardingChecklist:draft.map(x=>({...x,title:x.title.trim()}))};
   try {

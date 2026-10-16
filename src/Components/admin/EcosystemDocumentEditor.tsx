@@ -3,10 +3,11 @@
 import {useEffect,useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
+import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 
 type DocumentRecord={content:string;updatedAt:string;reviewStatus?:"draft"|"review"|"approved";publishedContent?:string;publishedAt?:string};
 type Eco={version?:number;selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,DocumentRecord>};
-type ProjectData={ecosystem2027?:Eco;executionTimeline?:{id:string;title:string;documentCode?:string;status?:string;dueDate?:string;visibleToClient?:boolean}[];[key:string]:unknown};
+type ProjectData={ecosystem2027?:Eco;executionTimeline?:ExecutionItem[];[key:string]:unknown};
 type Props={projectId:string;projectData:ProjectData;updatedAt:string;onSaved:(data:ProjectData,updatedAt:string)=>void};
 
 export default function EcosystemDocumentEditor({projectId,projectData,updatedAt,onSaved}:Props){

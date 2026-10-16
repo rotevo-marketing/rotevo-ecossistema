@@ -41,6 +41,9 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
    return rank(a.task)-rank(b.task)||(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999");
   }),[tasks,customer,responsible,status,search,deadline,documentScope]);
  async function change(project:TaskProject,task:ExecutionItem,next:Status){
+  const timeline=project.data?.executionTimeline??[];
+  if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos pendentes antes de finalizar esta tarefa.");return;}
+  if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as atividades concluídas que dependem desta tarefa.");return;}
   if(working)return;
   setWorking(task.id);setError("");setMessage("");
   const nextData={...(project.data??{}),executionTimeline:(project.data?.executionTimeline??[]).map(t=>t.id===task.id?{...t,status:next}:t)};

@@ -234,7 +234,7 @@ try {
     return {status:response.status,body:await response.text()};
   }
   const original=JSON.parse(strategistProject.body).project;
-  const candidate={projectId,expectedUpdatedAt:original.updated_at,data:{internalNotes:"PRIVATE_UPDATED_BY_STRATEGIST"}};
+  const candidate={projectId,expectedUpdatedAt:original.updated_at,data:{...original.data,internalNotes:"PRIVATE_UPDATED_BY_STRATEGIST"}};
   assert.equal((await patchProject(null,candidate)).status,401,"anonymous project edit rejected");
   assert.equal((await patchProject(clientJwt,candidate)).status,403,"client project edit rejected");
   assert.equal((await patchProject(bJwt,candidate)).status,403,"other tenant project edit rejected");

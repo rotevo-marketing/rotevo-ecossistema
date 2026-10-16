@@ -57,6 +57,21 @@ export async function PATCH(req:NextRequest){
  // Historical assignments are preserved without retroactive data migration.
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
+ // Validate onboarding links on the server as well as in the editor.
+ const checklist=nextRoot.onboardingChecklist;
+ if(checklist!==undefined){
+  if(!Array.isArray(checklist))return fail(400);
+  for(const item of checklist){
+   if(!item||typeof item!=="object"||Array.isArray(item))return fail(400);
+   const link=(item as Record<string,unknown>).link;
+   if(link===undefined||link===null||link==="")continue;
+   if(typeof link!=="string")return fail(400);
+   try{
+    const parsed=new URL(link);
+    if(parsed.protocol!=="https:"||!parsed.hostname)return fail(400);
+   }catch{return fail(400);}
+  }
+ }
  const previousItems=Array.isArray(oldRoot.executionTimeline)?oldRoot.executionTimeline:[];
  const nextItems=Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline:[];
  const previousOwners=new Map(previousItems.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v.ownerUserId]));

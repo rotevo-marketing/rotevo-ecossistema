@@ -27,14 +27,27 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   setSaving(true);setError("");setSuccess("");
   // Compare-and-swap guards against overwriting changes made elsewhere.
   const nextData={...projectData,executionTimeline:next};
-  const nextUpdatedAt=new Date().toISOString();
-  const {data,error:saveError}=await supabase.from("planning_projects")
-   .update({data:nextData,updated_at:nextUpdatedAt}).eq("id",projectId).eq("updated_at",updatedAt)
-   .select("data,updated_at").maybeSingle();
-  setSaving(false);
-  if(saveError){setError(saveError.message||"Não foi possível salvar as entregas.");return;}
-  if(!data){setError("O planejamento foi atualizado em outra sessão. Atualize a página antes de salvar para evitar sobrescrever alterações.");return;}
-  onSaved((data.data??nextData) as ProjectData,data.updated_at as string);
+  try {
+   const {data:sessionResult,error:sessionError}=await supabase.auth.getSession();
+   const token=sessionResult.session?.access_token;
+   if(sessionError||!token){setError("Sessão expirada. Entre novamente antes de salvar.");return;}
+   const response=await fetch("/api/admin/project/update",{
+    method:"PATCH",
+    headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+    body:JSON.stringify({projectId,expectedUpdatedAt:updatedAt,data:nextData}),
+    cache:"no-store"
+   });
+   if(response.status===409){setError("O planejamento foi atualizado em outra sessão. Atualize a página antes de salvar para evitar sobrescrever alterações.");return;}
+   if(!response.ok){setError("Não foi possível salvar as entregas. Verifique sua permissão e tente novamente.");return;}
+   const result=await response.json();
+   if(!result?.project||typeof result.project.updated_at!=="string"){
+    setError("Não foi possível confirmar a atualização das entregas.");return;
+   }
+   onSaved(result.project.data as ProjectData,result.project.updated_at);
+  }catch{
+   setError("Falha de conexão ao salvar as entregas. Tente novamente.");
+   return;
+  }finally{setSaving(false);}
   setEditing(null);setSuccess("Linha do tempo atualizada com sucesso.");
  }
  function saveItem(){

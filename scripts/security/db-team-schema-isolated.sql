@@ -106,3 +106,42 @@ BEGIN
   RAISE EXCEPTION 'Missing administrative succession audit record';
  END IF;
 END $assert$;
+
+-- Negative security checks: reject privilege escalation, self-edit and stale status.
+DO $assert$
+DECLARE before_events bigint; before_permissions bigint;
+BEGIN
+ SELECT count(*) INTO before_events FROM public.team_audit_events;
+ SELECT count(*) INTO before_permissions FROM public.team_member_permissions;
+ BEGIN
+  PERFORM public.rotevo_change_team_access(
+   '22222222-2222-4222-8222-222222222222',
+   '11111111-1111-4111-8111-111111111111',
+   'permission','finance.write',null,true,null
+  );
+  RAISE EXCEPTION 'Nonadmin changed administrator access';
+ EXCEPTION WHEN insufficient_privilege THEN NULL;
+ END;
+ BEGIN
+  PERFORM public.rotevo_change_team_access(
+   '22222222-2222-4222-8222-222222222222',
+   '22222222-2222-4222-8222-222222222222',
+   'permission','finance.write',null,true,null
+  );
+  RAISE EXCEPTION 'Self-edit was permitted';
+ EXCEPTION WHEN insufficient_privilege THEN NULL;
+ END;
+ BEGIN
+  PERFORM public.rotevo_change_team_access(
+   '22222222-2222-4222-8222-222222222222',
+   '11111111-1111-4111-8111-111111111111',
+   'status',null,null,false,false
+  );
+  RAISE EXCEPTION 'Former admin could alter an admin';
+ EXCEPTION WHEN insufficient_privilege THEN NULL;
+ END;
+ IF (SELECT count(*) FROM public.team_audit_events)<>before_events
+ OR (SELECT count(*) FROM public.team_member_permissions)<>before_permissions THEN
+  RAISE EXCEPTION 'Denied team operation changed state or wrote an audit event';
+ END IF;
+END $assert$;

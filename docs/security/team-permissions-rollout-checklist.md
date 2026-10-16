@@ -5,9 +5,11 @@ Estado: **STAGED / NÃO ATIVADO**. Documento de revisão; não autoriza deploy, 
 ## Escopo preparado na branch de desenvolvimento
 
 - Diretório administrativo: `GET /api/team/directory`, leitura de equipe, permissões explícitas e vínculos com projetos. Exige JWT validado, perfil `strategist` e membro `admin` ativo.
-- Convites: `POST /api/team/invite`, controlado por `ROTEVO_TEAM_INVITES_ENABLED=true`.
+- Convites: `POST /api/team/invite`, controlado por `ROTEVO_TEAM_INVITES_ENABLED=true`. A interface só mostra o formulário após a capacidade ser autorizada pelo servidor.
 - Permissões: `PATCH /api/team/permissions`, controlado por `ROTEVO_TEAM_PERMISSIONS_ENABLED=true`.
 - Vínculos: `PATCH /api/team/assignments`, controlado por `ROTEVO_TEAM_ASSIGNMENTS_ENABLED=true`.
+- Situação do membro: `PATCH /api/team/members/status`, controlado por `ROTEVO_TEAM_MEMBER_STATUS_ENABLED=true`; veda alteração da própria conta e de contas administradoras e usa proteção de concorrência.
+- Os controles de edição da interface são exibidos apenas pelas capacidades fornecidas no diretório autenticado. Ocultação de botão não substitui validação do servidor.
 - Nenhuma flag deve ser habilitada antes de confirmação das políticas RLS, consistência do esquema, mapeamento de funções e execução de testes funcionais com usuários de teste isolados.
 
 ## Bloqueios de aprovação

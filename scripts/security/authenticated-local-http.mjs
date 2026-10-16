@@ -219,6 +219,39 @@ try {
   const clientAfterUpdate=await getProjects(clientJwt);
   assert.equal(clientAfterUpdate.status,200);
   assert.equal(clientAfterUpdate.body.includes("PRIVATE_UPDATED_BY_STRATEGIST"),false,"private update must never appear to client");
+  async function adminMutation(path,method,jwt,payload){
+    const response=await fetch(app.slice(0,-1)+path,{
+      method,headers:jwt?{"Authorization":`Bearer ${jwt}`,"Content-Type":"application/json"}:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  const newProjectPayload={
+    client_id:a.id,title:"Local authorized project",slug:`local-project-${process.pid}`,
+    description:null,status:"draft",data:{internalNotes:"CREATION_PRIVATE_SENTINEL"}
+  };
+  assert.equal((await adminMutation("/api/admin/project/create","POST",null,newProjectPayload)).status,401,"anonymous creation denied");
+  assert.equal((await adminMutation("/api/admin/project/create","POST",clientJwt,newProjectPayload)).status,403,"client creation denied");
+  assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,{...newProjectPayload,client_id:"00000000-0000-4000-8000-000000000001"})).status,404,"missing tenant must not create project");
+  const createdProjectResponse=await adminMutation("/api/admin/project/create","POST",strategistJwt,newProjectPayload);
+  assert.equal(createdProjectResponse.status,201,"strategist creates synthetic project");
+  const createdProjectId=JSON.parse(createdProjectResponse.body).project.id;
+  assert.ok(createdProjectId);
+  assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,newProjectPayload)).status,409,"duplicate project slug denied");
+  const {data:beforeStatus,error:beforeStatusError}=await admin.from("planning_projects").select("status,updated_at").eq("id",createdProjectId).single();
+  assert.ifError(beforeStatusError);
+  const statusPayload={projectId:createdProjectId,expectedUpdatedAt:beforeStatus.updated_at,status:"published"};
+  assert.equal((await adminMutation("/api/admin/project/status","PATCH",null,statusPayload)).status,401,"anonymous publishing denied");
+  assert.equal((await adminMutation("/api/admin/project/status","PATCH",clientJwt,statusPayload)).status,403,"client publishing denied");
+  const published=await adminMutation("/api/admin/project/status","PATCH",strategistJwt,statusPayload);
+  assert.equal(published.status,200,"strategist can publish synthetic project");
+  assert.equal(JSON.parse(published.body).project.status,"published");
+  assert.equal((await adminMutation("/api/admin/project/status","PATCH",strategistJwt,statusPayload)).status,409,"stale publication denied");
+  const {data:afterStatus,error:afterStatusError}=await admin.from("planning_projects").select("status").eq("id",createdProjectId).single();
+  assert.ifError(afterStatusError);
+  assert.equal(afterStatus.status,"published");
+  const {error:cleanupProjectError}=await admin.from("planning_projects").delete().eq("id",createdProjectId);
+  assert.ifError(cleanupProjectError);
   console.log("PASS: own-name edit, client and inactive admin denied; active admin authorized without invite delivery; strategist target guard; client-project tenant isolation");
 } finally {
   for(const id of created.reverse()) {

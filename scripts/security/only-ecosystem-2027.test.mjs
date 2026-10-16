@@ -83,3 +83,11 @@ test("obsolete dynamic legacy module editor is no longer a route",()=>{
 test("obsolete demonstration source remains removed",()=>{
  assert.equal(existsSync(fileURLToPath(new URL("../../src/app/apresentacao/demo/page.old.tsx",import.meta.url))),false);
 });
+
+test("search uses clickable results while preserving the native document selection",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/visibleDocuments\.map\(doc=><button/);
+ assert.match(editor,/setCode\(doc\.code\)/);
+ assert.match(editor,/Descartar alterações não salvas/);
+ assert.doesNotMatch(editor,/hidden=\{!visibleDocuments\.includes\(doc\)\}/);
+});

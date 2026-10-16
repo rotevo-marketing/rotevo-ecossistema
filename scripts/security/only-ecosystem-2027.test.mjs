@@ -173,3 +173,8 @@ test("operations dashboard counts valid 2027 document codes with the actual digi
  assert.doesNotMatch(overview,/filter\(code=>\/\^\\\\d/);
  assert.equal(/^\d{2}\.\d{2}$/.test("07.01"),true);
 });
+
+test("admin publication progress requires both published content and publication timestamp",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(overview,/typeof eco\?\.documents\?\.\[code\]\?\.publishedAt==="string"&&typeof eco\?\.documents\?\.\[code\]\?\.publishedContent==="string"/);
+});

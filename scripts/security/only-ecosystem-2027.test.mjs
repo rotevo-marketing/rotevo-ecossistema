@@ -91,3 +91,12 @@ test("search uses clickable results while preserving the native document selecti
  assert.match(editor,/Descartar alterações não salvas/);
  assert.doesNotMatch(editor,/hidden=\{!visibleDocuments\.includes\(doc\)\}/);
 });
+
+test("document workspace supports lifecycle filtering without modifying project contents",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/statusFilter/);
+ assert.match(editor,/matchesStatus/);
+ assert.match(editor,/publishedAt/);
+ assert.match(editor,/Filtrar por etapa/);
+ assert.match(editor,/draftCount/);
+});

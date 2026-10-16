@@ -186,3 +186,12 @@ test("operations task hub filters deadlines and strategic references without cha
  assert.match(board,/\!\["completed","cancelled"\]\.includes/);
  assert.match(board,/setDocumentScope\("all"\)/);
 });
+
+test("task triage highlights due-today and blocked work without flagging completed tasks as overdue",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/const dueToday=task\.dueDate===today\(\)&&open/);
+ assert.match(board,/const blocked=task\.status==="blocked"/);
+ assert.match(board,/Vence hoje/);
+ assert.match(board,/Bloqueada/);
+ assert.match(board,/Bloqueadas/);
+});

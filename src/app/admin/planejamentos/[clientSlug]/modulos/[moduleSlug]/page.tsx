@@ -541,7 +541,6 @@ const [selectedLegacyPersonaId, setSelectedLegacyPersonaId] = useState("");
           status,
           created_at,
           updated_at,
-          data,
           clients!inner (
             id,
             name,
@@ -561,10 +560,20 @@ const [selectedLegacyPersonaId, setSelectedLegacyPersonaId] = useState("");
         return;
       }
 
-      const foundProject = (data?.[0] ?? null) as unknown as PlanningProject | null;
+      const metadata = (data?.[0] ?? null) as unknown as PlanningProject | null;
 
-      if (!foundProject) {
+      if (!metadata) {
         setErrorMessage("Planejamento não encontrado para este cliente.");
+        setIsLoading(false);
+        return;
+      }
+
+      let foundProject: PlanningProject;
+      try {
+        const loaded=await authorizedProjectRequest("GET",metadata.id);
+        foundProject={...metadata,data:loaded.data,updated_at:loaded.updated_at};
+      }catch(error){
+        setErrorMessage(error instanceof Error?error.message:"Não foi possível carregar os documentos.");
         setIsLoading(false);
         return;
       }

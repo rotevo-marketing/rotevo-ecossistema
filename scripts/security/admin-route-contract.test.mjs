@@ -226,3 +226,10 @@ test("single project API enforces team read access before returning private proj
  assert.match(singleProjectRoute,/if\(!assignment\)return fail\(403\)/);
  assert.match(singleProjectRoute,/if\(!permission\)return fail\(403\)/);
 });
+
+const createProjectRoute=readFileSync(new URL("../../src/app/api/admin/project/create/route.ts",import.meta.url),"utf8");
+test("new projects require active administrator when staged team enforcement is enabled",()=>{
+ before(createProjectRoute,'ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"','.from("team_members")',"creation checks team membership after rollout");
+ before(createProjectRoute,'member.role!=="admin"','.from("clients")',"admin gate before accessing client");
+ assert.match(createProjectRoute,/member\.active!==true/);
+});

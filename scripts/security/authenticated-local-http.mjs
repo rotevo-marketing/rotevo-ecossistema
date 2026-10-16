@@ -147,6 +147,8 @@ try {
   const {error:projectsError}=await admin.from("planning_projects").insert([
     {client_id:a.id,title:"Public A",slug:"ci-public-a",data:{
       internalNotes:"PRIVATE_TENANT_A_SENTINEL",
+      selectedModules:["empresa"],
+      moduleContent:{empresa:{publicText:"PUBLISHED_MODULE_SENTINEL"},interno:{privateText:"HIDDEN_MODULE_SENTINEL"}},
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
                          {id:"e-hide",title:"Secret A",status:"review",visibleToClient:false}]
     }},
@@ -173,6 +175,23 @@ try {
   assert.equal(onlyB.body.includes("PRIVATE_TENANT_B_SENTINEL"),false);
   assert.equal((await getProjects(strategistJwt)).status,403,"strategist cannot use client portal endpoint");
   assert.equal((await getProjects()).status,401,"unauthenticated denied");
+  async function presentation(jwt,slug){
+    const response=await fetch(app.slice(0,-1)+"/api/presentation/project?slug="+encodeURIComponent(slug),{
+      headers:jwt?{Authorization:`Bearer ${jwt}`}:{},redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  assert.equal((await presentation(null,"ci-public-a")).status,401,"anonymous presentation denied");
+  assert.equal((await presentation(bJwt,"ci-public-a")).status,404,"other tenant presentation hidden");
+  const presentedA=await presentation(clientJwt,"ci-public-a");
+  assert.equal(presentedA.status,200,"own tenant presentation allowed");
+  assert.ok(presentedA.body.includes("PUBLISHED_MODULE_SENTINEL"));
+  for(const hidden of ["PRIVATE_TENANT_A_SENTINEL","PRIVATE_TENANT_B_SENTINEL","HIDDEN_MODULE_SENTINEL"]){
+    assert.equal(presentedA.body.includes(hidden),false,`presentation must hide ${hidden}`);
+  }
+  const presentedAdmin=await presentation(strategistJwt,"ci-public-a");
+  assert.equal(presentedAdmin.status,200,"strategist presentation available");
+  assert.ok(presentedAdmin.body.includes("HIDDEN_MODULE_SENTINEL"),"strategist retains internal presentation view");
   const projectId=JSON.parse(allowed.body).projects[0].id;
   async function adminList(jwt){
     const response=await fetch(app.slice(0,-1)+"/api/admin/projects",{

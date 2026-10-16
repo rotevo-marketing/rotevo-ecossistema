@@ -24,6 +24,19 @@ export async function GET(req:NextRequest){
  if(projectError)return fail(503);
  if(!project)return fail(404);
  if(profile.role==="client"&&(!profile.client_id||profile.client_id!==project.client_id))return fail(404);
+ if(profile.role==="strategist"&&process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+  const {data:member,error:memberError}=await admin.from("team_members").select("role,active").eq("user_id",identity.user.id).maybeSingle();
+  if(memberError)return fail(503);
+  if(!member||member.active!==true)return fail(403);
+  if(member.role!=="admin"){
+   const {data:assignment,error:assignmentError}=await admin.from("team_project_assignments").select("project_id").eq("user_id",identity.user.id).eq("project_id",project.id).maybeSingle();
+   if(assignmentError)return fail(503);
+   if(!assignment)return fail(404);
+   const {data:permission,error:permissionError}=await admin.from("team_member_permissions").select("permission").eq("user_id",identity.user.id).eq("permission","projects.read").maybeSingle();
+   if(permissionError)return fail(503);
+   if(!permission)return fail(403);
+  }
+ }
  const projected=projectForPresentation(project as PresentationProjectRow,profile.role==="strategist");
  if(!projected)return fail(404);
  return NextResponse.json({project:projected},{headers:{"Cache-Control":"no-store"}});

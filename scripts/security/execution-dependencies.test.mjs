@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validExecutionDependencies as valid} from "../../src/lib/security/executionDependencyValidation.ts";
+import {validExecutionDependencies as valid,validOperationalTime} from "../../src/lib/security/executionDependencyValidation.ts";
 
 const task=(id,dependencies=[])=>({id,title:id,dependencies});
 const project=(...items)=>({executionTimeline:items});
@@ -49,4 +49,9 @@ test("operational agenda accepts valid optional times and rejects invalid clocks
  assert.equal(valid({operationalAgenda:[{...event,time:"09:30"}]}),true);
  assert.equal(valid({operationalAgenda:[{...event,time:""}]}),true);
  for(const time of ["24:00","09:65","noon","9:30"])assert.equal(valid({operationalAgenda:[{...event,time}]}),false);
+});
+
+test("shared agenda time validator accepts standard HH:MM and rejects malformed values",()=>{
+ for(const time of ["00:00","09:30","12:45","23:59"])assert.equal(validOperationalTime(time),true);
+ for(const time of ["24:00","09:65","9:30","noon","23:60",""])assert.equal(validOperationalTime(time),false);
 });

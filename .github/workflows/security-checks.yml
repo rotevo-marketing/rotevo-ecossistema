@@ -90,6 +90,8 @@ jobs:
         run: node --test scripts/security/admin-project-editor-contract.test.mjs
       - name: Enforce Ecossistema 2027 as the only presentation
         run: node --test scripts/security/only-ecosystem-2027.test.mjs
+      - name: Validate operational dependency graphs
+        run: node --test scripts/security/execution-dependencies.test.mjs
       - name: Inventory legacy component dependencies
         run: node scripts/security/legacy-dependency-inventory.mjs
       - name: Inventory remaining direct planning project consumers

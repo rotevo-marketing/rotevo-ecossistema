@@ -248,3 +248,9 @@ test("client account creation enforces active administrative status before privi
  before(clientAccessRoute,'member.role !== "admin"','.from("clients")',"admin authorization before target lookup");
  before(clientAccessRoute,'member.role !== "admin"','auth.admin.createUser(',"admin authorization before account creation");
 });
+
+test("project status and deletion use administrator-only authorization during rollout",()=>{
+ for(const route of [projectDeleteRoute,projectStatusRoute]){
+  assert.match(route,/mayMutateProject\(admin,identity\.user\.id,b\.projectId,true\)/);
+ }
+});

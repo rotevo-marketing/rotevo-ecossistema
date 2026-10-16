@@ -14,6 +14,11 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const selected=useMemo(()=>new Set(eco?.selectedDocumentCodes??[]),[eco?.selectedDocumentCodes]);
  const documents=useMemo(()=>ecosystemDocuments.filter(d=>selected.has(d.code)&&!d.area.startsWith("00 ")),[selected]);
  const [code,setCode]=useState("");
+ const [search,setSearch]=useState("");
+ const visibleDocuments=documents.filter(d=>`${d.code} ${d.title} ${d.area}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR").trim()));
+ const reviewedCount=documents.filter(d=>eco?.documents?.[d.code]?.reviewStatus==="review").length;
+ const approvedCount=documents.filter(d=>eco?.documents?.[d.code]?.reviewStatus==="approved").length;
+ const publishedCount=documents.filter(d=>!!eco?.documents?.[d.code]?.publishedAt).length;
  const active=documents.find(d=>d.code===code)??documents[0];
  const activeCode=active?.code??"";
  const record=activeCode?eco?.documents?.[activeCode]:undefined;
@@ -58,11 +63,13 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
    <h2 className="text-xl font-bold text-[#090D1C]">Documentos do Ecossistema 2027</h2>
    <p className="mt-2 text-sm text-[#697386]">Edite, revise e aprove cada documento. A apresentação utiliza somente a versão explicitamente publicada; alterações no rascunho não modificam o conteúdo já entregue ao cliente.</p>
+   <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Indicadores dos documentos"><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{documents.length}</strong>Selecionados</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{reviewedCount}</strong>Em revisão</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{approvedCount}</strong>Aprovados</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{publishedCount}</strong>Publicados</div></div>
    {documents.length===0?<p className="mt-5 text-sm text-[#697386]">Selecione documentos para começar.</p>:<>
     <div className="mt-5 grid gap-4 md:grid-cols-[270px_1fr]">
-     <div><label htmlFor="rotevo-doc-code" className="mb-2 block text-sm font-semibold">Documento</label>
+     <div><label htmlFor="rotevo-doc-search" className="mb-2 block text-sm font-semibold">Buscar documento</label><input id="rotevo-doc-search" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Código, título ou área" className="mb-4 w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm"/><label htmlFor="rotevo-doc-code" className="mb-2 block text-sm font-semibold">Documento</label>
       <select id="rotevo-doc-code" value={activeCode} onChange={e=>{if(content!==savedContent&&!window.confirm("Descartar as alterações não salvas?"))return;setCode(e.target.value);}} className="w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm">
-       {documents.map(doc=><option key={doc.code} value={doc.code}>{doc.code} — {doc.title}</option>)}
+       {visibleDocuments.length===0?<option disabled value="">Nenhum documento encontrado</option>:null}
+       {documents.map(doc=><option key={doc.code} value={doc.code} hidden={!visibleDocuments.includes(doc)}>{doc.code} — {doc.title}</option>)}
       </select>
       <p className="mt-3 text-xs text-[#697386]">{active?.area}</p>
      </div>

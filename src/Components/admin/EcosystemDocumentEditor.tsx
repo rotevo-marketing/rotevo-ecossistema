@@ -39,7 +39,8 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const linkedPending=linkedDeliveries.filter(item=>item.status!=="completed"&&item.status!=="cancelled");
  const linkedCompleted=linkedDeliveries.filter(item=>item.status==="completed");
  const linkedBlocked=linkedDeliveries.filter(item=>item.status==="blocked");
- const currentDate=new Date().toLocaleDateString("en-CA");
+ const now=new Date();
+ const currentDate=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
  const linkedOverdue=linkedPending.filter(item=>typeof item.dueDate==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(item.dueDate)&&item.dueDate<currentDate);
  const record=activeCode?eco?.documents?.[activeCode]:undefined;
  const savedContent=record?.content??"";

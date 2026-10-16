@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ authorized: true, delivery: "disabled" },
       { status: 200, headers: { "Cache-Control": "no-store" } });
   }
+  // Invitations remain disabled until RLS and role activation are explicitly approved.
+  if (process.env.ROTEVO_TEAM_INVITES_ENABLED !== "true")
+    return response("Convites de equipe aguardam homologação de permissões.", 503);
   const cleanEmail = email.trim().toLowerCase();
   const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(cleanEmail, {
     data: { full_name: displayName.trim() }

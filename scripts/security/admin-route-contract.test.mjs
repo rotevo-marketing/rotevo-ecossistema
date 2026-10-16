@@ -20,7 +20,7 @@ test("client access: created users always have client role", () => {
 });
 test("team invite: valid auth and active admin must precede invite", () => {
   before(invite, 'if (!auth?.startsWith("Bearer "))', "auth.getUser(auth.slice(7))", "bearer required before verify");
-  before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.inviteUserByEmail(", "active admin required");
+  before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.createUser(", "active admin required");
 });
 test("team invite: role allowlist excludes admin and input cannot grant project", () => {
   assert.match(invite, /new Set\(\["strategist",\s*"project_manager",\s*"producer",\s*"finance"\]\)/);
@@ -69,17 +69,17 @@ test("team invitation rejects extra permission grants and malformed body shapes"
  assert.match(invite, /Array\.isArray\(input\)/);
  assert.match(invite, /Object\.keys\(input\).*permissions|Object\.keys\(input\)/);
  assert.match(invite, /Campos não autorizados/);
- before(invite, "Campos não autorizados", "auth.admin.inviteUserByEmail(", "extra fields rejected before sending invitations");
+ before(invite, "Campos não autorizados", "auth.admin.createUser(", "extra fields rejected before sending invitations");
 });
 test("team invitation requires active team admin, and UI stays read only", () => {
- before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.inviteUserByEmail(", "team admin authorization");
+ before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.createUser(", "team admin authorization");
  assert.match(teamDirectory, /Convites em preparação/);
  assert.doesNotMatch(teamDirectory, /inviteUserByEmail|\/api\/team\/invite/);
 });
 
 test("team invitations require an explicit server-side rollout flag",()=>{
  assert.match(invite, /ROTEVO_TEAM_INVITES_ENABLED !== "true"/);
- before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "auth.admin.inviteUserByEmail(", "invite must remain disabled by default");
+ before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "auth.admin.createUser(", "invite must remain disabled by default");
 });
 
 const directoryRoute = readFileSync(new URL("../../src/app/api/team/directory/route.ts", import.meta.url), "utf8");
@@ -215,7 +215,7 @@ test("invitation authorization checks trusted strategist profile before membersh
  before(invite, 'auth.getUser(auth.slice(7))', '.from("profiles")', "verified JWT before profile");
  before(invite, 'profile?.role !== "strategist"', '.from("team_members")', "strategist role before team membership");
  before(invite, 'member.role !== "admin" || member.active !== true', 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', "active team admin before rollout");
- before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', 'auth.admin.inviteUserByEmail(', "rollout before email side-effect");
+ before(invite, 'ROTEVO_TEAM_INVITES_ENABLED !== "true"', 'auth.admin.createUser(', "rollout before email side-effect");
 });
 
 const singleProjectRoute=readFileSync(new URL("../../src/app/api/admin/project/route.ts",import.meta.url),"utf8");
@@ -279,4 +279,14 @@ test("administrator succession is gated, confirmed and audited atomically",()=>{
  assert.match(teamDirectory,/capabilities\.adminTransfer&&<TeamAdminTransferForm/);
  assert.match(directoryRoute,/ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED==="true"/);
  assert.match(transactionalTeamAudit,/administrator_transferred/);
+});
+
+test("administrator-created staff account begins inactive and temporary credential is not stored in team metadata",()=>{
+ assert.match(invite,/temporaryPassword\.length < 12/);
+ assert.match(invite,/app_metadata: \{ rotevo_password_reset_required: true \}/);
+ assert.match(invite,/active: false/);
+ assert.match(invite,/admin\.auth\.admin\.deleteUser\(created\.user\.id\)/);
+ assert.doesNotMatch(invite,/\.insert\(\{[^}]*temporaryPassword/);
+ assert.match(teamInviteForm,/type="password"/);
+ assert.match(teamInviteForm,/temporaryPassword/);
 });

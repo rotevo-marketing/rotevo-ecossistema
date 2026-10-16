@@ -33,3 +33,10 @@ test("administrative read API authenticates and authorizes before fetching docum
  const auth=code.indexOf("auth.getUser("),role=code.indexOf('profile?.role!=="strategist"'),project=code.indexOf('.from("planning_projects")');
  assert.ok(auth>=0&&role>auth&&project>role);
 });
+
+test("administrative project list checks role before querying private JSON",()=>{
+ const code=readFileSync(new URL("app/api/admin/projects/route.ts",root),"utf8");
+ const auth=code.indexOf("auth.getUser("),role=code.indexOf('profile?.role!=="strategist"'),projects=code.indexOf('.from("planning_projects")');
+ assert.ok(auth>=0&&role>auth&&projects>role);
+ assert.match(code,/"Cache-Control":"no-store"/);
+});

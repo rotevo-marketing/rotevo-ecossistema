@@ -94,3 +94,12 @@ test("team directory UI never reads membership table with browser credentials",(
  assert.match(teamDirectory, /fetch\("\/api\/team\/directory"/);
  assert.doesNotMatch(teamDirectory, /supabase\.from\("team_members"\)/);
 });
+
+test("team directory reads assignments and permissions only after admin authorization",()=>{
+ before(directoryRoute, 'member?.role!=="admin"||member.active!==true', '.from("team_project_assignments")', "assignments protected");
+ before(directoryRoute, 'member?.role!=="admin"||member.active!==true', '.from("team_member_permissions")', "permissions protected");
+ assert.match(directoryRoute,/if\(assignmentsError\)return fail\(503\)/);
+ assert.match(directoryRoute,/if\(permissionsError\)return fail\(503\)/);
+ assert.match(teamDirectory,/data\?\.assignments/);
+ assert.match(teamDirectory,/data\?\.permissions/);
+});

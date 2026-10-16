@@ -125,7 +125,7 @@ test("project assignment writes require administrator approval and rollout",()=>
  before(assignmentRoute,'auth.getUser(bearer.slice(7))','caller?.role!=="admin"||caller.active!==true',"identity before admin");
  before(assignmentRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"',"active admin before feature gate");
  before(assignmentRoute,'ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"','admin.rpc("rotevo_change_team_access"',"disabled by default");
- before(assignmentRoute,'.from("planning_projects").select("id")','.from("team_project_assignments").upsert(',"project must exist");
+ before(assignmentRoute,'.from("planning_projects").select("id")','admin.rpc("rotevo_change_team_access"',"project must exist");
  assert.match(assignmentRoute,/userId===identity\.user\.id/);
  assert.match(assignmentRoute,/target\.active!==true/);
  assert.match(assignmentRoute,/target\.role==="admin"/);
@@ -198,8 +198,8 @@ const projectDeleteRoute=readFileSync(new URL("../../src/app/api/admin/project/d
 const projectStatusRoute=readFileSync(new URL("../../src/app/api/admin/project/status/route.ts",import.meta.url),"utf8");
 test("project status and deletion enforce the same server-side authorization",()=>{
  for(const route of [projectDeleteRoute,projectStatusRoute]){
-  before(route,"auth.getUser(header.slice(7))","mayMutateProject(admin,identity.user.id,b.projectId)","verify caller before authorization");
-  before(route,"mayMutateProject(admin,identity.user.id,b.projectId)","if(!access.allowed)return fail(access.status)","deny before database change");
+  before(route,"auth.getUser(header.slice(7))","mayMutateProject(admin,identity.user.id,b.projectId,true)","verify caller before authorization");
+  before(route,"mayMutateProject(admin,identity.user.id,b.projectId,true)","if(!access.allowed)return fail(access.status)","deny before database change");
   before(route,"if(!access.allowed)return fail(access.status)",'.from("planning_projects")',"authorize before changing project");
  }
 });

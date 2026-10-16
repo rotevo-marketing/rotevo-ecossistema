@@ -148,3 +148,13 @@ test("central task board exposes linked document code and searchable title",()=>
  assert.match(board,/task\.documentCode/);
  assert.match(board,/ecosystemDocuments\.find/);
 });
+
+test("admin operations summary connects published 2027 documents and delivery deadlines per project",()=>{
+ const panel=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(panel,/documentSummary/);
+ assert.match(panel,/ecosystem2027/);
+ assert.match(panel,/publishedAt/);
+ assert.match(panel,/Acompanhamento por cliente e projeto/);
+ assert.match(panel,/Entregas abertas/);
+ assert.match(panel,/Atrasadas/);
+});

@@ -303,6 +303,11 @@ try {
   const published=await adminMutation("/api/admin/project/status","PATCH",strategistJwt,statusPayload);
   assert.equal(published.status,200,"strategist can publish synthetic project");
   assert.equal(JSON.parse(published.body).project.status,"published");
+  const servedReviewProject=await presentation(clientJwt,newProjectPayload.slug);
+  assert.equal(servedReviewProject.status,200,"authorized client can read released document");
+  assert.ok(servedReviewProject.body.includes("DRAFT_ONLY_SENTINEL"),"released snapshot appears");
+  assert.equal(servedReviewProject.body.includes("NEWER_PRIVATE_DRAFT_SENTINEL"),false,"later edits do not leak");
+
   assert.equal((await adminMutation("/api/admin/project/status","PATCH",strategistJwt,statusPayload)).status,409,"stale publication denied");
   const {data:afterStatus,error:afterStatusError}=await admin.from("planning_projects").select("status").eq("id",createdProjectId).single();
   assert.ifError(afterStatusError);

@@ -304,3 +304,9 @@ test("temporary-password change only targets the authenticated user and clears t
  assert.match(firstPasswordPage,/autocomplete|autoComplete="new-password"/);
  assert.match(strategistLogin,/router\.replace\("\/primeiro-acesso"\)/);
 });
+
+test("staff identities never inherit legacy strategist database authorization",()=>{
+ assert.match(invite,/role: "staff"/);
+ assert.match(invite,/profileInsertError/);
+ assert.match(invite,/admin\.auth\.admin\.deleteUser\(created\.user\.id\)/);
+});

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { projectForClient } from "../../src/lib/security/projectForClient.ts";
@@ -39,4 +40,10 @@ test("default-deny: items without explicit visibleToClient true never appear", (
  assert.equal(p.data.executionTimeline.length,0);
  assert.equal(p.data.onboardingChecklist.length,0);
  assert.equal(JSON.stringify(p).includes("DO_NOT_SEND"),false);
+});
+
+test("client portal must use the authorized projection endpoint, not raw project data", () => {
+ const source=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
+ assert.match(source,/fetch\("\/api\/client\/projects"/);
+ assert.doesNotMatch(source,/from\("planning_projects"\)/);
 });

@@ -7,6 +7,7 @@ export type ExecutionItem = {
   title:string;
   description?:string;
   projectTitle?:string;
+  documentCode?:string;
   phase?:string;
   owner?:string;
   ownerUserId?:string;

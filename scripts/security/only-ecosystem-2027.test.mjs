@@ -58,3 +58,10 @@ test("server validates all document transitions before changing project JSON",()
  assert.match(guard,/status\(oldDoc\)==="review"&&status\(nextDoc\)==="approved"/);
  assert.match(guard,/nextDoc\.publishedContent!==oldDoc\.content/);
 });
+
+test("current project admin contains no legacy module selection state",()=>{
+ const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ assert.doesNotMatch(page,/planningModules|moduleCategories|selectedModuleSlugs|saveModuleSelection|toggleModule/);
+ assert.match(page,/EcosystemDocumentEditor/);
+ assert.match(page,/selectedDocumentCodes/);
+});

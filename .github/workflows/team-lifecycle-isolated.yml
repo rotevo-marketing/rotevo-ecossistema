@@ -1,0 +1,81 @@
+name: Team lifecycle with isolated Supabase Auth
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/admin-v2-redesign]
+    paths:
+      - '.github/workflows/team-lifecycle-isolated.yml'
+      - 'scripts/security/team-lifecycle-local-http.mjs'
+      - 'src/app/api/team/**'
+      - 'supabase/migrations/**'
+permissions:
+  contents: read
+jobs:
+  authenticated-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Prepare a fresh detached local database with selected migrations only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rotevo-team-lifecycle"
+          cd "$RUNNER_TEMP/rotevo-team-lifecycle"
+          supabase init
+          mkdir -p supabase/migrations
+          cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_harden_profile_authorization.sql" supabase/migrations/20261015000001_profile_hardening.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_team_roles.sql" supabase/migrations/20261015000002_team.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261016_staff_role_legacy_boundary.sql" supabase/migrations/20261015000003_staff.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261016_team_access_audit.sql" supabase/migrations/20261015000004_audit.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261016210140_activation_privilege_boundary.sql" supabase/migrations/20261015000005_grants.sql
+          supabase start
+      - name: Verify registration, first password, project scope, revocation and deactivation
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          cd "$RUNNER_TEMP/rotevo-team-lifecycle"
+          supabase status -o env > "$RUNNER_TEMP/rotevo-local.env"
+          set -a
+          source "$RUNNER_TEMP/rotevo-local.env"
+          set +a
+          export NEXT_PUBLIC_SUPABASE_URL='http://127.0.0.1:54321'
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL='http://127.0.0.1:3000/'
+          export ROTEVO_LOCAL_API_TESTS='YES_LOCAL_ONLY'
+          export ROTEVO_TEAM_INVITES_ENABLED=true
+          export ROTEVO_TEAM_MEMBER_STATUS_ENABLED=true
+          export ROTEVO_TEAM_PERMISSIONS_ENABLED=true
+          export ROTEVO_TEAM_ASSIGNMENTS_ENABLED=true
+          export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED=true
+          cd "$GITHUB_WORKSPACE"
+          npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/rotevo-team-next.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            status=$(curl -s --max-time 3 -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/team/my-access || true)
+            if [ "$status" = 401 ]; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then tail -n 40 "$RUNNER_TEMP/rotevo-team-next.log"; exit 1; fi
+          node scripts/security/team-lifecycle-local-http.mjs
+      - name: Stop only this disposable local environment
+        if: always()
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/rotevo-team-lifecycle"
+          supabase stop --no-backup

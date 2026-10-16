@@ -49,4 +49,17 @@ O contrato de teste da consulta de equipe foi corrigido para aceitar arquivos CR
 
 Nenhuma migração, bootstrap, criação/inativação de conta real, flag de produção ou deploy foi executado nesta rodada. A autorização atual do usuário cobre o avanço condicionado; a pendência é técnica (recuperação e homologação), não nova aprovação genérica.
 
+## Continuidade: homologação autenticada local
+
+- Pipeline do commit `e42583a` confirmado com sucesso: [Security checks #38967090423](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/38967090423).
+- As configurações adicionais verificadas (credenciais salvas e diretórios temporários Supabase) não forneceram senha PostgreSQL de produção. `start-secrets` é parte do ambiente local; não comprova acesso remoto.
+- Preparadas as migrações selecionadas no banco de API **local** existente, que possuía duas identidades de laboratório e nenhum cliente/projeto. As flags foram habilitadas somente na configuração local ignorada pelo Git.
+- Executado `scripts/security/team-lifecycle-local-http.mjs`: **38 verificações autenticadas aprovadas** com Supabase Auth, REST e APIs Next.js reais, todos em loopback. O teste cria e remove somente IDs fictícios gerados pela execução.
+- Cobertura: cadastro com perfil `staff` e membro inicialmente inativo; duplicação sem exclusão do usuário existente; login com senha temporária; bloqueio antes da troca mesmo após ativação; rejeição de alvo arbitrário na troca; nova senha aceita e antiga rejeitada; troca não repetível; diretório/cadastro negados ao staff; concessão, vínculo, revogação de projeto/permissão; isolamento de REST direto; tentativa de elevar role negada; inativação nega token emitido anteriormente; sete mutações têm os sete eventos de auditoria correspondentes.
+- A primeira execução falhou apenas pela expectativa incorreta de oito eventos no teste; ajustado para comparar os sete eventos efetivamente solicitados. Segunda execução integral aprovada e fixtures removidos.
+- Ampliada a suíte para incluir cliente real do Auth local: somente seu projeto visível; diretório e área da equipe negados; alteração de role e client_id recusada. Corrigida a ordem de limpeza (usuários/perfis antes dos clientes referenciados). Execução final com 38 verificações e limpeza aprovada; inventário posterior: 2 identidades anteriores preservadas, 0 identidades lifecycle, 0 clientes, 0 projetos e 0 eventos de auditoria.
+- Workflow dedicado adicionado para repetir esse ciclo em Supabase descartável sem conexão com produção. O resultado local não substitui a confirmação desse novo workflow no GitHub, a homologação visual integral nem a restauração de dados reais.
+- Login local renderizado no navegador; o fluxo completo de interface de cadastro/troca ainda não foi homologado no navegador.
+- Backup de produção, restauração real, migração e bootstrap hospedados seguem pendentes da conexão privada e da recuperação comprovada.
+
 Referências: [RLS e TRUNCATE (PostgreSQL)](https://www.postgresql.org/docs/17/ddl-rowsecurity.html), [backup/restore Supabase](https://supabase.com/docs/guides/platform/migrating-within-supabase).

@@ -265,6 +265,36 @@ try {
   const createdProjectId=JSON.parse(createdProjectResponse.body).project.id;
   assert.ok(createdProjectId);
   assert.equal((await adminMutation("/api/admin/project/create","POST",strategistJwt,newProjectPayload)).status,409,"duplicate project slug denied");
+
+  // Enforce document review transitions on server-side authenticated writes.
+  const {data:initialRevision,error:initialRevisionError}=await admin.from("planning_projects")
+    .select("updated_at").eq("id",createdProjectId).single();
+  assert.ifError(initialRevisionError);
+  let revision=initialRevision.updated_at;
+  const when="2026-10-16T12:00:00.000Z";
+  const doc=(content,reviewStatus,extra={})=>({content,updatedAt:when,reviewStatus,...extra});
+  const change=async document=>{
+    const response=await adminMutation("/api/admin/project/update","PATCH",strategistJwt,{
+      projectId:createdProjectId,expectedUpdatedAt:revision,
+      data:{...newProjectPayload.data,ecosystem2027:{...newProjectPayload.data.ecosystem2027,
+        presentedDocumentCodes:["01.02"],documents:{"01.02":document}}}
+    });
+    if(response.status===200)revision=JSON.parse(response.body).project.updated_at;
+    return response.status;
+  };
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","approved",{publishedContent:"DRAFT_ONLY_SENTINEL",publishedAt:when})),400,
+    "single-step publication cannot bypass review and approval");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","draft")),200,"draft document can be saved");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","approved")),400,"server rejects approval before review");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","review")),200,"saved draft can enter review");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","approved")),200,"reviewed draft can be approved");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","approved",{publishedContent:"APPROVED_SNAPSHOT_SENTINEL",publishedAt:when})),400,
+    "release content must match the approved draft");
+  assert.equal(await change(doc("DRAFT_ONLY_SENTINEL","approved",{publishedContent:"DRAFT_ONLY_SENTINEL",publishedAt:when})),200,
+    "approved draft can be released");
+  assert.equal(await change(doc("NEWER_PRIVATE_DRAFT_SENTINEL","draft",{publishedContent:"DRAFT_ONLY_SENTINEL",publishedAt:when})),200,
+    "draft edits preserve published snapshot");
+
   const {data:beforeStatus,error:beforeStatusError}=await admin.from("planning_projects").select("status,updated_at").eq("id",createdProjectId).single();
   assert.ifError(beforeStatusError);
   const statusPayload={projectId:createdProjectId,expectedUpdatedAt:beforeStatus.updated_at,status:"published"};

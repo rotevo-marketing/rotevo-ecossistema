@@ -22,6 +22,15 @@ export function validExecutionDependencies(data:unknown):boolean{
   if(new Set(ids).size!==ids.length||ids.includes(item.id))return false;
   dependencies.set(item.id,ids);
  }
+ // Completion is a server-enforced workflow rule, not merely a disabled UI button.
+ for(const entry of timeline){
+  const item=object(entry)!;
+  if(item.status!=="completed")continue;
+  for(const id of dependencies.get(item.id as string)??[]){
+   const prerequisite=timeline.find(candidate=>object(candidate)?.id===id);
+   if(object(prerequisite)?.status!=="completed")return false;
+  }
+ }
  const done=new Set<string>(),visiting=new Set<string>();
  const visit=(id:string):boolean=>{
   if(!dependencies.has(id))return false;

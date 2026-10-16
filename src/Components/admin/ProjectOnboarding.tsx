@@ -17,13 +17,22 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
   if(draft.some(x=>x.title.trim().length<3)){setError("Informe uma descrição válida para cada etapa.");return;}
   setSaving(true);setError("");
   const value={...data,onboardingChecklist:draft.map(x=>({...x,title:x.title.trim()}))};
-  const now=new Date().toISOString();
-  const {data:result,error:err}=await supabase.from("planning_projects").update({data:value,updated_at:now}).eq("id",projectId).eq("updated_at",updatedAt).select("data,updated_at").maybeSingle();
-  setSaving(false);
-  if(err){setError("Não foi possível atualizar o onboarding. Confira as permissões.");return;}
-  if(!result){setError("O projeto foi atualizado em outra sessão. Atualize a página antes de salvar.");return;}
-  onSaved((result.data??value) as OnboardingData,result.updated_at);
-  setEditing(false);setNotice("Checklist de onboarding atualizado.");
+  try {
+   const {data:session,error:authError}=await supabase.auth.getSession();
+   const token=session.session?.access_token;
+   if(authError||!token){setError("Sessão expirada. Entre novamente para salvar.");return;}
+   const response=await fetch("/api/admin/project/update",{
+    method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+    body:JSON.stringify({projectId,expectedUpdatedAt:updatedAt,data:value}),cache:"no-store"
+   });
+   if(response.status===409){setError("O projeto foi atualizado em outra sessão. Atualize a página antes de salvar.");return;}
+   if(!response.ok){setError("Não foi possível atualizar o onboarding. Confira as permissões.");return;}
+   const result=await response.json();
+   if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar a atualização do onboarding.");return;}
+   onSaved(result.project.data as OnboardingData,result.project.updated_at);
+   setEditing(false);setNotice("Checklist de onboarding atualizado.");
+  }catch{setError("Falha de conexão ao salvar o onboarding.");}
+  finally{setSaving(false);}
  }
  return <section className="mt-6 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
   <div className="flex flex-wrap items-start justify-between gap-3">

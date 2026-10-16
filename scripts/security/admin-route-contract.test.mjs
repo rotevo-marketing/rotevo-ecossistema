@@ -45,3 +45,21 @@ test("client access: missing Auth UID requires explicit reconciliation and preve
   assert.match(missing, /status:\s*500/);
   before(client, "if (!userId) {", '.from("profiles").upsert(', "missing UID guard precedes profile update");
 });
+
+test("client access: duplicate Auth account cannot trigger profile upsert or rollback", () => {
+  const segment = client.slice(client.indexOf("if (createError) {"), client.indexOf("const userId = newUser.user?.id"));
+  assert.match(segment, /status:\s*409/);
+  assert.match(segment, /if \(alreadyExists\)/);
+  assert.doesNotMatch(segment, /\.from\("profiles"\)\.upsert\(/);
+  assert.doesNotMatch(segment, /compensateNewClientAccount\(/);
+});
+test("client access: successful response appears only after profile upsert handling", () => {
+  before(client, '.from("profiles").upsert(', "if (upsertError) {", "upsert precedes its failure handling");
+  before(client, "if (upsertError) {", "success: true,", "never report success before profile write is checked");
+});
+test("client access: reconciliation marker is surfaced for failed rollback", () => {
+  const branch = client.slice(client.indexOf("if (upsertError) {"), client.indexOf("// ── 10. Success"));
+  assert.match(branch, /rollback\.reconciliationRequired/);
+  assert.match(branch, /reconciliationRequired:\s*true/);
+  assert.match(branch, /status:\s*500/);
+});

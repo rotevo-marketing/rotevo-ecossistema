@@ -32,6 +32,8 @@ jobs:
           echo "Audit fix exit code: $code"
           cat /tmp/rotevo-audit-fix.log | tail -n 60
           git diff --stat -- package-lock.json
+      - name: Refresh Tiptap semver-compatible dependency family
+        run: npm update @tiptap/extension-link @tiptap/extension-underline @tiptap/pm @tiptap/react @tiptap/starter-kit --package-lock-only --no-audit --no-fund
       - name: Validate candidate dependency installation
         run: npm ci --no-audit --no-fund
       - name: TypeScript candidate verification

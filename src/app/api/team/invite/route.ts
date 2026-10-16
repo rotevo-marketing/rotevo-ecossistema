@@ -22,8 +22,9 @@ export async function POST(req: NextRequest) {
   if (!auth?.startsWith("Bearer ")) return response("Sessão não informada.", 401);
   let input: unknown;
   try { input = await req.json(); } catch { return response("Dados inválidos.", 400); }
-  if (!input || typeof input !== "object") return response("Dados inválidos.", 400);
+  if (!input || typeof input !== "object" || Array.isArray(input)) return response("Dados inválidos.", 400);
   const { email, displayName, role } = input as Record<string, unknown>;
+  if (Object.keys(input).some(key => !["email", "displayName", "role"].includes(key))) return response("Campos não autorizados.", 400);
   if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
       typeof displayName !== "string" || displayName.trim().length < 2 || displayName.length > 120 ||
       typeof role !== "string" || !roles.has(role)) return response("Revise nome, e-mail e função.", 400);

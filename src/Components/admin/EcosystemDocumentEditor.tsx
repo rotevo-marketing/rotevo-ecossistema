@@ -26,6 +26,12 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const approvedCount=documents.filter(d=>eco?.documents?.[d.code]?.reviewStatus==="approved").length;
  const draftCount=documents.filter(d=>!eco?.documents?.[d.code]||eco?.documents?.[d.code]?.reviewStatus==="draft").length;
  const publishedCount=documents.filter(d=>!!eco?.documents?.[d.code]?.publishedAt).length;
+ const areaProgress=Array.from(new Set(documents.map(d=>d.area))).map(area=>{
+  const scoped=documents.filter(d=>d.area===area);
+  const done=scoped.filter(d=>!!eco?.documents?.[d.code]?.publishedAt).length;
+  return {area,total:scoped.length,done};
+ });
+ const overallProgress=documents.length?Math.round(publishedCount/documents.length*100):0;
  const active=documents.find(d=>d.code===code)??documents[0];
  const activeCode=active?.code??"";
  const record=activeCode?eco?.documents?.[activeCode]:undefined;
@@ -71,6 +77,13 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
    <h2 className="text-xl font-bold text-[#090D1C]">Documentos do Ecossistema 2027</h2>
    <p className="mt-2 text-sm text-[#697386]">Edite, revise e aprove cada documento. A apresentação utiliza somente a versão explicitamente publicada; alterações no rascunho não modificam o conteúdo já entregue ao cliente.</p>
    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Indicadores dos documentos"><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{documents.length}</strong>Selecionados</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{draftCount}</strong>Em produção</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{reviewedCount}</strong>Em revisão</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{approvedCount}</strong>Aprovados</div><div className="rounded-xl bg-[#F6F7FB] p-3 text-sm"><strong className="block text-xl">{publishedCount}</strong>Publicados</div></div>
+   <div className="mt-5 rounded-xl border border-[#E3E7F0] p-4">
+    <div className="flex items-center justify-between gap-2 text-sm"><strong>Progresso de publicação</strong><span className="font-semibold">{overallProgress}%</span></div>
+    <progress max={100} value={overallProgress} aria-label="Progresso geral de publicação" className="mt-3 h-2 w-full accent-[#6D35F5]"/>
+    <details className="mt-3"><summary className="cursor-pointer text-xs font-medium text-[#525B70]">Acompanhar por área estratégica</summary>
+      <div className="mt-3 space-y-3">{areaProgress.map(item=><div key={item.area}><div className="flex justify-between gap-3 text-xs"><span>{item.area}</span><span>{item.done} / {item.total}</span></div><progress aria-label={`Publicações em ${item.area}`} max={item.total} value={item.done} className="mt-1 h-2 w-full accent-[#6D35F5]"/></div>)}</div>
+    </details>
+   </div>
    {documents.length===0?<p className="mt-5 text-sm text-[#697386]">Selecione documentos para começar.</p>:<>
     <div className="mt-5 grid gap-4 md:grid-cols-[270px_1fr]">
      <div><label htmlFor="rotevo-doc-search" className="mb-2 block text-sm font-semibold">Buscar documento</label><input id="rotevo-doc-search" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Código, título ou área" className="mb-4 w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm"/><label htmlFor="rotevo-doc-filter" className="mb-2 block text-sm font-semibold">Filtrar por etapa</label><select id="rotevo-doc-filter" value={statusFilter} onChange={e=>setStatusFilter(e.target.value as typeof statusFilter)} className="mb-4 w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm"><option value="all">Todas as etapas</option><option value="draft">Em produção</option><option value="review">Em revisão</option><option value="approved">Aprovados</option><option value="published">Com versão publicada</option></select><label htmlFor="rotevo-doc-code" className="mb-2 block text-sm font-semibold">Documento</label>

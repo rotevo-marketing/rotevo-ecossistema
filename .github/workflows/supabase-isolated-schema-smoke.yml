@@ -1,0 +1,56 @@
+name: Supabase isolated legacy baseline smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Prepare detached local Supabase workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rotevo-security-lab"
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase init
+          cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
+          mkdir -p supabase/tests/database
+          cat > supabase/tests/database/schema_smoke.sql <<'SQL'
+          BEGIN;
+          CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+          SELECT plan(6);
+          SELECT has_table('public','profiles','profiles fixture exists');
+          SELECT has_table('public','clients','clients fixture exists');
+          SELECT has_table('public','client_users','client_users fixture exists');
+          SELECT has_table('public','planning_projects','planning_projects fixture exists');
+          SELECT has_function('public','is_strategist',ARRAY[]::text[],'function fixture exists');
+          SELECT is((SELECT count(*)::integer FROM pg_policies
+            WHERE schemaname='public' AND tablename IN
+            ('profiles','clients','client_users','planning_projects')),16,'fixture loads 16 policies');
+          SELECT * FROM finish();
+          ROLLBACK;
+          SQL
+      - name: Start wholly local Supabase and run database smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase start
+          supabase test db --local
+      - name: Stop detached local environment
+        if: always()
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase stop --no-backup || true

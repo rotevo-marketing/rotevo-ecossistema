@@ -63,6 +63,14 @@ export async function POST(req: NextRequest) {
   });
   if (createError || !created.user)
     return response("Não foi possível cadastrar o usuário. Confirme se o e-mail já está em uso.",409);
+  // A restricted employee must never inherit legacy strategist RLS privileges.
+  const { error: profileInsertError } = await admin.from("profiles").insert({
+    id: created.user.id, full_name: displayName.trim(), email: cleanEmail, role: "staff"
+  });
+  if (profileInsertError) {
+    await admin.auth.admin.deleteUser(created.user.id);
+    return response("Não foi possível configurar o perfil limitado; cadastro revertido.",503);
+  }
   const { error: insertError } = await admin.from("team_members").insert({
     user_id: created.user.id, display_name: displayName.trim(), role, active: false
   });

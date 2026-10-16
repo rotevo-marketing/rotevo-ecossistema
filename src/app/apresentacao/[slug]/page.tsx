@@ -10,7 +10,7 @@ type PresentationProject={
  id:string;title:string;slug:string;status:string;client_id:string;
  clients:{name:string;slug:string}|{name:string;slug:string}[]|null;
  data:{coverImageUrl?:string|null;deliverySchedule?:Record<string,string>|null;
- ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null
+ ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,{content:string}>}}|null
 };
 const clientOf=(project:PresentationProject)=>Array.isArray(project.clients)?project.clients[0]:project.clients;
 
@@ -60,5 +60,6 @@ export default function ApresentacaoDinamicaPage(){
   isStrategist={strategist}
   selectedCodes={details.ecosystem2027?.selectedDocumentCodes??[]}
   presentedCodes={details.ecosystem2027?.presentedDocumentCodes??[]}
+  documents={details.ecosystem2027?.documents??{}}
  />;
 }

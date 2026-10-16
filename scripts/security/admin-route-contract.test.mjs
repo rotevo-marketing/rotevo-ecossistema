@@ -109,8 +109,8 @@ test("permission mutations require verified active admin and explicit rollout",(
  before(permissionRoute,'auth.getUser(bearer.slice(7))','profile?.role!=="strategist"',"verified user");
  before(permissionRoute,'profile?.role!=="strategist"','caller?.role!=="admin"||caller.active!==true',"caller role");
  before(permissionRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"',"active administrator required");
- before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','.upsert({user_id:userId,permission}',"disabled by default");
- before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','.delete().eq("user_id",userId)',"disabled before revocation");
+ before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','admin.rpc("rotevo_change_team_access"',"disabled by default");
+ before(permissionRoute,'ROTEVO_TEAM_PERMISSIONS_ENABLED!=="true"','admin.rpc("rotevo_change_team_access"',"disabled before revocation");
 });
 test("permission mutations disallow self editing, inactive targets and admin role",()=>{
  assert.match(permissionRoute,/userId===identity\.user\.id/);
@@ -124,7 +124,7 @@ const assignmentRoute=readFileSync(new URL("../../src/app/api/team/assignments/r
 test("project assignment writes require administrator approval and rollout",()=>{
  before(assignmentRoute,'auth.getUser(bearer.slice(7))','caller?.role!=="admin"||caller.active!==true',"identity before admin");
  before(assignmentRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"',"active admin before feature gate");
- before(assignmentRoute,'ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"','.from("team_project_assignments").upsert(',"disabled by default");
+ before(assignmentRoute,'ROTEVO_TEAM_ASSIGNMENTS_ENABLED!=="true"','admin.rpc("rotevo_change_team_access"',"disabled by default");
  before(assignmentRoute,'.from("planning_projects").select("id")','.from("team_project_assignments").upsert(',"project must exist");
  assert.match(assignmentRoute,/userId===identity\.user\.id/);
  assert.match(assignmentRoute,/target\.active!==true/);
@@ -144,11 +144,11 @@ const memberStatusRoute=readFileSync(new URL("../../src/app/api/team/members/sta
 test("member status requires verified administrator and explicit activation flag",()=>{
  before(memberStatusRoute,'auth.getUser(bearer.slice(7))','caller?.role!=="admin"||caller.active!==true',"verified caller");
  before(memberStatusRoute,'caller?.role!=="admin"||caller.active!==true','ROTEVO_TEAM_MEMBER_STATUS_ENABLED!=="true"',"active admin");
- before(memberStatusRoute,'ROTEVO_TEAM_MEMBER_STATUS_ENABLED!=="true"','.update({active})',"disabled by default");
+ before(memberStatusRoute,'ROTEVO_TEAM_MEMBER_STATUS_ENABLED!=="true"','admin.rpc("rotevo_change_team_access"',"disabled by default");
  assert.match(memberStatusRoute,/userId===identity\.user\.id/);
  assert.match(memberStatusRoute,/target\.role==="admin"/);
- assert.match(memberStatusRoute,/\.eq\("active",target\.active\)/);
- assert.match(memberStatusRoute,/\.neq\("role","admin"\)/);
+ assert.match(memberStatusRoute,/p_expected_active:target.active/);
+ assert.match(memberStatusRoute,/p_action:"status"/);
 });
 
 const teamMemberControls=readFileSync(new URL("../../src/Components/admin/TeamMemberControls.tsx",import.meta.url),"utf8");
@@ -253,4 +253,17 @@ test("project status and deletion use administrator-only authorization during ro
  for(const route of [projectDeleteRoute,projectStatusRoute]){
   assert.match(route,/mayMutateProject\(admin,identity\.user\.id,b\.projectId,true\)/);
  }
+});
+
+const transactionalTeamAudit=readFileSync(new URL("../../supabase/migrations/20261016_team_access_audit.sql",import.meta.url),"utf8");
+test("team mutations use one server-only transaction with an audit entry",()=>{
+ for(const route of [permissionRoute,assignmentRoute,memberStatusRoute]){
+  assert.match(route,/admin\.rpc\("rotevo_change_team_access"/);
+  assert.doesNotMatch(route,/\.from\("team_member_permissions"\)\.(?:upsert|delete)/);
+  assert.doesNotMatch(route,/\.from\("team_project_assignments"\)\.(?:upsert|delete)/);
+ }
+ assert.match(transactionalTeamAudit,/security definer/i);
+ assert.match(transactionalTeamAudit,/grant execute on function public\.rotevo_change_team_access[^;]+to service_role/i);
+ assert.match(transactionalTeamAudit,/team_audit_events/);
+ assert.match(transactionalTeamAudit,/p_expected_active/);
 });

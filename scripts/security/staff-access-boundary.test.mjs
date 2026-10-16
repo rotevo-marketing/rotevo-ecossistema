@@ -23,3 +23,9 @@ test("staff registration and database constraints disallow legacy strategist inh
  assert.match(sql,/role in \('strategist','client','staff'\)/);
  assert.match(sql,/revoke update on public\.profiles from anon,authenticated/);
 });
+
+test("only explicitly assigned projects with read permission expose titles",()=>{
+ assert.match(api,/permitted\.includes\("projects\.read"\)&&ids\.length>0/);
+ assert.match(api,/\.select\("id,title"\)\.in\("id",ids\)/);
+ assert.doesNotMatch(api,/\.select\("\*"\)/);
+});

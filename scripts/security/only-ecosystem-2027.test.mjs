@@ -259,3 +259,15 @@ test("operational management connects task priorities to editor, task board and 
  assert.match(overview,/Distribuição da carga por responsável/);
  assert.match(overview,/Não representa horas trabalhadas/);
 });
+
+test("task hub supports authorized inline team reassignment and reprioritization",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/supabase\.from\("team_members"\)/);
+ assert.match(board,/\.eq\("active",true\)/);
+ assert.match(board,/async function updateTask/);
+ assert.match(board,/expectedUpdatedAt:project\.updated_at/);
+ assert.match(board,/updateTask\(project,task,\{priority:/);
+ assert.match(board,/updateTask\(project,task,\{ownerUserId:/);
+ assert.match(board,/Responsável por/);
+ assert.match(board,/Prioridade de/);
+});

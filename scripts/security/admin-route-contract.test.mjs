@@ -192,3 +192,21 @@ test("staged project listing enforces active membership, read permission and pro
  assert.match(projectsListRoute,/query=query\.in\("id",allowedProjectIds\)/);
  assert.match(projectsListRoute,/allowedProjectIds\.length===0/);
 });
+
+const sharedProjectAuth=readFileSync(new URL("../../src/lib/security/teamProjectAuthorization.ts",import.meta.url),"utf8");
+const projectDeleteRoute=readFileSync(new URL("../../src/app/api/admin/project/delete/route.ts",import.meta.url),"utf8");
+const projectStatusRoute=readFileSync(new URL("../../src/app/api/admin/project/status/route.ts",import.meta.url),"utf8");
+test("project status and deletion enforce the same server-side authorization",()=>{
+ for(const route of [projectDeleteRoute,projectStatusRoute]){
+  before(route,"auth.getUser(header.slice(7))","mayMutateProject(admin,identity.user.id,b.projectId)","verify caller before authorization");
+  before(route,"mayMutateProject(admin,identity.user.id,b.projectId)","if(!access.allowed)return fail(access.status)","deny before database change");
+  before(route,"if(!access.allowed)return fail(access.status)",'.from("planning_projects")',"authorize before changing project");
+ }
+});
+test("shared project guard fails closed for inactive and unassigned members",()=>{
+ assert.match(sharedProjectAuth,/ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED/);
+ assert.match(sharedProjectAuth,/member\.active!==true/);
+ assert.match(sharedProjectAuth,/if\(!assignment\)/);
+ assert.match(sharedProjectAuth,/projects\.write/);
+ assert.match(sharedProjectAuth,/status:503/);
+});

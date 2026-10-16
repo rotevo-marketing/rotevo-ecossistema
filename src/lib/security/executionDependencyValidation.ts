@@ -5,6 +5,8 @@ const object=(value:unknown):ObjectValue|null=>value!==null&&typeof value==="obj
  * Existing projects without a timeline remain compatible. All existing links must be
  * resolvable within the same project; dangling links and cycles are rejected.
  */
+export const validOperationalTime=(time:string):boolean=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+
 export function validExecutionDependencies(data:unknown):boolean{
  const root=object(data);
  if(!root)return false;
@@ -20,7 +22,7 @@ export function validExecutionDependencies(data:unknown):boolean{
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return false;
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return false;
    if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date+"T12:00:00")))return false;
-   if(item.time!==undefined&&item.time!==""&&(typeof item.time!=="string"||!/^([01]\d|2[0-3]):[0-5]\d$/.test(item.time)))return false;
+   if(item.time!==undefined&&item.time!==""&&(typeof item.time!=="string"||!validOperationalTime(item.time)))return false;
    if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;

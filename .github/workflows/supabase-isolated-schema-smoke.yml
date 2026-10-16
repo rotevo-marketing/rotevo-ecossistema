@@ -2,6 +2,12 @@ name: Supabase isolated legacy baseline smoke test
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - '.github/workflows/supabase-isolated-schema-smoke.yml'
+      - 'docs/security/lab-legacy-baseline-local-only.sql'
 
 permissions:
   contents: read

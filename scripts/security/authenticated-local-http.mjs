@@ -152,7 +152,7 @@ try {
       editorialCalendar:[{id:"e-a",title:"Published A",status:"awaiting_client",visibleToClient:true},
                          {id:"e-hide",title:"Secret A",status:"review",visibleToClient:false}]
     }},
-    {client_id:b.id,title:"Public B",slug:"ci-public-b",data:{internalNotes:"PRIVATE_TENANT_B_SENTINEL"}}
+    {client_id:b.id,title:"Public B",slug:"ci-public-b",status:"draft",data:{internalNotes:"PRIVATE_TENANT_B_SENTINEL"}}
   ]);
   assert.ifError(projectsError);
   async function getProjects(jwt) {

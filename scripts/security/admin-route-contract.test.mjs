@@ -233,3 +233,11 @@ test("new projects require active administrator when staged team enforcement is 
  before(createProjectRoute,'member.role!=="admin"','.from("clients")',"admin gate before accessing client");
  assert.match(createProjectRoute,/member\.active!==true/);
 });
+
+const presentationRoute=readFileSync(new URL("../../src/app/api/presentation/project/route.ts",import.meta.url),"utf8");
+test("strategist presentation is scoped to active assigned projects when team enforcement is enabled",()=>{
+ assert.match(presentationRoute,/profile\.role==="strategist"&&process\.env\.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"/);
+ before(presentationRoute,'member.active!==true','.from("team_project_assignments")',"inactive members denied");
+ before(presentationRoute,'.from("team_project_assignments")','.from("team_member_permissions")',"project assignment before read permission");
+ before(presentationRoute,'.eq("permission","projects.read")','projectForPresentation(',"read authorization before presentation");
+});

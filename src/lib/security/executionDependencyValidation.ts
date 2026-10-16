@@ -15,6 +15,7 @@ export function validExecutionDependencies(data:unknown):boolean{
  for(const entry of timeline){
   const item=object(entry);
   if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||dependencies.has(item.id))return false;
+  if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   const raw=item.dependencies??[];
   if(!Array.isArray(raw)||raw.length>200)return false;
   if(raw.some((id:unknown)=>typeof id!=="string"||!id.trim()||id.length>128))return false;

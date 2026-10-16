@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import {supabase} from "@/lib/supabase";
+import {canGrantTeamPermission,teamPermissionLabels,teamPermissionLabel} from "@/lib/team-permissions";
 export type TeamProject={id:string;title:string};
 export type TeamPermission={user_id:string;permission:string};
 export type TeamAssignment={user_id:string;project_id:string};
@@ -10,7 +11,7 @@ type Props={
  projects:TeamProject[];assignments:TeamAssignment[];permissions:TeamPermission[];
  capabilities:TeamCapabilities;onUpdated:()=>Promise<void>;
 };
-const allowedPermissions=["projects.read","projects.write","tasks.read","tasks.write","editorial.read","editorial.write","meetings.read","finance.read","finance.write"];
+const allowedPermissions=Object.keys(teamPermissionLabels);
 export default function TeamMemberControls({userId,memberRole,active,projects,assignments,permissions,capabilities,onUpdated}:Props){
  const [pending,setPending]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [permission,setPermission]=useState(allowedPermissions[0]);
@@ -37,6 +38,7 @@ export default function TeamMemberControls({userId,memberRole,active,projects,as
  if(!editable||!capabilities.permissions&&!capabilities.assignments&&!capabilities.memberStatus)return null;
  return <div className="mt-3 space-y-3 rounded-xl border border-[#E3E7F0] bg-white p-3">
   <p className="text-xs font-semibold text-[#525B70]">Administração de acesso</p>
+  <p className="text-xs text-[#697386]">A função organiza a equipe. O acesso depende da ativação, da permissão de consulta e dos projetos atribuídos. Edição, tarefas, conteúdo, reuniões e financeiro ainda não estão disponíveis para colaboradores.</p>
   {capabilities.memberStatus&&<div className="flex flex-wrap items-center justify-between gap-2">
    <span className="text-xs text-[#525B70]">Situação do colaborador</span>
    <button type="button" disabled={pending} onClick={()=>void apply("/api/team/members/status",{userId,active:!active})}
@@ -46,11 +48,12 @@ export default function TeamMemberControls({userId,memberRole,active,projects,as
    <label className="text-xs text-[#525B70]" htmlFor={`permission-${userId}`}>Permissão</label>
    <select id={`permission-${userId}`} value={permission} onChange={event=>setPermission(event.target.value)}
     className="min-w-0 flex-1 rounded-lg border border-[#D5D9E6] px-2 py-1.5 text-xs">
-    {allowedPermissions.map(value=><option key={value} value={value}>{value}</option>)}
+    {allowedPermissions.map(value=><option key={value} value={value}>{teamPermissionLabel(value)}</option>)}
    </select>
    <button type="button" disabled={pending} onClick={()=>void apply("/api/team/permissions",{userId,permission,enabled:!hasPermission})}
     className="rounded-lg border border-[#D5D9E6] px-3 py-1.5 text-xs disabled:opacity-50">{hasPermission?"Revogar":"Conceder"}</button>
   </div>}
+  {active&&capabilities.permissions&&permissions.filter(p=>p.user_id===userId&&!canGrantTeamPermission(p.permission)).map(p=><div key={p.permission} className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-[#697386]">Concessão anterior sem funcionalidade disponível</span><button type="button" disabled={pending} onClick={()=>void apply("/api/team/permissions",{userId,permission:p.permission,enabled:false})} className="rounded-lg border border-[#D5D9E6] px-3 py-1.5 text-xs disabled:opacity-50">Revogar concessão anterior</button></div>)}
   {active&&capabilities.assignments&&<div className="flex flex-wrap items-center gap-2">
    <label className="text-xs text-[#525B70]" htmlFor={`project-${userId}`}>Projeto</label>
    <select id={`project-${userId}`} value={projectId} onChange={event=>setProjectId(event.target.value)}

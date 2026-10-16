@@ -1,3 +1,5 @@
+> Registro histórico de preparação. Para o estado posterior à ativação do banco, ao rollback da publicação e à homologação local V2, consulte [a validação atual](team-v2-local-validation-20261016.md). As pendências abaixo descrevem a situação da rodada original.
+
 # ROTEVO — Gestão de Usuários e Permissões: roteiro de homologação
 
 Estado: **STAGED / NÃO ATIVADO**. Documento de revisão; não autoriza deploy, migração ou criação de usuários.

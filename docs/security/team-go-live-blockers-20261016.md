@@ -1,3 +1,5 @@
+> Registro histórico de preparação. Para o estado posterior à ativação do banco, ao rollback da publicação e à homologação local V2, consulte [a validação atual](team-v2-local-validation-20261016.md). As pendências abaixo descrevem a situação da rodada original.
+
 # Fechamento de usuários — estado verificável e bloqueios de implantação
 
 Data: 16/10/2026. Alterações de código na branch de desenvolvimento, sem intervenção no Supabase hospedado.

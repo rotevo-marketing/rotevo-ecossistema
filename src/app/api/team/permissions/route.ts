@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
+import {canGrantTeamPermission} from "@/lib/team-permissions";
 export const runtime="nodejs";
 const allowed=new Set(["projects.read","projects.write","tasks.read","tasks.write","editorial.read","editorial.write","meetings.read","finance.read","finance.write"]);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +30,8 @@ export async function PATCH(req:NextRequest){
  if(Object.keys(input).some(key=>!["userId","permission","enabled"].includes(key)))return fail(400,"Campos não autorizados.");
  const {userId,permission,enabled}=input;
  if(typeof userId!=="string"||!uuid.test(userId)||typeof permission!=="string"||!allowed.has(permission)||typeof enabled!=="boolean")return fail(400,"Parâmetros inválidos.");
+ // Permit revocation of older grants, but never grant unimplemented operations.
+ if(enabled&&!canGrantTeamPermission(permission))return fail(409,"Esta permissão ainda não está disponível. Nesta etapa, apenas a consulta dos nomes dos projetos pode ser concedida.");
  if(userId===identity.user.id)return fail(403,"Não é permitido alterar as próprias permissões.");
  const {data:target,error:targetError}=await admin.from("team_members").select("role,active").eq("user_id",userId).maybeSingle();
  if(targetError)return fail(503,"Destinatário indisponível.");

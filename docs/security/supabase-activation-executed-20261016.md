@@ -4,7 +4,9 @@ Data: 16/10/2026. Projeto: `kadvzjelkyfwouqmlxaa`. Branch: `feature/admin-v2-red
 
 ## Resultado
 
-**Backup privado, restauração, ensaio das migrações, ativação do banco e publicação da Gestão de Usuários no domínio oficial concluídos.**
+**Backup privado, restauração, ensaio das migrações e ativação do banco concluídos. A publicação antecipada da Gestão de Usuários sobre a interface anterior foi revertida em 16/10/2026 após esclarecimento do usuário. O desenvolvimento deve continuar na interface V2 da branch `feature/admin-v2-redesign`, sem nova publicação em produção.**
+
+Correção: o domínio oficial voltou à implantação `dpl_6in2DbPJnSeD49oJsMd197TDvvXg`; as flags de cadastro, permissões, vínculos e estado dos membros foram desativadas no ambiente production. O commit de entrega continua salvo no Git; o rollback alterou a implantação servida, sem apagar código ou desfazer a segurança do banco. Os registros de publicação abaixo descrevem o evento anterior à reversão.
 
 Administrador principal configurado e verificado: **Otávio Silva — contato@rotevo.com.br**, membro `admin` ativo. As 12 identidades e credenciais de usuários existentes foram preservadas.
 

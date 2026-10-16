@@ -232,6 +232,23 @@ export default function PlanejamentoClientePage() {
     setSelectedModuleSlugs([]);
   }
 
+  async function saveAuthorizedProjectData(current: PlanningProject, nextData: ProjectData): Promise<{data: ProjectData; updated_at: string}> {
+    const {data:session,error:sessionError}=await supabase.auth.getSession();
+    const token=session.session?.access_token;
+    if(sessionError||!token) throw new Error("Sessão expirada. Entre novamente para salvar.");
+    const response=await fetch("/api/admin/project/update",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+      body:JSON.stringify({projectId:current.id,expectedUpdatedAt:current.updated_at,data:nextData}),
+      cache:"no-store"
+    });
+    if(response.status===409) throw new Error("Este planejamento foi modificado em outra sessão. Recarregue a página antes de salvar.");
+    if(!response.ok) throw new Error("Não foi possível salvar. Confira suas permissões e tente novamente.");
+    const result=await response.json();
+    if(!result?.project||typeof result.project.updated_at!=="string") throw new Error("Não foi possível confirmar a gravação.");
+    return {data:result.project.data as ProjectData,updated_at:result.project.updated_at};
+  }
+
   async function saveModuleSelection() {
     if (!project) {
       return;
@@ -261,30 +278,15 @@ export default function PlanejamentoClientePage() {
       modules: selectedModuleRecords,
     };
 
-    const { error } = await supabase
-      .from("planning_projects")
-      .update({
-        data: nextData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
-
-    if (error) {
-      setErrorMessage(
-        error.message || "Não foi possível salvar a seleção de módulos."
-      );
+    try {
+      const saved = await saveAuthorizedProjectData(project,nextData);
+      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+      setSuccessMessage("Seleção de módulos salva com sucesso.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível salvar a seleção de módulos.");
+    } finally {
       setIsSaving(false);
-      return;
     }
-
-    setProject({
-      ...project,
-      data: nextData,
-      updated_at: new Date().toISOString(),
-    });
-
-    setSuccessMessage("Seleção de módulos salva com sucesso.");
-    setIsSaving(false);
   }
 
   function toggleScopeDocument(code: string, kind: "include" | "present") {
@@ -320,20 +322,18 @@ export default function PlanejamentoClientePage() {
         presentedDocumentCodes: visible,
       },
     };
-    const updatedAt = new Date().toISOString();
-    const { error } = await supabase.from("planning_projects").update({
-      data: nextData, updated_at: updatedAt,
-    }).eq("id", project.id);
-    setIsSaving(false);
-    if (error) {
-      setErrorMessage(error.message || "Não foi possível salvar os documentos.");
-      return;
+    try {
+      const saved=await saveAuthorizedProjectData(project,nextData);
+      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+      setDraftDocumentCodes(included);
+      setDraftPresentedCodes(visible);
+      setEditingScope(false);
+      setSuccessMessage("Documentos do planejamento atualizados com sucesso.");
+    } catch(error) {
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível salvar os documentos.");
+    } finally {
+      setIsSaving(false);
     }
-    setProject({ ...project, data: nextData, updated_at: updatedAt });
-    setDraftDocumentCodes(included);
-    setDraftPresentedCodes(visible);
-    setEditingScope(false);
-    setSuccessMessage("Documentos do planejamento atualizados com sucesso.");
   }
 
   async function handlePublish(newStatus: "draft" | "published") {

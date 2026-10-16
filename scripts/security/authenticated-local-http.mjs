@@ -65,6 +65,18 @@ try {
   assert.ifError(confirmationError);
   assert.equal(confirmed.full_name,"Fictitious client updated");
   assert.equal(confirmed.role,"client","display name edit must not change role");
+  // Mutating security-sensitive fields must be denied at the real local REST layer.
+  const {error:roleWriteError}=await anonClient.from("profiles")
+    .update({role:"strategist"}).eq("id",client.id);
+  assert.ok(roleWriteError,"authenticated client must not update role");
+  const {error:tenantWriteError}=await anonClient.from("profiles")
+    .update({client_id:"00000000-0000-4000-8000-000000000001"}).eq("id",client.id);
+  assert.ok(tenantWriteError,"authenticated client must not reassign its tenant");
+  const {data:protectedProfile,error:protectedReadError}=await admin.from("profiles")
+    .select("role,client_id").eq("id",client.id).single();
+  assert.ifError(protectedReadError);
+  assert.equal(protectedProfile.role,"client","role is unchanged after forbidden write");
+  assert.equal(protectedProfile.client_id,null,"tenant is unchanged after forbidden write");
   await anonClient.auth.signOut();
   const clientJwt=await token(client.email);
   const inactiveJwt=await token(inactive.email);

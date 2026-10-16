@@ -40,3 +40,23 @@ test("administrative project list checks role before querying private JSON",()=>
  assert.ok(auth>=0&&role>auth&&projects>role);
  assert.match(code,/"Cache-Control":"no-store"/);
 });
+
+test("project create and status routes authenticate before privileged writes",()=>{
+ for(const [path,operation] of [
+  ["app/api/admin/project/create/route.ts",'.from("planning_projects").insert('],
+  ["app/api/admin/project/status/route.ts",'.from("planning_projects")']
+ ]){
+  const source=readFileSync(new URL(path,root),"utf8");
+  const token=source.indexOf("auth.getUser(");
+  const role=source.indexOf('profile?.role!=="strategist"');
+  const write=source.indexOf(operation);
+  assert.ok(token>=0&&role>token&&write>role,path);
+  assert.match(source,/"Cache-Control":"no-store"/);
+ }
+ const status=readFileSync(new URL("app/api/admin/project/status/route.ts",root),"utf8");
+ assert.match(status,/\.eq\("updated_at",b\.expectedUpdatedAt\)/);
+ assert.match(status,/if\(!updated\)return fail\(409\)/);
+ const create=readFileSync(new URL("app/api/admin/project/create/route.ts",root),"utf8");
+ assert.match(create,/if\(!client\)return fail\(404\)/);
+ assert.match(create,/createError\.code==="23505"\?409:503/);
+});

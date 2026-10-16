@@ -43,3 +43,10 @@ test("operational meetings and followups require valid dates and linked tasks",(
  assert.equal(valid({...project(task("a")),operationalAgenda:[event,{...event}]}),false);
  assert.equal(valid({...project(task("a")),operationalAgenda:[{...event,date:"invalid"}]}),false);
 });
+
+test("operational agenda accepts valid optional times and rejects invalid clocks",()=>{
+ const event={id:"meeting-1",title:"Alinhamento",kind:"meeting",date:"2026-11-15",status:"planned"};
+ assert.equal(valid({operationalAgenda:[{...event,time:"09:30"}]}),true);
+ assert.equal(valid({operationalAgenda:[{...event,time:""}]}),true);
+ for(const time of ["24:00","09:65","noon","9:30"])assert.equal(valid({operationalAgenda:[{...event,time}]}),false);
+});

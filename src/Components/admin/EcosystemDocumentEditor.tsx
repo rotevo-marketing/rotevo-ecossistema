@@ -68,10 +68,11 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
     <div className="mt-5 grid gap-4 md:grid-cols-[270px_1fr]">
      <div><label htmlFor="rotevo-doc-search" className="mb-2 block text-sm font-semibold">Buscar documento</label><input id="rotevo-doc-search" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Código, título ou área" className="mb-4 w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm"/><label htmlFor="rotevo-doc-code" className="mb-2 block text-sm font-semibold">Documento</label>
       <select id="rotevo-doc-code" value={activeCode} onChange={e=>{if(content!==savedContent&&!window.confirm("Descartar as alterações não salvas?"))return;setCode(e.target.value);}} className="w-full rounded-xl border border-[#E3E7F0] bg-white px-3 py-3 text-sm">
-       {visibleDocuments.length===0?<option disabled value="">Nenhum documento encontrado</option>:null}
-       {documents.map(doc=><option key={doc.code} value={doc.code} hidden={!visibleDocuments.includes(doc)}>{doc.code} — {doc.title}</option>)}
+       {documents.map(doc=><option key={doc.code} value={doc.code}>{doc.code} — {doc.title}</option>)}
       </select>
       <p className="mt-3 text-xs text-[#697386]">{active?.area}</p>
+      {search.trim()&&<div className="mt-3 max-h-44 space-y-1 overflow-y-auto rounded-xl border border-[#E3E7F0] p-2" aria-label="Resultados da busca">{visibleDocuments.length===0?<p className="p-2 text-xs text-[#697386]">Nenhum documento encontrado.</p>:visibleDocuments.map(doc=><button key={doc.code} type="button" onClick={()=>{if(content!==savedContent&&!window.confirm("Descartar alterações não salvas?"))return;setCode(doc.code);}} className={`block w-full rounded-lg px-3 py-2 text-left text-xs ${doc.code===activeCode?"bg-[#F0ECFF] font-bold":"hover:bg-[#F6F7FB]"}`}>{doc.code} — {doc.title}</button>)}</div>}
+
      </div>
      <div><label htmlFor="rotevo-doc-body" className="mb-2 block text-sm font-semibold">Conteúdo estratégico</label>
       <textarea id="rotevo-doc-body" rows={14} value={content} onChange={e=>setContent(e.target.value)} placeholder="Insira aqui o documento estratégico estruturado..." className="min-h-72 w-full rounded-xl border border-[#E3E7F0] p-4 text-sm leading-6 outline-none focus:border-[#6D35F5]"/>

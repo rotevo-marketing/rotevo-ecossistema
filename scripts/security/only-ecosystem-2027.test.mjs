@@ -127,3 +127,11 @@ test("operational delivery may reference only a selected Ecossistema document",(
  assert.match(editor,/Documento estratégico relacionado/);
  assert.match(timeline,/documentCode\?:string/);
 });
+
+test("document workspace displays only execution items linked to its active document",()=>{
+ const editor=source("Components/admin/EcosystemDocumentEditor.tsx");
+ assert.match(editor,/linkedDeliveries/);
+ assert.match(editor,/item\.documentCode===activeCode/);
+ assert.match(editor,/Entregas vinculadas a este documento/);
+ assert.match(editor,/Nenhuma entrega vinculada até agora/);
+});

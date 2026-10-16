@@ -195,3 +195,12 @@ test("task triage highlights due-today and blocked work without flagging complet
  assert.match(board,/Bloqueada/);
  assert.match(board,/Bloqueadas/);
 });
+
+test("operational task ordering prioritizes overdue blocked and due-today work",()=>{
+ const board=source("Components/admin/CentralTarefas.tsx");
+ assert.match(board,/if\(task\.status==="completed"\|\|task\.status==="cancelled"\)return 4/);
+ assert.match(board,/if\(task\.dueDate&&task\.dueDate<today\(\)\)return 0/);
+ assert.match(board,/if\(task\.status==="blocked"\)return 1/);
+ assert.match(board,/if\(task\.dueDate===today\(\)\)return 2/);
+ assert.match(board,/rank\(a\.task\)-rank\(b\.task\)/);
+});

@@ -78,3 +78,18 @@
 - O primeiro administrador requer bootstrap seguro e autorizado; a transferência pressupõe um administrador ativo existente. Revisão de código legado e homologação geral ainda são etapas separadas.
 
 **Decisão:** código do lote concluído e aprovado no pipeline, mas Gestão de Usuários e Permissões NÃO homologada nem ativada em produção. Não habilitar flags até confirmação da matriz RLS, migração de papéis legados e autorização formal.
+
+## Nota de segurança: revogação de sessões
+
+A documentação do Supabase Auth esclarece que logout global revoga sessões/tokens de renovação, mas **JWTs de acesso já emitidos podem continuar válidos até sua expiração**. Portanto, o bloqueio imediato deve depender da verificação do estado ativo no banco em toda rota/API e nas políticas aplicáveis, e não somente de um comando de logout. Fonte: https://supabase.com/docs/guides/auth/signout e https://supabase.com/docs/guides/auth/sessions.
+
+### Plano de ativação pendente de aprovação
+
+1. Isolar uma cópia sintética da estrutura e testar a matriz RLS com atores e projetos segregados.
+2. Rever fluxos de login, papéis legados e consumidores diretos Supabase antes de liberar produtores/gestores/financeiros.
+3. Aplicar somente após autorização específica o bloqueio de grants em profiles e as migrações de equipe e auditoria, com backup e rollback revisados.
+4. Provisionar o primeiro administrador por procedimento confiável, em vez de permitir autoatribuição de privilégios.
+5. Manter todas as flags de alteração desligadas; habilitar apenas após teste autenticado de ponta a ponta em homologação.
+6. Validar controles de sessão, trilha de auditoria, projeto e cliente em uso real antes de produção.
+
+A aprovação dos 6 jobs do GitHub Actions não equivale à ativação ou homologação completa dos papéis de equipe.

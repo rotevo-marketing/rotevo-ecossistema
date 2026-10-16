@@ -1,0 +1,45 @@
+name: Apply dependency security updates (development only)
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - '.github/workflows/apply-dependency-candidate-dev.yml'
+permissions:
+  contents: write
+concurrency:
+  group: apply-dependencies-development
+  cancel-in-progress: false
+jobs:
+  update-dev:
+    if: github.ref == 'refs/heads/feature/admin-v2-redesign'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: feature/admin-v2-redesign
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Recreate tested candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm audit fix --package-lock-only --no-fund --no-force || true
+          npm install '@tiptap/core@^3.32.0' '@tiptap/extension-link@^3.32.0' '@tiptap/extension-underline@^3.32.0' '@tiptap/pm@^3.32.0' '@tiptap/react@^3.32.0' '@tiptap/starter-kit@^3.32.0' --package-lock-only --no-audit --no-fund
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit
+          npm audit --omit=dev --audit-level=moderate
+      - name: Commit only dependency manifest and lockfile to development branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "rotevo-security-ci"
+          git config user.email "security-ci@users.noreply.github.com"
+          git add -- package.json package-lock.json
+          if git diff --cached --quiet; then echo "No dependency changes"; exit 0; fi
+          git commit -m "security(deps): align Tiptap family and resolve audit advisories"
+          git push origin HEAD:feature/admin-v2-redesign

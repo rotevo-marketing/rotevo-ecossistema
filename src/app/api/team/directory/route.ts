@@ -23,5 +23,9 @@ export async function GET(req:NextRequest){
  const {data:members,error:directoryError}=await admin.from("team_members")
   .select("user_id,display_name,job_title,avatar_url,role,active").order("display_name");
  if(directoryError)return fail(503);
- return NextResponse.json({members:members??[]},{headers:{"Cache-Control":"no-store"}});
+ const {data:assignments,error:assignmentsError}=await admin.from("team_project_assignments").select("user_id,project_id");
+ if(assignmentsError)return fail(503);
+ const {data:permissions,error:permissionsError}=await admin.from("team_member_permissions").select("user_id,permission");
+ if(permissionsError)return fail(503);
+ return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:members??[]},{headers:{"Cache-Control":"no-store"}});
 }

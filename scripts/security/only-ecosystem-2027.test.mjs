@@ -204,3 +204,12 @@ test("operational task ordering prioritizes overdue blocked and due-today work",
  assert.match(board,/if\(task\.dueDate===today\(\)\)return 2/);
  assert.match(board,/rank\(a\.task\)-rank\(b\.task\)/);
 });
+
+test("execution editor enforces same-project acyclic task prerequisites",()=>{
+ const editor=source("Components/admin/ExecutionTimelineEditor.tsx");
+ assert.match(editor,/Pré-requisitos desta entrega/);
+ assert.match(editor,/Dependência circular detectada/);
+ assert.match(editor,/Uma entrega não pode depender de si mesma/);
+ assert.match(editor,/Esta entrega é pré-requisito de outra/);
+ assert.match(editor,/const reaches=/);
+});

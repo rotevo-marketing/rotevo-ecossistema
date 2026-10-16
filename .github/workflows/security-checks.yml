@@ -209,6 +209,10 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-profile-grants-isolated.sql
       - name: Verify proposed team RLS schema and grants in isolation
         run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-team-schema-isolated.sql
+      - name: Verify activation grants and staff/client isolation with hosted default grants
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_activation_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_activation_isolated -f scripts/security/activation-boundary-isolated.sql
 
   typecheck:
     name: TypeScript verification

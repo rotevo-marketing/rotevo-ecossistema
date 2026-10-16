@@ -6,6 +6,7 @@ const client = readFileSync(new URL("../../src/app/api/admin/create-client-acces
 const invite = readFileSync(new URL("../../src/app/api/team/invite/route.ts", import.meta.url), "utf8");
 
 function before(src, earlier, later, label) {
+  src = src.replace(/\r\n/g, "\n");
   const a = src.indexOf(earlier), b = src.indexOf(later);
   assert.ok(a !== -1 && b !== -1 && a < b, label);
 }

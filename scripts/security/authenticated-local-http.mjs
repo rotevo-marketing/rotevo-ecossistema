@@ -174,6 +174,19 @@ try {
   assert.equal((await getProjects(strategistJwt)).status,403,"strategist cannot use client portal endpoint");
   assert.equal((await getProjects()).status,401,"unauthenticated denied");
   const projectId=JSON.parse(allowed.body).projects[0].id;
+  async function adminList(jwt){
+    const response=await fetch(app.slice(0,-1)+"/api/admin/projects",{
+      headers:jwt?{Authorization:`Bearer ${jwt}`}:{},redirect:"error",signal:AbortSignal.timeout(15000)
+    });
+    return {status:response.status,body:await response.text()};
+  }
+  assert.equal((await adminList(null)).status,401,"anonymous cannot list administrative projects");
+  assert.equal((await adminList(clientJwt)).status,403,"client cannot list administrative projects");
+  assert.equal((await adminList(bJwt)).status,403,"another tenant cannot list administrative projects");
+  const allAdminProjects=await adminList(strategistJwt);
+  assert.equal(allAdminProjects.status,200,"strategist can list administrative projects");
+  assert.ok(allAdminProjects.body.includes("PRIVATE_TENANT_A_SENTINEL"));
+  assert.ok(allAdminProjects.body.includes("PRIVATE_TENANT_B_SENTINEL"));
   async function adminRead(jwt,id) {
     const response=await fetch(app.slice(0,-1)+"/api/admin/project?id="+encodeURIComponent(id),{
       headers:jwt?{Authorization:`Bearer ${jwt}`}:{},redirect:"error",signal:AbortSignal.timeout(15000)

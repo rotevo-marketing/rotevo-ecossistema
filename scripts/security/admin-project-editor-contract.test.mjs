@@ -95,3 +95,12 @@ test("strategist project writes enforce acyclic dependency validation on server"
  const update=endpoint.indexOf('.update({data:b.data,updated_at:nextAt})');
  assert.ok(validation>auth&&update>validation,"dependency validation must run before privileged write");
 });
+
+test("new operational owner assignments require an active team member on server",()=>{
+ const route=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ assert.match(route,/const changedOwners=/);
+ assert.match(route,/admin\.from\("team_members"\)\.select\("user_id"\)\.eq\("active",true\)\.in\("user_id",changedOwners\)/);
+ assert.match(route,/if\(new Set\(\(members\?\?\[\]\)\.map/);
+ assert.ok(route.indexOf('if(profile?.role!=="strategist")')<route.indexOf("const changedOwners="));
+ assert.ok(route.indexOf("const changedOwners=")<route.indexOf('.update({data:b.data,updated_at:nextAt})'));
+});

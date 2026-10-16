@@ -16,7 +16,7 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMon
 export default function AdminOperationsOverview({projects,onOpenProjects}:{projects:OperationsProject[];onOpenProjects:()=>void}){
  const documentSummary=useMemo(()=>projects.map(project=>{
    const eco=project.data?.ecosystem2027;
-   const selected=[...new Set((eco?.selectedDocumentCodes??[]).filter(code=>/^\\d{2}\\.\\d{2}$/.test(code)))];
+   const selected=[...new Set((eco?.selectedDocumentCodes??[]).filter(code=>/^\d{2}\.\d{2}$/.test(code)))];
    const released=selected.filter(code=>typeof eco?.documents?.[code]?.publishedAt==="string").length;
    const review=selected.filter(code=>eco?.documents?.[code]?.reviewStatus==="review").length;
    const tasks=(project.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string");

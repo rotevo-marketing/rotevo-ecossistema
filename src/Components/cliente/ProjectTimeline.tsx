@@ -8,6 +8,7 @@ export type ExecutionItem = {
   description?:string;
   projectTitle?:string;
   documentCode?:string;
+  priority?:"low"|"normal"|"high"|"urgent";
   phase?:string;
   owner?:string;
   ownerUserId?:string;

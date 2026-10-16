@@ -48,6 +48,8 @@ export function validExecutionDependencies(data:unknown):boolean{
   if(item.startDate!==undefined&&item.startDate!==""&&(typeof item.startDate!=="string"||!validOperationalDate(item.startDate)))return false;
   if(item.dueDate!==undefined&&item.dueDate!==""&&(typeof item.dueDate!=="string"||!validOperationalDate(item.dueDate)))return false;
   if(typeof item.startDate==="string"&&item.startDate&&typeof item.dueDate==="string"&&item.dueDate&&item.startDate>item.dueDate)return false;
+  if(item.status!==undefined&&!["planned","in_progress","blocked","completed","cancelled"].includes(String(item.status)))return false;
+  if(item.kind!==undefined&&!["deliverable","milestone","task"].includes(String(item.kind)))return false;
   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   const raw=item.dependencies??[];
   if(!Array.isArray(raw)||raw.length>200)return false;

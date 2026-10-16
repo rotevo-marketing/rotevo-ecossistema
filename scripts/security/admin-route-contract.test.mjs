@@ -1,0 +1,28 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const client = readFileSync(new URL("../../src/app/api/admin/create-client-access/route.ts", import.meta.url), "utf8");
+const invite = readFileSync(new URL("../../src/app/api/team/invite/route.ts", import.meta.url), "utf8");
+
+function before(src, earlier, later, label) {
+  const a = src.indexOf(earlier), b = src.indexOf(later);
+  assert.ok(a !== -1 && b !== -1 && a < b, label);
+}
+test("client access: token and strategist check precede Auth user creation", () => {
+  before(client, 'if (!token)', "auth.getUser(token)", "JWT must be required before verification");
+  before(client, "auth.getUser(token)", 'callerProfile.role !== "strategist"', "verified identity before role check");
+  before(client, 'callerProfile.role !== "strategist"', "auth.admin.createUser(", "role check before admin create");
+});
+test("client access: created users always have client role", () => {
+  assert.match(client, /user_metadata:\s*\{\s*full_name:\s*fullName,\s*role:\s*"client"/);
+  assert.match(client, /role:\s*"client",\s*client_id:\s*clientId/);
+});
+test("team invite: valid auth and active admin must precede invite", () => {
+  before(invite, 'if (!auth?.startsWith("Bearer "))', "auth.getUser(auth.slice(7))", "bearer required before verify");
+  before(invite, 'member.role !== "admin" || member.active !== true', "auth.admin.inviteUserByEmail(", "active admin required");
+});
+test("team invite: role allowlist excludes admin and input cannot grant project", () => {
+  assert.match(invite, /new Set\(\["strategist",\s*"project_manager",\s*"producer",\s*"finance"\]\)/);
+  assert.doesNotMatch(invite, /const\s*\{[^}]*\b(projectId|clientId|permissions)\b/);
+});

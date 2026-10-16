@@ -58,7 +58,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
  const commitments=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.operationalAgenda)?p.data.operationalAgenda:[]).filter(x=>x&&typeof x.date==="string"&&typeof x.title==="string").map(x=>({...x,project:p}))),[projects]);
  const plannedCommitments=commitments.filter(x=>x.status==="planned");
  const overdueCommitments=plannedCommitments.filter(x=>x.date<today());
- const nextCommitments=plannedCommitments.filter(x=>x.date>=today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);
+ const nextCommitments=plannedCommitments.filter(x=>x.date>=today()).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))).slice(0,8);
  const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
  const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
  const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
@@ -77,7 +77,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Prioridades da operação</h2><p className="mt-1 text-sm text-[#697386]">Entregas em atraso, bloqueadas ou urgentes nos projetos cadastrados.</p></div>
     <button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></div>
-   {attention.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhuma entrega atrasada ou bloqueada registrada até o momento. Aprovações e reuniões serão integradas nas próximas etapas.</p>:
+   {attention.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhuma entrega atrasada, bloqueada ou urgente registrada até o momento. A agenda e as aprovações são acompanhadas nos painéis correspondentes.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{attention.map(t=><div key={t.project.id+":"+t.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
       <div><p className="text-sm font-semibold">{t.title}</p><p className="mt-1 text-xs text-[#697386]">{client(t.project)?.name??"Cliente"} · {t.owner}{t.dueDate?` · ${date(t.dueDate)}`:""}</p></div>
       <Link className="text-sm font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(t.project)?.slug??""}`}>Abrir projeto →</Link>
@@ -99,7 +99,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <h2 className="text-lg font-semibold">Reuniões e acompanhamentos</h2><p className="mt-1 text-sm text-[#697386]">Compromissos registrados na agenda operacional dos projetos.</p>
    <div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Agendados</p><p className="mt-2 text-2xl font-semibold">{plannedCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Pendentes com data vencida</p><p className="mt-2 text-2xl font-semibold">{overdueCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Reuniões registradas</p><p className="mt-2 text-2xl font-semibold">{commitments.filter(x=>x.kind==="meeting").length}</p></div></div>
-   <h3 className="mt-5 text-sm font-semibold">Próximos compromissos</h3>{nextCommitments.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhum compromisso futuro pendente.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextCommitments.map(x=><div key={x.project.id+":"+x.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{x.title}</p><p className="text-xs text-[#697386]">{client(x.project)?.name??"Cliente"} · {x.owner||"Sem responsável"}</p></div><span className="text-xs font-medium">{date(x.date)}</span></div>)}</div>}
+   <h3 className="mt-5 text-sm font-semibold">Próximos compromissos</h3>{nextCommitments.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhum compromisso futuro pendente.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextCommitments.map(x=><div key={x.project.id+":"+x.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{x.title}</p><p className="text-xs text-[#697386]">{client(x.project)?.name??"Cliente"} · {x.owner||"Sem responsável"}</p></div><span className="text-xs font-medium">{date(x.date)}{x.time?` às ${x.time}`:""}</span></div>)}</div>}
   </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <h2 className="text-lg font-semibold">Agenda editorial e aprovações</h2>
@@ -118,7 +118,7 @@ export default function AdminOperationsOverview({projects,onOpenProjects}:{proje
    {ownership.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhuma atividade em aberto.</p>:<div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-[#E3E7F0] text-xs text-[#697386]"><th className="py-3 pr-4">Responsável</th><th className="px-3 py-3">Em aberto</th><th className="px-3 py-3">Atrasadas</th><th className="px-3 py-3">Bloqueadas</th><th className="px-3 py-3">Urgentes</th></tr></thead><tbody>{ownership.map(item=><tr key={item.name} className="border-b border-[#F0F1F5]"><th className="py-3 pr-4 font-medium">{item.name}</th><td className="px-3 py-3 tabular-nums">{item.open}</td><td className="px-3 py-3 tabular-nums">{item.overdue}</td><td className="px-3 py-3 tabular-nums">{item.blocked}</td><td className="px-3 py-3 tabular-nums">{item.urgent}</td></tr>)}</tbody></table></div>}
   </section>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne projetos e entregas já registrados na Rotevo. A agenda editorial já utiliza registros dos projetos. Aprovações formais usam registros de decisão separados; reuniões e saúde automática de projetos dependem de uma fonte de dados validada. Nenhuma atividade ou indicador é simulado.</p>
+   <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne tarefas, prazos, compromissos e conteúdo editorial registrados nos projetos. As decisões formais de aprovação permanecem na tabela específica de aprovações, evitando presumir concordância do cliente a partir do status editorial. Nenhuma atividade ou indicador é simulado.</p>
   </section>
  </div>;
 }

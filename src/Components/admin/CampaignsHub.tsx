@@ -39,7 +39,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   return list.filter(item=>item&&typeof item.id==="string"&&typeof item.title==="string").map(item=>({item,project}));
  }),[projects]);
  const selectedProjectId=projectFilter||projects[0]?.id||"";
- const scoped=rows.filter(({project})=>project.id===selectedProjectId);
+ const scoped=rows.filter(({item,project})=>project.id===selectedProjectId&&(platformFilter==="all"||item.platform===platformFilter)&&(statusFilter==="all"||item.status===statusFilter)&&(project.title+" "+(client(project)?.name??"")+" "+item.title+" "+item.objective).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
  const dataFor=(item:CampaignRecord)=>{const reports=Array.isArray(item.snapshots)?item.snapshots:[];return reports.find(x=>x.month===monthFilter)??null;};
  const monthRows=scoped.filter(({item})=>(!item.startDate||item.startDate<=monthFilter+"-31")&&(!item.endDate||item.endDate>=monthFilter+"-01"));
  const reported=monthRows.filter(x=>dataFor(x.item)!==null);

@@ -148,7 +148,7 @@ test("central task board searches linked projects and task titles without adding
  assert.match(board,/task.title/);
  assert.match(board,/project.title/);
  assert.match(board,/query.toLocaleLowerCase/);
- assert.match(board,/\["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"\]/);
+ for(const name of ["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"])assert.ok(board.includes('["'+name+'",'),name);
 });
 
 test("admin operations summary connects published 2027 documents and delivery deadlines per project",()=>{

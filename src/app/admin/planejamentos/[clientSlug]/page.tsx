@@ -106,6 +106,7 @@ function PlanejamentoClienteContent() {
   const documentAreas = Array.from(new Set(selectedDocuments.map((doc) => doc.area)));
 
   useEffect(() => {
+    let cancelled = false;
     async function loadProject() {
       setIsLoading(true);
       setProject(null);
@@ -113,6 +114,7 @@ function PlanejamentoClienteContent() {
       setSuccessMessage("");
 
       const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (cancelled) return;
 
       if (userError || !userData.user) {
         window.localStorage.removeItem("metodo-epc-strategist-auth");
@@ -125,6 +127,7 @@ function PlanejamentoClienteContent() {
         .select("role")
         .eq("id", userData.user.id)
         .single();
+      if (cancelled) return;
 
       if (profileError || profile?.role !== "strategist") {
         await supabase.auth.signOut();
@@ -165,6 +168,7 @@ function PlanejamentoClienteContent() {
       const { data, error } = await query
         .order("updated_at", { ascending: false })
         .limit(1);
+      if (cancelled) return;
 
       if (error) {
         setErrorMessage(
@@ -190,11 +194,13 @@ function PlanejamentoClienteContent() {
         const response=await fetch(`/api/admin/project?id=${encodeURIComponent(projectMetadata.id)}`,{
           headers:{Authorization:`Bearer ${token}`},cache:"no-store"
         });
+        if (cancelled) return;
         if(!response.ok)throw new Error("Não foi possível carregar os documentos do planejamento autorizado.");
         const loaded=await response.json();
         if(!loaded?.project||loaded.project.id!==projectMetadata.id)throw new Error("Resposta administrativa inválida.");
         foundProject={...projectMetadata,data:(loaded.project.data??{}) as ProjectData,updated_at:loaded.project.updated_at};
       }catch(error){
+        if (cancelled) return;
         setErrorMessage(error instanceof Error?error.message:"Não foi possível carregar este planejamento.");
         setIsLoading(false);
         return;
@@ -207,8 +213,9 @@ function PlanejamentoClienteContent() {
     }
 
     if (clientSlug) {
-      loadProject();
+      void loadProject();
     }
+    return () => { cancelled = true; };
   }, [clientSlug, requestedProjectId, router]);
 
   async function saveAuthorizedProjectData(current: PlanningProject, nextData: ProjectData): Promise<{data: ProjectData; updated_at: string}> {

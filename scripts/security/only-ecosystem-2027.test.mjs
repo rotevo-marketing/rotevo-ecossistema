@@ -288,7 +288,7 @@ test("operational meetings integrate authorized project editor and admin overvie
  const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
  const agenda=source("Components/admin/OperationalAgenda.tsx");
  const dashboard=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(page,/OperationalAgenda projectId=/);
+ assert.match(page,/<OperationalAgenda(?: key=\{project\.id\})? projectId=/);
  assert.match(agenda,/\/api\/admin\/project\/update/);
  assert.match(agenda,/expectedUpdatedAt:updatedAt/);
  assert.match(agenda,/Reuniões e acompanhamento/);

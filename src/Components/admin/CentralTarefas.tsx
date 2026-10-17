@@ -2,169 +2,170 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
-import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
-import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
-
 type Client={id:string;name:string;slug:string};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
-const columns:{id:Status;name:string}[]=[{id:"planned",name:"Planejado"},{id:"in_progress",name:"Em andamento"},{id:"blocked",name:"Aguardando"},{id:"completed",name:"Concluído"},{id:"cancelled",name:"Cancelado"}];
-const label=(s?:string)=>columns.find(c=>c.id===s)?.name??"Planejado";
-const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+type Priority="low"|"normal"|"high"|"urgent";
+const statuses:{id:Status;name:string;chip:string;bar:string}[]=[
+ {id:"planned",name:"Pendente",chip:"bg-[#EDF0F6] text-[#4A5368]",bar:"bg-[#A2ACBD]"},
+ {id:"in_progress",name:"Em andamento",chip:"bg-[#DCEBFF] text-[#1659A8]",bar:"bg-[#4C9CF0]"},
+ {id:"blocked",name:"Aguardando",chip:"bg-[#FFF1D4] text-[#875400]",bar:"bg-[#E9AE39]"},
+ {id:"completed",name:"Concluída",chip:"bg-[#DFF6E7] text-[#176F40]",bar:"bg-[#37B36E]"},
+ {id:"cancelled",name:"Cancelada",chip:"bg-[#F3E8EA] text-[#995666]",bar:"bg-[#BB7D8C]"}
+];
+const priorities:{id:Priority;name:string;chip:string}[]=[
+ {id:"urgent",name:"Urgente",chip:"bg-[#FFE4E6] text-[#AE183D]"},
+ {id:"high",name:"Alta",chip:"bg-[#FFEBD7] text-[#A54B07]"},
+ {id:"normal",name:"Normal",chip:"bg-[#EEEAFE] text-[#6738BC]"},
+ {id:"low",name:"Baixa",chip:"bg-[#E7F1FF] text-[#356DAA]"}
+];
 const getClient=(p:TaskProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
-const date=(value?:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(value??"");return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem prazo";};
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+const formatted=(s?:string)=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s)?`${s.slice(8,10)}/${s.slice(5,7)}`:"Sem prazo";
+const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
+const selectClass="max-w-full rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-medium text-[#31394B] focus:outline-none focus:ring-2 focus:ring-[#6D35F5]";
+const buttonClass="inline-flex items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-semibold text-[#344056] hover:bg-[#F7F7FC]";
+type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
 export default function CentralTarefas({projects,onChanged}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void}){
- const [customer,setCustomer]=useState("all"),[responsible,setResponsible]=useState("all"),[status,setStatus]=useState("all");
- const [search,setSearch]=useState(""),[view,setView]=useState<"list"|"board">("list");
- const [deadline,setDeadline]=useState<"all"|"overdue"|"today"|"upcoming"|"undated">("all");
- const [documentScope,setDocumentScope]=useState<"all"|"linked"|"unlinked">("all");
- const [prerequisiteScope,setPrerequisiteScope]=useState<"all"|"waiting"|"ready">("all");
- const [priorityScope,setPriorityScope]=useState<"all"|"urgent"|"high"|"normal"|"low">("all");
- const [working,setWorking]=useState(""),[error,setError]=useState(""),[message,setMessage]=useState("");
+ const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
+ const [deadline,setDeadline]=useState<"all"|"today"|"overdue"|"upcoming">("all");
+ const [query,setQuery]=useState(""),[showSearch,setShowSearch]=useState(false),[showFilters,setShowFilters]=useState(false);
+ const [view,setView]=useState<"list"|"board">("list"),[order,setOrder]=useState<"urgency"|"due"|"priority">("urgency");
+ const [working,setWorking]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
+ const [creating,setCreating]=useState(false),[draft,setDraft]=useState({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:""});
  const [members,setMembers]=useState<{user_id:string;display_name:string}[]>([]);
  const [teamReady,setTeamReady]=useState(false);
- useEffect(()=>{let mounted=true;async function load(){
-  const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");
-  if(!mounted)return;
-  setTeamReady(!error);setMembers(error?[]:(data??[]));
- }void load();return()=>{mounted=false;};},[]);
- const tasks=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.executionTimeline)?p.data.executionTimeline:[])
- .filter(t=>t&&typeof t.id==="string"&&typeof t.title==="string")
- .map(t=>({task:t,project:p,client:getClient(p)}))),[projects]);
- const appointments=useMemo(()=>projects.flatMap(project=>(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[]).filter(a=>a&&a.status==="planned"&&typeof a.date==="string"&&typeof a.title==="string").map(appointment=>({appointment,project,client:getClient(project)}))).sort((a,b)=>(a.appointment.date+"T"+(a.appointment.time??"23:59")).localeCompare(b.appointment.date+"T"+(b.appointment.time??"23:59"))),[projects]);
- const todayAppointments=appointments.filter(x=>x.appointment.date===today());
- const nextAppointments=appointments.filter(x=>x.appointment.date>today()).slice(0,4);
- const todayTasks=tasks.filter(x=>x.task.dueDate===today()&&!["completed","cancelled"].includes(x.task.status??"planned"));
- const overdueTasks=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&!["completed","cancelled"].includes(x.task.status??"planned"));
- const owners=useMemo(()=>[...new Set(tasks.map(t=>t.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
+ useEffect(()=>{let active=true;void (async()=>{const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");if(active){setTeamReady(!error);setMembers(error?[]:(data??[]));}})();return()=>{active=false};},[]);
+ const tasks=useMemo<Item[]>(()=>projects.flatMap(project=>(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[])
+  .filter(task=>task&&typeof task.id==="string"&&typeof task.title==="string")
+  .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
+ const owners=useMemo(()=>[...new Set(tasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
+ const appointments=useMemo(()=>projects.flatMap(project=>(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[])
+  .filter(item=>item&&item.status==="planned"&&typeof item.date==="string"&&typeof item.title==="string")
+  .map(appointment=>({appointment,project,client:getClient(project)}))),[projects]);
+ const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
-  (customer==="all"||project.id===customer)&&(responsible==="all"||(responsible==="unassigned"?!task.owner?.trim():task.owner?.trim()===responsible))&&
+  (projectId==="all"||project.id===projectId)&&
+  (owner==="all"||(owner==="unassigned"?!task.owner?.trim():task.owner?.trim()===owner))&&
   (status==="all"||(task.status??"planned")===status)&&
-  (documentScope==="all"||(documentScope==="linked"?!!task.documentCode:!task.documentCode))&&
-  (priorityScope==="all"||(task.priority??"normal")===priorityScope)&&
-  (prerequisiteScope==="all"||(prerequisiteScope==="waiting"?(task.dependencies??[]).some(id=>project.data?.executionTimeline?.find(item=>item.id===id)?.status!=="completed"):(task.dependencies??[]).every(id=>project.data?.executionTimeline?.find(item=>item.id===id)?.status==="completed")))&&
-  (deadline==="all"||(deadline==="undated"?!task.dueDate:deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&!["completed","cancelled"].includes(task.status??"planned"):deadline==="today"?task.dueDate===today()&&!["completed","cancelled"].includes(task.status??"planned"):!!task.dueDate&&task.dueDate>today()&&!["completed","cancelled"].includes(task.status??"planned")))&&
-  (`${task.title} ${client?.name??""} ${project.title} ${task.owner??""} ${task.documentCode??""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))))
- .sort((a,b)=>{
-   const rank=(task:ExecutionItem)=>{
-    if(task.status==="completed"||task.status==="cancelled")return 4;
-    if(task.dueDate&&task.dueDate<today())return 0;
-    if(task.status==="blocked")return 1;
-    if(task.dueDate===today())return 2;
-    return 3;
-   };
-   const weight:Record<string,number>={urgent:0,high:1,normal:2,low:3};
-   return rank(a.task)-rank(b.task)||(weight[a.task.priority??"normal"]??2)-(weight[b.task.priority??"normal"]??2)||(a.task.dueDate??"9999").localeCompare(b.task.dueDate??"9999");
-  }),[tasks,customer,responsible,status,search,deadline,documentScope,prerequisiteScope,priorityScope]);
- async function updateTask(project:TaskProject,task:ExecutionItem,patch:Partial<ExecutionItem>){
-  const next=patch.status??task.status??"planned";
-  const timeline=project.data?.executionTimeline??[];
-  if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos pendentes antes de finalizar esta tarefa.");return;}
-  if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as atividades concluídas que dependem desta tarefa.");return;}
-  if(working)return;
-  setWorking(task.id);setError("");setMessage("");
-  const nextData={...(project.data??{}),executionTimeline:(project.data?.executionTimeline??[]).map(t=>t.id===task.id?{...t,...patch}:t)};
-  try {
-    const {data:session,error:sessionError}=await supabase.auth.getSession();
-    const token=session.session?.access_token;
-    if(sessionError||!token)throw new Error("Sessão expirada. Entre novamente.");
-    const response=await fetch("/api/admin/project/update",{
-      method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
-      body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:nextData}),
-      cache:"no-store"
-    });
-    if(response.status===409)throw new Error("O projeto foi atualizado em outra sessão. Atualize a página antes de alterar o status.");
-    if(!response.ok)throw new Error("Não foi possível atualizar a tarefa autorizada.");
-    const result=await response.json();
-    if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Não foi possível confirmar a alteração.");
-    onChanged(project.id,result.project.data as TaskProject["data"],result.project.updated_at);
-  }catch(e){
-    setError(e instanceof Error?e.message:"Não foi possível atualizar a tarefa.");
-    setWorking("");
-    return;
-  }
-  setWorking("");
-  setMessage("Atividade atualizada com sucesso.");
+  (priority==="all"||(task.priority??"normal")===priority)&&
+  (deadline==="all"||(deadline==="today"?task.dueDate===today()&&isOpen(task):deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&isOpen(task):!!task.dueDate&&task.dueDate>today()&&isOpen(task)))&&
+  (`${task.title} ${project.title} ${client?.name??""} ${task.owner??""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")))
+ ).sort((a,b)=>{
+  const weights:Record<Priority,number>={urgent:0,high:1,normal:2,low:3};
+  const priorityScore=(t:ExecutionItem)=>weights[t.priority??"normal"];
+  const dateScore=(t:ExecutionItem)=>t.dueDate??"9999-99-99";
+  const openScore=(t:ExecutionItem)=>isOpen(t)?0:1;
+  const urgencyScore=(t:ExecutionItem)=>!isOpen(t)?4:t.dueDate&&t.dueDate<today()?0:t.status==="blocked"?1:t.dueDate===today()?2:3;
+  return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
+   order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
+   urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
+ }),[tasks,projectId,owner,status,priority,deadline,query,order]);
+ async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
+  if(working)return false;
+  setWorking(key);setError("");setNotice("");
+  try{
+   const {data:session,error:authError}=await supabase.auth.getSession();
+   const token=session.session?.access_token;
+   if(authError||!token)throw new Error("Sessão expirada. Entre novamente.");
+   const response=await fetch("/api/admin/project/update",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:{...(project.data??{}),executionTimeline:nextTasks}}),cache:"no-store"});
+   if(response.status===409)throw new Error("O projeto mudou em outra sessão. Atualize a página para evitar sobrescrever alterações.");
+   if(!response.ok)throw new Error("Não foi possível salvar a tarefa. Verifique as permissões.");
+   const result=await response.json();
+   if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Não foi possível confirmar a gravação.");
+   onChanged(project.id,result.project.data as TaskProject["data"],result.project.updated_at);
+   setNotice(success);
+   return true;
+  }catch(e){setError(e instanceof Error?e.message:"Falha de conexão.");return false;}
+  finally{setWorking("");}
  }
- const tile=(entry:typeof tasks[number])=>{
-  const {task,project,client}=entry;
-  const open=task.status!=="completed"&&task.status!=="cancelled";
-  const overdue=!!task.dueDate&&task.dueDate<today()&&open;
-  const dueToday=task.dueDate===today()&&open;
-  const blocked=task.status==="blocked";
-  const prerequisites=(task.dependencies??[]).flatMap(id=>(project.data?.executionTimeline??[]).filter(item=>item.id===id));
-  const waiting=prerequisites.filter(item=>item.status!=="completed");
-  return <article key={project.id+":"+task.id} className="rounded-xl border border-[#E3E7F0] bg-white p-4">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="min-w-0"><h3 className="text-sm font-semibold">{task.title}</h3>
-      <p className="mt-1 text-xs text-[#697386]">{client?.name??"Cliente sem nome"} · {project.title}</p>{task.documentCode&&<p className="mt-1 text-xs font-medium text-[#6D35F5]">{task.documentCode} — {ecosystemDocuments.find(d=>d.code===task.documentCode)?.title??"Documento estratégico"}</p>}</div>
-      <div className="flex flex-wrap gap-2">{overdue&&<span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Atrasada</span>}{dueToday&&<span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">Vence hoje</span>}{blocked&&<span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">Bloqueada</span>}</div>
-    </div>
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386]">
-      <span>Prazo: {date(task.dueDate)}</span><span>Responsável: {task.owner?.trim()||"Não atribuído"}</span><span>Prioridade: {({low:"Baixa",normal:"Normal",high:"Alta",urgent:"Urgente"} as Record<string,string>)[task.priority??"normal"]??"Normal"}</span>
-      <span>{task.visibleToClient===true?"Visível ao cliente":"Uso interno"}</span>
-      {prerequisites.length>0&&<span>Pré-requisitos: {prerequisites.length} · {waiting.length?`${waiting.length} pendente(s)`:"Concluídos"}</span>}
-    </div>
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF0F5] pt-3">
-      <label className="text-xs font-medium text-[#525B70]">Situação
-        <select aria-label={`Situação de ${task.title}`} value={task.status??"planned"} disabled={!!working}
-          onChange={e=>void updateTask(project,task,{status:e.target.value as Status})}
-          className="ml-2 cursor-pointer rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
-          {columns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
-      <label className="text-xs font-medium text-[#525B70]">Prioridade
-        <select aria-label={`Prioridade de ${task.title}`} value={task.priority??"normal"} disabled={!!working} onChange={e=>void updateTask(project,task,{priority:e.target.value as ExecutionItem["priority"]})} className="ml-2 rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
-          <option value="low">Baixa</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option>
-        </select>
-      </label>
-      {teamReady&&members.length>0&&<label className="text-xs font-medium text-[#525B70]">Atribuir
-        <select aria-label={`Responsável por ${task.title}`} value={task.ownerUserId&&members.some(m=>m.user_id===task.ownerUserId)?task.ownerUserId:""} disabled={!!working} onChange={e=>{const member=members.find(m=>m.user_id===e.target.value);void updateTask(project,task,{ownerUserId:member?.user_id??"",owner:member?.display_name??""});}} className="ml-2 max-w-44 rounded-lg border border-[#D9DCE5] bg-white px-2 py-2 text-xs disabled:opacity-50">
-          <option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}
-        </select>
-      </label>}
-      {client?.slug?<Link href={`/admin/planejamentos/${client.slug}?projectId=${encodeURIComponent(project.id)}`} className="text-xs font-semibold text-[#6D35F5] hover:underline">Abrir projeto →</Link>:null}
-    </div>
-  </article>;
- };
- return <div className="mt-7 space-y-5">
-  <section aria-label="Prioridades e reuniões do dia" className="grid gap-4 lg:grid-cols-2">
-   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><div className="flex items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Minha visão do dia</h2><p className="mt-1 text-xs text-[#697386]">Prazos de todos os projetos · {date(today())}</p></div><span className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-sm font-semibold">{todayTasks.length} hoje</span></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Vencem hoje ({todayTasks.length})</button><button type="button" onClick={()=>{setDeadline("overdue");setStatus("all");}} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Atrasadas ({overdueTasks.length})</button><button type="button" onClick={()=>setDeadline("all")} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Todas</button></div><p className="mt-3 text-xs text-[#697386]">Use os atalhos para filtrar as tarefas abaixo. Para editar uma entrega, abra seu projeto.</p></div>
-   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-lg font-semibold">Agenda de hoje</h2><p className="mt-1 text-xs text-[#697386]">Reuniões e acompanhamentos dos projetos</p>{todayAppointments.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhum compromisso agendado para hoje.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{todayAppointments.map(({appointment,project,client})=><div key={project.id+":"+appointment.id} className="flex items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{appointment.time??"Sem horário"} · {appointment.title}</p><p className="text-xs text-[#697386]">{client?.name??"Cliente"} · {project.title}</p></div>{client?.slug&&<Link href={`/admin/planejamentos/${client.slug}?projectId=${encodeURIComponent(project.id)}`} className="shrink-0 text-xs font-semibold text-[#6D35F5]">Abrir →</Link>}</div>)}</div>}{nextAppointments.length>0&&<p className="mt-4 text-xs text-[#697386]">Próximo compromisso: {date(nextAppointments[0].appointment.date)} · {nextAppointments[0].appointment.title}</p>}</div>
+ async function updateTask(project:TaskProject,task:ExecutionItem,patch:Partial<ExecutionItem>){
+  const timeline=project.data?.executionTimeline??[];
+  const next=patch.status??task.status??"planned";
+  if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos antes desta tarefa.");return;}
+  if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as tarefas que dependem desta.");return;}
+  await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch}:t),project.id+":"+task.id,"Tarefa atualizada.");
+ }
+ async function createTask(){
+  const project=projects.find(p=>p.id===draft.projectId);
+  if(!project){setError("Selecione um projeto válido.");return;}
+  if(draft.title.trim().length<3||draft.title.trim().length>140){setError("Informe um título entre 3 e 140 caracteres.");return;}
+  if(draft.description.length>2000){setError("A descrição excede 2.000 caracteres.");return;}
+  if(draft.dueDate&&!/^\d{4}-\d{2}-\d{2}$/.test(draft.dueDate)){setError("Informe um prazo válido.");return;}
+  const member=members.find(x=>x.user_id===draft.ownerUserId);
+  if(draft.ownerUserId&&!member){setError("Escolha um responsável válido.");return;}
+  const task:ExecutionItem={id:crypto.randomUUID(),title:draft.title.trim(),description:draft.description.trim(),kind:"task",status:"planned",priority:draft.priority,owner:member?.display_name??"",ownerUserId:member?.user_id??"",dueDate:draft.dueDate,dependencies:[],visibleToClient:false};
+  const ok=await persist(project,[...(project.data?.executionTimeline??[]),task],project.id+":create","Tarefa criada no projeto selecionado.");
+  if(ok){setCreating(false);setDraft({title:"",projectId:"",ownerUserId:"",priority:"normal",dueDate:"",description:""});}
+ }
+ const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setQuery("");};
+ const overdue=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
+ const todayCount=tasks.filter(x=>x.task.dueDate===today()&&isOpen(x.task)).length;
+ const chipStatus=(task:ExecutionItem)=>statuses.find(s=>s.id===(task.status??"planned"))??statuses[0];
+ const chipPriority=(task:ExecutionItem)=>priorities.find(p=>p.id===(task.priority??"normal"))??priorities[2];
+ const projectLink=(project:TaskProject)=>`/admin/planejamentos/${getClient(project)?.slug??""}?projectId=${encodeURIComponent(project.id)}`;
+ const taskControls=(x:Item,compact=false)=><div className={compact?"flex flex-wrap gap-1":"flex flex-wrap items-center gap-2"}>
+  <select aria-label={`Situação de ${x.task.title}`} value={x.task.status??"planned"} disabled={!!working} onChange={e=>void updateTask(x.project,x.task,{status:e.target.value as Status})} className={selectClass}>
+   {statuses.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+  </select>
+  <select aria-label={`Prioridade de ${x.task.title}`} value={x.task.priority??"normal"} disabled={!!working} onChange={e=>void updateTask(x.project,x.task,{priority:e.target.value as Priority})} className={selectClass}>
+   {priorities.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+  </select>
+ </div>;
+ return <div className="mt-7 space-y-4">
+  <section aria-label="Prioridades e reuniões do dia" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E3E7F0] bg-white p-4">
+   <div><h2 className="text-sm font-bold">Minha visão do dia</h2><p className="mt-1 text-xs text-[#697386]">Tarefas e reuniões dos projetos · {formatted(today())}</p></div>
+   <div className="flex flex-wrap gap-2">
+    <button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className={buttonClass}>Hoje <strong>{todayCount}</strong></button>
+    <button type="button" onClick={()=>{setDeadline("overdue");setStatus("all");}} className={buttonClass}>Atrasadas <strong>{overdue}</strong></button>
+    <button type="button" onClick={()=>{setDeadline("all");setStatus("all");}} className={buttonClass}>Todas <strong>{tasks.length}</strong></button>
+    <span className="rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]">Reuniões hoje: {todayAppointments.length}</span>
+   </div>
   </section>
-  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-   {[{name:"Todas as tarefas",count:tasks.length},{name:"Em andamento",count:tasks.filter(t=>t.task.status==="in_progress").length},{name:"Atrasadas",count:tasks.filter(t=>t.task.dueDate&&t.task.dueDate<today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Vencem hoje",count:tasks.filter(t=>t.task.dueDate===today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Bloqueadas",count:tasks.filter(t=>t.task.status==="blocked").length}].map(metric=>
-    <div key={metric.name} className={`rounded-2xl border p-5 ${metric.name==="Todas as tarefas"?"border-[#DDD6FE] bg-[#F5F3FF]":metric.name==="Em andamento"?"border-[#BFDBFE] bg-[#EFF6FF]":metric.name==="Atrasadas"?"border-[#FECACA] bg-[#FEF2F2]":metric.name==="Vencem hoje"?"border-[#FDE68A] bg-[#FFFBEB]":"border-[#FED7AA] bg-[#FFF7ED]"}`}><p className="text-sm text-[#525B70]">{metric.name}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{metric.count}</p></div>)}
-  </div>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
-   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-    <div><h2 className="text-lg font-semibold">Central de tarefas</h2><p className="mt-1 text-sm text-[#697386]">Uma única visão das atividades cadastradas em todos os projetos.</p></div>
-    <div className="flex items-center gap-2"><RotevoTablerIcon name="report" size={22}/><button type="button" onClick={()=>setView(view==="list"?"board":"list")} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2 text-sm font-medium">{view==="list"?"Ver Kanban":"Ver lista"}</button></div>
+  {todayAppointments.length>0&&<section className="rounded-xl border bg-white p-4"><h3 className="text-sm font-semibold">Agenda de hoje</h3><div className="mt-2 flex flex-wrap gap-2">{todayAppointments.map(({appointment,project})=><Link key={project.id+":"+appointment.id} href={projectLink(project)} className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-xs">{appointment.time??"Sem horário"} · {appointment.title} · {project.title}</Link>)}</div></section>}
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-5">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Central de tarefas</h2><p className="mt-1 text-xs text-[#697386]">Todos os projetos · {filtered.length} tarefa(s) encontrada(s)</p></div>
+    <div className="flex flex-wrap items-center gap-2">
+     <button type="button" onClick={()=>{setDraft(d=>({...d,projectId:projectId!=="all"?projectId:projects[0]?.id??""}));setCreating(true);setError("");}} className="rounded-lg bg-[#6D35F5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5825D6]">+ Nova tarefa</button>
+     <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}>⌕ <span className="hidden sm:inline">Buscar</span></button>
+     <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}>☷ <span className="hidden sm:inline">Filtros</span></button>
+     <select aria-label="Ordenar tarefas" className={selectClass} value={order} onChange={e=>setOrder(e.target.value as typeof order)}><option value="urgency">Prioridades primeiro</option><option value="due">Prazo</option><option value="priority">Prioridade</option></select>
+     <div className="flex overflow-hidden rounded-lg border border-[#E1E5EE]"><button type="button" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`px-3 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}>Lista</button><button type="button" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`border-l px-3 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}>Kanban</button></div>
+    </div>
    </div>
-   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    <input aria-label="Buscar tarefas" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar tarefa ou cliente" className="rounded-xl border border-[#E3E7F0] px-3 py-3 text-sm"/>
-    <select aria-label="Filtrar projeto" value={customer} onChange={e=>setCustomer(e.target.value)} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-3 py-3 text-sm"><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select>
-    <select aria-label="Filtrar responsável" value={responsible} onChange={e=>setResponsible(e.target.value)} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-3 py-3 text-sm"><option value="all">Todos os responsáveis</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select>
-    <select aria-label="Filtrar situação" value={status} onChange={e=>setStatus(e.target.value)} className="cursor-pointer rounded-xl border border-[#E3E7F0] px-3 py-3 text-sm"><option value="all">Todas as situações</option>{columns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
-   </div>
-   <div className="mt-3 flex flex-wrap gap-3">
-    <select aria-label="Filtrar prazo" value={deadline} onChange={e=>setDeadline(e.target.value as typeof deadline)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os prazos</option><option value="overdue">Atrasadas em aberto</option><option value="today">Vencem hoje</option><option value="upcoming">Prazos futuros</option><option value="undated">Sem prazo</option></select>
-    <select aria-label="Filtrar vínculo estratégico" value={documentScope} onChange={e=>setDocumentScope(e.target.value as typeof documentScope)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os vínculos</option><option value="linked">Com documento 2027</option><option value="unlinked">Sem documento vinculado</option></select>
-<select aria-label="Filtrar prioridade" value={priorityScope} onChange={e=>setPriorityScope(e.target.value as typeof priorityScope)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todas as prioridades</option><option value="urgent">Urgente</option><option value="high">Alta</option><option value="normal">Normal</option><option value="low">Baixa</option></select>
-        <select aria-label="Filtrar pré-requisitos" value={prerequisiteScope} onChange={e=>setPrerequisiteScope(e.target.value as typeof prerequisiteScope)} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm"><option value="all">Todos os pré-requisitos</option><option value="waiting">Aguardando pré-requisitos</option><option value="ready">Pré-requisitos atendidos</option></select>
-    <button type="button" onClick={()=>{setCustomer("all");setResponsible("all");setStatus("all");setDeadline("all");setDocumentScope("all");setPrerequisiteScope("all");setPriorityScope("all");setSearch("");}} className="rounded-xl border border-[#E3E7F0] px-3 py-2 text-sm font-medium">Limpar filtros</button>
+   {showSearch&&<input autoFocus aria-label="Buscar por tarefa, projeto, cliente ou responsável" className="mt-4 w-full rounded-lg border border-[#E1E5EE] px-4 py-3 text-sm" placeholder="Buscar tarefa, projeto, cliente ou responsável..." type="search" value={query} onChange={e=>setQuery(e.target.value)}/>}
+   <div className={`mt-4 flex flex-wrap gap-2 ${showFilters?"":"items-center"}`}>
+    <select aria-label="Filtrar projeto" value={projectId} onChange={e=>setProjectId(e.target.value)} className={selectClass}><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select>
+    <select aria-label="Filtrar responsável" value={owner} onChange={e=>setOwner(e.target.value)} className={selectClass}><option value="all">Todas as pessoas</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select>
+    <select aria-label="Filtrar prioridade" value={priority} onChange={e=>setPriority(e.target.value)} className={selectClass}><option value="all">Todas as prioridades</option>{priorities.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+    {showFilters&&<><select aria-label="Filtrar situação" value={status} onChange={e=>setStatus(e.target.value)} className={selectClass}><option value="all">Todas as situações</option>{statuses.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select aria-label="Filtrar prazo" value={deadline} onChange={e=>setDeadline(e.target.value as typeof deadline)} className={selectClass}><option value="all">Todos os prazos</option><option value="today">Hoje</option><option value="overdue">Atrasadas</option><option value="upcoming">Futuras</option></select></>}
+    <button type="button" className={buttonClass} onClick={reset}>Limpar</button>
    </div>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-   {message&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
-   <p className="mt-4 text-xs text-[#697386]">{filtered.length} atividade(s) encontrada(s)</p>
-   {filtered.length===0?<div className="mt-4 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma tarefa corresponde aos filtros. Para cadastrar novas entregas, abra um projeto na seção Projetos.</div>:
-    view==="list"?<div className="mt-4 grid gap-3 xl:grid-cols-2">{filtered.map(tile)}</div>:
-    <div className="mt-4 flex gap-3 overflow-x-auto pb-3">{columns.map(col=><div key={col.id} className="w-64 shrink-0 rounded-xl bg-[#F6F7FB] p-3">
-      <h3 className="mb-3 text-sm font-semibold">{col.name} <span className="text-[#697386]">({filtered.filter(t=>(t.task.status??"planned")===col.id).length})</span></h3>
-      <div className="space-y-3">{filtered.filter(t=>(t.task.status??"planned")===col.id).map(tile)}</div>
-     </div>)}</div>}
+   {notice&&<p role="status" className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">{notice}</p>}
+   {creating&&<section aria-label="Nova tarefa" className="mt-4 rounded-xl border border-[#DDD4FB] bg-[#FCFAFF] p-4"><h3 className="text-base font-semibold">Nova tarefa</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
+     <label className="text-xs font-medium sm:col-span-2">Nome da tarefa *<input value={draft.title} maxLength={140} onChange={e=>setDraft({...draft,title:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>
+     <label className="text-xs font-medium">Projeto *<select value={draft.projectId} onChange={e=>setDraft({...draft,projectId:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"><option value="">Selecione um projeto</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
+     <label className="text-xs font-medium">Responsável<select disabled={!teamReady||members.length===0} value={draft.ownerUserId} onChange={e=>setDraft({...draft,ownerUserId:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"><option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}</select></label>
+     <label className="text-xs font-medium">Prioridade<select value={draft.priority} onChange={e=>setDraft({...draft,priority:e.target.value as Priority})} className="mt-1 w-full rounded-lg border p-3 text-sm">{priorities.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+     <label className="text-xs font-medium">Prazo<input type="date" value={draft.dueDate} onChange={e=>setDraft({...draft,dueDate:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>
+     <label className="text-xs font-medium sm:col-span-2">Descrição opcional<textarea rows={2} maxLength={2000} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>
+    </div><div className="mt-4 flex justify-end gap-2"><button type="button" disabled={!!working} className={buttonClass} onClick={()=>setCreating(false)}>Cancelar</button><button type="button" disabled={!!working||projects.length===0} className="rounded-lg bg-[#0B142A] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>void createTask()}>{working?"Salvando...":"Criar tarefa"}</button></div></section>}
+   {filtered.length===0?<div className="mt-4 rounded-lg bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma tarefa corresponde aos filtros. Use “Nova tarefa” para cadastrar uma atividade em um projeto.</div>:view==="list"?
+   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[820px] border-collapse text-left text-sm"><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr>{["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"].map(x=><th key={x} className="border-b border-[#E3E7F0] px-3 py-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-[#EEF0F5]">{filtered.map(({task,project,client})=>{
+    const statusChip=chipStatus(task),priorityChip=chipPriority(task);
+    return <tr key={project.id+":"+task.id} className="hover:bg-[#FBFAFF]">
+     <td className="max-w-[280px] border-l-4 px-3 py-3 font-medium" style={{borderLeftColor:task.status==="completed"?"#37B36E":task.priority==="urgent"?"#E04961":task.priority==="high"?"#E9AE39":"#9C78F4"}}><span className="block truncate">{task.title}</span>{(task.dependencies??[]).length>0&&<span className="mt-1 block text-[10px] text-[#697386]">Pré-requisitos: {(task.dependencies??[]).length}</span>}</td>
+     <td className="px-3 py-3"><Link className="block max-w-[180px] truncate text-xs font-semibold text-[#6034B7] hover:underline" href={projectLink(project)}>{project.title}</Link><span className="block max-w-[180px] truncate text-[10px] text-[#697386]">{client?.name??"Cliente"}</span></td>
+     <td className="px-3 py-3">{teamReady&&members.length>0?<select aria-label={`Responsável por ${task.title}`} className={selectClass} disabled={!!working} value={task.ownerUserId&&members.some(m=>m.user_id===task.ownerUserId)?task.ownerUserId:""} onChange={e=>{const m=members.find(x=>x.user_id===e.target.value);void updateTask(project,task,{ownerUserId:m?.user_id??"",owner:m?.display_name??""});}}><option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}</select>:<span className="text-xs text-[#525B70]">{task.owner||"Não atribuído"}</span>}</td>
+     <td className="px-3 py-3"><select aria-label={`Situação de ${task.title}`} disabled={!!working} value={task.status??"planned"} onChange={e=>void updateTask(project,task,{status:e.target.value as Status})} className={`max-w-[150px] rounded-lg px-2 py-2 text-xs font-semibold ${statusChip.chip}`}>{statuses.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></td>
+     <td className="px-3 py-3"><select aria-label={`Prioridade de ${task.title}`} disabled={!!working} value={task.priority??"normal"} onChange={e=>void updateTask(project,task,{priority:e.target.value as Priority})} className={`rounded-lg px-2 py-2 text-xs font-semibold ${priorityChip.chip}`}>{priorities.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></td>
+     <td className={`whitespace-nowrap px-3 py-3 text-xs ${task.dueDate&&task.dueDate<today()&&isOpen(task)?"font-bold text-[#BB3041]":"text-[#525B70]"}`}>{formatted(task.dueDate)}</td>
+    </tr>;
+   })}</tbody></table></div>:
+   <div className="mt-4 flex gap-3 overflow-x-auto pb-3">{statuses.map(col=><section key={col.id} className="w-64 shrink-0 rounded-xl bg-[#F6F7FB] p-3"><h3 className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold"><span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${col.bar}`}/>{col.name}</span><span>{filtered.filter(x=>(x.task.status??"planned")===col.id).length}</span></h3><div className="space-y-2">{filtered.filter(x=>(x.task.status??"planned")===col.id).map(x=><article key={x.project.id+":"+x.task.id} className="rounded-lg border bg-white p-3"><p className="text-xs font-semibold">{x.task.title}</p><Link href={projectLink(x.project)} className="mt-2 block truncate text-[11px] text-[#6034B7] hover:underline">{x.project.title}</Link><div className="mt-2 flex justify-between gap-1 text-[11px] text-[#697386]"><span>{x.task.owner||"Não atribuído"}</span><span>{formatted(x.task.dueDate)}</span></div><div className="mt-3">{taskControls(x,true)}</div></article>)}</div></section>)}</div>}
   </section>
  </div>;
 }

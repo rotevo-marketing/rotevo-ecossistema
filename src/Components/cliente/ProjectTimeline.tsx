@@ -7,6 +7,7 @@ export type ExecutionItem = {
   title:string;
   description?:string;
   projectTitle?:string;
+  projectKey?:string;
   documentCode?:string;
   priority?:"low"|"normal"|"high"|"urgent";
   phase?:string;
@@ -48,8 +49,8 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
    const legacyMilestones:{id:string;projectTitle:string;title:string;dueDate:string}[]=[];
    for(const project of projects){
      for(const item of project.data?.executionTimeline??[]){
-       if(!isExecutionItem(item)||item.visibleToClient===false)continue;
-       items.push({...item,projectTitle:project.title});
+       if(!isExecutionItem(item)||item.visibleToClient!==true)continue;
+       items.push({...item,projectTitle:project.title,projectKey:project.id});
      }
      for(const [key,value] of Object.entries(project.data?.deliverySchedule??{})){
        if(typeof value!=="string"||!value)continue;
@@ -62,7 +63,9 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
  },[projects]);
  const visible=items.filter(item=>filter==="all"||item.status===filter);
  const completed=items.filter(item=>item.status==="completed").length;
- const next=items.find(item=>item.status!=="completed"&&item.status!=="cancelled"&&item.dueDate&&item.dueDate>=new Date().toISOString().slice(0,10));
+ const now=new Date();
+ const localToday=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+ const next=items.find(item=>item.status!=="completed"&&item.status!=="cancelled"&&item.dueDate&&item.dueDate>=localToday);
  return <div className="space-y-5">
    <section className="grid gap-3 sm:grid-cols-3">
     {[{label:"Entregas cadastradas",value:String(items.length),icon:"report" as const},{label:"Concluídas",value:String(completed),icon:"chart-pie" as const},{label:"Próxima entrega",value:next?formatted(next.dueDate):"A definir",icon:"calendar-heart" as const}].map(k=>
@@ -90,7 +93,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
        <p className="mt-2 text-sm leading-6 text-[#697386]">Assim que a equipe incluir as iniciativas e os responsáveis do plano de execução, o andamento aparecerá aqui. As datas históricas já cadastradas são mostradas abaixo, separadamente.</p>
       </div>:visible.length===0?<p className="mt-6 text-sm text-[#697386]">Nenhuma entrega corresponde a este filtro.</p>:
       <div className={`mt-6 ${view==="timeline"?"border-l-2 border-[#E4E8F0] pl-5":"space-y-3"}`}>
-       {visible.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={item.id} className={`${view==="timeline"?"relative mb-6":"mb-3"} rounded-xl border border-[#E3E7F0] p-4`}>
+       {visible.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className={`${view==="timeline"?"relative mb-6":"mb-3"} rounded-xl border border-[#E3E7F0] p-4`}>
          {view==="timeline"&&<span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#6D35F5]"/>}
          <div className="flex flex-wrap items-start justify-between gap-2">
           <div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.projectTitle}{item.phase?` · ${item.phase}`:""}</p></div>

@@ -217,3 +217,10 @@ test("switching between client projects isolates editor state and late save call
  const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
  assert.equal(guards.length,4,"all four editor save callbacks must verify project identity");
 });
+
+test("execution editor never shares unmarked tasks with the client",()=>{
+ const editor=readFileSync(new URL("Components/admin/ExecutionTimelineEditor.tsx",root),"utf8");
+ assert.match(editor,/visibleToClient:editing\.visibleToClient===true/);
+ assert.match(editor,/item\.visibleToClient===true\?"Visível ao cliente":"Interno"/);
+ assert.doesNotMatch(editor,/visibleToClient:editing\.visibleToClient!==false/);
+});

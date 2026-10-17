@@ -119,7 +119,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
           <option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}
         </select>
       </label>}
-      {client?.slug?<Link href={`/admin/planejamentos/${client.slug}`} className="text-xs font-semibold text-[#6D35F5] hover:underline">Abrir projeto →</Link>:null}
+      {client?.slug?<Link href={`/admin/planejamentos/${client.slug}?projectId=${encodeURIComponent(project.id)}`} className="text-xs font-semibold text-[#6D35F5] hover:underline">Abrir projeto →</Link>:null}
     </div>
   </article>;
  };

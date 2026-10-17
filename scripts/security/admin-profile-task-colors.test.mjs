@@ -25,3 +25,11 @@ test("password change recovers from network errors and re-enables controls",()=>
  assert.match(menu,/finally\{/);
  assert.match(menu,/setBusy\(false\)/);
 });
+
+test("account menu dismisses with outside click or Escape and restores keyboard focus",()=>{
+ assert.match(menu,/document\.addEventListener\("pointerdown",closeOutside\)/);
+ assert.match(menu,/document\.addEventListener\("keydown",escape\)/);
+ assert.match(menu,/event\.key==="Escape"/);
+ assert.match(menu,/triggerRef\.current\?\.focus\(\)/);
+ assert.match(menu,/aria-expanded=\{open\}/);
+});

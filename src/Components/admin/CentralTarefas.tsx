@@ -7,7 +7,7 @@ import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 
 type Client={id:string;name:string;slug:string};
-export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[]}|null;clients:Client|Client[]|null};
+export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:{id:string;title:string;date:string;time?:string;status?:string;kind?:string}[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
 const columns:{id:Status;name:string}[]=[{id:"planned",name:"Planejado"},{id:"in_progress",name:"Em andamento"},{id:"blocked",name:"Aguardando"},{id:"completed",name:"Concluído"},{id:"cancelled",name:"Cancelado"}];
 const label=(s?:string)=>columns.find(c=>c.id===s)?.name??"Planejado";
@@ -32,6 +32,11 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  const tasks=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.executionTimeline)?p.data.executionTimeline:[])
  .filter(t=>t&&typeof t.id==="string"&&typeof t.title==="string")
  .map(t=>({task:t,project:p,client:getClient(p)}))),[projects]);
+ const appointments=useMemo(()=>projects.flatMap(project=>(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[]).filter(a=>a&&a.status==="planned"&&typeof a.date==="string"&&typeof a.title==="string").map(appointment=>({appointment,project,client:getClient(project)}))).sort((a,b)=>(a.appointment.date+"T"+(a.appointment.time??"23:59")).localeCompare(b.appointment.date+"T"+(b.appointment.time??"23:59"))),[projects]);
+ const todayAppointments=appointments.filter(x=>x.appointment.date===today());
+ const nextAppointments=appointments.filter(x=>x.appointment.date>today()).slice(0,4);
+ const todayTasks=tasks.filter(x=>x.task.dueDate===today()&&!["completed","cancelled"].includes(x.task.status??"planned"));
+ const overdueTasks=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&!["completed","cancelled"].includes(x.task.status??"planned"));
  const owners=useMemo(()=>[...new Set(tasks.map(t=>t.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
   (customer==="all"||project.id===customer)&&(responsible==="all"||(responsible==="unassigned"?!task.owner?.trim():task.owner?.trim()===responsible))&&
@@ -98,7 +103,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     </div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386]">
       <span>Prazo: {date(task.dueDate)}</span><span>Responsável: {task.owner?.trim()||"Não atribuído"}</span><span>Prioridade: {({low:"Baixa",normal:"Normal",high:"Alta",urgent:"Urgente"} as Record<string,string>)[task.priority??"normal"]??"Normal"}</span>
-      <span>{task.visibleToClient===false?"Uso interno":"Visível ao cliente"}</span>
+      <span>{task.visibleToClient===true?"Visível ao cliente":"Uso interno"}</span>
       {prerequisites.length>0&&<span>Pré-requisitos: {prerequisites.length} · {waiting.length?`${waiting.length} pendente(s)`:"Concluídos"}</span>}
     </div>
     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF0F5] pt-3">
@@ -124,7 +129,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   </article>;
  };
  return <div className="mt-7 space-y-5">
-  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+  <section aria-label="Prioridades e reuniões do dia" className="grid gap-4 lg:grid-cols-2">\n   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><div className="flex items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Minha visão do dia</h2><p className="mt-1 text-xs text-[#697386]">Prazos de todos os projetos · {date(today())}</p></div><span className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-sm font-semibold">{todayTasks.length} hoje</span></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Vencem hoje ({todayTasks.length})</button><button type="button" onClick={()=>{setDeadline("overdue");setStatus("all");}} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Atrasadas ({overdueTasks.length})</button><button type="button" onClick={()=>setDeadline("all")} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold">Todas</button></div><p className="mt-3 text-xs text-[#697386]">Use os atalhos para filtrar as tarefas abaixo. Para editar uma entrega, abra seu projeto.</p></div>\n   <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-lg font-semibold">Agenda de hoje</h2><p className="mt-1 text-xs text-[#697386]">Reuniões e acompanhamentos dos projetos</p>{todayAppointments.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhum compromisso agendado para hoje.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{todayAppointments.map(({appointment,project,client})=><div key={project.id+":"+appointment.id} className="flex items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{appointment.time??"Sem horário"} · {appointment.title}</p><p className="text-xs text-[#697386]">{client?.name??"Cliente"} · {project.title}</p></div>{client?.slug&&<Link href={`/admin/planejamentos/${client.slug}?projectId=${encodeURIComponent(project.id)}`} className="shrink-0 text-xs font-semibold text-[#6D35F5]">Abrir →</Link>}</div>)}</div>}{nextAppointments.length>0&&<p className="mt-4 text-xs text-[#697386]">Próximo compromisso: {date(nextAppointments[0].appointment.date)} · {nextAppointments[0].appointment.title}</p>}</div>\n  </section>\n  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
    {[{name:"Todas as tarefas",count:tasks.length},{name:"Em andamento",count:tasks.filter(t=>t.task.status==="in_progress").length},{name:"Atrasadas",count:tasks.filter(t=>t.task.dueDate&&t.task.dueDate<today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Vencem hoje",count:tasks.filter(t=>t.task.dueDate===today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Bloqueadas",count:tasks.filter(t=>t.task.status==="blocked").length}].map(metric=>
     <div key={metric.name} className={`rounded-2xl border p-5 ${metric.name==="Todas as tarefas"?"border-[#DDD6FE] bg-[#F5F3FF]":metric.name==="Em andamento"?"border-[#BFDBFE] bg-[#EFF6FF]":metric.name==="Atrasadas"?"border-[#FECACA] bg-[#FEF2F2]":metric.name==="Vencem hoje"?"border-[#FDE68A] bg-[#FFFBEB]":"border-[#FED7AA] bg-[#FFF7ED]"}`}><p className="text-sm text-[#525B70]">{metric.name}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{metric.count}</p></div>)}
   </div>

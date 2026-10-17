@@ -107,7 +107,7 @@ export function AdminMeetingsHub({projects,onChanged}:{projects:HubProject[];onC
   {(newOpen||selectedProject)&&<section aria-label="Gerenciar compromisso" className="rounded-2xl border border-[#E3E7F0] bg-[#F6F7FB] p-5">
    <div className="flex items-center justify-between gap-3"><h2 className="text-base font-bold text-[#090D1C]">{newOpen?"Novo compromisso":"Gerenciar compromissos do projeto"}</h2><button type="button" onClick={closeEditor} className="cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2 text-xs">Fechar</button></div>
    {newOpen&&<label className="mt-4 block text-xs font-semibold">Selecione o projeto<select aria-label="Projeto do novo compromisso" value={editingProject} onChange={e=>setEditingProject(e.target.value)} className="mt-2 w-full rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="">Selecione...</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}
-   {selectedProject&&<OperationalAgenda key={selectedProject.id} projectId={selectedProject.id} projectData={selectedProject.data} updatedAt={selectedProject.updated_at} onSaved={(data,updatedAt)=>onChanged(selectedProject.id,{...selectedProject.data,...data} as HubProject["data"],updatedAt)}/>}
+   {selectedProject&&<OperationalAgenda key={selectedProject.id+(newOpen?"-new":"-edit")} startNew={newOpen} projectId={selectedProject.id} projectData={selectedProject.data} updatedAt={selectedProject.updated_at} onSaved={(data,updatedAt)=>onChanged(selectedProject.id,{...selectedProject.data,...data} as HubProject["data"],updatedAt)}/>}
   </section>}
  </div>;
 }

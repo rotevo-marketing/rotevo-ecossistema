@@ -92,7 +92,7 @@ export default function SelecionarModulosPage() {
 
   const finalProjectSlug = useMemo(() => {
     if (!draft) return "";
-    if (draft.projectSlug.startsWith(draft.clientSlug)) return draft.projectSlug;
+    if (draft.projectSlug === draft.clientSlug || draft.projectSlug.startsWith(`${draft.clientSlug}-`)) return draft.projectSlug;
     return `${draft.clientSlug}-${draft.projectSlug}`;
   }, [draft]);
 

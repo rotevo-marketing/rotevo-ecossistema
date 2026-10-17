@@ -148,3 +148,12 @@ test("task board navigates to the correct owning project",()=>{
  const board=readFileSync(new URL("Components/admin/CentralTarefas.tsx",root),"utf8");
  assert.match(board,/projectId=\$\{encodeURIComponent\(project\.id\)\}/);
 });
+
+test("module selection rejects malformed locally persisted planning drafts",()=>{
+ const source=readFileSync(new URL("app/admin/novo-planejamento/modulos/page.tsx",root),"utf8");
+ assert.match(source,/const value: unknown = JSON\.parse\(storedDraft\)/);
+ assert.match(source,/typeof fields\.clientSlug !== "string" \|\| !slugPattern\.test\(fields\.clientSlug\)/);
+ assert.match(source,/typeof fields\.projectSlug !== "string" \|\| !slugPattern\.test\(fields\.projectSlug\)/);
+ assert.match(source,/typeof fields\.projectTitle !== "string" \|\| !fields\.projectTitle\.trim\(\)/);
+ assert.match(source,/if \(!storedDraft\) \{/);
+});

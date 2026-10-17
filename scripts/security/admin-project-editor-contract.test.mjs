@@ -224,3 +224,16 @@ test("execution editor never shares unmarked tasks with the client",()=>{
  assert.match(editor,/item\.visibleToClient===true\?"Visível ao cliente":"Interno"/);
  assert.doesNotMatch(editor,/visibleToClient:editing\.visibleToClient!==false/);
 });
+
+test("admin onboarding and meetings tabs use real project-bound editors",()=>{
+ const page=readFileSync(new URL("app/admin/page.tsx",root),"utf8");
+ const hubs=readFileSync(new URL("Components/admin/OperationalHubs.tsx",root),"utf8");
+ assert.match(page,/workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub/);
+ assert.match(page,/workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub/);
+ assert.match(hubs,/<ProjectOnboarding key=\{project.id\} projectId=\{project.id\}/);
+ assert.match(hubs,/<OperationalAgenda key=\{project.id\} projectId=\{project.id\}/);
+ assert.match(hubs,/onChanged\(project.id,data,updatedAt\)/);
+ assert.match(hubs,/aria-label="Selecionar projeto operacional"/);
+ assert.match(hubs,/Agenda de \{activeDay.slice/);
+ assert.match(hubs,/dateKey\(new Date\(month.getFullYear\(\),month.getMonth\(\),i\+1\)\)/);
+});

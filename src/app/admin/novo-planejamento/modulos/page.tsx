@@ -61,7 +61,14 @@ function getStoredDraft(): NewPlanningDraft | null {
         typeof fields.clientSlug !== "string" || !slugPattern.test(fields.clientSlug) ||
         typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
         typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
-    return fields as NewPlanningDraft;
+    return {
+      clientName: fields.clientName,
+      clientSlug: fields.clientSlug,
+      projectTitle: fields.projectTitle,
+      projectSlug: fields.projectSlug,
+      description: fields.description,
+      coverImageUrl: fields.coverImageUrl,
+    } as NewPlanningDraft;
   } catch {
     return null;
   }

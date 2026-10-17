@@ -77,6 +77,30 @@ export async function PATCH(req:NextRequest){
     new Set(presented).size!==presented.length)return fail(400);
   }
  }
+ // Customer editorial decisions apply to a specific content version. Once a
+ // decision exists, changing its material without a new version is forbidden.
+ const oldEditorial=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
+ const newEditorial=Array.isArray(nextRoot.editorialCalendar)?nextRoot.editorialCalendar:[];
+ const oldEditorialById=new Map(oldEditorial.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v]));
+ const materialFields=["title","channel","format","publishDate","caption","driveUrl"];
+ const changedEditorialVersions=new Map<string,string>();
+ for(const entry of newEditorial){
+  if(!entry||typeof entry!=="object"||Array.isArray(entry))continue;
+  const item=entry as Record<string,unknown>;
+  if(typeof item.id!=="string")continue;
+  const before=oldEditorialById.get(item.id);
+  if(!before||String(before.version??"")!==String(item.version??""))continue;
+  if(materialFields.some(field=>(before[field]??"")!==(item[field]??""))){
+   changedEditorialVersions.set(item.id,String(item.version??""));
+  }
+ }
+ if(changedEditorialVersions.size){
+  const {data:approvals,error:approvalError}=await admin.from("editorial_approvals")
+   .select("content_id,content_version").eq("project_id",b.projectId)
+   .in("content_id",[...changedEditorialVersions.keys()]);
+  if(approvalError)return fail(503);
+  if((approvals??[]).some(approval=>changedEditorialVersions.get(approval.content_id)===approval.content_version))return fail(409);
+ }
  // Validate onboarding links on the server as well as in the editor.
  const checklist=nextRoot.onboardingChecklist;
  if(checklist!==undefined){

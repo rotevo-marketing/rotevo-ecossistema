@@ -114,7 +114,8 @@ test("admin navigation keeps consistent project lifecycle order on desktop and m
  assert.ok(positions.every((n,i)=>i===0||n>positions[i-1]),"tabs follow approved sequence");
  assert.match(admin,/NAV_ITEMS\.map\(item=><button/);
  assert.match(admin,/workspaceTab==="campaigns"/);
- assert.match(admin,/Nenhuma campanha ou resultado fictício/);
+ assert.match(admin,/<CampaignsHub projects=/);
+ assert.doesNotMatch(admin,/Área reservada para acompanhar campanhas/);
 });
 test("nav icons use official consistent Tabler selections",()=>{
  const icons=readFileSync(new URL("Components/RotevoTablerIcon.tsx",base),"utf8");

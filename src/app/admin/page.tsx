@@ -384,7 +384,7 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                        <Link href={"/admin/planejamentos/"+clientSlug} className="inline-flex min-h-10 items-center rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#24304D]">Editar planejamento</Link>
+                        <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-10 items-center rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#24304D]">Editar planejamento</Link>
                         <div className="relative">
                           <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#E3E7F0] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
                           {menuOpen && (

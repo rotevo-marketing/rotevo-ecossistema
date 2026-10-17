@@ -113,3 +113,15 @@ test("creating a planning project never overwrites an existing client profile",(
  assert.match(code,/if \(!client && !clientError\)/);
  assert.match(code,/clientError\?\.code==="23505"/);
 });
+
+test("project management links identify the exact project under its client",()=>{
+ const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
+ const clients=readFileSync(new URL("Components/admin/ClientsDirectory.tsx",root),"utf8");
+ const dashboard=readFileSync(new URL("app/admin/page.tsx",root),"utf8");
+ assert.match(page,/requestedProjectId = new URLSearchParams\(window\.location\.search\)\.get\("projectId"\)/);
+ assert.match(page,/projectIdPattern\.test\(requestedProjectId\)/);
+ assert.match(page,/\.eq\("clients\.slug", clientSlug\)/);
+ assert.match(page,/query = query\.eq\("id", requestedProjectId\)/);
+ assert.match(clients,/projectId=\$\{encodeURIComponent\(p\.id\)\}/);
+ assert.match(dashboard,/encodeURIComponent\(project\.id\)/);
+});

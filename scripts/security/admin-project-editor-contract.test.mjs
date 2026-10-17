@@ -118,7 +118,10 @@ test("project management links identify the exact project under its client",()=>
  const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
  const clients=readFileSync(new URL("Components/admin/ClientsDirectory.tsx",root),"utf8");
  const dashboard=readFileSync(new URL("app/admin/page.tsx",root),"utf8");
- assert.match(page,/requestedProjectId = new URLSearchParams\(window\.location\.search\)\.get\("projectId"\)/);
+ assert.match(page,/requestedProjectId = searchParams\.get\("projectId"\)/);
+ assert.match(page,/\[clientSlug, requestedProjectId, router\]/);
+ assert.match(page,/\<Suspense fallback=/);
+ assert.match(page,/setProject\(null\)/);
  assert.match(page,/projectIdPattern\.test\(requestedProjectId\)/);
  assert.match(page,/\.eq\("clients\.slug", clientSlug\)/);
  assert.match(page,/query = query\.eq\("id", requestedProjectId\)/);

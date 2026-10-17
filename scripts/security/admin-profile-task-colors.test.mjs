@@ -33,3 +33,9 @@ test("account menu dismisses with outside click or Escape and restores keyboard 
  assert.match(menu,/triggerRef\.current\?\.focus\(\)/);
  assert.match(menu,/aria-expanded=\{open\}/);
 });
+
+test("in-progress projects are included in production counts and filters",()=>{
+ assert.match(admin,/project\.status === "draft" \|\| project\.status === "in_progress"/);
+ assert.match(admin,/statusFilter === "draft" && project\.status !== "draft" && project\.status !== "in_progress"/);
+ assert.match(admin,/statusFilter === "published" && project\.status !== "published"/);
+});

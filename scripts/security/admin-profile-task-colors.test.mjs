@@ -18,3 +18,10 @@ test("account menu offers password change and logout",()=>{
 test("task status cards have semantically distinct palettes",()=>{
  for(const color of ["#F5F3FF","#EFF6FF","#FEF2F2","#FFFBEB","#FFF7ED"])assert.ok(tasks.includes(color),color);
 });
+
+test("password change recovers from network errors and re-enables controls",()=>{
+ assert.match(menu,/catch\{/);
+ assert.match(menu,/Falha de conexão ao alterar a senha/);
+ assert.match(menu,/finally\{/);
+ assert.match(menu,/setBusy\(false\)/);
+});

@@ -64,7 +64,7 @@ export default function EditorialCalendar({projects,clientView=false}:{projects:
     <h4 className="mt-6 text-sm font-semibold">Legenda</h4><div className="mt-2 min-h-[90px] whitespace-pre-wrap rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4 text-sm text-[#344056]">{active.caption||"Nenhuma legenda cadastrada."}</div>
     <h4 className="mt-5 text-sm font-semibold">Material</h4>{safe(active.driveUrl)?<a href={safe(active.driveUrl)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#D9C9FA] px-4 py-2.5 text-sm font-semibold text-[#6034B7]"><RotevoTablerIcon name="link" size={18}/> Abrir material no Drive ↗</a>:<p className="mt-2 text-sm text-[#697386]">Nenhum link de material disponível.</p>}
     {active.reviewNotes&&<div className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4"><h4 className="text-sm font-semibold">Observações de revisão</h4><p className="mt-2 whitespace-pre-wrap text-sm text-[#525B70]">{active.reviewNotes}</p></div>}
-    {clientView&&<EditorialDecision key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} item={active}/>}
+    {clientView&&<EditorialDecision key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} item={active} onDecision={decision=>setClientDecisions(prev=>[...prev.filter(row=>!(row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))),{project_id:active.projectId,content_id:active.id,content_version:active.version??"",decision}])}/>}
    </aside>
   </div>}
  </div>;

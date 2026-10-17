@@ -5,10 +5,11 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 
 export type CampaignStatus="draft"|"active"|"paused"|"finished";
 export type CampaignPlatform="Google Ads"|"Meta Ads"|"Outro";
+export type CampaignSnapshot={id:string;month:string;spent:number|null;impressions:number|null;clicks:number|null;results:number|null;leads:number|null;appointments:number|null;sales:number|null;revenue:number|null;notes:string;updatedAt:string};
 export type CampaignRecord={
  id:string;title:string;platform:CampaignPlatform;objective:string;status:CampaignStatus;
  startDate:string;endDate:string;budget:number|null;spent:number|null;results:number|null;
- resultLabel:string;dashboardUrl:string;notes:string;updatedAt?:string;
+ resultLabel:string;dashboardUrl:string;notes:string;updatedAt?:string;snapshots?:CampaignSnapshot[];
 };
 export type CampaignProject={id:string;title:string;updated_at:string;data:Record<string,unknown>|null;clients:{name:string}|{name:string}[]|null};
 const client=(p:CampaignProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
@@ -19,10 +20,13 @@ const validDate=(v:string)=>!v||(/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Da
 const numberOrNull=(v:string)=>v.trim()===""?null:Number(v.replace(",","."));
 const https=(v:string)=>{if(!v)return true;try{return new URL(v).protocol==="https:";}catch{return false;}};
 export default function CampaignsHub({projects,onChanged}:{projects:CampaignProject[];onChanged:(id:string,data:CampaignProject["data"],updatedAt:string)=>void}){
- const [projectFilter,setProjectFilter]=useState("all");
+ const [projectFilter,setProjectFilter]=useState("");
+ const [snapshotCampaign,setSnapshotCampaign]=useState<{projectId:string;campaignId:string}|null>(null);
+ const [snapshotDraft,setSnapshotDraft]=useState<CampaignSnapshot>({id:"",month:"",spent:null,impressions:null,clicks:null,results:null,leads:null,appointments:null,sales:null,revenue:null,notes:"",updatedAt:""});
+ const [snapshotSaving,setSnapshotSaving]=useState(false);
  const [platformFilter,setPlatformFilter]=useState("all");
  const [statusFilter,setStatusFilter]=useState("all");
- const [monthFilter,setMonthFilter]=useState("");
+ const [monthFilter,setMonthFilter]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
  const [search,setSearch]=useState("");
  const [editing,setEditing]=useState<CampaignRecord|null>(null);
  const [editProjectId,setEditProjectId]=useState("");
@@ -34,18 +38,28 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   const list=Array.isArray(source)?source as CampaignRecord[]:[];
   return list.filter(item=>item&&typeof item.id==="string"&&typeof item.title==="string").map(item=>({item,project}));
  }),[projects]);
+ const selectedProjectId=projectFilter||projects[0]?.id||"";
+ const scoped=rows.filter(({project})=>project.id===selectedProjectId);
+ const dataFor=(item:CampaignRecord)=>{const reports=Array.isArray(item.snapshots)?item.snapshots:[];return reports.find(x=>x.month===monthFilter)??null;};
+ const monthRows=scoped.filter(({item})=>(!item.startDate||item.startDate<=monthFilter+"-31")&&(!item.endDate||item.endDate>=monthFilter+"-01"));
+ const reported=monthRows.filter(x=>dataFor(x.item)!==null);
+ const total=(field:"spent"|"impressions"|"clicks"|"results"|"leads"|"appointments"|"sales"|"revenue")=>{const values=reported.map(x=>dataFor(x.item)?.[field]).filter((n):n is number=>typeof n==="number"&&Number.isFinite(n));return values.length?values.reduce((a,b)=>a+b,0):null;};
+ const totals={spent:total("spent"),impressions:total("impressions"),clicks:total("clicks"),leads:total("leads"),appointments:total("appointments"),sales:total("sales"),revenue:total("revenue")};
+ const monthlyBudget=monthRows.reduce((sum,x)=>sum+(typeof x.item.budget==="number"?x.item.budget:0),0);
+ const hasBudget=monthRows.some(x=>typeof x.item.budget==="number");
+ const cpc=totals.spent!==null&&totals.clicks!==null&&totals.clicks>0?totals.spent/totals.clicks:null;
+ const ctr=totals.clicks!==null&&totals.impressions!==null&&totals.impressions>0?100*totals.clicks/totals.impressions:null;
+ const cpl=totals.spent!==null&&totals.leads!==null&&totals.leads>0?totals.spent/totals.leads:null;
+ const roas=totals.revenue!==null&&totals.spent!==null&&totals.spent>0?totals.revenue/totals.spent:null;
  const filtered=rows.filter(({item,project})=>
-  (projectFilter==="all"||project.id===projectFilter)&&
+  project.id===selectedProjectId&&
   (platformFilter==="all"||item.platform===platformFilter)&&
   (statusFilter==="all"||item.status===statusFilter)&&
   (!monthFilter||(!item.startDate&&!item.endDate)||((!item.startDate||item.startDate<=monthFilter+"-31")&&(!item.endDate||item.endDate>=monthFilter+"-01")))&&
   (project.title+" "+(client(project)?.name??"")+" "+item.title+" "+item.objective).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))
  );
- const active=filtered.filter(x=>x.item.status==="active").length;
- const spent=filtered.reduce((sum,x)=>sum+(x.item.spent??0),0);
- const withSpend=filtered.filter(x=>x.item.spent!==null).length;
- const withResults=filtered.filter(x=>x.item.results!==null).length;
- const openNew=()=>{setEditing({...blank});setEditProjectId(projectFilter==="all"?(projects[0]?.id??""):projectFilter);setError("");setNotice("");};
+ 
+ const openNew=()=>{setEditing({...blank});setEditProjectId(selectedProjectId);setError("");setNotice("");};
  const openEdit=(id:string,item:CampaignRecord)=>{setEditing({...item});setEditProjectId(id);setError("");setNotice("");};
  const close=()=>{if(!saving){setEditing(null);setError("");}};
  async function save(){

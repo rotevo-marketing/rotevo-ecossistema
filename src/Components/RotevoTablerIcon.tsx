@@ -4,6 +4,85 @@
 import type { ReactNode } from "react";
 
 const artwork: Record<string, ReactNode> = {
+  "square-rounded-plus": <>
+    <path d="M12 3c7.2 0 9 1.8 9 9c0 7.2 -1.8 9 -9 9c-7.2 0 -9 -1.8 -9 -9c0 -7.2 1.8 -9 9 -9" />
+    <path d="M15 12h-6" />
+    <path d="M12 9v6" />
+  </>,
+  "search": <>
+    <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+    <path d="M21 21l-6 -6" />
+  </>,
+  "filter": <>
+    <path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227" />
+  </>,
+  "user-check": <>
+    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+    <path d="M6 21v-2a4 4 0 0 1 4 -4h4" />
+    <path d="M15 19l2 2l4 -4" />
+  </>,
+  "folder": <>
+    <path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" />
+  </>,
+  "arrows-sort": <>
+    <path d="M3 9l4 -4l4 4m-4 -4v14" />
+    <path d="M21 15l-4 4l-4 -4m4 4v-14" />
+  </>,
+  "list": <>
+    <path d="M9 6l11 0" />
+    <path d="M9 12l11 0" />
+    <path d="M9 18l11 0" />
+    <path d="M5 6l0 .01" />
+    <path d="M5 12l0 .01" />
+    <path d="M5 18l0 .01" />
+  </>,
+  "layout-kanban": <>
+    <path d="M4 4l6 0" />
+    <path d="M14 4l6 0" />
+    <path d="M4 10a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -8" />
+    <path d="M14 10a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -2" />
+  </>,
+  "calendar-week": <>
+    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+    <path d="M16 3v4" />
+    <path d="M8 3v4" />
+    <path d="M4 11h16" />
+    <path d="M7 14h.013" />
+    <path d="M10.01 14h.005" />
+    <path d="M13.01 14h.005" />
+    <path d="M16.015 14h.005" />
+    <path d="M13.015 17h.005" />
+    <path d="M7.01 17h.005" />
+    <path d="M10.01 17h.005" />
+  </>,
+  "flag": <>
+    <path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9" />
+    <path d="M5 21v-7" />
+  </>,
+  "link": <>
+    <path d="M9 15l6 -6" />
+    <path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" />
+    <path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" />
+  </>,
+  "message-circle": <>
+    <path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1" />
+  </>,
+  "circle-check": <>
+    <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+    <path d="M9 12l2 2l4 -4" />
+  </>,
+  "view-360-arrow": <>
+    <path d="M17 15.328c2.414 -.718 4 -1.94 4 -3.328c0 -2.21 -4.03 -4 -9 -4s-9 1.79 -9 4s4.03 4 9 4" />
+    <path d="M9 13l3 3l-3 3" />
+  </>,
+  "history": <>
+    <path d="M12 8l0 4l2 2" />
+    <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+  </>,
+  "x": <>
+    <path d="M18 6l-12 12" />
+    <path d="M6 6l12 12" />
+  </>,
   "layout-dashboard": <>
     <path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" />
     <path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" />
@@ -111,7 +190,7 @@ const artwork: Record<string, ReactNode> = {
   </>,
 };
 
-export type RotevoIconName = "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
+export type RotevoIconName = "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
 
 export function RotevoTablerIcon({name, size=24, stroke=2.3, className=""}: {
   name:RotevoIconName; size?:number; stroke?:number; className?:string

@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
+import {validOperationalDate} from "@/lib/security/executionDependencyValidation";
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
 type Client={id:string;name:string;slug:string};
@@ -50,7 +51,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  function save(){
   if(!editing||!project)return;
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
+  if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
   if(!safe(editing.driveUrl??"")){setError("O link do Drive precisa ser um endereço HTTPS.");return;}
   const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim()};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);

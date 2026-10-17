@@ -65,21 +65,13 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }
  return <div className="mt-7 space-y-5">
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Gerenciar conteúdos</h2>
-   <p className="mt-2 text-sm text-[#525B70]">Crie pautas, vincule arquivos do Drive e organize as etapas de revisão. Os arquivos permanecem no Google Drive.</p>
-   <div className="mt-5 flex flex-wrap items-center gap-3">
-    <select aria-label="Projeto editorial" value={projectId} onChange={e=>{setProjectId(e.target.value);setEditing(null);setError("");}} className="min-h-11 min-w-0 flex-1 cursor-pointer rounded-xl border border-[#DDE1EA] px-4 py-2.5 text-sm">
-     <option value="">Selecione um projeto</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}
-    </select>
-    <button type="button" disabled={!project||saving} onClick={()=>{setEditing({...blank});setError("");setNotice("");}} className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#ADE60A] px-5 py-3 text-sm font-semibold text-[#090D1C] disabled:cursor-not-allowed disabled:opacity-40">Novo conteúdo</button>
-   </div>
-   {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-   {notice&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-   {project&&approvalError&&<p className="mt-3 text-xs text-[#916000]">A sincronização do histórico de aprovações ainda depende da configuração do banco.</p>}
-   {project&&<div className="mt-5 space-y-2">{items.length===0?<p className="text-sm text-[#697386]">Nenhum conteúdo cadastrado para este projeto.</p>:items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] p-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.publishDate} · {displayStatus(item)} · {item.visibleToClient?"Compartilhado":"Interno"}</p></div><button type="button" onClick={()=>{setEditing({...item});setError("");}} className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold">Editar</button></div>)}</div>}
-   {project&&editing&&<div className="mt-5 rounded-xl border border-[#DED4FA] bg-[#FCFBFF] p-4">
+  {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+  <EditorialCalendar projects={projects} onNew={id=>{setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
+  {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={()=>setEditing(null)} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">
     <h3 className="text-base font-semibold">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
+    {!editing.id&&<label className="mt-4 block text-xs font-medium">Projeto<select value={projectId} onChange={e=>{setProjectId(e.target.value);setError("");}} className="mt-1 block w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}
+    {error&&<p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    {approvalError&&<p className="mt-3 text-xs text-[#916000]">A sincronização de aprovações depende da configuração do banco.</p>}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
      <label className="text-xs font-medium sm:col-span-2">Título *<input value={editing.title} maxLength={150} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Canal<input value={editing.channel} onChange={e=>setEditing({...editing,channel:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
@@ -94,9 +86,6 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
     </div>
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
     <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#ADE60A] px-5 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
-   </div>}
-  </section>
-  {project&&<EditorialApprovalsPanel projectId={project.id} contentTitles={Object.fromEntries(items.map(item=>[item.id,item.title]))}/>}
-  <EditorialCalendar projects={projects}/>
+   </aside></div>}
  </div>;
 }

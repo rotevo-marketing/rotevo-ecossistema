@@ -76,7 +76,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   };
   if(editing.id&&deps.some(id=>reaches(id,editing.id))){setError("Dependência circular detectada. Revise a sequência das entregas.");return;}
   if(!editing.id&&typeof crypto==="undefined"){setError("Não foi possível gerar um identificador para a entrega.");return;}
-  const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient!==false};
+  const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient===true};
   const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
   void persist(next);
  }
@@ -96,7 +96,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
    {success&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
    {items.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma entrega operacional cadastrada. Os marcos antigos continuarão disponíveis separadamente no portal.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{items.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-     <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#6D35F5]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===false?"Interno":"Visível ao cliente"}</p></div>
+     <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#6D35F5]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===true?"Visível ao cliente":"Interno"}</p></div>
      <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
     </div>)}</div>}
    {editing&&<div className="mt-5 rounded-2xl border border-[#D9D0F5] bg-[#FCFBFF] p-4 sm:p-5">

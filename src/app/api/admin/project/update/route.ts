@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
+import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 export const runtime = "nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível atualizar o projeto autorizado."},{status,headers:{"Cache-Control":"no-store"}});
@@ -57,6 +58,25 @@ export async function PATCH(req:NextRequest){
  // Historical assignments are preserved without retroactive data migration.
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
+ // Validate new scope selections, but preserve historical scope during unrelated edits.
+ const previousEco=oldRoot.ecosystem2027;
+ const nextEco=nextRoot.ecosystem2027;
+ if(nextEco&&typeof nextEco==="object"&&!Array.isArray(nextEco)){
+  const before=previousEco&&typeof previousEco==="object"&&!Array.isArray(previousEco)?previousEco as Record<string,unknown>:{};
+  const after=nextEco as Record<string,unknown>;
+  const scopeChanged=JSON.stringify(before.selectedDocumentCodes)!==JSON.stringify(after.selectedDocumentCodes)||
+   JSON.stringify(before.presentedDocumentCodes)!==JSON.stringify(after.presentedDocumentCodes);
+  if(scopeChanged){
+   const selected=after.selectedDocumentCodes,presented=after.presentedDocumentCodes;
+   const allowedCodes=new Set(ecosystemDocuments.filter(doc=>!doc.area.startsWith("00 ")).map(doc=>doc.code));
+   if(!Array.isArray(selected)||selected.length===0||selected.length>100||
+    !selected.every(code=>typeof code==="string"&&allowedCodes.has(code))||
+    new Set(selected).size!==selected.length||
+    !Array.isArray(presented)||presented.length>100||
+    !presented.every(code=>typeof code==="string"&&selected.includes(code))||
+    new Set(presented).size!==presented.length)return fail(400);
+  }
+ }
  // Validate onboarding links on the server as well as in the editor.
  const checklist=nextRoot.onboardingChecklist;
  if(checklist!==undefined){

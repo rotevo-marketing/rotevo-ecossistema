@@ -26,6 +26,7 @@ type ClientRecord = {
 };
 
 type ProjectData = {
+  [key: string]: unknown;
   coverImageUrl?: string | null;
   executionTimeline?: ExecutionItem[];
   onboardingChecklist?: OnboardingItem[];

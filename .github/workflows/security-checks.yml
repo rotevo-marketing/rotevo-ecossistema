@@ -88,6 +88,8 @@ jobs:
         run: node --test scripts/security/team-project-access-behavior.test.mjs
       - name: Verify client-project JSON projection is allowlisted
         run: node --test scripts/security/client-project-projection.test.mjs
+      - name: Verify operational agenda form validations
+        run: node --test scripts/security/agenda-form-contract.test.mjs
       - name: Verify editorial calendar date validation
         run: node --test scripts/security/editorial-date-contract.test.mjs
       - name: Verify onboarding link validation contracts

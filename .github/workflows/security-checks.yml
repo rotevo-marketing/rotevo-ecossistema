@@ -145,7 +145,8 @@ jobs:
           npm run dev -- --hostname 127.0.0.1 > /tmp/rotevo-next-test.log 2>&1 &
           echo $! > /tmp/rotevo-next-test.pid
           for i in $(seq 1 60); do
-            if curl -fsS --max-time 2 http://127.0.0.1:3000/ > /dev/null; then
+            status="$(curl -sS --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/admin/projects || true)"
+            if [ "$status" = "401" ]; then
               exit 0
             fi
             sleep 2

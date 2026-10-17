@@ -2,7 +2,7 @@
 import {useMemo,useState} from "react";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import EditorialDecision from "@/Components/cliente/EditorialDecision";
-export type EditorialItem={id:string;title:string;channel:string;format:string;publishDate:string;caption?:string;driveUrl?:string;version?:string;status:"idea"|"production"|"review"|"awaiting_client"|"changes_requested"|"approved"|"scheduled"|"published";visibleToClient?:boolean;reviewNotes?:string};
+export type EditorialItem={id:string;title:string;channel:string;format:string;publishDate:string;caption?:string;driveUrl?:string;version?:string;status:"idea"|"production"|"review"|"awaiting_client"|"changes_requested"|"approved"|"scheduled"|"published";visibleToClient?:boolean;reviewNotes?:string;relatedTaskId?:string};
 export type EditorialProject={id:string;title:string;data:{editorialCalendar?:EditorialItem[]}|null};
 export const editorialStatuses:Record<EditorialItem["status"],string>={idea:"Ideia",production:"Em produção",review:"Revisão interna",awaiting_client:"Aguardando aprovação",changes_requested:"Ajustes solicitados",approved:"Aprovado",scheduled:"Agendado",published:"Publicado"};
 const fmt=(d:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem data"};

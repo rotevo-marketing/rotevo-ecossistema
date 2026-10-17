@@ -208,3 +208,12 @@ test("editorial decisions cannot silently approve modified material under the sa
  assert.match(source,/changedEditorialVersions\.get\(approval\.content_id\)===approval\.content_version/);
  assert.ok(source.indexOf("changedEditorialVersions.size")<source.indexOf('.update({data:b.data,updated_at:nextAt})'));
 });
+
+test("switching between client projects isolates editor state and late save callbacks",()=>{
+ const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
+ for(const name of ["EcosystemDocumentEditor","ProjectOnboarding","OperationalAgenda","ExecutionTimelineEditor"]){
+  assert.match(page,new RegExp("<"+name+" key=\\{project\\.id\\} projectId=\\{project\\.id\\}"));
+ }
+ const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
+ assert.equal(guards.length,4,"all four editor save callbacks must verify project identity");
+});

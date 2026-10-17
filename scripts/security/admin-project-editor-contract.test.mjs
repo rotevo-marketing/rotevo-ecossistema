@@ -190,3 +190,10 @@ test("planning wizard checks slug length before selecting strategic documents",(
  assert.match(start,/projectSlug\.startsWith\(`\$\{clientSlug\}-`\)/);
  assert.match(finish,/draft\.projectSlug\.startsWith\(`\$\{draft\.clientSlug\}-`\)/);
 });
+
+test("project creation rejects invalid execution and agenda graphs before inserting data",()=>{
+ const source=readFileSync(new URL("app/api/admin/project/create/route.ts",root),"utf8");
+ assert.match(source,/validExecutionDependencies\(payload\)/);
+ assert.ok(source.indexOf("validExecutionDependencies(payload)")<source.indexOf('.from("planning_projects").insert('));
+ assert.match(source,/validEcosystemDocumentTransition\(\{ecosystem2027:\{version:1\}\},payload\)/);
+});

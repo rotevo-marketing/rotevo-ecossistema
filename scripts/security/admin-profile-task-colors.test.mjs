@@ -106,3 +106,20 @@ test("shared tasks remain opt-in and editorial decisions do not auto-complete ex
  assert.match(tasks,/decision\.comment/);
  assert.match(tasks,/Compartilhar a tarefa com o cliente não cria uma publicação automaticamente/);
 });
+
+test("admin navigation keeps consistent project lifecycle order on desktop and mobile",()=>{
+ const ids=["overview","clients","projects","onboarding","tasks","meetings","content","campaigns","team","finance"];
+ const positions=ids.map(id=>admin.indexOf('{id:"'+id+'",label:'));
+ assert.ok(positions.every(n=>n>=0),"all tabs are present");
+ assert.ok(positions.every((n,i)=>i===0||n>positions[i-1]),"tabs follow approved sequence");
+ assert.match(admin,/NAV_ITEMS\.map\(item=><button/);
+ assert.match(admin,/workspaceTab==="campaigns"/);
+ assert.match(admin,/Nenhuma campanha ou resultado fictício/);
+});
+test("nav icons use official consistent Tabler selections",()=>{
+ const icons=readFileSync(new URL("Components/RotevoTablerIcon.tsx",base),"utf8");
+ for(const icon of ["users","users-group","list-check","calendar","currency-dollar","rocket","lifebuoy"]){
+   assert.ok(icons.includes('"'+icon+'"'),icon);
+   assert.ok(admin.includes('icon:"'+icon+'"'),icon);
+ }
+});

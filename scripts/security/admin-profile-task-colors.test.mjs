@@ -16,7 +16,7 @@ test("account menu offers password change and logout",()=>{
  assert.match(menu,/onLogout\(\)/);
 });
 test("task status cards have semantically distinct palettes",()=>{
- for(const color of ["#F5F3FF","#EFF6FF","#FEF2F2","#FFFBEB","#FFF7ED"])assert.ok(tasks.includes(color),color);
+ for(const color of ["#DCEBFF","#FFF1D4","#DFF6E7","#FFE4E6","#EEEAFE"])assert.ok(tasks.includes(color),color);
 });
 
 test("password change recovers from network errors and re-enables controls",()=>{
@@ -48,11 +48,11 @@ test("admin profile photo is optional and uses the existing account menu",()=>{
 });
 test("tasks dashboard includes today's deadlines and meeting agenda",()=>{
  assert.match(tasks,/Minha visão do dia/);
- assert.match(tasks,/Agenda de hoje/);
+ assert.match(tasks,/Reuniões hoje/);
  assert.match(tasks,/todayAppointments/);
  assert.match(tasks,/setDeadline\("today"\)/);
  assert.match(tasks,/setDeadline\("overdue"\)/);
- assert.match(tasks,/task\.visibleToClient===true\?"Visível ao cliente":"Uso interno"/);
+ assert.match(tasks,/visibleToClient:false/);
 });
 
 test("daily tasks layout does not render escaped newline artifacts",()=>{
@@ -63,4 +63,14 @@ test("failed admin API loads show a retry rather than false zero project totals"
  assert.match(admin,/errorMessage && !isLoading && <div role="alert"/);
  assert.match(admin,/onClick=\{\(\)=>void loadAdminData\(\)\}/);
  assert.match(admin,/workspaceTab==="projects" && !errorMessage &&/);
+});
+
+test("central task table has six meaningful columns and compact controls",()=>{
+ for(const col of ["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"])assert.ok(tasks.includes('"'+col+'"'),col);
+ for(const term of ["Nova tarefa","Filtrar projeto","Filtrar responsável","Filtrar prioridade","Buscar tarefas","Ordenar tarefas","Kanban"])assert.ok(tasks.includes(term),term);
+ assert.match(tasks,/value="all">Todos os projetos/);
+ assert.match(tasks,/href=\{projectLink\(project\)\}/);
+ assert.match(tasks,/visibleToClient:false/);
+ assert.match(tasks,/expectedUpdatedAt:project.updated_at/);
+ assert.match(tasks,/\/api\/admin\/project\/update/);
 });

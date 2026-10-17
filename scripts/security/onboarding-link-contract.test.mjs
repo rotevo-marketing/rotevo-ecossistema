@@ -23,7 +23,9 @@ test("onboarding stays a project-scoped, ten-step checklist with no task creatio
 });
 test("existing checklist stages are preserved when applying the current template",()=>{
  assert.match(editor,/\.\.\.items,\.\.\.missing\.map/);
- assert.match(editor,/Adicionar etapas padrão que faltam/);
+ assert.match(editor,/Preservar atuais e adicionar/);
+ assert.match(editor,/Usar checklist padrão de 10 etapas/);
+ assert.match(editor,/Confirmar substituição/);
  assert.match(editor,/visibleToClient:false/);
 });
 test("onboarding management stays project-based with start button and Tabler icons",()=>{
@@ -32,4 +34,10 @@ test("onboarding management stays project-based with start button and Tabler ico
  assert.match(hub,/Gerenciar onboarding/);
  for(const name of ["lifebuoy","hourglass","clock","circle-check"])assert.ok(hub.includes('name="'+name+'"')||hub.includes('icon:"'+name+'"'),name);
  assert.doesNotMatch(hub,/\["Progresso","chart-pie"\]/);
+});
+
+test("start onboarding stays actionable even when all projects have legacy checklists",()=>{
+ assert.match(hub,/disabled=\{projects\.length===0\}/);
+ assert.match(hub,/overview\.map\(p=><option/);
+ assert.match(hub,/checklist existente/);
 });

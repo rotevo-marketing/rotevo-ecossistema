@@ -4,6 +4,11 @@
 import type { ReactNode } from "react";
 
 const artwork: Record<string, ReactNode> = {
+  "alert-circle": <>
+    <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+    <path d="M12 8v4" />
+    <path d="M12 16h.01" />
+  </>,
   "lifebuoy": <>
     <path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
@@ -208,7 +213,7 @@ const artwork: Record<string, ReactNode> = {
   </>,
 };
 
-export type RotevoIconName = "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
+export type RotevoIconName = "alert-circle" | "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
 
 export function RotevoTablerIcon({name, size=24, stroke=2.3, className=""}: {
   name:RotevoIconName; size?:number; stroke?:number; className?:string

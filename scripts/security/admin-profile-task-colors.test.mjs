@@ -88,5 +88,21 @@ test("task details open from list and kanban and save through protected project 
 test("task operations use the selected official Tabler icons",()=>{
  const icons=readFileSync(new URL("Components/RotevoTablerIcon.tsx",base),"utf8");
  for(const icon of ["square-rounded-plus","search","filter","user-check","folder","arrows-sort","list","layout-kanban","calendar-week","flag","link","message-circle","circle-check","view-360-arrow","history","x"])assert.ok(icons.includes('"'+icon+'"'),icon);
- for(const icon of ["square-rounded-plus","search","filter","arrows-sort","list","layout-kanban","calendar-week","flag","folder","user-check","link","message-circle","circle-check","view-360-arrow","history","x"])assert.ok(tasks.includes('name="'+icon+'"'),icon);
+ for(const icon of ["square-rounded-plus","search","filter","arrows-sort","list","layout-kanban","calendar-week","flag","folder","user-check","link","message-circle","x"])assert.ok(tasks.includes('name="'+icon+'"'),icon);
+});
+
+test("task title visibly behaves as a clickable detail opener",()=>{
+ assert.match(tasks,/cursor-pointer items-center gap-1\.5/);
+ assert.match(tasks,/underline-offset-4/);
+ assert.match(tasks,/openDetails\(\{task,project,client\}\)/);
+ assert.match(tasks,/openDetails\(x\)/);
+});
+test("shared tasks remain opt-in and editorial decisions do not auto-complete execution",()=>{
+ assert.match(tasks,/visibleToClient:detailDraft.visibleToClient/);
+ assert.match(tasks,/visibleToClient:false/);
+ assert.match(tasks,/linkedContent=selected/);
+ assert.match(tasks,/item\.relatedTaskId===selected\.task\.id/);
+ assert.match(tasks,/approvalRows\.find/);
+ assert.match(tasks,/decision\.comment/);
+ assert.match(tasks,/Compartilhar a tarefa com o cliente não cria uma publicação automaticamente/);
 });

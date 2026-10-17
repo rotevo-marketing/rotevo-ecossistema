@@ -2,6 +2,7 @@
 import {useMemo,useState} from "react";
 import Link from "next/link";
 import ProjectOnboarding, {type OnboardingData} from "@/Components/admin/ProjectOnboarding";
+import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import OperationalAgenda, {type AgendaItem} from "@/Components/admin/OperationalAgenda";
 
 export type HubProject={id:string;title:string;updated_at:string;data:OnboardingData & {operationalAgenda?:AgendaItem[];executionTimeline?:{id:string;title:string}[]};clients:{name:string;slug:string}|{name:string;slug:string}[]|null};
@@ -17,19 +18,31 @@ function Picker({projects,selected,onSelect}:{projects:HubProject[];selected:str
 }
 export function AdminOnboardingHub({projects,onChanged}:{projects:HubProject[];onChanged:(id:string,data:OnboardingData,updatedAt:string)=>void}){
  const [selected,setSelected]=useState("");
+ const [query,setQuery]=useState("");
+ const [filter,setFilter]=useState<"all"|"pending"|"waiting"|"done"|"not_started">("all");
  const project=projects.find(p=>p.id===selected)??projects[0];
- if(!project)return <p className="mt-8 rounded-xl bg-white p-6 text-sm">Cadastre um planejamento para iniciar o onboarding.</p>;
- const items=Array.isArray(project.data?.onboardingChecklist)?project.data.onboardingChecklist:[];
- const done=items.filter(x=>x.done).length;
- const completed=projects.filter(p=>{const rows=p.data?.onboardingChecklist;return Array.isArray(rows)&&rows.length>0&&rows.every(x=>x.done)}).length;
+ const overview=useMemo(()=>projects.map(p=>{
+  const steps=Array.isArray(p.data?.onboardingChecklist)?p.data.onboardingChecklist:[];
+  const done=steps.filter(item=>item.done).length;
+  const waiting=steps.filter(item=>!item.done&&item.waitingOnClient).length;
+  const overdue=steps.filter(item=>!item.done&&item.dueDate&&item.dueDate<dateKey(new Date())).length;
+  const status=steps.length===0?"not_started":done===steps.length?"done":waiting>0?"waiting":"pending";
+  return {project:p,steps,done,waiting,overdue,status,percent:steps.length?Math.round(done/steps.length*100):0};
+ }),[projects]);
+ const totals={started:overview.filter(p=>p.steps.length>0).length,completed:overview.filter(p=>p.status==="done").length,waiting:overview.reduce((sum,p)=>sum+p.waiting,0),overdue:overview.reduce((sum,p)=>sum+p.overdue,0)};
+ const visible=overview.filter(x=>(filter==="all"||x.status===filter)&&(`${client(x.project)?.name??""} ${x.project.title}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))));
+ const labels:Record<string,string>={not_started:"Não iniciado",pending:"Em preparação",waiting:"Aguardando cliente",done:"Concluído"};
  return <div className="mt-7 space-y-5">
-  <div className="grid gap-3 sm:grid-cols-3">
-   <div className="rounded-2xl border bg-white p-5"><p className="text-sm text-[#697386]">Projetos com onboarding</p><p className="mt-2 text-3xl font-semibold">{projects.filter(p=>Array.isArray(p.data?.onboardingChecklist)&&p.data.onboardingChecklist.length>0).length}</p></div>
-   <div className="rounded-2xl border bg-white p-5"><p className="text-sm text-[#697386]">Onboardings concluídos</p><p className="mt-2 text-3xl font-semibold">{completed}</p></div>
-   <div className="rounded-2xl border bg-white p-5"><p className="text-sm text-[#697386]">Etapas do projeto selecionado</p><p className="mt-2 text-3xl font-semibold">{done}/{items.length}</p></div>
+  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+   {[{label:"Em onboarding",value:totals.started-totals.completed,icon:"list" as const},{label:"Concluídos",value:totals.completed,icon:"circle-check" as const},{label:"Pendências do cliente",value:totals.waiting,icon:"user-check" as const},{label:"Etapas atrasadas",value:totals.overdue,icon:"calendar-week" as const}].map(k=><div key={k.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><div className="flex items-center justify-between"><p className="text-sm text-[#697386]">{k.label}</p><RotevoTablerIcon name={k.icon} size={19} className="text-[#6D35F5]"/></div><p className="mt-2 text-3xl font-bold text-[#090D1C]">{k.value}</p></div>)}
   </div>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><Picker projects={projects} selected={project.id} onSelect={setSelected}/><p className="mt-3 text-xs text-[#697386]">As alterações são salvas somente no planejamento selecionado.</p></section>
-  <ProjectOnboarding key={project.id} projectId={project.id} data={project.data} updatedAt={project.updated_at} onSaved={(data,updatedAt)=>onChanged(project.id,data,updatedAt)}/>
+  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Acompanhamento de entrada</h2><p className="mt-1 text-xs text-[#697386]">Todos os clientes e projetos, com etapas, responsáveis e pendências.</p></div><span className="text-xs text-[#697386]">{visible.length} projeto(s)</span></div>
+   <div className="mt-4 flex flex-wrap gap-2"><label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-[#E3E7F0] bg-white px-3"><RotevoTablerIcon name="search" size={17} className="text-[#697386]"/><input aria-label="Buscar onboarding por cliente ou projeto" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar cliente ou projeto" className="w-full bg-transparent py-2.5 text-sm outline-none"/></label><select aria-label="Filtrar situação do onboarding" value={filter} onChange={e=>setFilter(e.target.value as typeof filter)} className="cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-xs"><option value="all">Todas as situações</option><option value="not_started">Não iniciados</option><option value="pending">Em preparação</option><option value="waiting">Aguardando cliente</option><option value="done">Concluídos</option></select></div>
+   {visible.length===0?<p className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">{projects.length===0?"Cadastre um projeto para iniciar o onboarding.":"Nenhum onboarding corresponde aos filtros."}</p>:
+   <div className="mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full min-w-[680px] border-collapse text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{["Cliente / projeto","Situação","Progresso","Aguardando cliente","Próxima ação"].map(h=><th key={h} className="border-b px-3 py-3">{h}</th>)}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{visible.map(p=><tr key={p.project.id} className={project?.id===p.project.id?"bg-[#F7F4FF]":"hover:bg-[#F9FAFC]"}><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{client(p.project)?.name??"Cliente"}</p><p className="mt-1 max-w-[200px] truncate text-[#697386]">{p.project.title}</p></td><td className="px-3 py-3"><span className={p.status==="done"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":p.status==="waiting"?"rounded-lg bg-[#FFF1D4] px-2 py-1 text-[#875400]":"rounded-lg bg-[#ECE8FF] px-2 py-1 text-[#6034B7]"}>{labels[p.status]}</span></td><td className="px-3 py-3"><div className="flex min-w-[110px] items-center gap-2"><div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#ADE60A]" style={{width:`${p.percent}%`}}/></div><strong>{p.percent}%</strong></div><span className="mt-1 block text-[#697386]">{p.done}/{p.steps.length} etapas</span></td><td className="px-3 py-3">{p.waiting}</td><td className="px-3 py-3"><button type="button" onClick={()=>setSelected(p.project.id)} className="cursor-pointer rounded-lg border border-[#D9C9FA] bg-white px-3 py-2 font-semibold text-[#6034B7] hover:bg-[#EEE8FF]">{p.steps.length?"Gerenciar":"Iniciar"} →</button></td></tr>)}</tbody></table></div>}
+  </section>
+  {project&&<section aria-label="Onboarding selecionado" className="space-y-3"><div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[#E3E7F0] bg-white p-5"><div><h2 className="text-base font-bold">{client(project)?.name??"Cliente"} · {project.title}</h2><p className="mt-1 text-xs text-[#697386]">As etapas pertencem a este projeto. Dados e permissões não são compartilhados entre clientes.</p></div>{client(project)?.slug&&<Link href={`/admin/planejamentos/${client(project)?.slug}?projectId=${encodeURIComponent(project.id)}`} className="inline-flex items-center gap-2 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="folder" size={16}/> Abrir projeto</Link>}</div><ProjectOnboarding key={project.id} projectId={project.id} data={project.data} updatedAt={project.updated_at} onSaved={(data,updatedAt)=>onChanged(project.id,data,updatedAt)}/></section>}
  </div>;
 }
 export function AdminMeetingsHub({projects,onChanged}:{projects:HubProject[];onChanged:(id:string,data:HubProject["data"],updatedAt:string)=>void}){

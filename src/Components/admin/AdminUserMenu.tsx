@@ -13,11 +13,16 @@ export default function AdminUserMenu({email,name,onLogout}:Props){
   if(password.length<12){setFeedback("Use uma senha com pelo menos 12 caracteres.");return;}
   if(password!==confirm){setFeedback("As senhas não coincidem.");return;}
   setBusy(true);setFeedback("");
-  const {error}=await supabase.auth.updateUser({password});
-  setBusy(false);
-  if(error){setFeedback("Não foi possível alterar a senha. Faça login novamente e tente de novo.");return;}
-  setPassword("");setConfirm("");setChanging(false);
-  setFeedback("Senha atualizada. Outros dispositivos podem precisar de novo login.");
+  try{
+   const {error}=await supabase.auth.updateUser({password});
+   if(error){setFeedback("Não foi possível alterar a senha. Faça login novamente e tente de novo.");return;}
+   setPassword("");setConfirm("");setChanging(false);
+   setFeedback("Senha atualizada. Outros dispositivos podem precisar de novo login.");
+  }catch{
+   setFeedback("Falha de conexão ao alterar a senha. Tente novamente.");
+  }finally{
+   setBusy(false);
+  }
  }
  return <div className="relative">
   <button type="button" aria-label="Abrir menu do usuário" aria-expanded={open} onClick={()=>setOpen(v=>!v)}

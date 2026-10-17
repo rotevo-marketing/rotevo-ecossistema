@@ -10,3 +10,8 @@ test("onboarding links are checked in both API and editor",()=>{
 test("the onboarding editor normalizes optional links before saving",()=>{
  assert.match(editor,/link:x\.link\?\.trim\(\)\|\|undefined/);
 });
+
+test("server enforces the same minimum title length as the onboarding editor",()=>{
+ assert.match(source,/entry\.title\.trim\(\)\.length<3/);
+ assert.match(editor,/x\.title\.trim\(\)\.length<3/);
+});

@@ -15,3 +15,9 @@ test("server enforces the same minimum title length as the onboarding editor",()
  assert.match(source,/entry\.title\.trim\(\)\.length<3/);
  assert.match(editor,/x\.title\.trim\(\)\.length<3/);
 });
+
+test("onboarding titles have identical maximum limits in editor and API",()=>{
+ assert.match(source,/entry\.title\.trim\(\)\.length>140/);
+ assert.match(editor,/x\.title\.trim\(\)\.length>140/);
+ assert.match(editor,/maxLength=\{140\}/);
+});

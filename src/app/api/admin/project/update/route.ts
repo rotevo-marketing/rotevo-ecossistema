@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
+import {validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 export const runtime = "nodejs";
@@ -58,6 +59,7 @@ export async function PATCH(req:NextRequest){
  // Historical assignments are preserved without retroactive data migration.
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
  // Validate new scope selections, but preserve historical scope during unrelated edits.
  const previousEco=oldRoot.ecosystem2027;
  const nextEco=nextRoot.ecosystem2027;

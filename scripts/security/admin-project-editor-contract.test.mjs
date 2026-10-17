@@ -236,6 +236,6 @@ test("admin onboarding and meetings tabs use real project-bound editors",()=>{
  assert.match(hubs,/startNew=\{newOpen\}/);
  assert.match(hubs,/onChanged\(project.id,data,updatedAt\)/);
  assert.match(hubs,/aria-label="Selecionar projeto operacional"/);
- assert.match(hubs,/Agenda de \{activeDay.slice/);
+ assert.match(hubs,/Agenda de \{labelDate\(activeDay\)\}/);
  assert.match(hubs,/dateKey\(new Date\(month.getFullYear\(\),month.getMonth\(\),i\+1\)\)/);
 });

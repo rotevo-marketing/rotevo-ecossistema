@@ -23,14 +23,13 @@ const standard=():OnboardingItem[]=>ONBOARDING_STANDARD_STEPS.map(title=>({id:cr
 export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{projectId:string;data:OnboardingData;updatedAt:string;onSaved:(value:OnboardingData,updatedAt:string)=>void}){
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
- const [notice,setNotice]=useState("");
  const [confirmReplace,setConfirmReplace]=useState(false);
  const items=Array.isArray(data.onboardingChecklist)?data.onboardingChecklist:[];
  const completed=items.filter(x=>x.done).length;
  const missing=ONBOARDING_STANDARD_STEPS.filter(title=>!items.some(item=>normalize(item.title)===normalize(title)));
- async function persist(next:OnboardingItem[],message:string){
+ async function persist(next:OnboardingItem[]){
   if(saving)return;
-  setSaving(true);setError("");setNotice("");
+  setSaving(true);setError("");
   try{
    const {data:session,error:authError}=await supabase.auth.getSession();
    if(authError||!session.session?.access_token){setError("Sessão expirada. Entre novamente.");return;}
@@ -45,22 +44,20 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
    const result=await response.json();
    if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar o salvamento.");return;}
    onSaved(result.project.data as OnboardingData,result.project.updated_at);
-   setNotice(message);
+
   }catch{setError("Falha de conexão. Tente novamente.");}
   finally{setSaving(false);}
  }
- const start=()=>void persist(standard(),"Onboarding iniciado com 10 etapas.");
- const replaceTemplate=()=>{setConfirmReplace(false);void persist(standard(),"Checklist padrão de 10 etapas aplicado.");};
- const extend=()=>void persist([...items,...missing.map(title=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false}))],"Etapas padrão adicionadas sem apagar as anteriores.");
- const toggle=(id:string,done:boolean)=>void persist(items.map(item=>item.id===id?{...item,done,updatedAt:new Date().toISOString()}:item),"Progresso atualizado.");
- const resetMessages=()=>{setError("");setNotice("");};
+ const start=()=>void persist(standard());
+ const replaceTemplate=()=>{setConfirmReplace(false);void persist(standard());};
+ const extend=()=>void persist([...items,...missing.map(title=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false}))]);
+ const toggle=(id:string,done:boolean)=>void persist(items.map(item=>item.id===id?{...item,done,updatedAt:new Date().toISOString()}:item));
+ const resetMessages=()=>{setError("");};
  return <section className="mt-4 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
   <div className="flex flex-wrap items-center justify-between gap-3">
-   <div><h3 className="text-lg font-bold text-[#090D1C]">Checklist do onboarding</h3><p className="mt-1 text-xs text-[#697386]">Marque o que foi realizado. Nenhuma etapa cria tarefas automaticamente.</p></div>
-   {items.length>0&&<span className={completed===items.length?"rounded-lg bg-[#DEF5E7] px-3 py-2 text-xs font-semibold text-[#176F40]":"rounded-lg bg-[#EEE8FF] px-3 py-2 text-xs font-semibold text-[#6034B7]"}>{completed===items.length?"Concluído":"Em andamento"}</span>}
+   <h3 className="text-lg font-bold text-[#090D1C]">Checklist do onboarding</h3>
   </div>
   {error&&<p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#A3223D]">{error}</p>}
-  {notice&&<p role="status" className="mt-4 rounded-lg bg-[#E9F7E9] p-3 text-sm text-[#21683F]">{notice}</p>}
   {items.length===0?
    <div className="mt-5 rounded-xl border border-dashed border-[#CBCDD6] bg-[#F6F7FB] p-5">
     <p className="text-sm font-semibold">Este projeto ainda não possui onboarding.</p>

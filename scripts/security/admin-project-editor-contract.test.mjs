@@ -231,7 +231,9 @@ test("admin onboarding and meetings tabs use real project-bound editors",()=>{
  assert.match(page,/workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub/);
  assert.match(page,/workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub/);
  assert.match(hubs,/<ProjectOnboarding key=\{project.id\} projectId=\{project.id\}/);
- assert.match(hubs,/<OperationalAgenda key=\{project.id\} projectId=\{project.id\}/);
+ assert.match(hubs,/<OperationalAgenda key=\{selectedProject.id/);
+ assert.match(hubs,/projectId=\{selectedProject.id\}/);
+ assert.match(hubs,/startNew=\{newOpen\}/);
  assert.match(hubs,/onChanged\(project.id,data,updatedAt\)/);
  assert.match(hubs,/aria-label="Selecionar projeto operacional"/);
  assert.match(hubs,/Agenda de \{activeDay.slice/);

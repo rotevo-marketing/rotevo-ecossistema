@@ -15,6 +15,7 @@ export type ExecutionItem = {
   ownerUserId?:string;
   startDate?:string;
   dueDate?:string;
+  completedAt?:string;
   status?:"planned"|"in_progress"|"blocked"|"completed"|"cancelled";
   kind?:"deliverable"|"milestone"|"task";
   dependencies?:string[];

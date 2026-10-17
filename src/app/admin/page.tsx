@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview";
+import AdminUserMenu from "@/Components/admin/AdminUserMenu";
 import EditorialOperations from "@/Components/admin/EditorialOperations";
 import CentralTarefas from "@/Components/admin/CentralTarefas";
 import ClientsDirectory from "@/Components/admin/ClientsDirectory";
@@ -95,6 +96,7 @@ export default function AdminPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export default function AdminPage() {
     const profileStartedAt = performance.now();
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role,full_name")
       .eq("id", userData.user.id)
       .single();
 
@@ -154,6 +156,7 @@ export default function AdminPage() {
 
     const profileDurationMs = Math.round(performance.now() - profileStartedAt);
     setUserEmail(userData.user.email ?? "");
+    setUserName(profile.full_name ?? "");
     const projectsStartedAt = performance.now();
 
     let data:PlanningProject[]|null=null;
@@ -292,9 +295,9 @@ export default function AdminPage() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white">
         <div className="flex w-full items-center justify-between gap-3 px-5 py-5">
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="white" size={27}/></Link><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Painel do Estrategista</span></div>
-          <div className="flex items-center gap-2">{userEmail&&<span className="hidden max-w-48 truncate text-xs text-[#CAD3E2] md:inline">{userEmail}</span>}
+          <div className="flex items-center gap-2">
             <button type="button" onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
-            <button type="button" onClick={handleLogout} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10">Sair</button>
+            <AdminUserMenu email={userEmail} name={userName} onLogout={handleLogout}/>
           </div>
         </div>
       </header>

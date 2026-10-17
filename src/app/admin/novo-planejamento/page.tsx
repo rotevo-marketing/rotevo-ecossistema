@@ -171,6 +171,14 @@ export default function NovoPlanejamentoPage() {
       return;
     }
 
+    // Keep the first step consistent with client identifiers and server project limits.
+    const finalSlug = projectSlug === clientSlug || projectSlug.startsWith(`${clientSlug}-`)
+      ? projectSlug : `${clientSlug}-${projectSlug}`;
+    if (clientSlug.length > 65 || finalSlug.length > 180 || projectTitle.trim().length > 180) {
+      setErrorMessage("O nome ou título é longo demais para o identificador do planejamento. Utilize uma versão mais curta.");
+      return;
+    }
+
     const draft = {
       clientName: clientName.trim(),
       clientSlug,

@@ -197,3 +197,14 @@ test("project creation rejects invalid execution and agenda graphs before insert
  assert.ok(source.indexOf("validExecutionDependencies(payload)")<source.indexOf('.from("planning_projects").insert('));
  assert.match(source,/validEcosystemDocumentTransition\(\{ecosystem2027:\{version:1\}\},payload\)/);
 });
+
+test("editorial decisions cannot silently approve modified material under the same version",()=>{
+ const source=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ assert.match(source,/const changedEditorialVersions=new Map<string,string>\(\)/);
+ assert.match(source,/const materialFields=\["title","channel","format","publishDate","caption","driveUrl"\]/);
+ assert.match(source,/admin\.from\("editorial_approvals"\)/);
+ assert.match(source,/\.eq\("project_id",b\.projectId\)/);
+ assert.match(source,/\.in\("content_id",\[\.\.\.changedEditorialVersions\.keys\(\)\]\)/);
+ assert.match(source,/changedEditorialVersions\.get\(approval\.content_id\)===approval\.content_version/);
+ assert.ok(source.indexOf("changedEditorialVersions.size")<source.indexOf('.update({data:b.data,updated_at:nextAt})'));
+});

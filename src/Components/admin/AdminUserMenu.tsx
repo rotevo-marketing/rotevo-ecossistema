@@ -1,9 +1,19 @@
 "use client";
-import {useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
 type Props={email:string;name:string;onLogout:()=>Promise<void>};
 export default function AdminUserMenu({email,name,onLogout}:Props){
  const [open,setOpen]=useState(false),[changing,setChanging]=useState(false);
+ const rootRef=useRef<HTMLDivElement>(null);
+ const triggerRef=useRef<HTMLButtonElement>(null);
+ useEffect(()=>{
+  if(!open)return;
+  const closeOutside=(event:PointerEvent)=>{if(event.target instanceof Node&&!rootRef.current?.contains(event.target))setOpen(false);};
+  const escape=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpen(false);triggerRef.current?.focus();}};
+  document.addEventListener("pointerdown",closeOutside);
+  document.addEventListener("keydown",escape);
+  return()=>{document.removeEventListener("pointerdown",closeOutside);document.removeEventListener("keydown",escape);};
+ },[open]);
  const [password,setPassword]=useState(""),[confirm,setConfirm]=useState("");
  const [busy,setBusy]=useState(false),[feedback,setFeedback]=useState("");
  const display=name.trim()||email.split("@")[0]||"Usuário";
@@ -24,8 +34,8 @@ export default function AdminUserMenu({email,name,onLogout}:Props){
    setBusy(false);
   }
  }
- return <div className="relative">
-  <button type="button" aria-label="Abrir menu do usuário" aria-expanded={open} onClick={()=>setOpen(v=>!v)}
+ return <div ref={rootRef} className="relative">
+  <button ref={triggerRef} type="button" aria-label="Abrir menu do usuário" aria-expanded={open} aria-haspopup="true" onClick={()=>setOpen(v=>!v)}
     className="flex items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 text-white hover:bg-white/10">
    <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#A7E000] text-xs font-bold text-[#0B142A]">{initials||"U"}</span>
    <span className="hidden max-w-44 truncate text-sm font-medium sm:inline">{display}</span>

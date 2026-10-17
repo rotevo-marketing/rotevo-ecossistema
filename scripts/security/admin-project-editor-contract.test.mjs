@@ -239,3 +239,28 @@ test("admin onboarding and meetings tabs use real project-bound editors",()=>{
  assert.match(hubs,/Agenda de \{labelDate\(activeDay\)\}/);
  assert.match(hubs,/dateKey\(new Date\(month.getFullYear\(\),month.getMonth\(\),i\+1\)\)/);
 });
+
+test("campaign overview scopes monthly spend and performance to one project",()=>{
+ const hub=readFileSync(new URL("Components/admin/CampaignsHub.tsx",root),"utf8");
+ assert.match(hub,/selectedProjectId=projectFilter\|\|projects\[0\]/);
+ assert.match(hub,/project\.id===selectedProjectId/);
+ assert.match(hub,/monthFilter/);
+ assert.match(hub,/const dataFor=/);
+ assert.match(hub,/Custo por lead \(CPL\)/);
+ assert.match(hub,/ROAS/);
+ assert.match(hub,/Alcance único não é somado/);
+ assert.doesNotMatch(hub,/Campanhas com resultados/);
+});
+test("campaign monthly history uses authorized project API and avoids accidental double-counting",()=>{
+ const hub=readFileSync(new URL("Components/admin/CampaignsHub.tsx",root),"utf8");
+ const api=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ const validator=readFileSync(new URL("lib/security/campaignMetricsValidation.ts",root),"utf8");
+ assert.match(hub,/async function saveSnapshot\(/);
+ assert.match(hub,/marketingCampaigns:updated/);
+ assert.match(hub,/expectedUpdatedAt:project.updated_at/);
+ assert.match(hub,/before\.filter\(x=>x\.month!==record\.month\)/);
+ assert.match(hub,/Histórico mensal/);
+ assert.match(api,/validCampaignRecords\(nextRoot\.marketingCampaigns\)/);
+ assert.match(validator,/months\.has\(r\.month\)/);
+ assert.match(validator,/Number\.isFinite/);
+});

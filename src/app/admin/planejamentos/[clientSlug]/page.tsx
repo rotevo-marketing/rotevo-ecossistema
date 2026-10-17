@@ -189,6 +189,7 @@ function PlanejamentoClienteContent() {
       let foundProject:PlanningProject;
       try {
         const {data:session,error:sessionError}=await supabase.auth.getSession();
+        if (cancelled) return;
         const token=session.session?.access_token;
         if(sessionError||!token)throw new Error("Sessão expirada.");
         const response=await fetch(`/api/admin/project?id=${encodeURIComponent(projectMetadata.id)}`,{
@@ -197,6 +198,7 @@ function PlanejamentoClienteContent() {
         if (cancelled) return;
         if(!response.ok)throw new Error("Não foi possível carregar os documentos do planejamento autorizado.");
         const loaded=await response.json();
+        if (cancelled) return;
         if(!loaded?.project||loaded.project.id!==projectMetadata.id)throw new Error("Resposta administrativa inválida.");
         foundProject={...projectMetadata,data:(loaded.project.data??{}) as ProjectData,updated_at:loaded.project.updated_at};
       }catch(error){

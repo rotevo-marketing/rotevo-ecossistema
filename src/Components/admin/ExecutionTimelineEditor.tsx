@@ -76,7 +76,9 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   };
   if(editing.id&&deps.some(id=>reaches(id,editing.id))){setError("Dependência circular detectada. Revise a sequência das entregas.");return;}
   if(!editing.id&&typeof crypto==="undefined"){setError("Não foi possível gerar um identificador para a entrega.");return;}
-  const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient===true};
+  const oldItem=items.find(item=>item.id===editing.id);
+  const completedAt=editing.status==="completed"?(oldItem?.status==="completed"?oldItem.completedAt:new Date().toISOString()):undefined;
+  const row={...editing,id:editing.id||crypto.randomUUID(),title,driveUrl:editing.driveUrl?.trim()||"",visibleToClient:editing.visibleToClient===true,completedAt};
   const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
   void persist(next);
  }

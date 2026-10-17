@@ -131,7 +131,16 @@ export default function PlanejamentoClientePage() {
       }
 
       setUserEmail(userData.user.email ?? "");
-      const { data, error } = await supabase
+      // Legacy client-only links still open the latest project. Explicit links
+      // select the requested project without crossing the client boundary.
+      const requestedProjectId = new URLSearchParams(window.location.search).get("projectId");
+      const projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (requestedProjectId !== null && !projectIdPattern.test(requestedProjectId)) {
+        setErrorMessage("Identificador de planejamento inválido.");
+        setIsLoading(false);
+        return;
+      }
+      let query = supabase
         .from("planning_projects")
         .select(
           `
@@ -149,7 +158,9 @@ export default function PlanejamentoClientePage() {
           )
         `
         )
-        .eq("clients.slug", clientSlug)
+        .eq("clients.slug", clientSlug);
+      if (requestedProjectId) query = query.eq("id", requestedProjectId);
+      const { data, error } = await query
         .order("updated_at", { ascending: false })
         .limit(1);
 

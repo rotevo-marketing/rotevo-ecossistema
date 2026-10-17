@@ -1,8 +1,8 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
-type Props={email:string;name:string;onLogout:()=>Promise<void>};
-export default function AdminUserMenu({email,name,onLogout}:Props){
+type Props={email:string;name:string;avatarUrl?:string|null;onLogout:()=>Promise<void>};
+export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
  const [open,setOpen]=useState(false),[changing,setChanging]=useState(false);
  const rootRef=useRef<HTMLDivElement>(null);
  const triggerRef=useRef<HTMLButtonElement>(null);
@@ -37,7 +37,7 @@ export default function AdminUserMenu({email,name,onLogout}:Props){
  return <div ref={rootRef} className="relative">
   <button ref={triggerRef} type="button" aria-label="Abrir menu do usuário" aria-expanded={open} aria-haspopup="true" onClick={()=>setOpen(v=>!v)}
     className="flex items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 text-white hover:bg-white/10">
-   <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#A7E000] text-xs font-bold text-[#0B142A]">{initials||"U"}</span>
+   <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#A7E000] text-xs font-bold text-[#0B142A]">{avatarUrl?<img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover"/>:initials||"U"}</span>
    <span className="hidden max-w-44 truncate text-sm font-medium sm:inline">{display}</span>
    <span aria-hidden="true" className="text-xs">▾</span>
   </button>

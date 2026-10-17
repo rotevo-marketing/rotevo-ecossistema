@@ -4,6 +4,7 @@ import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
+import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 type Client={id:string;name:string;slug:string};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
@@ -37,10 +38,14 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  const [creating,setCreating]=useState(false),[draft,setDraft]=useState({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:""});
  const [members,setMembers]=useState<{user_id:string;display_name:string}[]>([]);
  const [teamReady,setTeamReady]=useState(false);
+ const [detailKey,setDetailKey]=useState<string|null>(null);
+ const [detailDraft,setDetailDraft]=useState<{title:string;description:string;driveUrl:string;dueDate:string;visibleToClient:boolean}|null>(null);
  useEffect(()=>{let active=true;void (async()=>{const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");if(active){setTeamReady(!error);setMembers(error?[]:(data??[]));}})();return()=>{active=false};},[]);
  const tasks=useMemo<Item[]>(()=>projects.flatMap(project=>(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[])
   .filter(task=>task&&typeof task.id==="string"&&typeof task.title==="string")
   .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
+ const selected=tasks.find(x=>x.project.id+":"+x.task.id===detailKey);
+ const openDetails=(x:Item)=>{setDetailKey(x.project.id+":"+x.task.id);setDetailDraft({title:x.task.title,description:x.task.description??"",driveUrl:x.task.driveUrl??"",dueDate:x.task.dueDate??"",visibleToClient:x.task.visibleToClient===true});setError("");};
  const owners=useMemo(()=>[...new Set(tasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
  const appointments=useMemo(()=>projects.flatMap(project=>(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[])
   .filter(item=>item&&item.status==="planned"&&typeof item.date==="string"&&typeof item.title==="string")
@@ -100,6 +105,18 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
   const ok=await persist(project,[...(project.data?.executionTimeline??[]),task],project.id+":create","Tarefa criada no projeto selecionado.");
   if(ok){setCreating(false);setDraft({title:"",projectId:"",ownerUserId:"",priority:"normal",dueDate:"",description:""});}
  }
+ async function saveDetails(){
+  if(!selected||!detailDraft)return;
+  const title=detailDraft.title.trim(),driveUrl=detailDraft.driveUrl.trim();
+  if(title.length<3||title.length>140){setError("O título deve ter entre 3 e 140 caracteres.");return;}
+  if(detailDraft.description.length>2000){setError("A descrição deve ter no máximo 2.000 caracteres.");return;}
+  if(driveUrl){try{if(new URL(driveUrl).protocol!=="https:"){setError("O material deve usar HTTPS.");return;}}catch{setError("Informe um link HTTPS válido.");return;}}
+  if(detailDraft.dueDate&&!/^\d{4}-\d{2}-\d{2}$/.test(detailDraft.dueDate)){setError("Informe uma data válida.");return;}
+  const patch:Partial<ExecutionItem>={title,description:detailDraft.description.trim(),driveUrl,dueDate:detailDraft.dueDate,visibleToClient:detailDraft.visibleToClient};
+  const previous=selected.project.data?.executionTimeline??[];
+  const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
+  if(ok){setDetailKey(null);setDetailDraft(null);}
+ }
  const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setQuery("");};
  const overdue=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
  const todayCount=tasks.filter(x=>x.task.dueDate===today()&&isOpen(x.task)).length;
@@ -121,25 +138,25 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
     <button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className={buttonClass}>Hoje <strong>{todayCount}</strong></button>
     <button type="button" onClick={()=>{setDeadline("overdue");setStatus("all");}} className={buttonClass}>Atrasadas <strong>{overdue}</strong></button>
     <button type="button" onClick={()=>{setDeadline("all");setStatus("all");}} className={buttonClass}>Todas <strong>{tasks.length}</strong></button>
-    <span className="rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]">Reuniões hoje: {todayAppointments.length}</span>
+    <span className="inline-flex items-center gap-2 rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.9}/> Reuniões hoje: {todayAppointments.length}</span>
    </div>
   </section>
   {todayAppointments.length>0&&<section className="rounded-xl border bg-white p-4"><h3 className="text-sm font-semibold">Agenda de hoje</h3><div className="mt-2 flex flex-wrap gap-2">{todayAppointments.map(({appointment,project})=><Link key={project.id+":"+appointment.id} href={projectLink(project)} className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-xs">{appointment.time??"Sem horário"} · {appointment.title} · {project.title}</Link>)}</div></section>}
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-5">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Central de tarefas</h2><p className="mt-1 text-xs text-[#697386]">Todos os projetos · {filtered.length} tarefa(s) encontrada(s)</p></div>
     <div className="flex flex-wrap items-center gap-2">
-     <button type="button" onClick={()=>{setDraft(d=>({...d,projectId:projectId!=="all"?projectId:projects[0]?.id??""}));setCreating(true);setError("");}} className="rounded-lg bg-[#6D35F5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5825D6]">+ Nova tarefa</button>
-     <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}>⌕ <span className="hidden sm:inline">Buscar</span></button>
-     <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}>☷ <span className="hidden sm:inline">Filtros</span></button>
-     <select aria-label="Ordenar tarefas" className={selectClass} value={order} onChange={e=>setOrder(e.target.value as typeof order)}><option value="urgency">Prioridades primeiro</option><option value="due">Prazo</option><option value="priority">Prioridade</option></select>
-     <div className="flex overflow-hidden rounded-lg border border-[#E1E5EE]"><button type="button" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`px-3 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}>Lista</button><button type="button" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`border-l px-3 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}>Kanban</button></div>
+     <button type="button" onClick={()=>{setDraft(d=>({...d,projectId:projectId!=="all"?projectId:projects[0]?.id??""}));setCreating(true);setError("");}} className="inline-flex items-center gap-2 rounded-lg bg-[#6D35F5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5825D6]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.9}/> Nova tarefa</button>
+     <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}><RotevoTablerIcon name="search" size={17} stroke={1.9}/> <span className="hidden sm:inline">Buscar</span></button>
+     <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}><RotevoTablerIcon name="filter" size={17} stroke={1.9}/> <span className="hidden sm:inline">Filtros</span></button>
+     <RotevoTablerIcon name="arrows-sort" size={18} stroke={1.9}/><select aria-label="Ordenar tarefas" className={selectClass} value={order} onChange={e=>setOrder(e.target.value as typeof order)}><option value="urgency">Prioridades primeiro</option><option value="due">Prazo</option><option value="priority">Prioridade</option></select>
+     <div className="flex overflow-hidden rounded-lg border border-[#E1E5EE]"><button type="button" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`inline-flex items-center gap-2 px-3 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="list" size={16} stroke={1.9}/> <span className="hidden sm:inline">Lista</span></button><button type="button" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`inline-flex items-center gap-2 border-l px-3 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="layout-kanban" size={16} stroke={1.9}/> <span className="hidden sm:inline">Kanban</span></button></div>
     </div>
    </div>
    {showSearch&&<input autoFocus aria-label="Buscar por tarefa, projeto, cliente ou responsável" className="mt-4 w-full rounded-lg border border-[#E1E5EE] px-4 py-3 text-sm" placeholder="Buscar tarefa, projeto, cliente ou responsável..." type="search" value={query} onChange={e=>setQuery(e.target.value)}/>}
    <div className={`mt-4 flex flex-wrap gap-2 ${showFilters?"":"items-center"}`}>
-    <select aria-label="Filtrar projeto" value={projectId} onChange={e=>setProjectId(e.target.value)} className={selectClass}><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select>
-    <select aria-label="Filtrar responsável" value={owner} onChange={e=>setOwner(e.target.value)} className={selectClass}><option value="all">Todas as pessoas</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select>
-    <select aria-label="Filtrar prioridade" value={priority} onChange={e=>setPriority(e.target.value)} className={selectClass}><option value="all">Todas as prioridades</option>{priorities.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+    <RotevoTablerIcon name="folder" size={17} stroke={1.9}/><select aria-label="Filtrar projeto" value={projectId} onChange={e=>setProjectId(e.target.value)} className={selectClass}><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select>
+    <RotevoTablerIcon name="user-check" size={17} stroke={1.9}/><select aria-label="Filtrar responsável" value={owner} onChange={e=>setOwner(e.target.value)} className={selectClass}><option value="all">Todas as pessoas</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select>
+    <RotevoTablerIcon name="flag" size={17} stroke={1.9}/><select aria-label="Filtrar prioridade" value={priority} onChange={e=>setPriority(e.target.value)} className={selectClass}><option value="all">Todas as prioridades</option>{priorities.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
     {showFilters&&<><select aria-label="Filtrar situação" value={status} onChange={e=>setStatus(e.target.value)} className={selectClass}><option value="all">Todas as situações</option>{statuses.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select aria-label="Filtrar prazo" value={deadline} onChange={e=>setDeadline(e.target.value as typeof deadline)} className={selectClass}><option value="all">Todos os prazos</option><option value="today">Hoje</option><option value="overdue">Atrasadas</option><option value="upcoming">Futuras</option></select></>}
     <button type="button" className={buttonClass} onClick={reset}>Limpar</button>
    </div>
@@ -157,7 +174,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
    <div className="mt-4 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[820px] border-collapse text-left text-sm"><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr>{["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"].map(x=><th key={x} className="border-b border-[#E3E7F0] px-3 py-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-[#EEF0F5]">{filtered.map(({task,project,client})=>{
     const statusChip=chipStatus(task),priorityChip=chipPriority(task);
     return <tr key={project.id+":"+task.id} className="hover:bg-[#FBFAFF]">
-     <td className="max-w-[280px] border-l-4 px-3 py-3 font-medium" style={{borderLeftColor:task.status==="completed"?"#37B36E":task.priority==="urgent"?"#E04961":task.priority==="high"?"#E9AE39":"#9C78F4"}}><span className="block truncate">{task.title}</span>{(task.dependencies??[]).length>0&&<span className="mt-1 block text-[10px] text-[#697386]">Pré-requisitos: {(task.dependencies??[]).length}</span>}</td>
+     <td className="max-w-[280px] border-l-4 px-3 py-3 font-medium" style={{borderLeftColor:task.status==="completed"?"#37B36E":task.priority==="urgent"?"#E04961":task.priority==="high"?"#E9AE39":"#9C78F4"}}><button type="button" onClick={()=>openDetails({task,project,client})} className="block max-w-full truncate text-left text-[#242A3A] hover:text-[#6D35F5] hover:underline">{task.title}</button>{(task.dependencies??[]).length>0&&<span className="mt-1 block text-[10px] text-[#697386]">Pré-requisitos: {(task.dependencies??[]).length}</span>}</td>
      <td className="px-3 py-3"><Link className="block max-w-[180px] truncate text-xs font-semibold text-[#6034B7] hover:underline" href={projectLink(project)}>{project.title}</Link><span className="block max-w-[180px] truncate text-[10px] text-[#697386]">{client?.name??"Cliente"}</span></td>
      <td className="px-3 py-3">{teamReady&&members.length>0?<select aria-label={`Responsável por ${task.title}`} className={selectClass} disabled={!!working} value={task.ownerUserId&&members.some(m=>m.user_id===task.ownerUserId)?task.ownerUserId:""} onChange={e=>{const m=members.find(x=>x.user_id===e.target.value);void updateTask(project,task,{ownerUserId:m?.user_id??"",owner:m?.display_name??""});}}><option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}</select>:<span className="text-xs text-[#525B70]">{task.owner||"Não atribuído"}</span>}</td>
      <td className="px-3 py-3"><select aria-label={`Situação de ${task.title}`} disabled={!!working} value={task.status??"planned"} onChange={e=>void updateTask(project,task,{status:e.target.value as Status})} className={`max-w-[150px] rounded-lg px-2 py-2 text-xs font-semibold ${statusChip.chip}`}>{statuses.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></td>
@@ -165,7 +182,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
      <td className={`whitespace-nowrap px-3 py-3 text-xs ${task.dueDate&&task.dueDate<today()&&isOpen(task)?"font-bold text-[#BB3041]":"text-[#525B70]"}`}>{formatted(task.dueDate)}</td>
     </tr>;
    })}</tbody></table></div>:
-   <div className="mt-4 flex gap-3 overflow-x-auto pb-3">{statuses.map(col=><section key={col.id} className="w-64 shrink-0 rounded-xl bg-[#F6F7FB] p-3"><h3 className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold"><span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${col.bar}`}/>{col.name}</span><span>{filtered.filter(x=>(x.task.status??"planned")===col.id).length}</span></h3><div className="space-y-2">{filtered.filter(x=>(x.task.status??"planned")===col.id).map(x=><article key={x.project.id+":"+x.task.id} className="rounded-lg border bg-white p-3"><p className="text-xs font-semibold">{x.task.title}</p><Link href={projectLink(x.project)} className="mt-2 block truncate text-[11px] text-[#6034B7] hover:underline">{x.project.title}</Link><div className="mt-2 flex justify-between gap-1 text-[11px] text-[#697386]"><span>{x.task.owner||"Não atribuído"}</span><span>{formatted(x.task.dueDate)}</span></div><div className="mt-3">{taskControls(x,true)}</div></article>)}</div></section>)}</div>}
+   <div className="mt-4 flex gap-3 overflow-x-auto pb-3">{statuses.map(col=><section key={col.id} className="w-64 shrink-0 rounded-xl bg-[#F6F7FB] p-3"><h3 className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold"><span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${col.bar}`}/>{col.name}</span><span>{filtered.filter(x=>(x.task.status??"planned")===col.id).length}</span></h3><div className="space-y-2">{filtered.filter(x=>(x.task.status??"planned")===col.id).map(x=><article key={x.project.id+":"+x.task.id} className="rounded-lg border bg-white p-3"><button type="button" onClick={()=>openDetails(x)} className="text-left text-xs font-semibold hover:text-[#6D35F5] hover:underline">{x.task.title}</button><Link href={projectLink(x.project)} className="mt-2 block truncate text-[11px] text-[#6034B7] hover:underline">{x.project.title}</Link><div className="mt-2 flex justify-between gap-1 text-[11px] text-[#697386]"><span>{x.task.owner||"Não atribuído"}</span><span>{formatted(x.task.dueDate)}</span></div><div className="mt-3">{taskControls(x,true)}</div></article>)}</div></section>)}</div>}
   </section>
  </div>;
 }

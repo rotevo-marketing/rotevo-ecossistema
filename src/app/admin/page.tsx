@@ -107,7 +107,7 @@ export default function AdminPage() {
   const totalProjects = projects.length;
 
   const inProgressProjects = useMemo(() => {
-    return projects.filter((project) => project.status === "draft").length;
+    return projects.filter((project) => project.status === "draft" || project.status === "in_progress").length;
   }, [projects]);
 
   const publishedProjects = useMemo(() => {
@@ -115,7 +115,8 @@ export default function AdminPage() {
   }, [projects]);
 
   const visibleProjects = useMemo(() => projects.filter((project) => {
-    if (statusFilter !== "all" && project.status !== statusFilter) return false;
+    if (statusFilter === "draft" && project.status !== "draft" && project.status !== "in_progress") return false;
+    if (statusFilter === "published" && project.status !== "published") return false;
     const text = ((getProjectClient(project)?.name ?? "") + " " + project.title).toLocaleLowerCase("pt-BR");
     return text.includes(searchTerm.trim().toLocaleLowerCase("pt-BR"));
   }), [projects, statusFilter, searchTerm]);

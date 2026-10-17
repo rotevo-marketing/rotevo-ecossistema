@@ -180,3 +180,13 @@ test("planning slugs do not confuse common name prefixes with whole client slugs
  assert.match(source,/draft\.projectSlug === draft\.clientSlug \|\| draft\.projectSlug\.startsWith\(`\$\{draft\.clientSlug\}-`\)/);
  assert.doesNotMatch(source,/if \(draft\.projectSlug\.startsWith\(draft\.clientSlug\)\)/);
 });
+
+test("planning wizard checks slug length before selecting strategic documents",()=>{
+ const start=readFileSync(new URL("app/admin/novo-planejamento/page.tsx",root),"utf8");
+ const finish=readFileSync(new URL("app/admin/novo-planejamento/modulos/page.tsx",root),"utf8");
+ assert.match(start,/clientSlug\.length > 65/);
+ assert.match(start,/finalSlug\.length > 180/);
+ assert.match(start,/projectTitle\.trim\(\)\.length > 180/);
+ assert.match(start,/projectSlug\.startsWith\(`\$\{clientSlug\}-`\)/);
+ assert.match(finish,/draft\.projectSlug\.startsWith\(`\$\{draft\.clientSlug\}-`\)/);
+});

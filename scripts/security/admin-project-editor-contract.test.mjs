@@ -141,4 +141,10 @@ test("executive dashboard shortcuts retain the exact project identity",()=>{
  const overview=readFileSync(new URL("Components/admin/AdminOperationsOverview.tsx",root),"utf8");
  assert.match(overview,/projectId=\$\{encodeURIComponent\(t\.project\.id\)\}/);
  assert.match(overview,/projectId=\$\{encodeURIComponent\(p\.id\)\}/);
+ assert.match(overview,/projectId=\$\{encodeURIComponent\(item\.project\.id\)\}/);
+});
+
+test("task board navigates to the correct owning project",()=>{
+ const board=readFileSync(new URL("Components/admin/CentralTarefas.tsx",root),"utf8");
+ assert.match(board,/projectId=\$\{encodeURIComponent\(project\.id\)\}/);
 });

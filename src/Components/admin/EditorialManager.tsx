@@ -72,7 +72,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
     <select aria-label="Projeto editorial" value={projectId} onChange={e=>{setProjectId(e.target.value);setEditing(null);setError("");}} className="min-h-11 min-w-0 flex-1 cursor-pointer rounded-xl border border-[#DDE1EA] px-4 py-2.5 text-sm">
      <option value="">Selecione um projeto</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}
     </select>
-    <button type="button" disabled={!project||saving} onClick={()=>{setEditing({...blank});setError("");setNotice("");}} className="cursor-pointer rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Novo conteúdo</button>
+    <button type="button" disabled={!project||saving} onClick={()=>{setEditing({...blank});setError("");setNotice("");}} className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#ADE60A] px-5 py-3 text-sm font-semibold text-[#090D1C] disabled:cursor-not-allowed disabled:opacity-40">Novo conteúdo</button>
    </div>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
@@ -93,10 +93,10 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
-    <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#0B142A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
+    <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#ADE60A] px-5 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
    </div>}
   </section>
-  {project&&<EditorialApprovalsPanel projectId={project.id}/>}
+  {project&&<EditorialApprovalsPanel projectId={project.id} contentTitles={Object.fromEntries(items.map(item=>[item.id,item.title]))}/>}
   <EditorialCalendar projects={projects}/>
  </div>;
 }

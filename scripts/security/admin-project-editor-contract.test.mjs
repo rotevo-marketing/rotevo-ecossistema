@@ -157,3 +157,11 @@ test("module selection rejects malformed locally persisted planning drafts",()=>
  assert.match(source,/typeof fields\.projectTitle !== "string" \|\| !fields\.projectTitle\.trim\(\)/);
  assert.match(source,/if \(!storedDraft\) \{/);
 });
+
+test("project creation accepts only real selectable 2027 document codes",()=>{
+ const source=readFileSync(new URL("app/api/admin/project/create/route.ts",root),"utf8");
+ assert.match(source,/import \{ecosystemDocuments\} from "@\/data\/ecosystem2027"/);
+ assert.match(source,/ecosystemDocuments\.filter\(doc=>!doc\.area\.startsWith\("00 "\)\)/);
+ assert.match(source,/selected\.every\(code=>typeof code==="string"&&allowedCodes\.has\(code\)\)/);
+ assert.match(source,/presented\.every\(code=>typeof code==="string"&&selected\.includes\(code\)\)/);
+});

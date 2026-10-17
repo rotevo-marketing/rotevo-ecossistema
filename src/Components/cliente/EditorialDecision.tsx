@@ -4,7 +4,7 @@ import {supabase} from "@/lib/supabase";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 
 type Decision={id:string;decision:"approved"|"changes_requested";comment:string|null;decided_at:string;content_version:string};
-export default function EditorialDecision({projectId,item}:{projectId:string;item:EditorialItem}){
+export default function EditorialDecision({projectId,item,onDecision}:{projectId:string;item:EditorialItem;onDecision?:(decision:"approved"|"changes_requested")=>void}){
  const [existing,setExisting]=useState<Decision|null>(null);
  const [note,setNote]=useState("");
  const [loading,setLoading]=useState(true);
@@ -35,7 +35,7 @@ export default function EditorialDecision({projectId,item}:{projectId:string;ite
   }).select("id,decision,comment,decided_at,content_version").single();
   setWorking(false);
   if(err){setError(err.code==="23505"?"Esta versão já recebeu uma decisão. Atualize a página.":"Não foi possível registrar a decisão. Tente novamente ou contate a equipe Rotevo.");return;}
-  setExisting(data as Decision);setCompleted(true);
+  setExisting(data as Decision);setCompleted(true);onDecision?.(decision);
  }
  if(item.status!=="awaiting_client"&&!existing)return null;
  return <section className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4">

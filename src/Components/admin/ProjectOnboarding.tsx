@@ -24,6 +24,7 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
+ const [confirmReplace,setConfirmReplace]=useState(false);
  const items=Array.isArray(data.onboardingChecklist)?data.onboardingChecklist:[];
  const completed=items.filter(x=>x.done).length;
  const missing=ONBOARDING_STANDARD_STEPS.filter(title=>!items.some(item=>normalize(item.title)===normalize(title)));
@@ -49,6 +50,7 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
   finally{setSaving(false);}
  }
  const start=()=>void persist(standard(),"Onboarding iniciado com 10 etapas.");
+ const replaceTemplate=()=>{setConfirmReplace(false);void persist(standard(),"Checklist padrão de 10 etapas aplicado.");};
  const extend=()=>void persist([...items,...missing.map(title=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false}))],"Etapas padrão adicionadas sem apagar as anteriores.");
  const toggle=(id:string,done:boolean)=>void persist(items.map(item=>item.id===id?{...item,done,updatedAt:new Date().toISOString()}:item),"Progresso atualizado.");
  const resetMessages=()=>{setError("");setNotice("");};
@@ -75,7 +77,17 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
      </label>)}
     </div>
     {saving&&<p role="status" className="mt-2 text-xs text-[#697386]">Salvando alteração...</p>}
-    {missing.length>0&&<div className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Este projeto possui um checklist anterior. Você pode acrescentar as {missing.length} etapas do modelo atual sem perder as existentes.</p><button type="button" disabled={saving} onClick={extend} className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#C9B8F3] bg-white px-3 py-2 text-xs font-semibold text-[#6034B7] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Adicionar etapas padrão que faltam</button></div>}
+    {missing.length>0&&<div className="mt-5 rounded-xl border border-[#D9C9FA] bg-[#F6F2FF] p-4">
+     <p className="text-sm font-semibold text-[#090D1C]">Este projeto usa um checklist anterior ({items.length} etapas).</p>
+     <p className="mt-2 text-xs leading-5 text-[#525B70]">O modelo atual possui 10 etapas. Para ver exatamente o checklist padrão, escolha substituir. Você também pode preservar as etapas atuais e adicionar as que faltam.</p>
+     <div className="mt-3 flex flex-wrap gap-2">
+      <button type="button" disabled={saving} onClick={()=>setConfirmReplace(true)} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#ADE60A] px-3 py-2.5 text-xs font-semibold text-[#090D1C] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Usar checklist padrão de 10 etapas</button>
+      <button type="button" disabled={saving} onClick={extend} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#C9B8F3] bg-white px-3 py-2.5 text-xs font-semibold text-[#6034B7] disabled:opacity-50">Preservar atuais e adicionar {missing.length} etapas</button>
+     </div>
+    </div>}
+    {confirmReplace&&<div role="alertdialog" aria-modal="true" aria-label="Confirmar substituição do checklist" className="fixed inset-0 z-[130] flex items-center justify-center bg-[#090D1C]/60 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"><h4 className="text-base font-bold text-[#090D1C]">Substituir o checklist?</h4><p className="mt-2 text-sm text-[#525B70]">As {items.length} etapas atuais e suas marcações serão substituídas pelo modelo padrão de 10 etapas, todas inicialmente pendentes. Essa alteração não pode ser desfeita pela tela.</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setConfirmReplace(false)} className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={replaceTemplate} className="rounded-lg bg-[#ADE60A] px-3 py-2 text-sm font-semibold text-[#090D1C] disabled:opacity-50">Confirmar substituição</button></div></div>
+    </div>}
    </>
   }
  </section>;

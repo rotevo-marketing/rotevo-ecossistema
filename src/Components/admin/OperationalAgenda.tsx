@@ -7,8 +7,8 @@ export type AgendaItem={id:string;title:string;kind:"meeting"|"followup"|"checkp
 type Data={operationalAgenda?:AgendaItem[];executionTimeline?:{id:string;title:string}[]};
 const empty:AgendaItem={id:"",title:"",kind:"meeting",date:"",time:"",status:"planned",notes:"",owner:"",relatedTaskId:"",meetingUrl:""};
 const kinds={meeting:"Reunião",followup:"Acompanhamento",checkpoint:"Marco de controle"};
-export default function OperationalAgenda({projectId,projectData,updatedAt,onSaved}:{projectId:string;projectData:Data;updatedAt:string;onSaved:(data:Data,updatedAt:string)=>void}){
- const [editing,setEditing]=useState<AgendaItem|null>(null),[working,setWorking]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
+export default function OperationalAgenda({projectId,projectData,updatedAt,onSaved,startNew=false}:{projectId:string;projectData:Data;updatedAt:string;onSaved:(data:Data,updatedAt:string)=>void;startNew?:boolean}){
+ const [editing,setEditing]=useState<AgendaItem|null>(startNew?{...empty}:null),[working,setWorking]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
  const rows=useMemo(()=>Array.isArray(projectData.operationalAgenda)?projectData.operationalAgenda.filter(x=>x&&typeof x.id==="string"&&typeof x.title==="string"):[],[projectData]);
  const ordered=[...rows].sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59")));
  const tasks=projectData.executionTimeline??[];

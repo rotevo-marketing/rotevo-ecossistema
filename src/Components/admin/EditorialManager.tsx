@@ -5,7 +5,7 @@ import {validOperationalDate} from "@/lib/security/executionDependencyValidation
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
 type Client={id:string;name:string;slug:string};
-type Project=EditorialProject & {updated_at:string;clients:Client|Client[]|null};
+type Project=EditorialProject & {updated_at:string;clients:Client|Client[]|null;data:{editorialCalendar?:EditorialItem[];executionTimeline?:{id:string;title:string}[]}|null};
 const blank:EditorialItem={id:"",title:"",channel:"Instagram",format:"Reels",publishDate:"",caption:"",driveUrl:"",version:"01",status:"idea",visibleToClient:false};
 function client(p:Project){return Array.isArray(p.clients)?p.clients[0]:p.clients;}
 function safe(u:string){if(!u)return true;try{return new URL(u).protocol==="https:";}catch{return false;}}

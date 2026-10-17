@@ -64,7 +64,7 @@ export async function PATCH(req:NextRequest){
   for(const item of checklist){
    if(!item||typeof item!=="object"||Array.isArray(item))return fail(400);
    const entry=item as Record<string,unknown>;
-   if(typeof entry.title!=="string"||entry.title.trim().length<3)return fail(400);
+   if(typeof entry.title!=="string"||entry.title.trim().length<3||entry.title.trim().length>140)return fail(400);
    const link=entry.link;
    if(link===undefined||link===null||link==="")continue;
    if(typeof link!=="string")return fail(400);

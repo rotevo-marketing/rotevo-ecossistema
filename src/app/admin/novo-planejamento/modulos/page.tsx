@@ -52,7 +52,16 @@ function getStoredDraft(): NewPlanningDraft | null {
   if (!storedDraft) return null;
 
   try {
-    return JSON.parse(storedDraft) as NewPlanningDraft;
+    const value: unknown = JSON.parse(storedDraft);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const fields = value as Record<string, unknown>;
+    const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (typeof fields.clientName !== "string" || !fields.clientName.trim() ||
+        typeof fields.projectTitle !== "string" || !fields.projectTitle.trim() ||
+        typeof fields.clientSlug !== "string" || !slugPattern.test(fields.clientSlug) ||
+        typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
+        typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
+    return fields as NewPlanningDraft;
   } catch {
     return null;
   }

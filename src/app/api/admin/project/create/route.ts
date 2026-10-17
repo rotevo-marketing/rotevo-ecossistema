@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
+import {ecosystemDocuments} from "@/data/ecosystem2027";
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível criar o planejamento autorizado."},{status,headers:{"Cache-Control":"no-store"}});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,8 +31,9 @@ export async function POST(req:NextRequest){
  if(!ecosystem||typeof ecosystem!=="object"||Array.isArray(ecosystem)||payload.selectedModules!==undefined||payload.moduleContent!==undefined||payload.modules!==undefined)return fail(400);
  const eco=ecosystem as Record<string,unknown>;
  const selected=eco.selectedDocumentCodes,presented=eco.presentedDocumentCodes;
+ const allowedCodes=new Set(ecosystemDocuments.filter(doc=>!doc.area.startsWith("00 ")).map(doc=>doc.code));
  if(eco.version!==1||!Array.isArray(selected)||selected.length===0||selected.length>100||
- !selected.every(code=>typeof code==="string"&&/^\d{2}\.\d{2}$/.test(code))||
+ !selected.every(code=>typeof code==="string"&&allowedCodes.has(code))||
  new Set(selected).size!==selected.length||!Array.isArray(presented)||presented.length>100||
  !presented.every(code=>typeof code==="string"&&selected.includes(code))||
  new Set(presented).size!==presented.length)return fail(400);

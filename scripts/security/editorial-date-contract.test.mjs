@@ -12,3 +12,12 @@ test("calendar date validator rejects nonexistent leap and month days",()=>{
  assert.match(source,/const leap=/);
  assert.match(source,/return day<=days\[month-1\]/);
 });
+
+test("client editorial calendar uses local year/month across UTC day boundaries",()=>{
+ const source=readFileSync(new URL("Components/cliente/EditorialCalendar.tsx",root),"utf8");
+ assert.match(source,/d\.getFullYear\(\)/);
+ assert.match(source,/d\.getMonth\(\)\+1/);
+ assert.doesNotMatch(source,/toISOString\(\)\.slice\(0,7\)/);
+ assert.match(source,/new Date\(y,m-2,1\)/);
+ assert.match(source,/new Date\(y,m,1\)/);
+});

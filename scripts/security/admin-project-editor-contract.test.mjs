@@ -174,3 +174,9 @@ test("project scope changes reject unknown and dashboard-only document codes",()
  assert.match(source,/selected\.every\(code=>typeof code==="string"&&allowedCodes\.has\(code\)\)/);
  assert.match(source,/presented\.every\(code=>typeof code==="string"&&selected\.includes\(code\)\)/);
 });
+
+test("planning slugs do not confuse common name prefixes with whole client slugs",()=>{
+ const source=readFileSync(new URL("app/admin/novo-planejamento/modulos/page.tsx",root),"utf8");
+ assert.match(source,/draft\.projectSlug === draft\.clientSlug \|\| draft\.projectSlug\.startsWith\(`\$\{draft\.clientSlug\}-`\)/);
+ assert.doesNotMatch(source,/if \(draft\.projectSlug\.startsWith\(draft\.clientSlug\)\)/);
+});

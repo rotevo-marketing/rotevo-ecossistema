@@ -53,6 +53,13 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
   if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
   if(!safe(editing.driveUrl??"")){setError("O link do Drive precisa ser um endereço HTTPS.");return;}
+  const original=items.find(row=>row.id===editing.id);
+  const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
+  const materialFields=["title","channel","format","publishDate","caption","driveUrl"] as const;
+  if(original&&decided&&original.version===editing.version&&materialFields.some(field=>(original[field]??"")!==(editing[field]??""))){
+   setError("Esta versão já recebeu uma decisão do cliente. Informe um novo número de versão antes de alterar o material.");
+   return;
+  }
   const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim()};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }

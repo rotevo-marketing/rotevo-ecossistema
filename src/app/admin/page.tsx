@@ -9,6 +9,7 @@ import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview"
 import AdminUserMenu from "@/Components/admin/AdminUserMenu";
 import EditorialOperations from "@/Components/admin/EditorialOperations";
 import CentralTarefas from "@/Components/admin/CentralTarefas";
+import CampaignsHub,{type CampaignRecord} from "@/Components/admin/CampaignsHub";
 import {AdminOnboardingHub,AdminMeetingsHub} from "@/Components/admin/OperationalHubs";
 import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
@@ -45,6 +46,7 @@ type ProjectData = {
   onboardingChecklist?: OnboardingItem[];
   operationalAgenda?: AgendaItem[];
   editorialCalendar?: EditorialItem[];
+  marketingCampaigns?: CampaignRecord[];
   selectedModules?: string[];
   modules?: {
     title: string;
@@ -439,13 +441,7 @@ export default function AdminPage() {
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 
-        {workspaceTab==="campaigns" && <section aria-labelledby="campaigns-heading" className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6">
- <div className="flex items-start gap-3"><span className="rounded-xl bg-[#F1EBFF] p-3 text-[#6D35F5]"><RotevoTablerIcon name="rocket" size={25} stroke={2}/></span><div>
- <h2 id="campaigns-heading" className="text-xl font-bold text-[#090D1C]">Campanhas</h2>
- <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Área reservada para acompanhar campanhas por cliente e projeto, incluindo plataforma, objetivo, situação, período e investimento. A gestão e as integrações com Google Ads e Meta Ads ainda serão desenvolvidas.</p>
- <p className="mt-3 text-xs font-medium text-[#697386]">Estrutura em preparação · Nenhuma campanha ou resultado fictício é apresentado.</p></div></div>
- <button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-5 cursor-pointer rounded-lg border border-[#D9C9FA] bg-white px-4 py-2 text-sm font-semibold text-[#6034B7]">Ver projetos →</button>
- </section>}
+        {workspaceTab==="campaigns" && !isLoading && <CampaignsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
         {workspaceTab==="overview" && isLoading && <p className="mt-8 text-sm text-[#697386]">Carregando informações da operação...</p>}
       </section>

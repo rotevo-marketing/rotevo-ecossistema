@@ -118,6 +118,39 @@ export async function PATCH(req:NextRequest){
    }catch{return fail(400);}
   }
  }
+ // Campaigns are stored per project. Reject malformed manual figures and unsafe links.
+ const campaigns=nextRoot.marketingCampaigns;
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(campaigns)){
+  if(!Array.isArray(campaigns)||campaigns.length>200)return fail(400);
+  const seenCampaignIds=new Set<string>();
+  const approvedStatuses=new Set(["draft","active","paused","finished"]);
+  const approvedPlatforms=new Set(["Google Ads","Meta Ads","Outro"]);
+  for(const raw of campaigns){
+   if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+   const row=raw as Record<string,unknown>;
+   if(typeof row.id!=="string"||!uuid.test(row.id)||seenCampaignIds.has(row.id))return fail(400);
+   seenCampaignIds.add(row.id);
+   if(typeof row.title!=="string"||row.title.trim().length<3||row.title.length>140||
+      typeof row.objective!=="string"||row.objective.length>220||
+      typeof row.resultLabel!=="string"||row.resultLabel.length>60||
+      typeof row.notes!=="string"||row.notes.length>1200||
+      !approvedStatuses.has(String(row.status))||!approvedPlatforms.has(String(row.platform)))return fail(400);
+   for(const field of ["budget","spent","results"]){
+    const n=row[field];
+    if(n!==null&&(typeof n!=="number"||!Number.isFinite(n)||n<0||n>1e12))return fail(400);
+   }
+   if(row.results!==null&&!Number.isInteger(row.results))return fail(400);
+   for(const key of ["startDate","endDate"]){
+    const value=row[key];
+    if(typeof value!=="string")return fail(400);
+    if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value))||
+     new Date(value+"T12:00:00").toISOString().slice(0,10)!==value))return fail(400);
+   }
+   if(row.startDate&&row.endDate&&(row.endDate as string)<(row.startDate as string))return fail(400);
+   if(typeof row.dashboardUrl!=="string"||row.dashboardUrl.length>2048)return fail(400);
+   if(row.dashboardUrl){try{if(new URL(row.dashboardUrl).protocol!=="https:")return fail(400);}catch{return fail(400);}}
+  }
+ }
  const previousItems=Array.isArray(oldRoot.executionTimeline)?oldRoot.executionTimeline:[];
  const nextItems=Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline:[];
  const previousOwners=new Map(previousItems.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v.ownerUserId]));

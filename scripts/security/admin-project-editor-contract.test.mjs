@@ -128,3 +128,11 @@ test("project management links identify the exact project under its client",()=>
  assert.match(clients,/projectId=\$\{encodeURIComponent\(p\.id\)\}/);
  assert.match(dashboard,/encodeURIComponent\(project\.id\)/);
 });
+
+test("rapid project navigation ignores obsolete asynchronous responses",()=>{
+ const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
+ assert.match(page,/let cancelled = false/);
+ assert.match(page,/return \(\) => \{ cancelled = true; \}/);
+ assert.match(page,/const loaded=await response\.json\(\);\s*if \(cancelled\) return;/);
+ assert.match(page,/const \{ data, error \} = await query[\s\S]*?if \(cancelled\) return;/);
+});

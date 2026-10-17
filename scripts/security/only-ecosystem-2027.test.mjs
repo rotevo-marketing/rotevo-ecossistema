@@ -143,10 +143,12 @@ test("document-linked delivery summary includes overdue, pending and blocked ite
  assert.match(editor,/entrega\(s\) aguardando desbloqueio/);
 });
 
-test("central task board exposes linked document code and searchable title",()=>{
+test("central task board searches linked projects and task titles without adding a redundant document column",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/task\.documentCode/);
- assert.match(board,/ecosystemDocuments\.find/);
+ assert.match(board,/task.title/);
+ assert.match(board,/project.title/);
+ assert.match(board,/query.toLocaleLowerCase/);
+ assert.match(board,/\["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"\]/);
 });
 
 test("admin operations summary connects published 2027 documents and delivery deadlines per project",()=>{
@@ -179,30 +181,26 @@ test("admin publication progress requires both published content and publication
  assert.match(overview,/typeof eco\?\.documents\?\.\[code\]\?\.publishedAt==="string"&&typeof eco\?\.documents\?\.\[code\]\?\.publishedContent==="string"/);
 });
 
-test("operations task hub filters deadlines and strategic references without changing project data",()=>{
+test("task hub filters project, owner, priority, status and deadlines without changing data",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- for(const token of ["documentScope","deadline","Filtrar prazo","Filtrar vínculo estratégico","Limpar filtros"])assert.ok(board.includes(token),token);
- assert.match(board,/task\.dueDate<today\(\)/);
- assert.match(board,/\!\["completed","cancelled"\]\.includes/);
- assert.match(board,/setDocumentScope\("all"\)/);
+ for(const token of ["Filtrar projeto","Filtrar responsável","Filtrar prioridade","Filtrar prazo","Limpar"])assert.ok(board.includes(token),token);
+ assert.match(board,/task.dueDate<today\(\)/);
+ assert.match(board,/isOpen\(task\)/);
+ assert.match(board,/setDeadline\("all"\)/);
 });
-
-test("task triage highlights due-today and blocked work without flagging completed tasks as overdue",()=>{
+test("task triage shows today's and overdue deadlines without completed items",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/const dueToday=task\.dueDate===today\(\)&&open/);
- assert.match(board,/const blocked=task\.status==="blocked"/);
- assert.match(board,/Vence hoje/);
- assert.match(board,/Bloqueada/);
- assert.match(board,/Bloqueadas/);
+ assert.match(board,/todayCount=tasks.filter/);
+ assert.match(board,/overdue=tasks.filter/);
+ assert.match(board,/isOpen\(x.task\)/);
+ assert.match(board,/Minha visão do dia/);
 });
-
-test("operational task ordering prioritizes overdue blocked and due-today work",()=>{
+test("task ordering places overdue and blocked work first in default view",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/if\(task\.status==="completed"\|\|task\.status==="cancelled"\)return 4/);
- assert.match(board,/if\(task\.dueDate&&task\.dueDate<today\(\)\)return 0/);
- assert.match(board,/if\(task\.status==="blocked"\)return 1/);
- assert.match(board,/if\(task\.dueDate===today\(\)\)return 2/);
- assert.match(board,/rank\(a\.task\)-rank\(b\.task\)/);
+ assert.match(board,/urgencyScore/);
+ assert.match(board,/t.status==="blocked"\?1/);
+ assert.match(board,/t.dueDate===today\(\)\?2/);
+ assert.match(board,/openScore\(a.task\)-openScore\(b.task\)/);
 });
 
 test("execution editor enforces same-project acyclic task prerequisites",()=>{
@@ -214,19 +212,13 @@ test("execution editor enforces same-project acyclic task prerequisites",()=>{
  assert.match(editor,/const reaches=/);
 });
 
-test("central task cards show incomplete dependencies from the same project's timeline",()=>{
- const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/const prerequisites=/);
- assert.match(board,/project\.data\?\.executionTimeline/);
- assert.match(board,/const waiting=prerequisites\.filter/);
- assert.match(board,/Pré-requisitos:/);
-});
-
-test("task completion UI enforces prerequisite constraints on both operational entry points",()=>{
+test("central task creation keeps dependencies empty and blocks premature completion",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
  const timeline=source("Components/admin/ExecutionTimelineEditor.tsx");
- assert.match(board,/Conclua os pré-requisitos pendentes/);
- assert.match(board,/Reabra primeiro as atividades concluídas/);
+ assert.match(board,/dependencies:\[\]/);
+ assert.match(board,/\(task.dependencies\?\?\[\]\).some/);
+ assert.match(board,/Conclua os pré-requisitos/);
+ assert.match(board,/Reabra primeiro as tarefas/);
  assert.match(timeline,/Conclua todos os pré-requisitos/);
  assert.match(timeline,/Reabra a atividade dependente primeiro/);
 });
@@ -240,22 +232,21 @@ test("project operational overview shows work with missing owners and unmet prer
  assert.match(overview,/atividade\(s\) sem responsável/);
 });
 
-test("central task board filters waiting and satisfied prerequisites without losing reset",()=>{
+test("advanced prerequisite editing stays in the project and task table resets compact filters",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/prerequisiteScope/);
- assert.match(board,/Filtrar pré-requisitos/);
- assert.match(board,/Aguardando pré-requisitos/);
- assert.match(board,/Pré-requisitos atendidos/);
- assert.match(board,/setPrerequisiteScope\("all"\)/);
+ const editor=source("Components/admin/ExecutionTimelineEditor.tsx");
+ assert.match(editor,/Pré-requisitos desta entrega/);
+ assert.match(board,/setProjectId\("all"\)/);
+ assert.match(board,/setPriority\("all"\)/);
+ assert.match(board,/setDeadline\("all"\)/);
 });
-
 test("operational management connects task priorities to editor, task board and team workload",()=>{
  const timeline=source("Components/admin/ExecutionTimelineEditor.tsx");
  const board=source("Components/admin/CentralTarefas.tsx");
  const overview=source("Components/admin/AdminOperationsOverview.tsx");
  assert.match(timeline,/Prioridade/);
  assert.match(board,/Filtrar prioridade/);
- assert.match(board,/setPriorityScope\("all"\)/);
+ assert.match(board,/setPriority\("all"\)/);
  assert.match(overview,/Distribuição da carga por responsável/);
  assert.match(overview,/Não representa horas trabalhadas/);
 });

@@ -5,9 +5,10 @@ import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
+import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
 
 type Client={id:string;name:string;slug:string};
-export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:{id:string;title:string;date:string;time?:string;status?:string;kind?:string}[]}|null;clients:Client|Client[]|null};
+export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
 const columns:{id:Status;name:string}[]=[{id:"planned",name:"Planejado"},{id:"in_progress",name:"Em andamento"},{id:"blocked",name:"Aguardando"},{id:"completed",name:"Concluído"},{id:"cancelled",name:"Cancelado"}];
 const label=(s?:string)=>columns.find(c=>c.id===s)?.name??"Planejado";

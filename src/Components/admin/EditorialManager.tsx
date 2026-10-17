@@ -55,11 +55,12 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(!safe(editing.driveUrl??"")){setError("O link do Drive precisa ser um endereço HTTPS.");return;}
   const original=items.find(row=>row.id===editing.id);
   const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
-  const materialFields=["title","channel","format","publishDate","caption","driveUrl"] as const;
+  const materialFields=["title","channel","format","publishDate","caption","driveUrl","relatedTaskId"] as const;
   if(original&&decided&&original.version===editing.version&&materialFields.some(field=>(original[field]??"")!==(editing[field]??""))){
    setError("Esta versão já recebeu uma decisão do cliente. Informe um novo número de versão antes de alterar o material.");
    return;
   }
+  if(editing.relatedTaskId&&!project.data?.executionTimeline?.some(t=>t.id===editing.relatedTaskId)){setError("A tarefa vinculada precisa pertencer ao mesmo projeto.");return;}
   const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim()};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }
@@ -86,6 +87,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium">Data prevista *<input type="date" value={editing.publishDate} onChange={e=>setEditing({...editing,publishDate:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Versão<input value={editing.version??""} maxLength={30} onChange={e=>setEditing({...editing,version:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Situação<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value as EditorialItem["status"]})} className="mt-1 block w-full cursor-pointer rounded-lg border px-3 py-2.5 text-sm">{Object.entries(editorialStatuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+     <label className="text-xs font-medium">Tarefa relacionada<select value={editing.relatedTaskId??""} onChange={e=>setEditing({...editing,relatedTaskId:e.target.value||undefined})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Nenhuma tarefa vinculada</option>{(project.data?.executionTimeline??[]).map(task=><option key={task.id} value={task.id}>{task.title}</option>)}</select><span className="mt-1 block text-[11px] text-[#697386]">Permite consultar a decisão do cliente na Central de Tarefas. Não conclui a tarefa automaticamente.</span></label>
      <label className="text-xs font-medium">Link para o material no Drive<input type="url" value={editing.driveUrl??""} onChange={e=>setEditing({...editing,driveUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Legenda<textarea rows={3} value={editing.caption??""} onChange={e=>setEditing({...editing,caption:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>

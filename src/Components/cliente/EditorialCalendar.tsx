@@ -12,7 +12,7 @@ export default function EditorialCalendar({projects,clientView=false}:{projects:
  const [view,setView]=useState<"month"|"list">("month");
  const [selected,setSelected]=useState<string|null>(null);
  const items=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[])
-  .filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"&&(!clientView||i.visibleToClient!==false))
+  .filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"&&(!clientView||i.visibleToClient===true))
   .map(i=>({...i,projectTitle:p.title,projectId:p.id}))),[projects,clientView]);
  const active=items.find(i=>i.projectId+":"+i.id===selected);
  const [y,m]=month.split("-").map(Number);

@@ -62,6 +62,41 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
  const openNew=()=>{setEditing({...blank});setEditProjectId(selectedProjectId);setError("");setNotice("");};
  const openEdit=(id:string,item:CampaignRecord)=>{setEditing({...item});setEditProjectId(id);setError("");setNotice("");};
  const close=()=>{if(!saving){setEditing(null);setError("");}};
+ const openSnapshot=(projectId:string,item:CampaignRecord)=>{
+  const existing=(item.snapshots??[]).find(x=>x.month===monthFilter);
+  setSnapshotCampaign({projectId,campaignId:item.id});
+  setSnapshotDraft(existing?{...existing}:{id:crypto.randomUUID(),month:monthFilter,spent:null,impressions:null,clicks:null,results:null,leads:null,appointments:null,sales:null,revenue:null,notes:"",updatedAt:""});
+  setError("");setNotice("");
+ };
+ async function saveSnapshot(){
+  if(!snapshotCampaign||snapshotSaving)return;
+  const project=projects.find(x=>x.id===snapshotCampaign.projectId);
+  const current=project?.data?.marketingCampaigns;
+  if(!project||!Array.isArray(current)){setError("Campanha indisponível para este projeto.");return;}
+  const target=(current as CampaignRecord[]).find(x=>x.id===snapshotCampaign.campaignId);
+  if(!target){setError("Campanha não localizada.");return;}
+  const metrics=["spent","impressions","clicks","results","leads","appointments","sales","revenue"] as const;
+  if(!/^\d{4}-\d{2}$/.test(snapshotDraft.month)||Number(snapshotDraft.month.slice(5))<1||Number(snapshotDraft.month.slice(5))>12){setError("Selecione um mês válido.");return;}
+  if(metrics.some(key=>{const n=snapshotDraft[key];return n!==null&&(!Number.isFinite(n)||n<0||n>1e12||(key!=="spent"&&key!=="revenue"&&!Number.isInteger(n)));})||snapshotDraft.notes.length>1000){setError("Informe métricas não negativas e observações de até 1.000 caracteres.");return;}
+  const before=target.snapshots??[];
+  if(before.some(x=>x.month===snapshotDraft.month&&x.id!==snapshotDraft.id)){setError("Já existe um registro para esse mês. Edite o registro existente.");return;}
+  const record={...snapshotDraft,updatedAt:new Date().toISOString()};
+  const updated=(current as CampaignRecord[]).map(c=>c.id===target.id?{...c,snapshots:[...before.filter(x=>x.month!==record.month),record].sort((a,b)=>a.month.localeCompare(b.month))}:c);
+  setSnapshotSaving(true);setError("");setNotice("");
+  try{
+   const {data:auth,error:authError}=await supabase.auth.getSession();
+   if(authError||!auth.session?.access_token){setError("Sessão expirada. Entre novamente.");return;}
+   const response=await fetch("/api/admin/project/update",{method:"PATCH",cache:"no-store",headers:{"Content-Type":"application/json",Authorization:"Bearer "+auth.session.access_token},body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:{...(project.data??{}),marketingCampaigns:updated}})});
+   if(response.status===409){setError("O projeto foi alterado em outra sessão. Recarregue antes de salvar.");return;}
+   if(!response.ok){setError("Não foi possível salvar o desempenho. Confira suas permissões.");return;}
+   const result=await response.json();
+   if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar a atualização.");return;}
+   onChanged(project.id,result.project.data as Record<string,unknown>,result.project.updated_at);
+   setSnapshotCampaign(null);setNotice("Indicadores mensais salvos no projeto.");
+  }catch{setError("Erro de conexão ao registrar os indicadores.");}
+  finally{setSnapshotSaving(false);}
+ }
+
  async function save(){
   if(!editing||saving)return;
   const project=projects.find(p=>p.id===editProjectId);
@@ -123,7 +158,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
    </div>
    <p className="mt-3 text-xs text-[#697386]">{filtered.length} campanha(s) no projeto e filtros selecionados. Os valores de desempenho são registrados por mês, sem duplicar históricos.</p>
    {filtered.length===0?<div className="mt-4 rounded-xl border border-dashed border-[#E3E7F0] p-6 text-center"><p className="text-sm font-semibold">Nenhuma campanha encontrada</p><p className="mt-2 text-xs text-[#697386]">{projects.length===0?"Cadastre um projeto antes de incluir campanhas.":"Cadastre sua primeira campanha ou ajuste os filtros."}</p></div>:
-   <div className="mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full min-w-[850px] text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{["Campanha / Projeto","Plataforma","Situação","Investimento informado","Resultados","Ação"].map(h=><th key={h} scope="col" className="border-b border-[#E3E7F0] px-3 py-3 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{filtered.map(({item,project})=><tr key={project.id+":"+item.id} className="hover:bg-[#F8F7FC]"><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{item.title}</p><p className="mt-1 text-[#697386]">{client(project)?.name??"Cliente"} · {project.title}</p></td><td className="px-3 py-3">{item.platform}</td><td className="px-3 py-3"><span className={item.status==="active"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":item.status==="paused"?"rounded-lg bg-[#FFF1D4] px-2 py-1 text-[#875400]":"rounded-lg bg-[#EEE8FF] px-2 py-1 text-[#6034B7]"}>{statuses[item.status]??item.status}</span></td><td className="px-3 py-3">{item.spent===null?"Não informado":money(item.spent)}</td><td className="px-3 py-3">{item.results===null?"—":item.results+" "+(item.resultLabel||"resultados")}{item.results!==null&&item.results>0&&item.spent!==null&&<span className="mt-1 block text-[#697386]">{money(item.spent/item.results)} por resultado</span>}</td><td className="px-3 py-3"><button type="button" onClick={()=>openEdit(project.id,item)} className="cursor-pointer rounded-lg border border-[#D9C9FA] bg-white px-3 py-2 font-semibold text-[#6034B7]">Gerenciar</button></td></tr>)}</tbody></table></div>}
+   <div className="mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full min-w-[850px] text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{["Campanha / Projeto","Plataforma","Situação","Gasto do mês","Resultados do mês","Ação"].map(h=><th key={h} scope="col" className="border-b border-[#E3E7F0] px-3 py-3 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{filtered.map(({item,project})=><tr key={project.id+":"+item.id} className="hover:bg-[#F8F7FC]"><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{item.title}</p><p className="mt-1 text-[#697386]">{client(project)?.name??"Cliente"} · {project.title}</p></td><td className="px-3 py-3">{item.platform}</td><td className="px-3 py-3"><span className={item.status==="active"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":item.status==="paused"?"rounded-lg bg-[#FFF1D4] px-2 py-1 text-[#875400]":"rounded-lg bg-[#EEE8FF] px-2 py-1 text-[#6034B7]"}>{statuses[item.status]??item.status}</span></td><td className="px-3 py-3">{dataFor(item)?.spent==null?"—":money(dataFor(item)!.spent!)}</td><td className="px-3 py-3">{dataFor(item)?.results==null?"—":dataFor(item)!.results+" "+(item.resultLabel||"resultados")}{dataFor(item)?.results!=null&&dataFor(item)!.results!>0&&dataFor(item)?.spent!=null&&<span className="mt-1 block text-[#697386]">{money(dataFor(item)!.spent!/dataFor(item)!.results!)} por resultado</span>}</td><td className="px-3 py-3"><div className="flex gap-2"><button type="button" onClick={()=>openSnapshot(project.id,item)} className="cursor-pointer rounded-lg bg-[#EEE8FF] px-3 py-2 font-semibold text-[#6034B7]">Resultados do mês</button><button type="button" onClick={()=>openEdit(project.id,item)} className="cursor-pointer rounded-lg border border-[#D9C9FA] bg-white px-3 py-2 font-semibold text-[#6034B7]">Gerenciar</button></div></td></tr>)}</tbody></table></div>}
   </section>
   {editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar cadastro de campanha" onClick={close} className="absolute inset-0 bg-[#090D1C]/55"/><aside role="dialog" aria-modal="true" aria-label={editing.id?"Editar campanha":"Nova campanha"} className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">
    <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-[#090D1C]">{editing.id?"Gerenciar campanha":"Nova campanha"}</h2><button type="button" disabled={saving} onClick={close} aria-label="Fechar" className="cursor-pointer rounded-lg border border-[#E3E7F0] p-2"><RotevoTablerIcon name="x" size={19}/></button></div>

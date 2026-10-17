@@ -6,7 +6,7 @@ const admin=readFileSync(new URL("app/admin/page.tsx",base),"utf8");
 const menu=readFileSync(new URL("Components/admin/AdminUserMenu.tsx",base),"utf8");
 const tasks=readFileSync(new URL("Components/admin/CentralTarefas.tsx",base),"utf8");
 test("admin header uses account menu with profile display name",()=>{
- assert.match(admin,/AdminUserMenu email=\{userEmail\} name=\{userName\}/);
+ assert.match(admin,/AdminUserMenu email=\{userEmail\} name=\{userName\} avatarUrl=\{userAvatar\}/);
  assert.match(admin,/\.select\("role,full_name"\)/);
 });
 test("account menu offers password change and logout",()=>{
@@ -38,4 +38,19 @@ test("in-progress projects are included in production counts and filters",()=>{
  assert.match(admin,/project\.status === "draft" \|\| project\.status === "in_progress"/);
  assert.match(admin,/statusFilter === "draft" && project\.status !== "draft" && project\.status !== "in_progress"/);
  assert.match(admin,/statusFilter === "published" && project\.status !== "published"/);
+});
+
+test("admin profile photo is optional and uses the existing account menu",()=>{
+ assert.match(admin,/\.select\("avatar_url"\)/);
+ assert.match(admin,/setUserAvatar\(/);
+ assert.match(menu,/avatarUrl\?<img/);
+ assert.match(menu,/initials\|\|"U"/);
+});
+test("tasks dashboard includes today's deadlines and meeting agenda",()=>{
+ assert.match(tasks,/Minha visão do dia/);
+ assert.match(tasks,/Agenda de hoje/);
+ assert.match(tasks,/todayAppointments/);
+ assert.match(tasks,/setDeadline\("today"\)/);
+ assert.match(tasks,/setDeadline\("overdue"\)/);
+ assert.match(tasks,/task\.visibleToClient===true\?"Visível ao cliente":"Uso interno"/);
 });

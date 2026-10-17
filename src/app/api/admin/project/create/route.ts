@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
+import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível criar o planejamento autorizado."},{status,headers:{"Cache-Control":"no-store"}});
@@ -37,7 +38,7 @@ export async function POST(req:NextRequest){
  new Set(selected).size!==selected.length||!Array.isArray(presented)||presented.length>100||
  !presented.every(code=>typeof code==="string"&&selected.includes(code))||
  new Set(presented).size!==presented.length)return fail(400);
- if(!validEcosystemDocumentTransition({ecosystem2027:{version:1}},payload))return fail(400);
+ if(!validEcosystemDocumentTransition({ecosystem2027:{version:1}},payload)||!validExecutionDependencies(payload))return fail(400);
  if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
   // New project has no assignment yet: only an active team administrator may create it.
   const {data:member,error:memberError}=await admin.from("team_members")

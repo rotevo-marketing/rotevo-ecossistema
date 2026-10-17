@@ -33,6 +33,8 @@ type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
 export default function CentralTarefas({projects,onChanged,onOpenContent}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
  const [deadline,setDeadline]=useState<"all"|"today"|"overdue"|"upcoming">("all");
+ const [periodMode,setPeriodMode]=useState<"due"|"completed">("due");
+ const [periodMonth,setPeriodMonth]=useState("");
  const [query,setQuery]=useState(""),[showSearch,setShowSearch]=useState(false),[showFilters,setShowFilters]=useState(false);
  const [view,setView]=useState<"list"|"board">("list"),[order,setOrder]=useState<"urgency"|"due"|"priority">("urgency");
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
@@ -60,6 +62,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   (projectId==="all"||project.id===projectId)&&
   (owner==="all"||(owner==="unassigned"?!task.owner?.trim():task.owner?.trim()===owner))&&
   (status==="all"||(task.status??"planned")===status)&&
+  (!periodMonth||(periodMode==="due"?task.dueDate?.startsWith(periodMonth):task.status==="completed"&&typeof task.completedAt==="string"&&task.completedAt.slice(0,7)===periodMonth))&&
   (priority==="all"||(task.priority??"normal")===priority)&&
   (deadline==="all"||(deadline==="today"?task.dueDate===today()&&isOpen(task):deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&isOpen(task):!!task.dueDate&&task.dueDate>today()&&isOpen(task)))&&
   (`${task.title} ${project.title} ${client?.name??""} ${task.owner??""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")))
@@ -72,7 +75,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
    order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
    urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
- }),[tasks,projectId,owner,status,priority,deadline,query,order]);
+ }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode]);
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
   if(working)return false;
   setWorking(key);setError("");setNotice("");
@@ -96,7 +99,8 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const next=patch.status??task.status??"planned";
   if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos antes desta tarefa.");return;}
   if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as tarefas que dependem desta.");return;}
-  await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch}:t),project.id+":"+task.id,"Tarefa atualizada.");
+  const completionPatch=patch.status!==undefined?{completedAt:next==="completed"?(task.status==="completed"?task.completedAt:new Date().toISOString()):undefined}:{};
+  await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch,...completionPatch}:t),project.id+":"+task.id,"Tarefa atualizada.");
  }
  async function createTask(){
   const project=projects.find(p=>p.id===draft.projectId);
@@ -122,7 +126,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
   if(ok){setDetailKey(null);setDetailDraft(null);}
  }
- const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setQuery("");};
+ const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");};
  const overdue=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
  const todayCount=tasks.filter(x=>x.task.dueDate===today()&&isOpen(x.task)).length;
  const chipStatus=(task:ExecutionItem)=>statuses.find(s=>s.id===(task.status??"planned"))??statuses[0];
@@ -159,12 +163,15 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
    </div>
    {showSearch&&<input autoFocus aria-label="Buscar por tarefa, projeto, cliente ou responsável" className="mt-4 w-full rounded-lg border border-[#E1E5EE] px-4 py-3 text-sm" placeholder="Buscar tarefa, projeto, cliente ou responsável..." type="search" value={query} onChange={e=>setQuery(e.target.value)}/>}
    <div className={`mt-4 flex flex-wrap gap-2 ${showFilters?"":"items-center"}`}>
-    <RotevoTablerIcon name="folder" size={17} stroke={1.9}/><select aria-label="Filtrar projeto" value={projectId} onChange={e=>setProjectId(e.target.value)} className={selectClass}><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select>
-    <RotevoTablerIcon name="user-check" size={17} stroke={1.9}/><select aria-label="Filtrar responsável" value={owner} onChange={e=>setOwner(e.target.value)} className={selectClass}><option value="all">Todas as pessoas</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select>
-    <RotevoTablerIcon name="flag" size={17} stroke={1.9}/><select aria-label="Filtrar prioridade" value={priority} onChange={e=>setPriority(e.target.value)} className={selectClass}><option value="all">Todas as prioridades</option>{priorities.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+    <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white pl-2 pr-1 text-[#525B70]"><RotevoTablerIcon name="folder" size={18} stroke={1.9}/><select aria-label="Filtrar projeto" value={projectId} onChange={e=>setProjectId(e.target.value)} className={selectClass}><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
+    <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white pl-2 pr-1 text-[#525B70]"><RotevoTablerIcon name="user-check" size={17} stroke={1.9}/><select aria-label="Filtrar responsável" value={owner} onChange={e=>setOwner(e.target.value)} className={selectClass}><option value="all">Todas as pessoas</option><option value="unassigned">Não atribuído</option>{owners.map(x=><option key={x} value={x}>{x}</option>)}</select></label>
+    <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white pl-2 pr-1 text-[#525B70]"><RotevoTablerIcon name="flag" size={17} stroke={1.9}/><select aria-label="Filtrar prioridade" value={priority} onChange={e=>setPriority(e.target.value)} className={selectClass}><option value="all">Todas as prioridades</option>{priorities.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
     {showFilters&&<><select aria-label="Filtrar situação" value={status} onChange={e=>setStatus(e.target.value)} className={selectClass}><option value="all">Todas as situações</option>{statuses.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select aria-label="Filtrar prazo" value={deadline} onChange={e=>setDeadline(e.target.value as typeof deadline)} className={selectClass}><option value="all">Todos os prazos</option><option value="today">Hoje</option><option value="overdue">Atrasadas</option><option value="upcoming">Futuras</option></select></>}
+    <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white pl-2 pr-1 text-[#525B70]"><RotevoTablerIcon name="calendar-week" size={18} stroke={1.9}/><select aria-label="Tipo de período" value={periodMode} onChange={e=>{setPeriodMode(e.target.value as "due"|"completed");setDeadline("all");}} className={selectClass}><option value="due">Prazo no mês</option><option value="completed">Concluídas no mês</option></select></label>
+    <input type="month" aria-label="Selecionar mês das tarefas" className={selectClass} value={periodMonth} onChange={e=>{setPeriodMonth(e.target.value);setDeadline("all");}}/>
     <button type="button" className={buttonClass} onClick={reset}>Limpar</button>
    </div>
+   {periodMonth&&periodMode==="completed"&&<p className="mt-3 text-xs text-[#697386]">O relatório considera a data real de conclusão registrada. Tarefas concluídas antes da implantação desse registro podem não aparecer porque não é possível determinar quando foram finalizadas.</p>}
    {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">{notice}</p>}
    {creating&&<section aria-label="Nova tarefa" className="mt-4 rounded-xl border border-[#DDD4FB] bg-[#FCFAFF] p-4"><h3 className="text-base font-semibold">Nova tarefa</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -176,7 +183,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
      <label className="text-xs font-medium sm:col-span-2">Descrição opcional<textarea rows={2} maxLength={2000} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>
     </div><div className="mt-4 flex justify-end gap-2"><button type="button" disabled={!!working} className={buttonClass} onClick={()=>setCreating(false)}>Cancelar</button><button type="button" disabled={!!working||projects.length===0} className="rounded-lg bg-[#0B142A] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>void createTask()}>{working?"Salvando...":"Criar tarefa"}</button></div></section>}
    {filtered.length===0?<div className="mt-4 rounded-lg bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma tarefa corresponde aos filtros. Use “Nova tarefa” para cadastrar uma atividade em um projeto.</div>:view==="list"?
-   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[820px] border-collapse text-left text-sm"><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr>{["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"].map(x=><th key={x} className="border-b border-[#E3E7F0] px-3 py-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-[#EEF0F5]">{filtered.map(({task,project,client})=>{
+   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[820px] border-collapse text-left text-sm"><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr>{([["Tarefa","list"],["Projeto","folder"],["Responsável","user-check"],["Situação","filter"],["Prioridade","flag"],["Prazo","calendar-week"]] as const).map(([name,icon])=><th key={name} className="border-b border-[#E3E7F0] px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name={icon} size={17} stroke={1.9}/>{name}</span></th>)}</tr></thead><tbody className="divide-y divide-[#EEF0F5]">{filtered.map(({task,project,client})=>{
     const statusChip=chipStatus(task),priorityChip=chipPriority(task);
     return <tr key={project.id+":"+task.id} className="hover:bg-[#FBFAFF]">
      <td className="max-w-[280px] border-l-4 px-3 py-3 font-medium" style={{borderLeftColor:task.status==="completed"?"#37B36E":task.priority==="urgent"?"#E04961":task.priority==="high"?"#E9AE39":"#9C78F4"}}><button type="button" onClick={()=>openDetails({task,project,client})} className="group inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md py-1 text-left font-semibold text-[#4E2CA8] underline decoration-[#C9B8F3] underline-offset-4 transition hover:bg-[#F2ECFF] hover:text-[#5622C5] hover:decoration-[#5622C5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]">{task.title}<span aria-hidden="true" className="text-xs opacity-60 transition group-hover:translate-x-0.5 group-hover:opacity-100">↗</span></button>{(task.dependencies??[]).length>0&&<span className="mt-1 block text-[10px] text-[#697386]">Pré-requisitos: {(task.dependencies??[]).length}</span>}</td>

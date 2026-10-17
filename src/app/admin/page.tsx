@@ -330,8 +330,9 @@ export default function AdminPage() {
           </div>
           {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
         </div>
+        {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
         {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8 space-y-6"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/><EditorialOperations projects={projects} onOpenContent={()=>setWorkspaceTab("content")}/></div>}
-        {workspaceTab==="projects" && <>
+        {workspaceTab==="projects" && !errorMessage && <>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             { label: "Total de planejamentos", value: totalProjects },
@@ -427,7 +428,6 @@ export default function AdminPage() {
 
         {workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
         {workspaceTab==="overview" && isLoading && <p className="mt-8 text-sm text-[#697386]">Carregando informações da operação...</p>}
-        {workspaceTab==="overview" && errorMessage && <p role="alert" className="mt-8 text-sm text-red-700">{errorMessage}</p>}
       </section>
       </div>
       </div>

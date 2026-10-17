@@ -136,3 +136,9 @@ test("rapid project navigation ignores obsolete asynchronous responses",()=>{
  assert.match(page,/const loaded=await response\.json\(\);\s*if \(cancelled\) return;/);
  assert.match(page,/const \{ data, error \} = await query[\s\S]*?if \(cancelled\) return;/);
 });
+
+test("executive dashboard shortcuts retain the exact project identity",()=>{
+ const overview=readFileSync(new URL("Components/admin/AdminOperationsOverview.tsx",root),"utf8");
+ assert.match(overview,/projectId=\$\{encodeURIComponent\(t\.project\.id\)\}/);
+ assert.match(overview,/projectId=\$\{encodeURIComponent\(p\.id\)\}/);
+});

@@ -32,7 +32,7 @@ test("onboarding management stays project-based with start button and Tabler ico
  assert.match(hub,/Iniciar onboarding/);
  assert.match(hub,/setStarterOpen\(true\)/);
  assert.match(hub,/Gerenciar onboarding/);
- for(const name of ["lifebuoy","hourglass","clock","circle-check"])assert.ok(hub.includes('name="'+name+'"')||hub.includes('icon:"'+name+'"'),name);
+ for(const name of ["lifebuoy","alert-circle","clock","circle-check"])assert.ok(hub.includes('name="'+name+'"')||hub.includes('icon:"'+name+'"'),name);
  assert.doesNotMatch(hub,/\["Progresso","chart-pie"\]/);
 });
 

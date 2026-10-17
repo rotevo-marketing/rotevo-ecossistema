@@ -8,7 +8,7 @@ export const editorialStatuses:Record<EditorialItem["status"],string>={idea:"Ide
 const fmt=(d:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem data"};
 const safe=(s?:string)=>{try{const x=new URL(s??"");return x.protocol==="https:"?x.href:null;}catch{return null;}};
 export default function EditorialCalendar({projects,clientView=false}:{projects:EditorialProject[];clientView?:boolean}){
- const [month,setMonth]=useState(()=>new Date().toISOString().slice(0,7));
+ const [month,setMonth]=useState(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;});
  const [view,setView]=useState<"month"|"list">("month");
  const [selected,setSelected]=useState<string|null>(null);
  const items=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[])
@@ -20,8 +20,8 @@ export default function EditorialCalendar({projects,clientView=false}:{projects:
  const days=new Date(y,m,0).getDate();
  const calendarDays=Array.from({length:Math.ceil((offset+days)/7)*7},(_,i)=>i-offset+1);
  const monthItems=items.filter(i=>i.publishDate?.startsWith(month));
- const prev=()=>setMonth(new Date(y,m-2,1).toISOString().slice(0,7));
- const next=()=>setMonth(new Date(y,m,1).toISOString().slice(0,7));
+ const prev=()=>{const d=new Date(y,m-2,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
+ const next=()=>{const d=new Date(y,m,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  return <div className="space-y-5">
   <div className="flex flex-wrap items-center justify-between gap-3">
    <div><h2 className="text-xl font-semibold">Calendário editorial</h2><p className="mt-1 text-sm text-[#697386]">Produção, datas de publicação e materiais compartilhados.</p></div>

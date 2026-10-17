@@ -5,14 +5,14 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 
 export type OnboardingItem={id:string;title:string;done:boolean;visibleToClient:boolean;link?:string;updatedAt?:string;owner?:string;dueDate?:string;waitingOnClient?:boolean;notes?:string};
 export type OnboardingData={onboardingChecklist?:OnboardingItem[];[key:string]:unknown};
-const defaults=["Confirmar informações de contato","Validar contrato e escopo","Solicitar materiais e identidade visual","Confirmar acessos e permissões","Realizar reunião inicial","Validar briefing e próximos passos"];
+const defaults=["Confirmar contratação, escopo e contrato","Confirmar pagamento e dados para faturamento","Validar cadastro e contatos do cliente","Criar e organizar a pasta do cliente no Google Drive","Solicitar materiais e informações iniciais","Solicitar e validar acessos aos canais digitais necessários","Definir responsáveis e canais de comunicação","Enviar o Formulário de Diagnóstico Inicial e confirmar o preenchimento","Agendar e realizar a reunião de kickoff","Liberar o projeto para execução"];
 export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{projectId:string;data:OnboardingData;updatedAt:string;onSaved:(value:OnboardingData,updatedAt:string)=>void}){
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState<OnboardingItem[]>([]);
  const [saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const items=Array.isArray(data.onboardingChecklist)?data.onboardingChecklist:[];
  const completed=items.filter(x=>x.done).length;
  function begin(){setDraft(items.map(x=>({...x})));setEditing(true);setError("");setNotice("");}
- function startTemplate(){setDraft(defaults.map((title,i)=>({id:crypto.randomUUID(),title,done:false,visibleToClient:i===0||i===2||i===4})));setEditing(true);setError("");}
+ function startTemplate(){setDraft(defaults.map((title,i)=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false})));setEditing(true);setError("");}
  async function save(){
   if(saving)return;
   if(draft.some(x=>x.title.trim().length<3||x.title.trim().length>140)){setError("Informe uma descrição entre 3 e 140 caracteres para cada etapa.");return;}

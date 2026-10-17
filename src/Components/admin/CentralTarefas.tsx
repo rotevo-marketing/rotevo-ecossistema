@@ -126,7 +126,7 @@ export default function CentralTarefas({projects,onChanged}:{projects:TaskProjec
  return <div className="mt-7 space-y-5">
   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
    {[{name:"Todas as tarefas",count:tasks.length},{name:"Em andamento",count:tasks.filter(t=>t.task.status==="in_progress").length},{name:"Atrasadas",count:tasks.filter(t=>t.task.dueDate&&t.task.dueDate<today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Vencem hoje",count:tasks.filter(t=>t.task.dueDate===today()&&!["completed","cancelled"].includes(t.task.status??"planned")).length},{name:"Bloqueadas",count:tasks.filter(t=>t.task.status==="blocked").length}].map(metric=>
-    <div key={metric.name} className={`rounded-2xl border p-5 ${metric.name==="Todas as tarefas"?"border-[#BDE7CB] bg-[#EAF8EF]":metric.name==="Em andamento"?"border-[#F3D5AD] bg-[#FFF1DC]":"border-[#F3C6C7] bg-[#FFF0F0]"}`}><p className="text-sm text-[#525B70]">{metric.name}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{metric.count}</p></div>)}
+    <div key={metric.name} className={`rounded-2xl border p-5 ${metric.name==="Todas as tarefas"?"border-[#DDD6FE] bg-[#F5F3FF]":metric.name==="Em andamento"?"border-[#BFDBFE] bg-[#EFF6FF]":metric.name==="Atrasadas"?"border-[#FECACA] bg-[#FEF2F2]":metric.name==="Vencem hoje"?"border-[#FDE68A] bg-[#FFFBEB]":"border-[#FED7AA] bg-[#FFF7ED]"}`}><p className="text-sm text-[#525B70]">{metric.name}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{metric.count}</p></div>)}
   </div>
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

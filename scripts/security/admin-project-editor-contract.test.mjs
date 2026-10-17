@@ -165,3 +165,12 @@ test("project creation accepts only real selectable 2027 document codes",()=>{
  assert.match(source,/selected\.every\(code=>typeof code==="string"&&allowedCodes\.has\(code\)\)/);
  assert.match(source,/presented\.every\(code=>typeof code==="string"&&selected\.includes\(code\)\)/);
 });
+
+test("project scope changes reject unknown and dashboard-only document codes",()=>{
+ const source=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ assert.match(source,/const scopeChanged=JSON\.stringify\(before\.selectedDocumentCodes\)/);
+ assert.match(source,/if\(scopeChanged\)\{/);
+ assert.match(source,/ecosystemDocuments\.filter\(doc=>!doc\.area\.startsWith\("00 "\)\)/);
+ assert.match(source,/selected\.every\(code=>typeof code==="string"&&allowedCodes\.has\(code\)\)/);
+ assert.match(source,/presented\.every\(code=>typeof code==="string"&&selected\.includes\(code\)\)/);
+});

@@ -108,6 +108,8 @@ jobs:
         run: node --test scripts/security/only-ecosystem-2027.test.mjs
       - name: Validate operational dependency graphs
         run: node --test scripts/security/execution-dependencies.test.mjs
+      - name: Validate strategic document approval and publication workflow
+        run: node --test scripts/security/ecosystem-document-workflow.test.mjs
       - name: Reject orphaned legacy components
         run: node scripts/security/legacy-dependency-inventory.mjs --fail-on-orphans
       - name: Prevent deprecated legacy runtime entry points

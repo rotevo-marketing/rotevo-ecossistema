@@ -32,6 +32,8 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
   if(!editing)return;
   const title=editing.title.trim();
   if(title.length<3||title.length>140){setError("Informe um título entre 3 e 140 caracteres.");return;}
+  if((editing.notes??"").length>2000){setError("As observações devem ter no máximo 2.000 caracteres.");return;}
+  if((editing.owner??"").length>120){setError("O responsável deve ter no máximo 120 caracteres.");return;}
   if(!validOperationalDate(editing.date)){setError("Informe uma data válida.");return;}
   if(editing.time&&!validOperationalTime(editing.time)){setError("Informe um horário válido.");return;}
   if(editing.relatedTaskId&&!tasks.some(t=>t.id===editing.relatedTaskId)){setError("A atividade vinculada não pertence ao projeto.");return;}

@@ -74,3 +74,19 @@ test("central task table has six meaningful columns and compact controls",()=>{
  assert.match(tasks,/expectedUpdatedAt:project.updated_at/);
  assert.match(tasks,/\/api\/admin\/project\/update/);
 });
+
+test("task details open from list and kanban and save through protected project API",()=>{
+ assert.match(tasks,/onClick=\{\(\)=>openDetails\(\{task,project,client\}\)\}/);
+ assert.match(tasks,/onClick=\{\(\)=>openDetails\(x\)\}/);
+ assert.match(tasks,/aria-label="Detalhes da tarefa"/);
+ assert.match(tasks,/onClick=\{\(\)=>void saveDetails\(\)\}/);
+ assert.match(tasks,/visibleToClient:detailDraft.visibleToClient/);
+ assert.match(tasks,/expectedUpdatedAt:project.updated_at/);
+ assert.match(tasks,/new URL\(driveUrl\).protocol!=="https:"/);
+ assert.match(tasks,/Material no Google Drive/);
+});
+test("task operations use the selected official Tabler icons",()=>{
+ const icons=readFileSync(new URL("Components/RotevoTablerIcon.tsx",base),"utf8");
+ for(const icon of ["square-rounded-plus","search","filter","user-check","folder","arrows-sort","list","layout-kanban","calendar-week","flag","link","message-circle","circle-check","view-360-arrow","history","x"])assert.ok(icons.includes('"'+icon+'"'),icon);
+ for(const icon of ["square-rounded-plus","search","filter","arrows-sort","list","layout-kanban","calendar-week","flag","folder","user-check","link","message-circle","circle-check","view-360-arrow","history","x"])assert.ok(tasks.includes('name="'+icon+'"'),icon);
+});

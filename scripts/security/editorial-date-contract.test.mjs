@@ -49,7 +49,9 @@ test("editorial review remains an independent client decision bound to content v
 });
 test("manager uses titled approval records and project-bound task association",()=>{
  const source=readFileSync(new URL("Components/admin/EditorialManager.tsx",root),"utf8");
- assert.match(source,/contentTitles=\{Object\.fromEntries\(items\.map/);
+ assert.match(source,/<EditorialCalendar projects=\{projects\} onNew=/);
+ assert.match(source,/onEdit=\{\(id,item\)=>/);
+ assert.doesNotMatch(source,/Gerenciar conteúdos/);
  assert.match(source,/editing\.relatedTaskId/);
  assert.match(source,/visibleToClient===true/);
 });

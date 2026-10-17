@@ -422,7 +422,7 @@ export default function AdminPage() {
         {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="clients" && !isLoading && <ClientsDirectory projects={projects}/>}
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
-        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>setWorkspaceTab("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 

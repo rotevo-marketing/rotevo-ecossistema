@@ -54,3 +54,13 @@ test("tasks dashboard includes today's deadlines and meeting agenda",()=>{
  assert.match(tasks,/setDeadline\("overdue"\)/);
  assert.match(tasks,/task\.visibleToClient===true\?"Visível ao cliente":"Uso interno"/);
 });
+
+test("daily tasks layout does not render escaped newline artifacts",()=>{
+ assert.doesNotMatch(tasks,/\\\\n\s*<div/);
+ assert.doesNotMatch(tasks,/\\\\n\s*<\/section>/);
+});
+test("failed admin API loads show a retry rather than false zero project totals",()=>{
+ assert.match(admin,/errorMessage && !isLoading && <div role="alert"/);
+ assert.match(admin,/onClick=\{\(\)=>void loadAdminData\(\)\}/);
+ assert.match(admin,/workspaceTab==="projects" && !errorMessage &&/);
+});

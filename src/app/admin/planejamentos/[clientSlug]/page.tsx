@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 import OperationalAgenda, {type AgendaItem} from "@/Components/admin/OperationalAgenda";
@@ -76,9 +76,11 @@ function getStatusClass(status: PlanningProject["status"]) {
   return "bg-slate-100 text-slate-600";
 }
 
-export default function PlanejamentoClientePage() {
+function PlanejamentoClienteContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const requestedProjectId = searchParams.get("projectId");
 
   const clientSlug =
     typeof params.clientSlug === "string" ? params.clientSlug : "";
@@ -106,6 +108,7 @@ export default function PlanejamentoClientePage() {
   useEffect(() => {
     async function loadProject() {
       setIsLoading(true);
+      setProject(null);
       setErrorMessage("");
       setSuccessMessage("");
 
@@ -133,7 +136,6 @@ export default function PlanejamentoClientePage() {
       setUserEmail(userData.user.email ?? "");
       // Legacy client-only links still open the latest project. Explicit links
       // select the requested project without crossing the client boundary.
-      const requestedProjectId = new URLSearchParams(window.location.search).get("projectId");
       const projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (requestedProjectId !== null && !projectIdPattern.test(requestedProjectId)) {
         setErrorMessage("Identificador de planejamento inválido.");
@@ -207,7 +209,7 @@ export default function PlanejamentoClientePage() {
     if (clientSlug) {
       loadProject();
     }
-  }, [clientSlug, router]);
+  }, [clientSlug, requestedProjectId, router]);
 
   async function saveAuthorizedProjectData(current: PlanningProject, nextData: ProjectData): Promise<{data: ProjectData; updated_at: string}> {
     const {data:session,error:sessionError}=await supabase.auth.getSession();
@@ -429,4 +431,7 @@ export default function PlanejamentoClientePage() {
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
+}
+export default function PlanejamentoClientePage() {
+  return <Suspense fallback={<main className="min-h-screen bg-[#F6F7FB] p-8 text-sm text-[#525B70]">Carregando planejamento...</main>}><PlanejamentoClienteContent/></Suspense>;
 }

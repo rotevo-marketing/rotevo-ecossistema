@@ -15,15 +15,15 @@ type Project = {
   id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
   data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; onboardingChecklist?:OnboardingItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
 };
-type MenuId="overview"|"planning"|"execution"|"content"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";
+type MenuId="overview"|"planning"|"execution"|"content"|"campaigns"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";
 type MenuItem={id:MenuId;name:string;icon:RotevoIconName};
 const menu:MenuItem[]=[
   {id:"overview",name:"Visão geral",icon:"layout-dashboard"},
   {id:"planning",name:"Planejamento",icon:"report"},
   {id:"execution",name:"Execução do projeto",icon:"chart-dots-3"},
   {id:"content",name:"Conteúdo",icon:"brand-instagram"},
+  {id:"campaigns",name:"Campanhas",icon:"rocket"},
   {id:"meetings",name:"Reuniões",icon:"calendar-heart"},
-  {id:"onboarding",name:"Onboarding",icon:"alert-square-rounded"},
   {id:"contract",name:"Contrato",icon:"report"},
   {id:"drive",name:"Drive",icon:"shape"},
   {id:"finance",name:"Financeiro",icon:"chart-pie"},
@@ -55,6 +55,7 @@ export default function ClientAreaPage(){
  const [tab,setTab]=useState<MenuId>("overview");
  const [collapsed,setCollapsed]=useState(false);
  const [mobileMenu,setMobileMenu]=useState(false);
+ const [profileOpen,setProfileOpen]=useState(false);
  useEffect(()=>{let mounted=true;async function load(){
    const {data:auth}=await supabase.auth.getUser();
    if(!auth.user){router.replace("/");return;}
@@ -98,9 +99,6 @@ export default function ClientAreaPage(){
     <div className="mt-4 flex justify-end"><Link className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#202E48]" href={`/apresentacao/${project.slug}`}>{project.status==="draft"?"Ver status do planejamento":"Acessar planejamento"} <span aria-hidden="true">→</span></Link></div>
   </article>)}</div>;
  const nav=<nav aria-label="Navegação do portal" className="space-y-1.5">
-   <div className={`mb-6 border-b border-white/15 pb-5 ${collapsed?"lg:text-center":""}`}>
-     <div className="flex items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-semibold text-white">{clientName.charAt(0).toUpperCase()||"C"}</span><div className={collapsed?"lg:hidden":""}><p className="line-clamp-2 text-sm font-semibold text-white">{clientName||"Portal do Cliente"}</p><p className="mt-1 text-xs text-[#B8C2D4]">Ambiente do cliente</p></div></div>
-   </div>
    {menu.map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
        onClick={()=>{setTab(item.id);setMobileMenu(false)}} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-colors ${collapsed?"lg:justify-center lg:px-2":""} ${tab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
        <Icon name={item.icon} size={25}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
@@ -110,7 +108,9 @@ export default function ClientAreaPage(){
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white"><div className="flex w-full items-center justify-between gap-3 px-5 py-5">
       <div className="flex items-center gap-3"><RotevoLogo variant="white" size={27}/><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Portal do Cliente</span></div>
-      <div className="flex items-center gap-2"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden" aria-expanded={mobileMenu}>Menu</button><button type="button" onClick={logout} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10">Sair</button></div>
+      <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden" aria-expanded={mobileMenu}>Menu</button>
+       <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ADE60A]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{clientName.trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{clientName||"Minha conta"}</span><Icon name="chevron-down" size={17}/></button>
+       {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-[#E3E7F0] bg-white p-2 text-[#090D1C] shadow-xl"><p className="truncate border-b border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#525B70]">{clientName||"Minha conta"}</p><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="key" size={18}/>Alterar senha</Link><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="logout" size={18}/>Sair</button></div></>}</div></div>
    </div></header>
    <div className="flex w-full flex-1 items-stretch">
      <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] lg:block ${collapsed?"w-[78px]":"w-[286px]"}`}>{nav}
@@ -148,6 +148,7 @@ export default function ClientAreaPage(){
        tab==="execution"?<ProjectTimeline projects={projects}/>:
        tab==="content"?<EditorialCalendar projects={projects} clientView/> :
        tab==="finance"?<ClientFinance/> :
+       tab==="campaigns"?<Block title="Campanhas" icon="rocket"><p className="text-sm leading-6 text-[#525B70]">A visualização das campanhas do seu projeto será organizada nesta área. Os resultados ainda não estão conectados ao portal.</p></Block>:
        tab==="onboarding"?<Block title="Etapas do seu projeto" icon="alert-square-rounded"><div className="space-y-4">{projects.flatMap(p=>(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectTitle:p.title}))).length===0?<p className="text-sm text-[#697386]">Nenhuma etapa de onboarding foi compartilhada pela equipe até o momento.</p>:projects.map(p=><div key={p.id}><h3 className="mb-2 text-sm font-semibold">{p.title}</h3><div className="divide-y divide-[#E3E7F0]">{(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=><div key={i.id} className="flex items-center justify-between gap-2 py-3"><span className="text-sm">{i.done?"✓":"○"} {i.title}</span>{i.link&&i.link.startsWith("https://")&&<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6D35F5]">Abrir material ↗</a>}</div>)}</div></div>)}</div></Block> :
        <Block title={selected.name} icon={selected.icon}>
          <p className="text-sm leading-6 text-[#525B70]">{tab==="meetings"?"Histórico de reuniões, atas, gravações e encaminhamentos compartilhados com você.":tab==="contract"?"Contrato, escopo contratado, vigência e documentos vinculados ao seu projeto.":tab==="drive"?"Acesso às pastas autorizadas do Google Drive: identidade visual, fotos, vídeos, documentos e entregas.":"Links de acesso às plataformas e planilhas autorizadas. As senhas não serão copiadas para a Rotevo."}</p>

@@ -38,7 +38,7 @@ export default function TeamMemberControls({userId,memberRole,active,projects,as
  if(!editable||!capabilities.permissions&&!capabilities.assignments&&!capabilities.memberStatus)return null;
  return <div className="mt-3 space-y-3 rounded-xl border border-[#E3E7F0] bg-white p-3">
   <p className="text-xs font-semibold text-[#525B70]">Administração de acesso</p>
-  <p className="text-xs text-[#697386]">A função organiza a equipe. O acesso depende da ativação, da permissão de consulta e dos projetos atribuídos. Edição, tarefas, conteúdo, reuniões e financeiro ainda não estão disponíveis para colaboradores.</p>
+  <p className="text-xs text-[#697386]">A função organiza a equipe. Projetos exigem vínculo e permissão de consulta. O financeiro exige ativação e permissões próprias; a operação também exige a consulta financeira. Edição de documentos, tarefas, conteúdo e reuniões permanecem indisponíveis.</p>
   {capabilities.memberStatus&&<div className="flex flex-wrap items-center justify-between gap-2">
    <span className="text-xs text-[#525B70]">Situação do colaborador</span>
    <button type="button" disabled={pending} onClick={()=>void apply("/api/team/members/status",{userId,active:!active})}

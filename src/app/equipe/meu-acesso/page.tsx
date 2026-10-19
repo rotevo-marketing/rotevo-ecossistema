@@ -25,6 +25,7 @@ export default function RestrictedTeamHome(){
   <h2 className="text-lg font-medium">Olá, {data.displayName}</h2>
   <p className="mt-2 text-sm">Projetos atribuídos: {data.assignedProjectCount}</p>
   <p className="mt-2 text-sm">Acesso: {data.permissions.includes("projects.read")?"Consultar nomes dos projetos atribuídos":"Nenhuma permissão de consulta concedida"}</p>
+  {data.permissions.includes("finance.read")&&<Link href="/equipe/financeiro" className="mt-5 inline-block rounded-lg bg-[#6D35F5] px-4 py-2.5 text-sm font-semibold text-white">Acessar Financeiro</Link>}
   <h3 className="mt-5 font-semibold">Nomes dos projetos liberados</h3>
   {data.projects.length?<ul className="mt-2 list-disc pl-5 text-sm">{data.projects.map(project=><li key={project.id}>{project.title}</li>)}</ul>:<p className="mt-2 text-sm">Nenhum projeto com permissão de leitura.</p>}
   <p className="mt-4 text-sm text-gray-600">O acesso aos documentos e às operações exige autorização adicional e não está disponível nesta área.</p>

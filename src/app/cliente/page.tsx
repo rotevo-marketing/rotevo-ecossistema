@@ -25,9 +25,9 @@ const menu:MenuItem[]=[
   {id:"campaigns",name:"Campanhas",icon:"rocket"},
   {id:"meetings",name:"Reuniões",icon:"calendar-heart"},
   {id:"contract",name:"Contrato",icon:"report"},
-  {id:"drive",name:"Drive",icon:"shape"},
-  {id:"finance",name:"Financeiro",icon:"chart-pie"},
-  {id:"access",name:"Acessos",icon:"bolt"}
+  {id:"drive",name:"Drive",icon:"folder-open"},
+  {id:"finance",name:"Financeiro",icon:"currency-dollar"},
+  {id:"access",name:"Acessos",icon:"lock"}
 ];
 const statusLabel=(s:string)=>s==="draft"?"Em produção":s==="in_progress"?"Em andamento":s==="published"?"Publicado":"Arquivado";
 const statusColor=(s:string)=>s==="published"?"bg-[#E2F6E8] text-[#126837]":s==="in_progress"?"bg-[#E6EFFF] text-[#315EA0]":s==="draft"?"bg-[#FFF2DB] text-[#92600C]":"bg-[#E9ECF2] text-[#626A7B]";
@@ -110,7 +110,7 @@ export default function ClientAreaPage(){
       <div className="flex items-center gap-3"><RotevoLogo variant="white" size={27}/><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Portal do Cliente</span></div>
       <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden" aria-expanded={mobileMenu}>Menu</button>
        <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ADE60A]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{clientName.trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{clientName||"Minha conta"}</span><span aria-hidden="true" className="text-xs">▾</span></button>
-       {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-[#E3E7F0] bg-white p-2 text-[#090D1C] shadow-xl"><p className="truncate border-b border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#525B70]">{clientName||"Minha conta"}</p><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="bolt" size={18}/>Alterar senha</Link><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="user" size={18}/>Sair</button></div></>}</div></div>
+       {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-[#E3E7F0] bg-white p-2 text-[#090D1C] shadow-xl"><p className="truncate border-b border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#525B70]">{clientName||"Minha conta"}</p><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="key" size={18}/>Alterar senha</Link><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="logout" size={18}/>Sair</button></div></>}</div></div>
    </div></header>
    <div className="flex w-full flex-1 items-stretch">
      <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] lg:block ${collapsed?"w-[78px]":"w-[286px]"}`}>{nav}

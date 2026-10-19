@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -7,7 +7,6 @@ import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview";
 import AdminUserMenu from "@/Components/admin/AdminUserMenu";
-import EditorialOperations from "@/Components/admin/EditorialOperations";
 import CentralTarefas from "@/Components/admin/CentralTarefas";
 import CampaignsHub,{type CampaignRecord} from "@/Components/admin/CampaignsHub";
 import {AdminOnboardingHub,AdminMeetingsHub} from "@/Components/admin/OperationalHubs";
@@ -15,6 +14,7 @@ import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
 import ClientsDirectory from "@/Components/admin/ClientsDirectory";
 import TeamDirectory from "@/Components/admin/TeamDirectory";
+import FinanceHub from "@/Components/finance/FinanceHub";
 import EditorialManager from "@/Components/admin/EditorialManager";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
@@ -117,6 +117,8 @@ export default function AdminPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userId,setUserId]=useState<string|null>(null);
+  const [overviewForbidden,setOverviewForbidden]=useState(false);
   const [userName, setUserName] = useState("");
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -149,6 +151,7 @@ export default function AdminPage() {
 
   async function loadAdminData() {
     setIsLoading(true);
+    setOverviewForbidden(false);
     setErrorMessage("");
     setSuccessMessage("");
 
@@ -178,6 +181,7 @@ export default function AdminPage() {
     }
 
     const profileDurationMs = Math.round(performance.now() - profileStartedAt);
+    setUserId(userData.user.id);
     setUserEmail(userData.user.email ?? "");
     setUserName(profile.full_name ?? "");
     // Profile photo is optional; never block dashboard loading when absent.
@@ -195,6 +199,7 @@ export default function AdminPage() {
       const response=await fetch("/api/admin/projects",{
         headers:{Authorization:`Bearer ${token}`},cache:"no-store"
       });
+      if(response.status===403)setOverviewForbidden(true);
       if(!response.ok)throw new Error("Consulta administrativa não autorizada.");
       const result=await response.json();
       if(!Array.isArray(result?.projects))throw new Error("Resposta administrativa inválida.");
@@ -341,12 +346,12 @@ export default function AdminPage() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">{NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">{workspaceTab==="overview"?"Sua central de gestão e rotina. Veja o que precisa de atenção e o que depende de você.":"Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar."}</p>
           </div>
           {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
         </div>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
-        {workspaceTab==="overview" && !isLoading && !errorMessage && <div className="mt-8 space-y-6"><AdminOperationsOverview projects={projects} onOpenProjects={()=>setWorkspaceTab("projects")}/><EditorialOperations projects={projects} onOpenContent={()=>setWorkspaceTab("content")}/></div>}
+        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
@@ -442,8 +447,9 @@ export default function AdminPage() {
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 
         {workspaceTab==="campaigns" && !isLoading && <CampaignsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
-        {workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
-        {workspaceTab==="overview" && isLoading && <p className="mt-8 text-sm text-[#697386]">Carregando informações da operação...</p>}
+        {workspaceTab==="finance" && !isLoading && userEmail && <FinanceHub/>}
+        {workspaceTab!=="finance" && workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
+
       </section>
       </div>
       </div>

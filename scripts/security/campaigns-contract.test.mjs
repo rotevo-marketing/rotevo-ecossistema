@@ -28,8 +28,8 @@ test("campaign filtering, figures and editor remain available",()=>{
  for(const value of ["Filtrar projeto de campanhas","Filtrar plataforma","Filtrar situação","Filtrar campanhas por mês ativo","Buscar campanhas","Nova campanha","Salvar campanha"]){
   assert.ok(hub.includes(value),value);
  }
- assert.match(hub,/money\(item.spent\/item.results\)/);
- assert.match(hub,/item.results>0/);
+ assert.match(hub,/money\(dataFor\(item\)!\.spent!\/dataFor\(item\)!\.results!\)/);
+ assert.match(hub,/dataFor\(item\)!\.results!>0/);
  assert.match(hub,/role="dialog"/);
  assert.match(admin,/<CampaignsHub projects=/);
 });

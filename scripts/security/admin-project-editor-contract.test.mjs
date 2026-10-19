@@ -137,11 +137,9 @@ test("rapid project navigation ignores obsolete asynchronous responses",()=>{
  assert.match(page,/const \{ data, error \} = await query[\s\S]*?if \(cancelled\) return;/);
 });
 
-test("executive dashboard shortcuts retain the exact project identity",()=>{
- const overview=readFileSync(new URL("Components/admin/AdminOperationsOverview.tsx",root),"utf8");
- assert.match(overview,/projectId=\$\{encodeURIComponent\(t\.project\.id\)\}/);
- assert.match(overview,/projectId=\$\{encodeURIComponent\(p\.id\)\}/);
- assert.match(overview,/projectId=\$\{encodeURIComponent\(item\.project\.id\)\}/);
+test("executive dashboard shortcuts retain the exact project identity",async()=>{
+ const {overviewProjectHref}=await import('../../src/lib/overview/model.ts');
+ for(const id of ['project-a','project-b'])assert.equal(overviewProjectHref({id,clients:{slug:'same-client'}}),'/admin/planejamentos/same-client?projectId='+encodeURIComponent(id));
 });
 
 test("task board navigates to the correct owning project",()=>{

@@ -1,124 +1,61 @@
 "use client";
-import { useMemo } from "react";
+import {useEffect,useMemo,useState,type ReactNode} from "react";
 import Link from "next/link";
-import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
-import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
-import type { EditorialItem } from "@/Components/cliente/EditorialCalendar";
-import type { AgendaItem } from "@/Components/admin/OperationalAgenda";
-
-export type OperationsProject = {
- id:string; title:string;slug:string;status:"draft"|"in_progress"|"published"|"archived";updated_at:string;
- data:{executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];operationalAgenda?:AgendaItem[];coverImageUrl?:string|null;operationalStatus?:string;ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string;publishedAt?:string;publishedContent?:string}>}}|null;
- clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
-};
-const client=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
-const status=(s:string)=>s==="draft"?"Em produção":s==="in_progress"?"Em andamento":s==="published"?"Publicado":"Arquivado";
-const date=(s:string)=>{const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);return p?`${p[3]}/${p[2]}/${p[1]}`:s;};
-const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
-export default function AdminOperationsOverview({projects,onOpenProjects}:{projects:OperationsProject[];onOpenProjects:()=>void}){
- const documentSummary=useMemo(()=>projects.map(project=>{
-   const eco=project.data?.ecosystem2027;
-   const selected=[...new Set((eco?.selectedDocumentCodes??[]).filter(code=>/^\d{2}\.\d{2}$/.test(code)))];
-   const released=selected.filter(code=>typeof eco?.documents?.[code]?.publishedAt==="string"&&typeof eco?.documents?.[code]?.publishedContent==="string").length;
-   const review=selected.filter(code=>eco?.documents?.[code]?.reviewStatus==="review").length;
-   const tasks=(project.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string");
-   const pending=tasks.filter(t=>t.status!=="completed"&&t.status!=="cancelled").length;
-   const overdue=tasks.filter(t=>t.dueDate&&t.dueDate<today()&&t.status!=="completed"&&t.status!=="cancelled").length;
-   const blocked=tasks.filter(t=>t.status==="blocked").length;
-   const unassigned=tasks.filter(t=>t.status!=="completed"&&t.status!=="cancelled"&&!t.owner?.trim()&&!t.ownerUserId).length;
-   const waitingPrerequisites=tasks.filter(t=>t.status!=="completed"&&t.status!=="cancelled"&&(t.dependencies??[]).some(id=>tasks.find(other=>other.id===id)?.status!=="completed")).length;
-   const contents=Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[];
-   const awaitingEditorial=contents.filter(item=>item?.status==="awaiting_client"&&item.visibleToClient===true).length;
-   const pastEditorial=contents.filter(item=>item?.publishDate&&item.publishDate<today()&&!["published","idea"].includes(item.status)).length;
-   const progress=selected.length?Math.round(released/selected.length*100):0;
-   return {project,selected:selected.length,released,review,pending,overdue,blocked,unassigned,waitingPrerequisites,awaitingEditorial,pastEditorial,progress};
- }),[projects]);
- const records=useMemo(()=>projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t&&typeof t.title==="string").map(t=>({...t,project:p,owner:t.owner?.trim()||"Não atribuído"}))),[projects]);
- const ownership=useMemo(()=>{
-  const map=new Map<string,{name:string;open:number;overdue:number;blocked:number;urgent:number}>();
-  for(const project of projects){
-   for(const task of project.data?.executionTimeline??[]){
-    if(!task||task.status==="completed"||task.status==="cancelled")continue;
-    const name=task.owner?.trim()||"Não atribuído";
-    const key=task.ownerUserId||name;
-    const record=map.get(key)??{name,open:0,overdue:0,blocked:0,urgent:0};
-    record.open++;
-    if(task.dueDate&&task.dueDate<today())record.overdue++;
-    if(task.status==="blocked")record.blocked++;
-    if(task.priority==="urgent")record.urgent++;
-    map.set(key,record);
-   }
-  }
-  return [...map.values()].sort((a,b)=>b.open-a.open||a.name.localeCompare(b.name,"pt-BR"));
- },[projects]);
- const editorial=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[]).filter(item=>item&&typeof item.title==="string"&&typeof item.publishDate==="string").map(item=>({...item,project:p}))),[projects]);
- const awaitingApproval=editorial.filter(item=>item.status==="awaiting_client"&&item.visibleToClient===true);
- const editorialOverdue=editorial.filter(item=>item.publishDate<today()&&!["published","idea"].includes(item.status));
- const nextEditorial=editorial.filter(item=>item.publishDate>=today()&&item.status!=="published").sort((a,b)=>a.publishDate.localeCompare(b.publishDate)).slice(0,6);
- const commitments=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.operationalAgenda)?p.data.operationalAgenda:[]).filter(x=>x&&typeof x.date==="string"&&typeof x.title==="string").map(x=>({...x,project:p}))),[projects]);
- const plannedCommitments=commitments.filter(x=>x.status==="planned");
- const overdueCommitments=plannedCommitments.filter(x=>x.date<today());
- const nextCommitments=plannedCommitments.filter(x=>x.date>=today()).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))).slice(0,8);
- const active=records.filter(t=>t.status!=="completed"&&t.status!=="cancelled");
- const overdue=active.filter(t=>t.dueDate&&t.dueDate<today());
- const upcoming=active.filter(t=>t.dueDate&&t.dueDate>=today()).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""));
- const attention=[...overdue,...active.filter(t=>t.status==="blocked"||t.priority==="urgent")].filter((item,index,array)=>array.findIndex(t=>t.id===item.id&&t.project.id===item.project.id)===index).sort((a,b)=>Number(!!b.dueDate&&b.dueDate<today())-Number(!!a.dueDate&&a.dueDate<today())||Number(b.status==="blocked")-Number(a.status==="blocked")||Number(b.priority==="urgent")-Number(a.priority==="urgent")).slice(0,8);
- const cards:{title:string;value:string;icon:RotevoIconName;description:string}[]=[
-  {title:"Projetos cadastrados",value:String(projects.length),icon:"report",description:"Planejamentos e projetos existentes"},
-  {title:"Entregas em aberto",value:String(active.length),icon:"chart-dots-3",description:"Itens da execução cadastrados"},
-  {title:"Tarefas atrasadas",value:String(overdue.length),icon:"alert-square-rounded",description:"Prazos anteriores a hoje"},
-  {title:"Aguardando solução",value:String(active.filter(t=>t.status==="blocked").length),icon:"calendar-heart",description:"Entregas marcadas como bloqueadas"}
+import {supabase} from "@/lib/supabase";
+import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
+import {buildOperationsOverview,overviewClient,overviewDate,overviewProjectHref,overviewToday,type OperationsProject,type OverviewDecision,type OverviewItem,type OverviewSource} from "@/lib/overview/model";
+import {loadOverviewDecisions} from "@/lib/overview/approvals";
+export type {OperationsProject} from "@/lib/overview/model";
+const panel="min-w-0 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6";
+const action="inline-flex min-h-10 shrink-0 items-center rounded-lg px-2 py-2 text-[13px] font-semibold text-[#6D35F5] hover:bg-[#F3EFFE] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
+function Heading({id,title,icon,description,children}:{id:string;title:string;icon:RotevoIconName;description:string;children?:ReactNode}){
+ return <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-2.5"><span aria-hidden="true" className="text-[#6D35F5]"><RotevoTablerIcon name={icon} size={21}/></span><h2 id={id} className="text-base font-bold tracking-tight sm:text-lg">{title}</h2></div><p className="mt-2 max-w-xl text-[13px] leading-5 text-[#525B70]">{description}</p></div>{children}</div>;
+}
+function Empty({children}:{children:ReactNode}){return <p className="mt-5 rounded-xl bg-[#F7F8FC] px-4 py-3 text-sm leading-6 text-[#525B70]">{children}</p>;}
+function RecordLink({item,label="Abrir no projeto"}:{item:OverviewItem;label?:string}){
+ const href=overviewProjectHref(item.project);return href?<Link href={href} className={action} aria-label={`${label}: ${item.title}`}>{label} →</Link>:<span className="text-[13px] text-[#525B70]">Vínculo do projeto indisponível</span>;
+}
+function ItemRow({item,meeting=false}:{item:OverviewItem;meeting?:boolean}){
+ return <li className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EDF0F6] py-4 last:border-b-0"><div className="min-w-0 flex-1 basis-44">{meeting&&<p className="mb-2 text-[13px] font-bold text-[#6D35F5]">{overviewDate(item.due)} · {item.time??"Horário não informado"}</p>}<p className="break-words text-sm font-semibold">{item.title}</p><p className="mt-1 break-words text-[13px] text-[#525B70]">{overviewClient(item.project)?.name??"Cliente não informado"} · {item.project.title}</p><p className={`mt-2 text-[13px] ${!meeting&&item.priority===1?"font-semibold text-red-700":"text-[#525B70]"}`}>{meeting?item.reasons[0]:overviewDate(item.due)+(item.time?` · ${item.time}`:"")}{!meeting&&item.kind==="meeting"?" · Compromisso vinculado à sua tarefa":""}</p></div><RecordLink item={item}/></li>;
+}
+type Props={projects:OperationsProject[];userId?:string|null;userName?:string;state?:"ready"|"loading"|"error"|"forbidden";onOpenProjects:()=>void;onOpenTasks?:()=>void;onOpenMeetings?:()=>void;onOpenContent?:()=>void;onOpenFinance?:()=>void};
+export default function AdminOperationsOverview({projects,userId=null,userName="",state="ready",onOpenProjects,onOpenTasks,onOpenMeetings,onOpenContent,onOpenFinance}:Props){
+ const [expanded,setExpanded]=useState(false),[retry,setRetry]=useState(0);
+ const key=JSON.stringify([projects.map(p=>[p.id,p.updated_at]),retry,state]);
+ const [decisions,setDecisions]=useState<{key:string;rows:OverviewDecision[];source:OverviewSource}>({key:"",rows:[],source:"loading"});
+ useEffect(()=>{
+  if(state!=="ready")return;let active=true;
+  void loadOverviewDecisions(supabase,projects).then(rows=>{if(active)setDecisions({key,rows,source:"ready"});}).catch((error:unknown)=>{const code=error&&typeof error==="object"&&"code" in error?error.code:null;if(active)setDecisions({key,rows:[],source:code==="42501"?"forbidden":"unavailable"});});
+  return()=>{active=false;};
+ },[projects,key,state]);
+ const source=decisions.key===key?decisions.source:"loading",today=overviewToday();
+ const model=useMemo(()=>buildOperationsOverview(projects,userId,decisions.key===key?decisions.rows:[],source,today),[projects,userId,decisions,key,source,today]);
+ const ready=state==="ready";
+ const cards:{title:string;value:string;hint:string;icon:RotevoIconName;open?:()=>void;critical?:boolean}[]=[
+  {title:"Projetos ativos",value:ready?String(model.activeProjects):"—",hint:"Em produção ou em andamento",icon:"report",open:onOpenProjects},
+  {title:"Tarefas atrasadas",value:ready&&model.overdueTasks!==null?String(model.overdueTasks):"—",hint:model.executionUnavailable?"Algumas tarefas não puderam ser consultadas":"Em aberto e com prazo vencido",icon:"list-check",open:onOpenTasks,critical:ready&&(model.overdueTasks??0)>0},
+  {title:"Aguardando decisão",value:ready&&model.pendingDecisions!==null?String(model.pendingDecisions):"—",hint:!ready?"Aguardando consulta":model.pendingDecisions!==null?"Revisões formais e aprovações sem decisão":source==="loading"?"Conferindo decisões editoriais…":"Aprovações ainda não conectadas",icon:"hourglass",open:onOpenContent},
+  {title:"Recebimentos vencidos",value:"—",hint:"Aguardando integração financeira",icon:"currency-dollar",open:onOpenFinance}
  ];
- return <div className="space-y-6">
-  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(card=><div key={card.title} className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
-   <span className="text-[#6D35F5]"><RotevoTablerIcon name={card.icon} size={26}/></span>
-   <p className="mt-3 text-sm text-[#525B70]">{card.title}</p><p className="mt-1 text-3xl font-semibold tabular-nums">{card.value}</p><p className="mt-2 text-xs text-[#697386]">{card.description}</p>
-  </div>)}</div>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Prioridades da operação</h2><p className="mt-1 text-sm text-[#697386]">Entregas em atraso, bloqueadas ou urgentes nos projetos cadastrados.</p></div>
-    <button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></div>
-   {attention.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhuma entrega atrasada, bloqueada ou urgente registrada até o momento. A agenda e as aprovações são acompanhadas nos painéis correspondentes.</p>:
-    <div className="mt-5 divide-y divide-[#E3E7F0]">{attention.map(t=><div key={t.project.id+":"+t.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-      <div><p className="text-sm font-semibold">{t.title}</p><p className="mt-1 text-xs text-[#697386]">{client(t.project)?.name??"Cliente"} · {t.owner}{t.dueDate?` · ${date(t.dueDate)}`:""}</p></div>
-      <Link className="text-sm font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(t.project)?.slug??""}?projectId=${encodeURIComponent(t.project.id)}`}>Abrir projeto →</Link>
-    </div>)}</div>}
-  </section>
-  <div className="grid gap-5 xl:grid-cols-2">
-   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-    <div className="mb-4 flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Projetos recentes</h2><button type="button" onClick={onOpenProjects} className="cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver todos →</button></div>
-    {projects.length===0?<p className="text-sm text-[#697386]">Nenhum projeto cadastrado.</p>:<div className="divide-y divide-[#E3E7F0]">{projects.slice(0,6).map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#ECE8FA] text-sm font-semibold text-[#5830A7]">{p.data?.coverImageUrl?<img src={p.data.coverImageUrl} alt="" className="h-full w-full object-cover"/>:(client(p)?.name??"C").charAt(0).toUpperCase()}</div><div><p className="text-sm font-semibold">{client(p)?.name??"Cliente sem nome"}</p><p className="mt-1 text-xs text-[#697386]">{p.title} · {status(p.status)}</p></div></div>
-      <Link href={`/admin/planejamentos/${client(p)?.slug??""}?projectId=${encodeURIComponent(p.id)}`} className="text-sm font-semibold text-[#6D35F5] hover:underline">Gerenciar →</Link>
-    </div>)}</div>}
+ return <div aria-label="Central de gestão e rotina da agência" className="space-y-5 text-[#090D1C] sm:space-y-6">
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(card=><button key={card.title} type="button" onClick={card.open} disabled={!ready||!card.open} className="min-w-0 rounded-2xl border border-[#E3E7F0] bg-white p-5 text-left transition enabled:hover:border-[#CFC0F6] enabled:hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5] disabled:cursor-default"><div className="flex items-center justify-between gap-2"><span className="text-[13px] font-semibold text-[#525B70]">{card.title}</span><span aria-hidden="true" className="text-[#6D35F5]"><RotevoTablerIcon name={card.icon} size={21}/></span></div><p className={`mt-4 text-[32px] font-bold leading-none tracking-tight tabular-nums ${card.critical?"text-red-700":"text-[#090D1C]"}`}>{card.value}</p><p className="mt-3 text-[13px] leading-5 text-[#525B70]">{card.hint}</p></button>)}</div>
+  {!ready?<section role={state==="loading"?"status":"alert"} aria-busy={state==="loading"} className={panel}><h2 className="font-semibold">{state==="loading"?"Preparando sua visão geral":state==="forbidden"?"Acesso não autorizado":"Não foi possível consultar a operação"}</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">{state==="loading"?"Consultando os projetos e registros permitidos para sua conta.":state==="forbidden"?"Sua conta não possui permissão para esta consulta.":"Os indicadores ficam indisponíveis até a consulta ser restabelecida. Use Tentar novamente acima."}</p></section>:<>
+   <section aria-labelledby="attention-title" className={panel+" border-t-[3px] border-t-[#6D35F5]"}>
+    <Heading id="attention-title" title="Central de Atenção" icon="alert-circle" description="O que exige intervenção: atrasos, bloqueios, pré-requisitos e decisões registradas."><span className="rounded-lg bg-[#F1ECFD] px-3 py-2 text-[13px] font-semibold text-[#6034B7]">{model.attention.length} {model.attention.length===1?"item identificado":"itens identificados"}</span></Heading>
+    {(model.executionUnavailable||model.agendaUnavailable||model.editorialUnavailable)&&<p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-[13px] leading-5 text-amber-900">Alguns registros não puderam ser consultados. A lista mostra as pendências confirmadas e pode estar incompleta.</p>}
+    {model.hasEditorialCandidates&&source!=="ready"&&<div role="status" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F6F7FB] p-3 text-[13px] leading-5 text-[#525B70]"><p>{source==="loading"?"Conferindo decisões das versões editoriais antes de contar aprovações.":source==="forbidden"?"Sem permissão para consultar decisões editoriais. O total não foi presumido.":"Aprovações ainda não conectadas. O total fica indisponível até que seja possível conferir as decisões."}</p>{source!=="loading"&&<button className={action} onClick={()=>setRetry(n=>n+1)}>Consultar novamente</button>}</div>}
+    {model.attention.length?<><ul className="mt-3 divide-y divide-[#EDF0F6]">{model.attention.slice(0,expanded?undefined:5).map(item=><li key={item.key} className="grid min-w-0 gap-3 py-4 lg:grid-cols-[100px_minmax(0,1fr)_140px_auto] lg:items-center"><div><span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-bold ${item.priority===1?"border-red-100 bg-red-50 text-red-800":item.priority===2?"border-amber-100 bg-amber-50 text-amber-900":"border-[#E3E7F0] bg-[#F6F7FB] text-[#525B70]"}`}>P{item.priority} · {({1:"Crítica",2:"Alta",3:"Normal"})[item.priority]}</span></div><div className="min-w-0"><p className="break-words text-sm font-semibold">{item.title}</p><p className="mt-1 break-words text-[13px] text-[#525B70]">{overviewClient(item.project)?.name??"Cliente não informado"} · {item.project.title}</p><p className="mt-2 text-[13px] leading-5 text-[#525B70]">{item.reasons.join(" · ")}</p></div><div className="min-w-0 text-[13px] leading-5 text-[#525B70]"><p className="break-words">{item.owner}</p><p className="mt-1 font-medium text-[#525B70]">{overviewDate(item.due)}{item.time?` · ${item.time}`:""}</p></div><RecordLink item={item}/></li>)}</ul>{model.attention.length>5&&<button className={action+" mt-3"} onClick={()=>setExpanded(v=>!v)}>{expanded?"Mostrar os cinco prioritários":`Ver todos os ${model.attention.length} itens`}</button>}</>:<Empty>Nenhuma pendência que exija atenção foi identificada nas fontes disponíveis.</Empty>}
+    <details className="mt-4 border-t border-[#EDF0F6] pt-3 text-[13px] leading-5 text-[#525B70]"><summary className="min-h-10 cursor-pointer rounded-lg py-2 font-medium focus-visible:outline-2 focus-visible:outline-[#6D35F5]">Como funcionam as prioridades?</summary><p className="mt-2">P1: prazo vencido ou bloqueio explícito. P2: prazo em até dois dias ou urgência registrada. P3: decisão ou pré-requisito sem urgência imediata.</p></details>
    </section>
-   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-    <h2 className="text-lg font-semibold">Próximas entregas</h2><p className="mt-1 text-sm text-[#697386]">Atividades com prazo futuro ou para hoje.</p>
-    {upcoming.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhuma entrega futura com prazo cadastrado.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{upcoming.slice(0,6).map(t=><div key={t.project.id+":"+t.id} className="flex items-center justify-between gap-2 py-3"><div><p className="text-sm font-semibold">{t.title}</p><p className="text-xs text-[#697386]">{client(t.project)?.name??"Cliente"} · {t.owner}</p></div><span className="shrink-0 text-xs font-semibold text-[#525B70]">{date(t.dueDate??"")}</span></div>)}</div>}
-   </section>
-  </div>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Reuniões e acompanhamentos</h2><p className="mt-1 text-sm text-[#697386]">Compromissos registrados na agenda operacional dos projetos.</p>
-   <div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Agendados</p><p className="mt-2 text-2xl font-semibold">{plannedCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Pendentes com data vencida</p><p className="mt-2 text-2xl font-semibold">{overdueCommitments.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Reuniões registradas</p><p className="mt-2 text-2xl font-semibold">{commitments.filter(x=>x.kind==="meeting").length}</p></div></div>
-   <h3 className="mt-5 text-sm font-semibold">Próximos compromissos</h3>{nextCommitments.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhum compromisso futuro pendente.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextCommitments.map(x=><div key={x.project.id+":"+x.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{x.title}</p><p className="text-xs text-[#697386]">{client(x.project)?.name??"Cliente"} · {x.owner||"Sem responsável"}</p></div><span className="text-xs font-medium">{date(x.date)}{x.time?` às ${x.time}`:""}</span></div>)}</div>}
-  </section>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Agenda editorial e aprovações</h2>
-   <p className="mt-1 text-sm text-[#697386]">Visão dos conteúdos registrados nos projetos. As decisões formais do cliente são acompanhadas no painel de aprovações.</p>
-   <div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Conteúdos cadastrados</p><p className="mt-2 text-2xl font-semibold">{editorial.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Em solicitação de aprovação</p><p className="mt-2 text-2xl font-semibold">{awaitingApproval.length}</p></div><div className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">Datas editoriais vencidas</p><p className="mt-2 text-2xl font-semibold">{editorialOverdue.length}</p></div></div>
-   <h3 className="mt-5 text-sm font-semibold">Próximas publicações previstas</h3>
-   {nextEditorial.length===0?<p className="mt-3 text-sm text-[#697386]">Nenhuma publicação futura pendente registrada.</p>:<div className="mt-3 divide-y divide-[#E3E7F0]">{nextEditorial.map(item=><div key={item.project.id+":"+item.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="text-xs text-[#697386]">{client(item.project)?.name??"Cliente"} · {item.channel} · {item.status}</p></div><span className="text-xs font-medium">{date(item.publishDate)}</span></div>)}</div>}
-  </section>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Acompanhamento por cliente e projeto</h2><p className="mt-1 text-sm text-[#697386]">Documentos estratégicos publicados, revisão e pendências de execução. Indicadores calculados a partir dos registros atuais.</p></div><button type="button" onClick={onOpenProjects} className="text-sm font-semibold text-[#6D35F5]">Ver todos os projetos →</button></div>
-   {documentSummary.length===0?<p className="mt-5 text-sm text-[#697386]">Nenhum projeto para acompanhar.</p>:<div className="mt-4 divide-y divide-[#E3E7F0]">{documentSummary.map(item=><div key={item.project.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] md:items-center"><div><p className="text-sm font-semibold">{client(item.project)?.name??"Cliente sem nome"}</p><p className="text-xs text-[#697386]">{item.project.title}</p><div className="mt-2 flex items-center gap-2"><progress aria-label={`Progresso dos documentos de ${item.project.title}`} max={100} value={item.progress} className="h-2 w-full max-w-36 accent-[#6D35F5]"/><span className="text-xs tabular-nums text-[#525B70]">{item.selected?`${item.progress}%`:"Sem documentos"}</span></div>{item.blocked>0&&<p className="mt-1 text-xs text-amber-800">{item.blocked} entrega(s) bloqueada(s)</p>}{item.unassigned>0&&<p className="mt-1 text-xs text-[#525B70]">{item.unassigned} atividade(s) sem responsável</p>}{item.waitingPrerequisites>0&&<p className="mt-1 text-xs text-amber-800">{item.waitingPrerequisites} aguardando pré-requisitos</p>}{item.awaitingEditorial>0&&<p className="mt-1 text-xs text-[#525B70]">{item.awaitingEditorial} conteúdo(s) em solicitação de aprovação</p>}{item.pastEditorial>0&&<p className="mt-1 text-xs text-red-700">{item.pastEditorial} prazo(s) editoriais vencidos</p>}</div><div className="text-xs"><strong className="block text-base">{item.released}/{item.selected}</strong>Publicados</div><div className="text-xs"><strong className="block text-base">{item.review}</strong>Em revisão</div><div className="text-xs"><strong className="block text-base">{item.pending}</strong>Entregas abertas</div><div className="text-xs"><strong className="block text-base">{item.overdue}</strong>Atrasadas</div><Link className="text-xs font-semibold text-[#6D35F5] hover:underline" href={`/admin/planejamentos/${client(item.project)?.slug??""}?projectId=${encodeURIComponent(item.project.id)}`}>Gerenciar →</Link></div>)}</div>}
-  </section>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Distribuição da carga por responsável</h2>
-   <p className="mt-1 text-sm text-[#697386]">Quantidade de tarefas em aberto por membro da equipe, incluindo urgências, atrasos e bloqueios. Não representa horas trabalhadas.</p>
-   {ownership.length===0?<p className="mt-4 text-sm text-[#697386]">Nenhuma atividade em aberto.</p>:<div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-[#E3E7F0] text-xs text-[#697386]"><th className="py-3 pr-4">Responsável</th><th className="px-3 py-3">Em aberto</th><th className="px-3 py-3">Atrasadas</th><th className="px-3 py-3">Bloqueadas</th><th className="px-3 py-3">Urgentes</th></tr></thead><tbody>{ownership.map(item=><tr key={item.name} className="border-b border-[#F0F1F5]"><th className="py-3 pr-4 font-medium">{item.name}</th><td className="px-3 py-3 tabular-nums">{item.open}</td><td className="px-3 py-3 tabular-nums">{item.overdue}</td><td className="px-3 py-3 tabular-nums">{item.blocked}</td><td className="px-3 py-3 tabular-nums">{item.urgent}</td></tr>)}</tbody></table></div>}
-  </section>
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-   <h2 className="text-lg font-semibold">Operação integrada</h2><p className="mt-2 text-sm leading-6 text-[#525B70]">Esta visão reúne tarefas, prazos, compromissos e conteúdo editorial registrados nos projetos. As decisões formais de aprovação permanecem na tabela específica de aprovações, evitando presumir concordância do cliente a partir do status editorial. Nenhuma atividade ou indicador é simulado.</p>
-  </section>
+   <div className="grid gap-5 xl:grid-cols-2">
+    <section aria-labelledby="routine-title" className={panel}><Heading id="routine-title" title="Minha Rotina" icon="user" description={userName?`Responsabilidades vinculadas à conta de ${userName}.`:"Responsabilidades vinculadas ao seu usuário autenticado."}>{onOpenTasks&&<button className={action} onClick={onOpenTasks}>Central de Tarefas →</button>}</Heading>{!userId?<Empty>Não foi possível confirmar a identidade para personalizar sua rotina.</Empty>:model.routine.length?<ul className="mt-2">{model.routine.slice(0,5).map(item=><ItemRow key={item.key} item={item}/>)}</ul>:<Empty>Nenhuma atividade vinculada a você.</Empty>}{model.unlinkedOwners>0&&<p className="mt-4 text-[13px] leading-5 text-[#525B70]">Há tarefas atribuídas apenas por nome, ainda sem vínculo com uma conta.</p>}<p className="mt-4 text-[13px] leading-5 text-[#525B70]">Sua rotina inclui tarefas atribuídas à sua conta e reuniões vinculadas a elas.</p></section>
+    <section aria-labelledby="meetings-title" className={panel}><Heading id="meetings-title" title="Próximas Reuniões" icon="calendar" description="Reuniões, acompanhamentos e marcos agendados para os próximos sete dias.">{onOpenMeetings&&<button className={action} onClick={onOpenMeetings}>Agenda completa →</button>}</Heading>{model.meetings.length?<ul className="mt-2">{model.meetings.slice(0,5).map(item=><ItemRow key={item.key} item={item} meeting/>)}</ul>:<Empty>{model.agendaUnavailable?"Agenda parcialmente indisponível. Não foi possível conferir todos os compromissos.":"Nenhum compromisso agendado nos próximos sete dias."}</Empty>}</section>
+   </div>
+   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+    <section aria-labelledby="projects-attention-title" className={panel}><Heading id="projects-attention-title" title="Projetos em Atenção" icon="report" description="Projetos com pendências operacionais confirmadas, sem índices artificiais de risco."><button className={action} onClick={onOpenProjects}>Ver projetos →</button></Heading>{model.projectAttention.length?<ul className="mt-2 divide-y divide-[#EDF0F6]">{model.projectAttention.slice(0,5).map(({project,items})=><li key={project.id} className="py-4"><div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold">{project.title}</p><p className="mt-1 text-[13px] text-[#525B70]">{overviewClient(project)?.name??"Cliente não informado"}</p></div><span className="rounded-md bg-[#F1ECFD] px-2 py-1 text-[10px] font-semibold text-[#6034B7]">{items.length} {items.length===1?"pendência":"pendências"}</span></div><p className="mt-3 text-[13px] leading-5 text-[#525B70]">{items[0].reasons.join(" · ")}</p><RecordLink item={items[0]} label="Abrir projeto"/></li>)}</ul>:<Empty>Nenhum projeto em atenção foi identificado nas fontes disponíveis.</Empty>}</section>
+    <section aria-labelledby="finance-summary-title" className={panel}><Heading id="finance-summary-title" title="Resumo Financeiro" icon="currency-dollar" description="Pendências financeiras da agência, no lugar certo da sua rotina."/><div className="mt-6 rounded-xl border border-dashed border-[#D9CEE9] bg-[#FAF8FE] p-5"><span className="inline-flex rounded-md bg-[#EEE8FA] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#6847A5]">Aguardando integração</span><h3 className="mt-4 text-sm font-semibold">Os dados gerenciais ainda não estão conectados.</h3><p className="mt-2 text-[13px] leading-6 text-[#525B70]">Recebimentos vencidos e próximos vencimentos da Rotevo aparecerão aqui após a integração. Nenhum valor demonstrativo é apresentado como dado real nesta Visão Geral.</p></div>{onOpenFinance&&<button className={action+" mt-4"} onClick={onOpenFinance}>Abrir módulo Financeiro →</button>}</section>
+   </div>
+   {model.invalidDates>0&&<p role="status" className="text-[13px] leading-5 text-[#525B70]">Alguns registros possuem datas inválidas e não foram usados nos cálculos de prazo. Confira os registros nos módulos de origem.</p>}
+  </>}
  </div>;
 }

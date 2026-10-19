@@ -151,34 +151,26 @@ test("central task board searches linked projects and task titles without adding
  for(const name of ["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"])assert.ok(board.includes('["'+name+'",'),name);
 });
 
-test("admin operations summary connects published 2027 documents and delivery deadlines per project",()=>{
- const panel=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(panel,/documentSummary/);
- assert.match(panel,/ecosystem2027/);
- assert.match(panel,/publishedAt/);
- assert.match(panel,/Acompanhamento por cliente e projeto/);
- assert.match(panel,/Entregas abertas/);
- assert.match(panel,/Atrasadas/);
+test("admin operations summary keeps formal document reviews actionable per project",()=>{
+ const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
+ assert.match(panel,/Projetos em Atenção/);assert.match(model,/ecosystem2027/);assert.match(model,/reviewStatus!=="review"/);assert.match(panel,/RecordLink item=\{items\[0\]\}/);
 });
 
-test("admin overview computes per-project publication rate and blocked deliverables without inferred records",()=>{
- const panel=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(panel,/selected\.length\?Math\.round\(released\/selected\.length\*100\):0/);
- assert.match(panel,/t\.status==="blocked"/);
- assert.match(panel,/Progresso dos documentos de/);
- assert.match(panel,/Sem documentos/);
+test("admin overview omits publication-rate decorations and retains actual blocked records",()=>{
+ const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
+ assert.doesNotMatch(panel,/<progress|released\/selected|Progresso dos documentos/);assert.match(model,/task.status==="blocked"/);
 });
 
-test("operations dashboard counts valid 2027 document codes with the actual digit regex",()=>{
- const overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(overview,/filter\(code=>\/\^\\d\{2\}\\\.\\d\{2\}\$\/\.test\(code\)\)/);
- assert.doesNotMatch(overview,/filter\(code=>\/\^\\\\d/);
- assert.equal(/^\d{2}\.\d{2}$/.test("07.01"),true);
+test("operations dashboard counts only valid selected document codes in formal review",async()=>{
+ const {buildOperationsOverview}=await import('../../src/lib/overview/model.ts');
+ const project={id:'p',status:'draft',data:{ecosystem2027:{selectedDocumentCodes:['07.01','invalid'],documents:{'07.01':{content:'Valid review',reviewStatus:'review'},invalid:{content:'Invalid review',reviewStatus:'review'}}}}};
+ assert.equal(buildOperationsOverview([project],null,[],'ready').pendingDecisions,1);
 });
 
-test("admin publication progress requires both published content and publication timestamp",()=>{
- const overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(overview,/typeof eco\?\.documents\?\.\[code\]\?\.publishedAt==="string"&&typeof eco\?\.documents\?\.\[code\]\?\.publishedContent==="string"/);
+test("already approved or published documents are not pending dashboard decisions",async()=>{
+ const {buildOperationsOverview}=await import('../../src/lib/overview/model.ts');
+ const project={id:'p',status:'draft',data:{ecosystem2027:{selectedDocumentCodes:['07.01'],documents:{'07.01':{content:'Approved',reviewStatus:'approved',publishedContent:'Approved',publishedAt:'2026-10-19T00:00:00Z'}}}}};
+ assert.equal(buildOperationsOverview([project],null,[],'ready').pendingDecisions,0);
 });
 
 test("task hub filters project, owner, priority, status and deadlines without changing data",()=>{
@@ -223,13 +215,9 @@ test("central task creation keeps dependencies empty and blocks premature comple
  assert.match(timeline,/Reabra a atividade dependente primeiro/);
 });
 
-test("project operational overview shows work with missing owners and unmet prerequisites",()=>{
- const overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(overview,/const unassigned=tasks\.filter/);
- assert.match(overview,/!t\.owner\?\.trim\(\)&&!t\.ownerUserId/);
- assert.match(overview,/const waitingPrerequisites=tasks\.filter/);
- assert.match(overview,/aguardando pré-requisitos/);
- assert.match(overview,/atividade\(s\) sem responsável/);
+test("overview distinguishes name-only ownership and preserves recorded prerequisites",()=>{
+ const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
+ assert.match(panel,/atribuídas apenas por nome/);assert.match(model,/task.ownerUserId===userId/);assert.match(model,/task.dependencies/);assert.match(model,/pré-requisito/);
 });
 
 test("advanced prerequisite editing stays in the project and task table resets compact filters",()=>{
@@ -240,15 +228,9 @@ test("advanced prerequisite editing stays in the project and task table resets c
  assert.match(board,/setPriority\("all"\)/);
  assert.match(board,/setDeadline\("all"\)/);
 });
-test("operational management connects task priorities to editor, task board and team workload",()=>{
- const timeline=source("Components/admin/ExecutionTimelineEditor.tsx");
- const board=source("Components/admin/CentralTarefas.tsx");
- const overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(timeline,/Prioridade/);
- assert.match(board,/Filtrar prioridade/);
- assert.match(board,/setPriority\("all"\)/);
- assert.match(overview,/Distribuição da carga por responsável/);
- assert.match(overview,/Não representa horas trabalhadas/);
+test("task priority controls remain specialized and overview does not duplicate team workload",()=>{
+ const timeline=source("Components/admin/ExecutionTimelineEditor.tsx"),board=source("Components/admin/CentralTarefas.tsx"),overview=source("Components/admin/AdminOperationsOverview.tsx");
+ assert.match(timeline,/Prioridade/);assert.match(board,/Filtrar prioridade/);assert.match(board,/setPriority\("all"\)/);assert.doesNotMatch(overview,/Distribuição da carga por responsável/);assert.match(overview,/Minha Rotina/);
 });
 
 test("task hub supports authorized inline team reassignment and reprioritization",()=>{
@@ -263,16 +245,9 @@ test("task hub supports authorized inline team reassignment and reprioritization
  assert.match(board,/Prioridade de/);
 });
 
-test("operations overview integrates editorial calendar without inventing formal approval decisions",()=>{
- const overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(overview,/editorialCalendar/);
- assert.match(overview,/Agenda editorial e aprovações/);
- assert.match(overview,/awaitingApproval/);
- assert.match(overview,/editorialOverdue/);
- assert.match(overview,/nextEditorial/);
- assert.match(overview,/awaitingEditorial/);
- assert.match(overview,/pastEditorial/);
- assert.match(overview,/As decisões formais do cliente são acompanhadas no painel de aprovações/);
+test("overview consults formal editorial decisions without duplicating the editorial calendar",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
+ assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/total fica indisponível até que seja possível conferir as decisões/);
 });
 
 test("operational meetings integrate authorized project editor and admin overview",()=>{
@@ -283,8 +258,8 @@ test("operational meetings integrate authorized project editor and admin overvie
  assert.match(agenda,/\/api\/admin\/project\/update/);
  assert.match(agenda,/expectedUpdatedAt:updatedAt/);
  assert.match(agenda,/Reuniões e acompanhamento/);
- assert.match(dashboard,/Próximos compromissos/);
- assert.match(dashboard,/overdueCommitments/);
+ assert.match(dashboard,/Próximas Reuniões/);
+ assert.match(source("lib/overview/model.ts"),/Compromisso vencido/);
 });
 
 test("operational agenda timestamps and task deletion retain linked meeting integrity",()=>{

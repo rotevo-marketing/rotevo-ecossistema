@@ -13,7 +13,7 @@ export default function ClientsDirectory({projects}:{projects:Project[]}){
  const [filter,setFilter]=useState("all"),[form,setForm]=useState(false),[saving,setSaving]=useState(false);
  const [fields,setFields]=useState(empty),[selected,setSelected]=useState<string|null>(null);
  async function load(){setLoading(true);const {data,error:e}=await supabase.from("clients").select("id,name,slug,contact_name,contact_email,whatsapp,status,cover_image_url,created_at").order("name");setLoading(false);if(e){setError("Não foi possível carregar os cadastros dos clientes.");return;}setClients((data??[]) as Client[]);}
- useEffect(()=>{void load();},[]);
+ useEffect(()=>{let active=true;void Promise.resolve().then(()=>{if(active)void load();});return()=>{active=false;};},[]);
  const rows=useMemo(()=>clients.filter(c=>(filter==="all"||c.status===filter)&&(c.name+" "+(c.contact_name??"")+" "+(c.contact_email??"")).toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))),[clients,filter,query]);
  const active=clients.filter(c=>c.status==="active").length;
  const linked=(id:string)=>projects.filter(p=>clientOf(p)?.id===id);

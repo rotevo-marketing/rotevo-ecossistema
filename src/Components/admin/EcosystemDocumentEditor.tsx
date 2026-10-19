@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
@@ -48,7 +48,8 @@ export default function EcosystemDocumentEditor({projectId,projectData,updatedAt
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
- useEffect(()=>{setContent(savedContent);setError("");setSuccess("");},[activeCode,savedContent]);
+ const [contentVersion,setContentVersion]=useState({activeCode,savedContent});
+ if(contentVersion.activeCode!==activeCode||contentVersion.savedContent!==savedContent){setContentVersion({activeCode,savedContent});setContent(savedContent);setError("");setSuccess("");}
  async function persist(action:"save"|"review"|"approve"|"publish"){
   if(!activeCode||saving)return;
   if(action==="publish"&&(record?.reviewStatus!=="approved"||content!==savedContent)){setError("Aprove e salve a versão atual antes de publicar.");return;}

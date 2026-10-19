@@ -18,7 +18,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const items=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[])
   .filter(i=>i&&typeof i.id==="string"&&typeof i.title==="string"&&(!clientView||i.visibleToClient===true))
   .map(i=>({...i,projectTitle:p.title,projectId:p.id}))),[projects,clientView]);
- useEffect(()=>{let alive=true;const ids=[...new Set(projects.map(p=>p.id))];if(!ids.length){setClientDecisions([]);return;}void (async()=>{const {data,error}=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids).limit(200);if(alive)setClientDecisions(error?[]:(data??[]) as typeof clientDecisions);})();return()=>{alive=false;};},[projects]);
+ useEffect(()=>{let alive=true;const ids=[...new Set(projects.map(p=>p.id))];if(!ids.length){void Promise.resolve().then(()=>{if(alive)setClientDecisions([]);});return()=>{alive=false;};}void (async()=>{const {data,error}=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids).limit(200);if(alive)setClientDecisions(error?[]:(data??[]) as typeof clientDecisions);})();return()=>{alive=false;};},[projects]);
  const decisionStatus=(item:EditorialItem & {projectId:string})=>{const decision=clientDecisions.find(r=>r.project_id===item.projectId&&r.content_id===item.id&&r.content_version===(item.version??""));return decision?decision.decision:item.status;};
  const active=items.find(i=>i.projectId+":"+i.id===selected);
  const filteredItems=items.filter(i=>(projectFilter==="all"||i.projectId===projectFilter)&&(statusFilter==="all"||decisionStatus(i)===statusFilter));

@@ -12,8 +12,10 @@ function checkBlocked(env) {
   const result = spawnSync(process.execPath, [script], {
     env: { ...baseline, ...env },
     encoding: "utf8",
-    timeout: 5000,
+    // Allow Windows process startup under build load; HTTP deadlines remain unchanged.
+    timeout: 30000,
   });
+  assert.ifError(result.error);
   assert.notEqual(result.status, 0, "guard should reject unsafe configuration");
   assert.match(result.stderr, /TEST BLOCKED/, "must fail before attempting HTTP");
 }

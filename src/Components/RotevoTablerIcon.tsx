@@ -4,6 +4,10 @@
 import type { ReactNode } from "react";
 
 const artwork: Record<string, ReactNode> = {
+  "key": <><path d="M16 8a4 4 0 1 0 -4 4h-1l-2 2h-2v2h-2v3h-3v-3l8 -8" /><path d="M17 7l.01 0" /></>,
+  "lock": <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11v-4a4 4 0 0 1 8 0v4" /><path d="M12 15v2" /></>,
+  "folder-open": <><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v2" /><path d="M3 19l3 -8h16l-3 8a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2" /></>,
+  "logout": <><path d="M9 21h-4a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h4" /><path d="M16 17l5 -5l-5 -5" /><path d="M21 12h-12" /></>,
   "users": <>
     <path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
     <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />

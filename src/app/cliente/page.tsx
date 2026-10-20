@@ -8,6 +8,7 @@ import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTabler
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import EditorialCalendar, {type EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import ClientAttention from "@/Components/cliente/ClientAttention";
+import ClientPlanning from "@/Components/cliente/ClientPlanning";
 import ClientFinance from "@/Components/finance/ClientFinance";
 import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 
@@ -144,7 +145,7 @@ export default function ClientAreaPage(){
          </Block>
          <Block title="Planejamento Estratégico" icon="report" action={<button className="cursor-pointer text-sm font-semibold text-[#6D35F5]" onClick={()=>setTab("planning")}>Ver todos →</button>}>{renderProjects()}</Block>
        </div>:
-       tab==="planning"?<Block title="Seus planejamentos" icon="report">{renderProjects()}</Block>:
+       tab==="planning"?<ClientPlanning projects={projects}/>:
        tab==="execution"?<ProjectTimeline projects={projects}/>:
        tab==="content"?<EditorialCalendar projects={projects} clientView/> :
        tab==="finance"?<ClientFinance/> :

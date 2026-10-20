@@ -7,6 +7,7 @@ import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import EditorialCalendar, {type EditorialItem} from "@/Components/cliente/EditorialCalendar";
+import ClientContentLayoutDemo from "@/Components/cliente/ClientContentLayoutDemo";
 import ClientAttention from "@/Components/cliente/ClientAttention";
 import ClientPlanning from "@/Components/cliente/ClientPlanning";
 import ClientFinance from "@/Components/finance/ClientFinance";
@@ -147,7 +148,7 @@ export default function ClientAreaPage(){
        </div>:
        tab==="planning"?<ClientPlanning projects={projects}/>:
        tab==="execution"?<ProjectTimeline projects={projects}/>:
-       tab==="content"?<EditorialCalendar projects={projects} clientView/> :
+       tab==="content"?<div className="space-y-5"><ClientContentLayoutDemo/><details className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Calendário existente e aprovações reais</summary><p className="mt-3 text-sm text-[#697386]">O módulo anterior permanece disponível para utilização. A prévia acima contém somente exemplos fictícios.</p><div className="mt-4"><EditorialCalendar projects={projects} clientView/></div></details></div> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<Block title="Campanhas" icon="rocket"><p className="text-sm leading-6 text-[#525B70]">A visualização das campanhas do seu projeto será organizada nesta área. Os resultados ainda não estão conectados ao portal.</p></Block>:
        tab==="onboarding"?<Block title="Etapas do seu projeto" icon="alert-square-rounded"><div className="space-y-4">{projects.flatMap(p=>(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectTitle:p.title}))).length===0?<p className="text-sm text-[#697386]">Nenhuma etapa de onboarding foi compartilhada pela equipe até o momento.</p>:projects.map(p=><div key={p.id}><h3 className="mb-2 text-sm font-semibold">{p.title}</h3><div className="divide-y divide-[#E3E7F0]">{(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=><div key={i.id} className="flex items-center justify-between gap-2 py-3"><span className="text-sm">{i.done?"✓":"○"} {i.title}</span>{i.link&&i.link.startsWith("https://")&&<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6D35F5]">Abrir material ↗</a>}</div>)}</div></div>)}</div></Block> :

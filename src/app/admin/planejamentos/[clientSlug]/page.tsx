@@ -9,6 +9,7 @@ import OperationalAgenda, {type AgendaItem} from "@/Components/admin/Operational
 import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
 import PlanningLayoutDemo from "@/Components/admin/PlanningLayoutDemo";
+import DynamicStrategicEditor from "@/Components/strategic-editor/DynamicStrategicEditor";
 import ProjectOnboarding, {type OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
@@ -438,6 +439,7 @@ function PlanejamentoClienteContent() {
 
       {project && !isLoading && hasEcosystem && <PlanningScheduleEditor key={project.id+project.updated_at} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject({...project,data:saved.data,updated_at:saved.updated_at});}}/>}
       {project && !isLoading && hasEcosystem && <PlanningLayoutDemo/>}
+      {project && !isLoading && hasEcosystem && <section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><details className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer text-lg font-semibold">Editor Estratégico profissional · demonstração integrada</summary><p className="mt-3 text-sm text-[#525B70]">Editor BlockNote aprovado, agora dentro da edição do planejamento e com o menu da Rotevo preservado. Este laboratório utiliza Aurora Consultoria fictícia e não salva nem publica documentos reais. O editor original permanece logo abaixo.</p><div className="mt-5"><DynamicStrategicEditor embedded/></div></details></section>}
       {project && !isLoading && hasEcosystem && <EcosystemDocumentEditor key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><ProjectOnboarding key={project.id} projectId={project.id} data={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><OperationalAgenda key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}

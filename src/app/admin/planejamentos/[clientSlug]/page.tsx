@@ -7,6 +7,7 @@ import { RotevoLogo } from "@/Components/RotevoLogo";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 import OperationalAgenda, {type AgendaItem} from "@/Components/admin/OperationalAgenda";
 import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
+import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
 import ProjectOnboarding, {type OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +20,7 @@ type ClientRecord = {
 
 type ProjectData = {
   coverImageUrl?: string | null;
+  planningStages?: PlanningStage[];
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   operationalAgenda?:AgendaItem[];
   onboardingChecklist?: OnboardingItem[];
@@ -433,6 +435,7 @@ function PlanejamentoClienteContent() {
         ) : null}
       </section>
 
+      {project && !isLoading && hasEcosystem && <PlanningScheduleEditor key={project.id+project.updated_at} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject({...project,data:saved.data,updated_at:saved.updated_at});}}/>}
       {project && !isLoading && hasEcosystem && <EcosystemDocumentEditor key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><ProjectOnboarding key={project.id} projectId={project.id} data={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}
       {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><OperationalAgenda key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}

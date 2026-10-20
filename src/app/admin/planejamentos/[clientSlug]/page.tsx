@@ -431,6 +431,7 @@ function PlanejamentoClienteContent() {
                 </div>}
                 {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Abaixo, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
               </div>
+              </div>
             </div>}
           </>
         ) : null}

@@ -12,6 +12,7 @@ import ClientCampaignLayoutDemo from "@/Components/cliente/ClientCampaignLayoutD
 import ClientMeetingsLayoutDemo from "@/Components/cliente/ClientMeetingsLayoutDemo";
 import ClientContractLayoutDemo from "@/Components/cliente/ClientContractLayoutDemo";
 import ClientDriveLayoutDemo from "@/Components/cliente/ClientDriveLayoutDemo";
+import ClientFinanceLayoutDemo from "@/Components/cliente/ClientFinanceLayoutDemo";
 import ClientAttention from "@/Components/cliente/ClientAttention";
 import ClientPlanning from "@/Components/cliente/ClientPlanning";
 import ClientFinance from "@/Components/finance/ClientFinance";
@@ -159,6 +160,7 @@ export default function ClientAreaPage(){
        tab==="meetings"?<ClientMeetingsLayoutDemo/>:
        tab==="contract"?<ClientContractLayoutDemo/>:
        tab==="drive"?<ClientDriveLayoutDemo/>:
+       tab==="finance"?<ClientFinanceLayoutDemo/>:
        <Block title={selected.name} icon={selected.icon}>
          <p className="text-sm leading-6 text-[#525B70]">{"Links de acesso às plataformas e planilhas autorizadas. As senhas não serão copiadas para a Rotevo."}</p>
          <div className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Esta área está preparada para receber links e informações liberados pela equipe Rotevo. Ainda não existem registros vinculados a esta seção.</div>

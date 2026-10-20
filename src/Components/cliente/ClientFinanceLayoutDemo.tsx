@@ -4,11 +4,11 @@ import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 type Tab="upcoming"|"paid"|"invoices";
 type Entry={id:string;title:string;due:string;amount:number;status:"paid"|"planned"|"overdue";paidAt?:string;kind:"monthly"|"oneoff"};
 const entries:Entry[]=[
-{id:"a",title:"Consultoria — outubro",due:"2026-10-05",amount:600,status:"paid",paidAt:"2026-10-05",kind:"monthly"},
-{id:"b",title:"Consultoria — novembro",due:"2026-11-05",amount:600,status:"planned",kind:"monthly"},
-{id:"c",title:"Consultoria — dezembro",due:"2026-12-05",amount:600,status:"planned",kind:"monthly"},
-{id:"d",title:"Consultoria — janeiro",due:"2027-01-05",amount:600,status:"planned",kind:"monthly"},
-{id:"e",title:"Planejamento — parcela final (exemplo)",due:"2026-10-10",amount:1000,status:"overdue",kind:"oneoff"}
+{id:"a",title:"Consultoria: outubro",due:"2026-10-05",amount:600,status:"paid",paidAt:"2026-10-05",kind:"monthly"},
+{id:"b",title:"Consultoria: novembro",due:"2026-11-05",amount:600,status:"planned",kind:"monthly"},
+{id:"c",title:"Consultoria: dezembro",due:"2026-12-05",amount:600,status:"planned",kind:"monthly"},
+{id:"d",title:"Consultoria: janeiro",due:"2027-01-05",amount:600,status:"planned",kind:"monthly"},
+{id:"e",title:"Planejamento: parcela final (exemplo)",due:"2026-10-10",amount:1000,status:"overdue",kind:"oneoff"}
 ];
 const money=(n:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n);
 const date=(s:string)=>s.split("-").reverse().join("/");

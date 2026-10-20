@@ -1,3 +1,4 @@
+import {validPlanningStages} from "@/lib/planning/stages";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
@@ -54,7 +55,10 @@ export async function PATCH(req:NextRequest){
    .select("data,updated_at").eq("id",b.projectId).maybeSingle();
  if(existingError)return fail(503);
  if(!existing||existing.updated_at!==b.expectedUpdatedAt)return fail(409);
- if(!validEcosystemDocumentTransition(existing.data,b.data)||!validExecutionDependencies(b.data))return fail(400);
+const previousStages=(existing.data as Record<string,unknown>|null)?.planningStages;
+ const nextStages=(b.data as Record<string,unknown>).planningStages;
+ if(JSON.stringify(previousStages)!==JSON.stringify(nextStages)&&!validPlanningStages(nextStages))return fail(400);
+  if(!validEcosystemDocumentTransition(existing.data,b.data)||!validExecutionDependencies(b.data))return fail(400);
  // Only newly assigned or reassigned identities require an active team membership.
  // Historical assignments are preserved without retroactive data migration.
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};

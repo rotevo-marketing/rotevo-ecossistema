@@ -250,11 +250,12 @@ test("overview consults formal editorial decisions without duplicating the edito
  assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/total fica indisponível até que seja possível conferir as decisões/);
 });
 
-test("operational meetings integrate authorized project editor and admin overview",()=>{
+test("operational meetings remain in the authorized hub and overview, outside planning tabs",()=>{
  const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
  const agenda=source("Components/admin/OperationalAgenda.tsx");
  const dashboard=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(page,/<OperationalAgenda(?: key=\{project\.id\})? projectId=/);
+ assert.doesNotMatch(page,/<OperationalAgenda\b/);
+ assert.match(source("Components/admin/OperationalHubs.tsx"),/<OperationalAgenda/);
  assert.match(agenda,/\/api\/admin\/project\/update/);
  assert.match(agenda,/expectedUpdatedAt:updatedAt/);
  assert.match(agenda,/Reuniões e acompanhamento/);

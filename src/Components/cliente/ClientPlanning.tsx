@@ -6,31 +6,36 @@ import {ecosystemDocuments} from "@/data/ecosystem2027";
 type Stage={id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean};
 type ClientProject={id:string;slug:string;title:string;description:string|null;status:string;data?:{planningStages?:Stage[]}|null};
 type VisibleDocument={content:string};
-type Presentation={status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>}}};
+type Presentation={id:string;status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>}}};
 const areas=Array.from(new Set(ecosystemDocuments.filter(d=>/^\d{2} /.test(d.area)&&!d.area.startsWith("00 ")).map(d=>d.area)));
 const button="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
 export default function ClientPlanning({projects}:{projects:ClientProject[]}){
  const [projectId,setProjectId]=useState("");
- const [loading,setLoading]=useState(true);
- const [error,setError]=useState("");
- const [presentation,setPresentation]=useState<Presentation|null>(null);
+ const [result,setResult]=useState<{key:string;presentation:Presentation|null;error:string}|null>(null);
+ const [retry,setRetry]=useState(0);
  const [area,setArea]=useState("");
  const [code,setCode]=useState("");
  const selected=projects.find(p=>p.id===projectId)??projects[0];
- useEffect(()=>{if(!selected||selected.status!=="published")return;let alive=true;
-   const load=async()=>{const {data}=await supabase.auth.getSession();if(!alive)return;
-     const token=data.session?.access_token;
-     if(!token){setError("Sessão expirada. Entre novamente.");setLoading(false);return;}
-     try{const res=await fetch("/api/presentation/project?slug="+encodeURIComponent(selected.slug),{headers:{Authorization:"Bearer "+token},cache:"no-store"});
-       if(!res.ok)throw Error("Não foi possível obter o planejamento publicado.");
-       const payload:unknown=await res.json();
-       if(alive&&payload&&typeof payload==="object"&&"project" in payload){setPresentation((payload as {project:Presentation}).project);}
-     }catch{if(alive)setError("A apresentação ainda não está disponível para consulta.");}
-     finally{if(alive)setLoading(false);}
+ const selectedId=selected?.id,selectedSlug=selected?.slug,selectedStatus=selected?.status;
+ const requestKey=selected?[selected.id,selected.slug,selected.status,retry].join(":"):"";
+ const current=result?.key===requestKey?result:null;
+ const loading=!current;
+ const error=current?.error??"";
+ const presentation=current?.presentation;
+ useEffect(()=>{if(!selectedId||!selectedSlug||selectedStatus!=="published")return;let alive=true;
+   const load=async()=>{
+     try{
+       const {data,error:sessionError}=await supabase.auth.getSession();
+       if(sessionError||!data.session?.access_token)throw Error("Sessão expirada. Entre novamente.");
+       const res=await fetch("/api/presentation/project?slug="+encodeURIComponent(selectedSlug),{headers:{Authorization:"Bearer "+data.session.access_token},cache:"no-store"});
+       if(!res.ok)throw Error("A apresentação ainda não está disponível para consulta.");
+       const payload=await res.json();
+       if(!payload?.project||payload.project.id!==selectedId||payload.project.status!=="published")throw Error("Não foi possível confirmar o planejamento publicado.");
+       if(alive)setResult({key:requestKey,presentation:payload.project,error:""});
+     }catch(error){if(alive)setResult({key:requestKey,presentation:null,error:error instanceof Error?error.message:"Não foi possível consultar o planejamento."});}
    };
-   // Run asynchronously without exposing any drafts from the client-project listing.
    void load();return()=>{alive=false};
- },[selected?.id,selected?.slug,selected?.status]);
+ },[selectedId,selectedSlug,selectedStatus,requestKey]);
  const visible=presentation?.data?.ecosystem2027;
  const allowed=new Set((visible?.selectedDocumentCodes??[]).filter(c=>(visible?.presentedDocumentCodes??[]).includes(c)));
  const publishedDocs=ecosystemDocuments.filter(d=>!d.area.startsWith("00 ")&&d.code!=="01.01"&&allowed.has(d.code)&&!!visible?.documents?.[d.code]?.content?.trim());
@@ -45,7 +50,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
    <h2 className="mt-2 text-2xl font-bold">Seu planejamento de crescimento</h2>
    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#525B70]">Conheça as decisões estratégicas da sua empresa e explore os documentos liberados pela Rotevo. As áreas e documentos permanecem nesta página.</p>
    {projects.length>1&&<label className="mt-5 block max-w-md text-sm font-semibold">Planejamento
-    <select value={selected?.id??""} onChange={e=>{setProjectId(e.target.value);setPresentation(null);setError("");setArea("");setCode("");setLoading(true)}} className="mt-2 w-full rounded-xl border border-[#DDE2ED] bg-white px-3 py-3 text-sm">
+    <select value={selected?.id??""} onChange={e=>{setProjectId(e.target.value);setArea("");setCode("")}} className="mt-2 w-full rounded-xl border border-[#DDE2ED] bg-white px-3 py-3 text-sm">
     {projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
    {selected&&<div className="mt-5 flex flex-wrap items-center gap-3"><strong className="text-sm">{selected.title}</strong><span className={`rounded-full px-3 py-1 text-xs font-semibold ${selected.status==="published"?"bg-[#E0F5E8] text-[#176F40]":"bg-[#FFF2DB] text-[#92600C]"}`}>{selected.status==="published"?"Publicado":"Em desenvolvimento"}</span></div>}
   </section>
@@ -53,7 +58,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
   {!selected?<section className="rounded-2xl bg-white p-6 text-sm text-[#525B70]">Nenhum planejamento está vinculado à sua conta.</section>
    :selected.status!=="published"?<section className="rounded-2xl border border-[#E3E7F0] bg-white p-7"><h3 className="text-lg font-bold">Planejamento em desenvolvimento</h3><p className="mt-2 text-sm leading-6 text-[#525B70]">A apresentação estratégica ficará disponível aqui quando for publicada pela Rotevo. Nenhum rascunho é mostrado.</p></section>
    :loading?<section role="status" className="rounded-xl bg-white p-6 text-sm text-[#525B70]">Carregando documentos autorizados…</section>
-   :error?<section role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-sm text-red-700">{error}</section>
+   :error?<section role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-sm text-red-700">{error}<button type="button" className={button+" ml-3 border border-red-200"} onClick={()=>setRetry(value=>value+1)}>Tentar novamente</button></section>
    :<section className="space-y-5">
     <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-[#6D35F5]">Visão Executiva</p><h3 className="mt-1 text-xl font-bold">Explore sua estratégia</h3></div><button type="button" className={button+" border border-[#DDE2ED] bg-white text-[#525B70]"} onClick={()=>{setArea("");setCode("")}}>Voltar à introdução</button></div>

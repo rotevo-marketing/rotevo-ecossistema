@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -92,6 +93,7 @@ function PlanejamentoClienteContent() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [legacyDirty,setLegacyDirty]=useState(false);
   const [editingScope, setEditingScope] = useState(false);
   const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("documents");
   const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
@@ -103,6 +105,7 @@ function PlanejamentoClienteContent() {
   const hasEcosystem = !!project?.data?.ecosystem2027;
   const documentCodes = project?.data?.ecosystem2027?.selectedDocumentCodes ?? [];
   const presentedCodes = project?.data?.ecosystem2027?.presentedDocumentCodes ?? [];
+  useUnsavedChanges(editingScope && (JSON.stringify(draftDocumentCodes)!==JSON.stringify(documentCodes)||JSON.stringify(draftPresentedCodes)!==JSON.stringify(presentedCodes)));
   const selectedDocuments = ecosystemDocuments.filter((doc) => documentCodes.includes(doc.code));
   const documentAreas = Array.from(new Set(selectedDocuments.map((doc) => doc.area)));
 
@@ -257,6 +260,7 @@ function PlanejamentoClienteContent() {
       setErrorMessage("Selecione pelo menos um documento para o planejamento.");
       return;
     }
+    if(legacyDirty){setErrorMessage("Salve ou descarte as alterações no editor anterior antes de mudar o escopo.");return;}
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -273,7 +277,7 @@ function PlanejamentoClienteContent() {
     };
     try {
       const saved=await saveAuthorizedProjectData(project,nextData);
-      setProject({...project,data:saved.data,updated_at:saved.updated_at});
+      setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);
       setDraftDocumentCodes(included);
       setDraftPresentedCodes(visible);
       setEditingScope(false);
@@ -305,7 +309,7 @@ function PlanejamentoClienteContent() {
       if(!response.ok)throw new Error("Não foi possível atualizar o status autorizado.");
       const result=await response.json();
       if(!result?.project||typeof result.project.updated_at!=="string")throw new Error("Resposta inválida ao atualizar o status.");
-      setProject({...project,status:newStatus,updated_at:result.project.updated_at});
+      setProject(p=>p?.id===project.id?{...p,status:newStatus,updated_at:result.project.updated_at}:p);
     }catch(error){
       setErrorMessage(error instanceof Error?error.message:"Não foi possível atualizar o status.");
       setIsPublishing(false);
@@ -337,7 +341,7 @@ function PlanejamentoClienteContent() {
         </div>
       </header>
 
-      <section className="mx-auto w-full max-w-6xl flex-1 px-5 pb-20 pt-9 sm:px-8 lg:px-10">
+      <section className="mx-auto w-full max-w-6xl px-5 pb-5 pt-9 sm:px-8 lg:px-10">
         {isLoading ? (
           <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:p-10">
             <p className="text-slate-500">Carregando planejamento...</p>
@@ -399,16 +403,23 @@ function PlanejamentoClienteContent() {
             {hasEcosystem && <div className="mt-7 space-y-5">
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Documentos selecionados</p><strong className="mt-2 block text-2xl">{selectedDocuments.length}</strong></div>
-                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Visíveis ao cliente</p><strong className="mt-2 block text-2xl">{presentedCodes.length}</strong></div>
+                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Marcados para exibição</p><strong className="mt-2 block text-2xl">{presentedCodes.length}</strong></div>
                 <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Áreas do projeto</p><strong className="mt-2 block text-2xl">{documentAreas.length}</strong></div>
               </div>
-              <nav aria-label="Seções do planejamento" className="flex flex-wrap gap-2 border-b border-[#E3E7F0] pb-4" role="tablist">{([{id:"documents",label:"Documentos"},{id:"schedule",label:"Cronograma"},{id:"preview",label:"Prévia do Cliente"},{id:"editor",label:"Editor Estratégico"},{id:"execution",label:"Plano de Execução"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} onClick={()=>setPlanningTab(item.id)} className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold ${planningTab===item.id?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70] hover:border-[#6D35F5]"}`}>{item.label}</button>)}</nav>
-              <div id="planning-panel-documents" role="tabpanel" aria-labelledby="planning-tab-documents" hidden={planningTab!=="documents"}>
+              <nav aria-label="Seções do planejamento" className="flex flex-wrap gap-2 border-b border-[#E3E7F0] pb-4" role="tablist">{([{id:"documents",label:"Documentos"},{id:"schedule",label:"Cronograma"},{id:"preview",label:"Prévia do Cliente"},{id:"editor",label:"Editor Estratégico"},{id:"execution",label:"Plano de Execução"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} tabIndex={planningTab===item.id?0:-1} onKeyDown={event=>{
+ if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+ event.preventDefault();
+ const tabs=Array.from(event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+ const index=tabs.indexOf(event.currentTarget);
+ const next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(index+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
+ tabs[next]?.click();tabs[next]?.focus();
+ }} onClick={()=>setPlanningTab(item.id)} className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold ${planningTab===item.id?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70] hover:border-[#6D35F5]"}`}>{item.label}</button>)}</nav>
+              <div id="planning-panel-documents" role="tabpanel" tabIndex={0} aria-labelledby="planning-tab-documents" hidden={planningTab!=="documents"}>
               <div className="rounded-xl border border-[#E3E7F0] bg-white p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Gerencie o escopo e a exibição dos documentos do Ecossistema 2027.</p></div>
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => { setEditingScope(!editingScope); setDraftDocumentCodes(documentCodes); setDraftPresentedCodes(presentedCodes); setErrorMessage(""); }} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">{editingScope ? "Cancelar edição" : "Editar documentos"}</button>
+                    <button type="button" onClick={() => { if(isSaving)return;setEditingScope(!editingScope); setDraftDocumentCodes(documentCodes); setDraftPresentedCodes(presentedCodes); setErrorMessage(""); }} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">{editingScope ? "Cancelar edição" : "Editar documentos"}</button>
                   </div>
                 </div>
                 {editingScope ? <div className="mt-5">
@@ -419,17 +430,17 @@ function PlanejamentoClienteContent() {
                       <div className="grid grid-cols-[1fr_64px_64px] gap-2 border-b border-[#E3E7F0] pb-2 text-xs text-[#697386] sm:grid-cols-[1fr_90px_90px]"><span>Documento</span><span className="text-center">Incluir</span><span className="text-center">Exibir</span></div>
                       {ecosystemDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="grid grid-cols-[1fr_64px_64px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_90px_90px]">
                         <div className="flex flex-wrap items-baseline gap-2"><span className="text-xs text-[#697386]">{doc.code}</span><span className="text-sm">{doc.title}</span></div>
-                        <div className="text-center"><input aria-label={`Incluir ${doc.title}`} type="checkbox" className="h-5 w-5 cursor-pointer accent-[#6D35F5]" checked={draftDocumentCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"include")}/></div>
-                        <div className="text-center"><input aria-label={`Exibir ${doc.title}`} type="checkbox" className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30" disabled={!draftDocumentCodes.includes(doc.code)} checked={draftPresentedCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"present")}/></div>
+                        <div className="text-center"><input aria-label={`Incluir ${doc.title}`} type="checkbox" disabled={isSaving} className="h-5 w-5 cursor-pointer accent-[#6D35F5]" checked={draftDocumentCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"include")}/></div>
+                        <div className="text-center"><input aria-label={`Exibir ${doc.title}`} type="checkbox" className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30" disabled={isSaving||!draftDocumentCodes.includes(doc.code)} checked={draftPresentedCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"present")}/></div>
                       </div>)}
                     </section>)}
                   </div>
                   {errorMessage && <p role="alert" className="mt-4 text-sm text-red-700">{errorMessage}</p>}
                   <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#E3E7F0] pt-5"><span className="text-xs text-[#525B70]">{draftDocumentCodes.length} documentos incluídos · {draftPresentedCodes.length} visíveis</span><button type="button" disabled={isSaving || draftDocumentCodes.length === 0} onClick={saveDocumentScope} className="cursor-pointer rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? "Salvando..." : "Salvar alterações"}</button></div>
                 </div> : <div className="mt-5 space-y-4">
-                  {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Visível ao cliente" : "Uso interno"}</span></div>)}</div></section>)}
+                  {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Marcado para exibição" : "Uso interno"}</span></div>)}</div></section>)}
                 </div>}
-                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Abaixo, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
+                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Na aba Editor Estratégico, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
               </div>
               </div>
             </div>}
@@ -437,10 +448,10 @@ function PlanejamentoClienteContent() {
         ) : null}
       </section>
 
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id+project.updated_at} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject({...project,data:saved.data,updated_at:saved.updated_at});}}/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PlanningLayoutDemo/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Demonstração BlockNote com conteúdo fictício. Para documentos reais utilize o editor anterior, preservado abaixo.</p></div><DynamicStrategicEditor embedded/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
-      {project && !isLoading && <div role="tabpanel" id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PlanningLayoutDemo/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Demonstração BlockNote com conteúdo fictício. Para documentos reais utilize o editor anterior, preservado abaixo.</p></div><DynamicStrategicEditor embedded/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor onDirtyChange={setLegacyDirty} key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
+      {project && !isLoading && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );

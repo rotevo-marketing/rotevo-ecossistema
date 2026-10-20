@@ -1,3 +1,5 @@
+import type {Viewport} from "next";
+export const viewport:Viewport={width:"device-width",initialScale:1,interactiveWidget:"resizes-content"};
 import {notFound} from "next/navigation";
 import DynamicStrategicEditor from "@/Components/strategic-editor/DynamicStrategicEditor";
 import {prototypeAllowed} from "@/lib/strategic-editor/prototype";

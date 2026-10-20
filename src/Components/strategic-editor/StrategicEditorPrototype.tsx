@@ -1,4 +1,5 @@
 "use client";
+import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import {useEffect,useRef,useState} from "react";
 import {useCreateBlockNote,getDefaultReactSlashMenuItems,SuggestionMenuController} from "@blocknote/react";
 import {BlockNoteView} from "@blocknote/mantine";
@@ -29,6 +30,7 @@ function DocumentWorkspace({code,title,area,onNavigate}:{code:string;title:strin
  const [showOutline,setShowOutline]=useState(true),[portalArea,setPortalArea]=useState(area);
  const dirty=!same(state.draft,state.saved),reviewed=!!state.review&&same(state.review,state.saved),approved=!!state.approved&&same(state.approved,state.saved);
  const snapshot=visibleSnapshot(state),selected=editor.getBlock(selectedId)??editor.document[0];
+ useUnsavedChanges(dirty);
  const stage=dirty?"Alterações não salvas":approved?"Aprovado na simulação":reviewed?"Em revisão simulada":"Rascunho demonstrativo";
  function action(kind:"save"|"review"|"approve"|"release"){
   try{setState(reviewAction(state,kind));setNotice({save:"Rascunho guardado nesta sessão. Nada foi enviado ao banco.",review:"Versão encaminhada para revisão simulada.",approve:"Versão aprovada apenas nesta simulação.",release:"Cópia liberada no portal simulado. Nenhum cliente real foi notificado."}[kind]);}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível concluir a simulação.");}
@@ -79,5 +81,5 @@ export default function StrategicEditorPrototype({embedded=false}:{embedded?:boo
  const [code,setCode]=useState("01.02");const current=docs.find(d=>d.code===code)??docs[0];
  const [pending,setPending]=useState<string|null>(null);
  const navigate=(next:string)=>{if(next!==code)setPending(next);};
- return <div className="se-root"><div className="se-demo-banner"><strong>Protótipo funcional isolado</strong><span>Empresa fictícia · Sem gravação no Supabase · Não altera o Portal real</span></div>{!embedded&&<header className="se-topbar"><RotevoLogo variant="white" size={30}/><span>Planejamento Estratégico</span><span className="se-profile">AC <span>Aurora Consultoria</span></span></header>}<main className="se-main"><div className="se-document-selectors"><label>Área metodológica<select value={current.area} onChange={e=>navigate(docs.find(d=>d.area===e.target.value)!.code)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label><label>Documento<select value={current.code} onChange={e=>navigate(e.target.value)}>{docs.filter(d=>d.area===current.area).map(d=><option key={d.code} value={d.code}>{d.code} · {d.title}</option>)}</select></label></div><DocumentWorkspace key={current.code} code={current.code} title={current.title} area={current.area} onNavigate={navigate}/></main>{pending&&<SwitchDocumentDialog onCancel={()=>setPending(null)} onConfirm={()=>{setCode(pending);setPending(null);}}/>}</div>;
+ return <div className="se-root"><div className="se-demo-banner"><strong>Protótipo funcional isolado</strong><span>Empresa fictícia · Sem gravação no Supabase · Não altera o Portal real</span></div>{!embedded&&<header className="se-topbar"><RotevoLogo variant="white" size={30}/><span>Planejamento Estratégico</span><span className="se-profile">AC <span>Aurora Consultoria</span></span></header>}<div className="se-main"><div className="se-document-selectors"><label>Área metodológica<select value={current.area} onChange={e=>navigate(docs.find(d=>d.area===e.target.value)!.code)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label><label>Documento<select value={current.code} onChange={e=>navigate(e.target.value)}>{docs.filter(d=>d.area===current.area).map(d=><option key={d.code} value={d.code}>{d.code} · {d.title}</option>)}</select></label></div><DocumentWorkspace key={current.code} code={current.code} title={current.title} area={current.area} onNavigate={navigate}/></div>{pending&&<SwitchDocumentDialog onCancel={()=>setPending(null)} onConfirm={()=>{setCode(pending);setPending(null);}}/>}</div>;
 }

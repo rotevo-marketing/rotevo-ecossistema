@@ -27,15 +27,8 @@ const labels:Record<string,string>={
   planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"
 };
 const colors:Record<string,string>={
-  planned:"bg-[#ECEFF5] text-[#566073]",in_progress:"bg-[#EDE8FF] text-[#6437C3]",
-  blocked:"bg-[#FFF0D9] text-[#94610A]",completed:"bg-[#DFF4E6] text-[#176A3B]",cancelled:"bg-[#F2E9EA] text-[#9C4C59]"
-};
-const scheduleLabels:Record<string,string>={
- "essencia-do-projeto":"Essência do projeto",
- "fundamentos-estrategicos":"Fundamentos estratégicos",
- "estrategia-editorial-e-canais":"Estratégia editorial e canais",
- "campanhas-automacoes-e-conversao":"Campanhas, automações e conversão",
- "execucao-acompanhamento-e-gestao":"Execução, acompanhamento e gestão"
+  planned:"bg-[#ECEFF5] text-[#566073]",in_progress:"bg-[#FFF0D9] text-[#94610A]",
+  blocked:"bg-[#EDE8FF] text-[#6437C3]",completed:"bg-[#DFF4E6] text-[#176A3B]",cancelled:"bg-[#F2E9EA] text-[#9C4C59]"
 };
 function formatted(value?:string){if(!value)return "A definir";const match=/^(\d{4})-(\d{2})-(\d{2})/.exec(value);return match?`${match[3]}/${match[2]}/${match[1]}`:"A definir";}
 function safeLink(url?:string){if(!url)return null;try{const parsed=new URL(url);return parsed.protocol==="https:"?parsed.href:null;}catch{return null;}}
@@ -45,35 +38,28 @@ function isExecutionItem(value:unknown):value is ExecutionItem{
 export default function ProjectTimeline({projects}:{projects:Project[]}){
  const [filter,setFilter]=useState("all");
  const [view,setView]=useState<"timeline"|"list">("timeline");
- const {items,legacyMilestones}=useMemo(()=>{
+ const items=useMemo(()=>{
    const items:ExecutionItem[]=[];
-   const legacyMilestones:{id:string;projectTitle:string;title:string;dueDate:string}[]=[];
    for(const project of projects){
      for(const item of project.data?.executionTimeline??[]){
        if(!isExecutionItem(item)||item.visibleToClient!==true)continue;
        items.push({...item,projectTitle:project.title,projectKey:project.id});
      }
-     for(const [key,value] of Object.entries(project.data?.deliverySchedule??{})){
-       if(typeof value!=="string"||!value)continue;
-       legacyMilestones.push({id:`${project.id}:${key}`,projectTitle:project.title,title:scheduleLabels[key]??key,dueDate:value});
-     }
    }
    items.sort((a,b)=>(a.dueDate??"9999").localeCompare(b.dueDate??"9999"));
-   legacyMilestones.sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-   return {items,legacyMilestones};
+   return items;
  },[projects]);
  const visible=items.filter(item=>filter==="all"||item.status===filter);
  const completed=items.filter(item=>item.status==="completed").length;
+ const planned=items.filter(item=>!item.status||item.status==="planned").length;
+ const inProgress=items.filter(item=>item.status==="in_progress").length;
+ const waiting=items.filter(item=>item.status==="blocked").length;
  const now=new Date();
  const localToday=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
  const next=items.find(item=>item.status!=="completed"&&item.status!=="cancelled"&&item.dueDate&&item.dueDate>=localToday);
  return <div className="space-y-5">
-   <section className="grid gap-3 sm:grid-cols-3">
-    {[{label:"Entregas cadastradas",value:String(items.length),icon:"report" as const},{label:"Concluídas",value:String(completed),icon:"chart-pie" as const},{label:"Próxima entrega",value:next?formatted(next.dueDate):"A definir",icon:"calendar-heart" as const}].map(k=>
-      <div key={k.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
-       <span className="text-[#6D35F5]"><RotevoTablerIcon name={k.icon} size={25}/></span>
-       <p className="mt-3 text-xs text-[#697386]">{k.label}</p><p className="mt-1 text-lg font-semibold">{k.value}</p>
-      </div>)}
+   <section aria-label="Resumo da execução" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+     {[{label:"Planejadas",value:planned,tone:"border-[#E3E7F0] bg-white text-[#566073]"},{label:"Em andamento",value:inProgress,tone:"border-[#F3D6A6] bg-[#FFFAF0] text-[#94610A]"},{label:"Aguardando",value:waiting,tone:"border-[#DDD2FF] bg-[#F7F3FF] text-[#6437C3]"},{label:"Concluídas",value:completed,tone:"border-[#BCE7CA] bg-[#F2FBF5] text-[#176A3B]"}].map(stat=><div key={stat.label} className={`rounded-2xl border p-4 sm:p-5 ${stat.tone}`}><p className="text-xs font-medium">{stat.label}</p><strong className="mt-2 block text-2xl">{stat.value}</strong></div>)}
    </section>
    <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
      <div className="flex flex-wrap items-center justify-between gap-3">
@@ -91,7 +77,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
       </div>:null}
      {items.length===0?<div className="mt-5 rounded-xl bg-[#F6F7FB] p-5">
        <p className="text-sm font-semibold">Nenhuma entrega operacional cadastrada.</p>
-       <p className="mt-2 text-sm leading-6 text-[#697386]">Assim que a equipe incluir as iniciativas e os responsáveis do plano de execução, o andamento aparecerá aqui. As datas históricas já cadastradas são mostradas abaixo, separadamente.</p>
+       <p className="mt-2 text-sm leading-6 text-[#697386]">Quando a Rotevo disponibilizar as entregas do projeto, você poderá acompanhar aqui o andamento e os próximos passos.</p>
       </div>:visible.length===0?<p className="mt-6 text-sm text-[#697386]">Nenhuma entrega corresponde a este filtro.</p>:
       <div className={`mt-6 ${view==="timeline"?"border-l-2 border-[#E4E8F0] pl-5":"space-y-3"}`}>
        {visible.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className={`${view==="timeline"?"relative mb-6":"mb-3"} rounded-xl border border-[#E3E7F0] p-4`}>
@@ -110,14 +96,6 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
        </article>})}
       </div>}
    </section>
-   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
-     <h2 className="text-base font-semibold">Marcos do cronograma anterior</h2>
-     <p className="mt-2 text-sm text-[#697386]">Datas de entrega existentes nos planejamentos. Não são consideradas tarefas concluídas nem entram no cálculo do progresso.</p>
-     {legacyMilestones.length?<div className="mt-4 divide-y divide-[#E3E7F0]">{legacyMilestones.map(item=>
-      <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-       <div><p className="text-sm font-medium">{item.title}</p><p className="text-xs text-[#697386]">{item.projectTitle}</p></div>
-       <span className="text-sm font-semibold">{formatted(item.dueDate)}</span>
-      </div>)}</div>:<p className="mt-4 text-sm text-[#697386]">Nenhum marco anterior cadastrado.</p>}
-   </section>
+
  </div>;
 }

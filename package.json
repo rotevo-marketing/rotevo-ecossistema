@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@blocknote/core": "0.56.0",
+    "@blocknote/mantine": "0.56.0",
+    "@blocknote/react": "0.56.0",
     "@supabase/supabase-js": "^2.106.2",
     "@tiptap/core": "^3.32.0",
     "@tiptap/extension-link": "^3.32.0",

@@ -1,0 +1,13 @@
+"use client";
+import {BlockNoteSchema,defaultBlockSpecs} from "@blocknote/core";
+import {createReactBlockSpec} from "@blocknote/react";
+import {chartPoints} from "@/lib/strategic-editor/prototype";
+const strategic=createReactBlockSpec({type:"strategic",propSchema:{kind:{default:"decision",values:["decision","recommendation","conclusion"] as const},title:{default:"Decisão estratégica"}},content:"inline"},{render:({block,contentRef})=><aside className={`strategic-callout strategic-${block.props.kind}`}><p className="strategic-eyebrow">{{decision:"Decisão estratégica",recommendation:"Recomendação",conclusion:"Conclusão"}[block.props.kind]}</p><strong>{block.props.title}</strong><div ref={contentRef} className="strategic-callout-body"/></aside>})();
+const indicator=createReactBlockSpec({type:"indicator",propSchema:{label:{default:"Indicador"},value:{default:"18"},context:{default:"Valor ilustrativo · Aurora Consultoria"}},content:"none"},{render:({block})=><figure className="strategic-indicator"><figcaption>{block.props.label}</figcaption><strong>{block.props.value}</strong><p>{block.props.context}</p></figure>})();
+const chart=createReactBlockSpec({type:"strategicChart",propSchema:{title:{default:"Origem das oportunidades"},series:{default:"Indicação:65;Conteúdo:20;Busca:15"},unit:{default:"%"}},content:"none"},{render:({block})=>{
+ const points=chartPoints(block.props.series),max=Math.max(1,...points.map(x=>x.value));
+ return <figure className="strategic-chart"><figcaption>{block.props.title}</figcaption>{points.length?<><div role="img" aria-label={points.map(p=>`${p.label}: ${p.value}${block.props.unit}`).join(', ')} className="strategic-bars">{points.map((p,i)=><div key={i} className="strategic-bar-row"><span>{p.label}</span><div className="strategic-bar-track"><div style={{width:`${p.value/max*100}%`}}/></div><strong>{p.value}{block.props.unit}</strong></div>)}</div><p>Dados fictícios para demonstração.</p></>:<p role="status">Informe até 8 categorias no formato Nome:valor, separadas por ponto e vírgula.</p>}</figure>;
+}})();
+export const strategicSchema=BlockNoteSchema.create({blockSpecs:{paragraph:defaultBlockSpecs.paragraph,heading:defaultBlockSpecs.heading,bulletListItem:defaultBlockSpecs.bulletListItem,numberedListItem:defaultBlockSpecs.numberedListItem,checkListItem:defaultBlockSpecs.checkListItem,table:defaultBlockSpecs.table,image:defaultBlockSpecs.image,quote:defaultBlockSpecs.quote,strategic,indicator,strategicChart:chart}});
+export type StrategicBlock=typeof strategicSchema.Block;
+export type StrategicPartial=typeof strategicSchema.PartialBlock;

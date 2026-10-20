@@ -29,6 +29,11 @@ export function projectForClient(project:PrivateProjectRow) {
     data:{
       coverImageUrl:https(data.coverImageUrl) ?? null,
       deliverySchedule,
+      planningStages:Array.isArray(data.planningStages)?data.planningStages.flatMap(value=>{
+        const v=object(value);
+        if(!v||v.visibleToClient!==true||typeof v.id!=="string"||typeof v.title!=="string"||v.title.length>140||typeof v.dueDate!=="string"||!(v.dueDate===""||/^\d{4}-\d{2}-\d{2}$/.test(v.dueDate))||!["pending","in_progress","completed"].includes(String(v.status)))return [];
+        return [{id:v.id,title:v.title,dueDate:v.dueDate,status:v.status,visibleToClient:true}];
+      }).slice(0,15):[],
       executionTimeline:publishedArray(data.executionTimeline,
         ["phase","status","kind","startDate","dueDate","description"],true),
       editorialCalendar:publishedArray(data.editorialCalendar,

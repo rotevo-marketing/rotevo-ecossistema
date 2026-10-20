@@ -33,7 +33,7 @@ const menu:MenuItem[]=[
   {id:"contract",name:"Contrato",icon:"report"},
   {id:"drive",name:"Drive",icon:"folder-open"},
   {id:"finance",name:"Financeiro",icon:"currency-dollar"},
-  {id:"access",name:"Acessos",icon:"lock"}
+
 ];
 const statusLabel=(s:string)=>s==="draft"?"Em produção":s==="in_progress"?"Em andamento":s==="published"?"Publicado":"Arquivado";
 const statusColor=(s:string)=>s==="published"?"bg-[#E2F6E8] text-[#126837]":s==="in_progress"?"bg-[#E6EFFF] text-[#315EA0]":s==="draft"?"bg-[#FFF2DB] text-[#92600C]":"bg-[#E9ECF2] text-[#626A7B]";

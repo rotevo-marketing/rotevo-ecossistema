@@ -3,7 +3,8 @@ import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
-type ClientProject={id:string;slug:string;title:string;description:string|null;status:string};
+type Stage={id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean};
+type ClientProject={id:string;slug:string;title:string;description:string|null;status:string;data?:{planningStages?:Stage[]}|null};
 type VisibleDocument={content:string};
 type Presentation={status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>}}};
 const areas=Array.from(new Set(ecosystemDocuments.filter(d=>/^\d{2} /.test(d.area)&&!d.area.startsWith("00 ")).map(d=>d.area)));
@@ -48,6 +49,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
     {projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
    {selected&&<div className="mt-5 flex flex-wrap items-center gap-3"><strong className="text-sm">{selected.title}</strong><span className={`rounded-full px-3 py-1 text-xs font-semibold ${selected.status==="published"?"bg-[#E0F5E8] text-[#176F40]":"bg-[#FFF2DB] text-[#92600C]"}`}>{selected.status==="published"?"Publicado":"Em desenvolvimento"}</span></div>}
   </section>
+  {selected&&<section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7"><h3 className="text-lg font-bold">Cronograma de elaboração e entrega</h3><p className="mt-2 text-sm text-[#525B70]">Datas previstas pela Rotevo. A conclusão de uma etapa não significa publicação automática dos documentos.</p>{(selected.data?.planningStages??[]).length?<ol className="mt-5 space-y-3">{(selected.data?.planningStages??[]).map(stage=><li key={stage.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] px-4 py-3"><span className="text-sm font-semibold">{stage.title}</span><span className="text-xs text-[#525B70]">{stage.status==="completed"?"Concluída":stage.status==="in_progress"?"Em andamento":"Não iniciada"} · {stage.dueDate?stage.dueDate.split("-").reverse().join("/"):"Previsão a definir"}</span></li>)}</ol>:<p className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#525B70]">A Rotevo ainda não divulgou as datas previstas para este planejamento.</p>}</section>}
   {!selected?<section className="rounded-2xl bg-white p-6 text-sm text-[#525B70]">Nenhum planejamento está vinculado à sua conta.</section>
    :selected.status!=="published"?<section className="rounded-2xl border border-[#E3E7F0] bg-white p-7"><h3 className="text-lg font-bold">Planejamento em desenvolvimento</h3><p className="mt-2 text-sm leading-6 text-[#525B70]">A apresentação estratégica ficará disponível aqui quando for publicada pela Rotevo. Nenhum rascunho é mostrado.</p></section>
    :loading?<section role="status" className="rounded-xl bg-white p-6 text-sm text-[#525B70]">Carregando documentos autorizados…</section>

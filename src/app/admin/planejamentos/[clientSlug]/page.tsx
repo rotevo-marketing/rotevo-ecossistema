@@ -5,12 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
-import OperationalAgenda, {type AgendaItem} from "@/Components/admin/OperationalAgenda";
 import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
 import PlanningLayoutDemo from "@/Components/admin/PlanningLayoutDemo";
 import DynamicStrategicEditor from "@/Components/strategic-editor/DynamicStrategicEditor";
-import ProjectOnboarding, {type OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
@@ -24,8 +22,6 @@ type ProjectData = {
   coverImageUrl?: string | null;
   planningStages?: PlanningStage[];
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
-  operationalAgenda?:AgendaItem[];
-  onboardingChecklist?: OnboardingItem[];
   ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[]; documents?: Record<string,{content:string;updatedAt:string}> };
 };
 
@@ -97,6 +93,7 @@ function PlanejamentoClienteContent() {
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [editingScope, setEditingScope] = useState(false);
+  const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("documents");
   const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
   const [draftPresentedCodes, setDraftPresentedCodes] = useState<string[]>([]);
 
@@ -405,6 +402,8 @@ function PlanejamentoClienteContent() {
                 <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Visíveis ao cliente</p><strong className="mt-2 block text-2xl">{presentedCodes.length}</strong></div>
                 <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Áreas do projeto</p><strong className="mt-2 block text-2xl">{documentAreas.length}</strong></div>
               </div>
+              <nav aria-label="Seções do planejamento" className="flex flex-wrap gap-2 border-b border-[#E3E7F0] pb-4" role="tablist">{([{id:"documents",label:"Documentos"},{id:"schedule",label:"Cronograma"},{id:"preview",label:"Prévia do Cliente"},{id:"editor",label:"Editor Estratégico"},{id:"execution",label:"Plano de Execução"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} onClick={()=>setPlanningTab(item.id)} className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold ${planningTab===item.id?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70] hover:border-[#6D35F5]"}`}>{item.label}</button>)}</nav>
+              <div id="planning-panel-documents" role="tabpanel" aria-labelledby="planning-tab-documents" hidden={planningTab!=="documents"}>
               <div className="rounded-xl border border-[#E3E7F0] bg-white p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Gerencie o escopo e a exibição dos documentos do Ecossistema 2027.</p></div>
@@ -437,13 +436,10 @@ function PlanejamentoClienteContent() {
         ) : null}
       </section>
 
-      {project && !isLoading && hasEcosystem && <PlanningScheduleEditor key={project.id+project.updated_at} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject({...project,data:saved.data,updated_at:saved.updated_at});}}/>}
-      {project && !isLoading && hasEcosystem && <PlanningLayoutDemo/>}
-      {project && !isLoading && hasEcosystem && <section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs font-semibold uppercase tracking-wide text-[#6D35F5]">Documentos estratégicos</p><h2 className="mt-1 text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Experiência de edição BlockNote aprovada. Esta versão ainda utiliza documentos fictícios para validação visual e não grava nem publica informações reais. O editor original continua acessível logo abaixo para trabalhar nos documentos existentes.</p></div><DynamicStrategicEditor embedded/></section>}
-      {project && !isLoading && hasEcosystem && <section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><details className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer text-base font-semibold">Editor anterior — documentos reais e publicação</summary><p className="mt-3 text-sm text-[#525B70]">Até a integração segura do BlockNote, utilize este editor para salvar, revisar e publicar os documentos reais do planejamento.</p><div className="mt-5"><EcosystemDocumentEditor key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></div></details></section>}
-      {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><ProjectOnboarding key={project.id} projectId={project.id} data={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}
-      {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10"><OperationalAgenda key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}
-      {project && !isLoading && <section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data ?? {}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id+project.updated_at} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject({...project,data:saved.data,updated_at:saved.updated_at});}}/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PlanningLayoutDemo/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Demonstração BlockNote com conteúdo fictício. Para documentos reais utilize o editor anterior, preservado abaixo.</p></div><DynamicStrategicEditor embedded/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
+      {project && !isLoading && <div role="tabpanel" id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );

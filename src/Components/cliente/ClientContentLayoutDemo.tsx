@@ -4,11 +4,11 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 type Status="awaiting"|"changes"|"approved"|"published";
 type Item={id:string;title:string;channel:string;format:string;date:string;status:Status;caption:string;material:string};
 const initial:Item[]=[
-{id:"p1",title:"O que impede um negócio de crescer?",channel:"Instagram",format:"Carrossel",date:"2026-11-06",status:"awaiting",caption:"Crescimento não depende apenas de publicar mais. É necessário ter clareza de objetivos, público e processos.\n\nNeste conteúdo, apresentamos três pontos para começar essa análise.",material:"Arte do carrossel — exemplo"},
-{id:"p2",title:"Bastidores de uma consultoria estratégica",channel:"YouTube",format:"Vídeo",date:"2026-11-09",status:"awaiting",caption:"Um processo estratégico começa pela compreensão da empresa, e não pela escolha de uma ferramenta.",material:"Vídeo demonstrativo"},
-{id:"p3",title:"Checklist para avaliar suas prioridades",channel:"LinkedIn",format:"Publicação",date:"2026-11-11",status:"changes",caption:"Antes de definir o próximo investimento, revise os objetivos e os recursos disponíveis.",material:"Documento ilustrativo"},
-{id:"p4",title:"Da análise para o plano de ação",channel:"Instagram",format:"Carrossel",date:"2026-11-15",status:"approved",caption:"Uma estratégia só é útil quando se transforma em decisões executáveis.",material:"Peças demonstrativas"},
-{id:"p5",title:"Como acompanhar resultados",channel:"LinkedIn",format:"Artigo",date:"2026-11-18",status:"published",caption:"Indicadores ajudam a orientar decisões, desde que estejam vinculados a objetivos reais.",material:"Artigo ilustrativo"}
+{id:"p1",title:"O que impede um negócio de crescer?",channel:"Instagram",format:"Carrossel",date:"2026-10-21",status:"awaiting",caption:"Crescimento não depende apenas de publicar mais. É necessário ter clareza de objetivos, público e processos.\n\nNeste conteúdo, apresentamos três pontos para começar essa análise.",material:"Arte do carrossel — exemplo"},
+{id:"p2",title:"Bastidores de uma consultoria estratégica",channel:"YouTube",format:"Vídeo",date:"2026-10-23",status:"awaiting",caption:"Um processo estratégico começa pela compreensão da empresa, e não pela escolha de uma ferramenta.",material:"Vídeo demonstrativo"},
+{id:"p3",title:"Checklist para avaliar suas prioridades",channel:"LinkedIn",format:"Publicação",date:"2026-10-26",status:"changes",caption:"Antes de definir o próximo investimento, revise os objetivos e os recursos disponíveis.",material:"Documento ilustrativo"},
+{id:"p4",title:"Da análise para o plano de ação",channel:"Instagram",format:"Carrossel",date:"2026-10-28",status:"approved",caption:"Uma estratégia só é útil quando se transforma em decisões executáveis.",material:"Peças demonstrativas"},
+{id:"p5",title:"Como acompanhar resultados",channel:"LinkedIn",format:"Artigo",date:"2026-10-30",status:"published",caption:"Indicadores ajudam a orientar decisões, desde que estejam vinculados a objetivos reais.",material:"Artigo ilustrativo"}
 ];
 const statuses:Record<Status,string>={awaiting:"Aguardando aprovação",changes:"Ajustes solicitados",approved:"Aprovado",published:"Publicado"};
 const statusColor:Record<Status,string>={awaiting:"bg-[#FFF2DB] text-[#92600C]",changes:"bg-[#EEE8FF] text-[#6034B7]",approved:"bg-[#E0F5E8] text-[#176F40]",published:"bg-[#EDF0F5] text-[#475467]"};
@@ -16,7 +16,7 @@ const filters=[["all","Todos"],["awaiting","Aguardando aprovação"],["changes",
 const fmt=(d:string)=>d.split("-").reverse().join("/");
 const channelIcon=(v:string)=>v==="Instagram"?"brand-instagram":v==="YouTube"?"brand-youtube":v==="LinkedIn"?"brand-linkedin":"link";
 export default function ClientContentLayoutDemo(){
- const [items,setItems]=useState<Item[]>(initial),[filter,setFilter]=useState("all"),[month,setMonth]=useState("2026-11"),[selected,setSelected]=useState<string|null>(null),[feedback,setFeedback]=useState(""),[editing,setEditing]=useState(false),[notice,setNotice]=useState("");
+ const [items,setItems]=useState<Item[]>(initial),[filter,setFilter]=useState("all"),[month,setMonth]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}),[selected,setSelected]=useState<string|null>(null),[feedback,setFeedback]=useState(""),[editing,setEditing]=useState(false),[notice,setNotice]=useState("");
  const dialog=useRef<HTMLDialogElement>(null);
  const active=items.find(x=>x.id===selected);
  useEffect(()=>{const d=dialog.current;if(selected&&!d?.open)d?.showModal();if(!selected&&d?.open)d.close();},[selected]);

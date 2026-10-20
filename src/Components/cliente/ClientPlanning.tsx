@@ -6,11 +6,11 @@ import {ecosystemDocuments} from "@/data/ecosystem2027";
 type ClientProject={id:string;slug:string;title:string;description:string|null;status:string};
 type VisibleDocument={content:string};
 type Presentation={status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>}}};
-const areas=Array.from(new Set(ecosystemDocuments.filter(d=>/^\\d{2} /.test(d.area)&&!d.area.startsWith("00 ")).map(d=>d.area)));
+const areas=Array.from(new Set(ecosystemDocuments.filter(d=>/^\d{2} /.test(d.area)&&!d.area.startsWith("00 ")).map(d=>d.area)));
 const button="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
 export default function ClientPlanning({projects}:{projects:ClientProject[]}){
  const [projectId,setProjectId]=useState("");
- const [loading,setLoading]=useState(false);
+ const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [presentation,setPresentation]=useState<Presentation|null>(null);
  const [area,setArea]=useState("");
@@ -60,7 +60,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
     </div>
     <section aria-label="Áreas do planejamento" className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
      <h3 className="mb-3 text-base font-bold">Áreas estratégicas</h3>
-     <div className="flex flex-wrap gap-2">{availableAreas.map(item=><button key={item.name} type="button" onClick={()=>{setArea(item.name);setCode(item.docs[0]?.code??"")}} aria-pressed={area===item.name} className={button+" border "+(area===item.name?"border-[#6D35F5] bg-[#6D35F5] text-white":"border-[#DDE2ED] bg-white text-[#525B70] hover:border-[#6D35F5]")}>{item.name.replace(/^\\d{2} /,"")} <span className="ml-1 text-xs opacity-75">({item.docs.length})</span></button>)}</div>
+     <div className="flex flex-wrap gap-2">{availableAreas.map(item=><button key={item.name} type="button" onClick={()=>{setArea(item.name);setCode(item.docs[0]?.code??"")}} aria-pressed={area===item.name} className={button+" border "+(area===item.name?"border-[#6D35F5] bg-[#6D35F5] text-white":"border-[#DDE2ED] bg-white text-[#525B70] hover:border-[#6D35F5]")}>{item.name.replace(/^\d{2} /,"")} <span className="ml-1 text-xs opacity-75">({item.docs.length})</span></button>)}</div>
     </section>
     {chosenArea&&<section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
      <p className="text-xs font-semibold text-[#697386]">{chosenArea.name}</p><h3 className="mt-2 text-xl font-bold">Documentos desta área</h3>

@@ -14,7 +14,7 @@ import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 
 type Project = {
   id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
-  data:{coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; onboardingChecklist?:OnboardingItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
+  data:{planningStages?:{id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean}[];coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; onboardingChecklist?:OnboardingItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
 };
 type MenuId="overview"|"planning"|"execution"|"content"|"campaigns"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";
 type MenuItem={id:MenuId;name:string;icon:RotevoIconName};

@@ -13,6 +13,7 @@ import ClientMeetingsLayoutDemo from "@/Components/cliente/ClientMeetingsLayoutD
 import ClientContractLayoutDemo from "@/Components/cliente/ClientContractLayoutDemo";
 import ClientDriveLayoutDemo from "@/Components/cliente/ClientDriveLayoutDemo";
 import ClientFinanceLayoutDemo from "@/Components/cliente/ClientFinanceLayoutDemo";
+import ClientOverviewLayoutDemo from "@/Components/cliente/ClientOverviewLayoutDemo";
 import ClientAttention from "@/Components/cliente/ClientAttention";
 import ClientPlanning from "@/Components/cliente/ClientPlanning";
 import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
@@ -128,28 +129,7 @@ export default function ClientAreaPage(){
        <div className="mb-7"><p className="mb-1 text-sm text-[#697386]">{tab==="overview"?"Bem-vindo ao seu espaço":"Portal do Cliente"}</p><h1 className="text-3xl font-bold tracking-tight">{tab==="overview"?(clientName?`Olá, ${clientName}!`:"Visão geral"):selected.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{tab==="overview"?"Acompanhe o andamento do seu projeto e saiba o que precisa da sua atenção.":tab==="planning"?"Consulte seus planejamentos estratégicos em um ambiente próprio.":"Informações e entregas do seu projeto, organizadas em um só lugar."}</p></div>
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
-       tab==="overview"?<div className="space-y-5">
-         <ClientAttention projects={projects} onOpenContent={()=>setTab("content")}/>
-         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-           {[
-             {label:"Planejamentos",value:String(projects.length),icon:"report" as RotevoIconName},
-             {label:"Projeto",value:projects.length===0?"Em preparação":projects.some(p=>p.status==="in_progress"||p.status==="draft")?"Em andamento":"Disponível",icon:"chart-dots-3" as RotevoIconName},
-             {label:"Próximo marco",value:nextMilestone?scheduleDate(nextMilestone.date):"A definir",icon:"calendar-heart" as RotevoIconName},
-             {label:"Aprovações",value:"Não integradas",icon:"alert-square-rounded" as RotevoIconName}
-           ].map(k=><div key={k.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><div className="mb-4 text-[#6D35F5]"><Icon name={k.icon}/></div><p className="text-xs text-[#697386]">{k.label}</p><p className="mt-2 text-base font-semibold">{k.value}</p></div>)}
-         </div>
-         <Block title="Andamento do projeto" icon="chart-dots-3" action={<button className="cursor-pointer text-sm font-semibold text-[#6D35F5]" onClick={()=>setTab("execution")}>Ver execução →</button>}>
-           <p className="text-sm text-[#525B70]">O acompanhamento operacional de tarefas e entregas será disponibilizado aqui quando a linha do tempo de execução estiver integrada.</p>
-           {projects.length>0&&<p className="mt-3 text-sm text-[#525B70]">Planejamento mais recente: <strong>{projects[0].title}</strong> · {statusLabel(projects[0].status)}.</p>}
-         </Block>
-         <Block title="Calendário editorial" icon="brand-instagram" action={<button className="cursor-pointer text-sm font-semibold text-[#6D35F5]" onClick={()=>setTab("content")}>Ver conteúdos →</button>}>
-           <p className="text-sm text-[#525B70]">O calendário de conteúdos, os materiais enviados e as solicitações de aprovação aparecerão aqui após sua configuração.</p>
-         </Block>
-         <Block title="Próximos marcos" icon="calendar-heart">
-           {nextMilestone?<div className="flex flex-wrap justify-between gap-2 text-sm"><span>{nextMilestone.label} · {nextMilestone.project}</span><strong>{scheduleDate(nextMilestone.date)}</strong></div>:<p className="text-sm text-[#697386]">Nenhum marco futuro cadastrado.</p>}
-         </Block>
-         <Block title="Planejamento Estratégico" icon="report" action={<button className="cursor-pointer text-sm font-semibold text-[#6D35F5]" onClick={()=>setTab("planning")}>Ver todos →</button>}>{renderProjects()}</Block>
-       </div>:
+       tab==="overview"?<ClientOverviewLayoutDemo onNavigate={setTab}/>:
        tab==="planning"?<ClientPlanning projects={projects}/>:
        tab==="execution"?<ProjectTimeline projects={projects}/>:
        tab==="content"?<ClientContentLayoutDemo/> :

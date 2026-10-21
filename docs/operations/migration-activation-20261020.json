@@ -13,7 +13,7 @@
     {
       "file": "supabase/migrations/20261018122353_finance_v2_private_domain.sql",
       "remoteVersion": "20261021001148",
-      "sha256": "aaf1891b84b3026b27f97e8cd30cb06c081e6dca6f40a586fc5a3b9034d4f6df"
+      "sha256": "bbe72cc6285090a6ef3cc624eb56d643628e99ee5109d133573404fbf210b405"
     },
     {
       "file": "supabase/migrations/20261019125535_finance_payables_lifecycle.sql",
@@ -23,12 +23,12 @@
     {
       "file": "supabase/migrations/20261020204843_operation_workspace_and_editorial.sql",
       "remoteVersion": "20261021001303",
-      "sha256": "9fbc001882870abb89a85439dde5a774831f1b6a3f1be31ef5d26698cbca8818"
+      "sha256": "ab87376ffc62ba624d19b15c12ab8327f4758444c8c4ddb798397db2f82572fe"
     },
     {
       "file": "supabase/migrations/20261020210903_private_operational_assets.sql",
       "remoteVersion": "20261021001314",
-      "sha256": "374fa089388c8d510380c517c5ba926072eef0dc66557ba8a804476daa82430d"
+      "sha256": "11dee2e7f77423674b133bd7c80b8719067e265a430ab2ff5df918cdd68ddb03"
     },
     {
       "file": "supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql",
@@ -43,7 +43,8 @@
     {
       "file": "supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql",
       "remoteVersion": "20261021011214",
-      "sha256": "067b1ad339103ab4c21616064565e4caeebfcbb185cd7b8e32cd9c3b55d9181a"
+      "sha256": "3810ef48d5e2f420f382b5fbb6741071a1ca7cddda73706a542c1fa0f9965c56"
     }
-  ]
+  ],
+  "hashNormalization": "UTF-8 text with LF line endings"
 }

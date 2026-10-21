@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
+import {financeBuildMode} from "./src/lib/finance/environment.ts";
 
 const nextConfig: NextConfig = {
   env: {
-    // Derived at build time; a public review flag alone cannot enable production demos.
-    NEXT_PUBLIC_ROTEVO_FINANCE_MODE: process.env.VERCEL_ENV === "production" ? "disabled"
-      : process.env.NEXT_PUBLIC_ROTEVO_FINANCE_REVIEW === "true" ? "review"
-      : !process.env.VERCEL_ENV && process.env.NEXT_PUBLIC_SUPABASE_URL === "http://127.0.0.1:54321" && process.env.ROTEVO_FINANCE_ENABLED === "true" ? "local" : "disabled",
+    NEXT_PUBLIC_ROTEVO_FINANCE_MODE: financeBuildMode(
+      process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.VERCEL_ENV,
+      process.env.ROTEVO_FINANCE_ENABLED, process.env.NEXT_PUBLIC_ROTEVO_FINANCE_REVIEW,
+      process.env.ROTEVO_FINANCE_PRODUCTION_APPROVED,
+    ),
   },
 };
 

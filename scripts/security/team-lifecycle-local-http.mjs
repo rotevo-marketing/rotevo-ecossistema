@@ -60,10 +60,14 @@ try{
  status(await call('/api/team/first-password',initial.jwt,{newPassword}),200,'first password update');
  const {error:oldPasswordError}=await browser().auth.signInWithPassword({email:invite.email,password:temporaryPassword});assert.ok(oldPasswordError);checks++;
  const session=await login(invite.email,newPassword);
- for(const permission of ['projects.write','tasks.read','tasks.write','editorial.read','editorial.write','meetings.read','finance.read','finance.write']){
+ for(const permission of ['projects.write','tasks.read','tasks.write','editorial.read','editorial.write','meetings.read']){
   status(await call('/api/team/permissions',ownerSession.jwt,{userId:staff.id,permission,enabled:true},'PATCH'),409,'unimplemented capability cannot be granted: '+permission);
  }
  const {data:unsupportedGrants,error:unsupportedError}=await admin.from('team_member_permissions').select('permission').eq('user_id',staff.id);assert.ifError(unsupportedError);assert.deepEqual(unsupportedGrants,[]);checks++;
+ for(const permission of ['finance.read','finance.write']){
+  await mutate('/api/team/permissions',ownerSession.jwt,{userId:staff.id,permission,enabled:true});
+  await mutate('/api/team/permissions',ownerSession.jwt,{userId:staff.id,permission,enabled:false});
+ }
  await insert('team_member_permissions',{user_id:staff.id,permission:'finance.read'});
  await mutate('/api/team/permissions',ownerSession.jwt,{userId:staff.id,permission:'finance.read',enabled:false});
  const {data:remainingLegacy,error:legacyError}=await admin.from('team_member_permissions').select('permission').eq('user_id',staff.id);assert.ifError(legacyError);assert.deepEqual(remainingLegacy,[]);checks++;

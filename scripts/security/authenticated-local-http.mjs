@@ -43,9 +43,9 @@ try {
   const active = await makeUser("active-admin");
   const {error:profileError} = await admin.from("profiles").insert([
     {id:client.id,role:"client",full_name:"Fictitious client",email:client.email},
-    {id:inactive.id,role:"client",full_name:"Fictitious inactive admin",email:inactive.email},
+    {id:inactive.id,role:"strategist",full_name:"Fictitious inactive admin",email:inactive.email},
     {id:strategist.id,role:"strategist",full_name:"Fictitious strategist",email:strategist.email},
-    {id:active.id,role:"client",full_name:"Fictitious active admin",email:active.email}
+    {id:active.id,role:"strategist",full_name:"Fictitious active admin",email:active.email}
   ]);
   assert.ifError(profileError);
   const {error:teamError}=await admin.from("team_members").insert([

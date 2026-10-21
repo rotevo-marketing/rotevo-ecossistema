@@ -46,3 +46,7 @@ A compilação final foi aprovada, incluindo TypeScript. Regressão final: 250/2
 As tentativas de regressão sem os destinos locais explícitos foram bloqueadas pela proteção dos testes; outra tentativa no servidor dev teve dois timeouts de compilação. A execução final usou servidor compilado local e passou integralmente. Não foram criados testes mutáveis no Supabase hospedado.
 
 A inspeção visual local validou edição/publicação rica, documento executivo, ocultação/liberação, apresentação, portal financeiro, contratos, perfil e navegação móvel. As evidências de imagens e logs ficam em `../recovery/`, fora do repositório. Consulte o relatório final e o manual para limites de homologação e publicação.
+
+## Conclusão da conferência autenticada
+
+A autorização específica do usuário permitiu criar o administrador temporário; login e 13 consultas autenticadas passaram. A inspeção visual encontrou next.config.ts ainda priorizando o modo review. Corrigido em ac69c12: configuração de build e API agora compartilham o mesmo gate. Regressão 251/251, domínio financeiro 16/16 e HTTP financeiro local 39/39; build/TypeScript e checks GitHub aprovados. Preview final dpl_H3eamaESYSvi1ckaiQLQrkg67bfn, fonte ac69c12d571412ab33ecc4db392dfe5c059e69fd. Tela conectada conferida no navegador. Administrador, perfil, vínculo e sessões temporárias removidos; 13 usuários, 1 cliente e 2 projetos originais preservados com fingerprints iguais. Domínio oficial sem promoção. Relatório e matriz de aceitação registram o escopo e as ressalvas.

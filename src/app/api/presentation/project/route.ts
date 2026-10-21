@@ -1,3 +1,4 @@
+import {emptyWorkspace,workspaceForClient} from "@/lib/operations/model";
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {projectForPresentation,type PresentationProjectRow} from "@/lib/security/projectForPresentation";
@@ -36,6 +37,11 @@ export async function GET(req:NextRequest){
    if(permissionError)return fail(503);
    if(!permission)return fail(403);
   }
+ }
+ if(profile.role==="client"){
+  const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
+  if(workspace.error)return fail(503);
+  if(!workspaceForClient(workspace.data?.data??emptyWorkspace()).modules.includes("planning"))return fail(404);
  }
  const projected=projectForPresentation(project as PresentationProjectRow,profile.role==="strategist");
  if(!projected)return fail(404);

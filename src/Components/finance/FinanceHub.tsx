@@ -7,6 +7,7 @@ import {accountBalance,balance,brl,displayDate,emptyFinanceState,invoiceStatus,t
 import {dueWindow} from "@/lib/finance/lifecycle";
 import FinanceLifecycleDialog,{type LifecycleForm} from "./FinanceLifecycleDialog";
 import {SupplierPanel,SubscriptionPanel,ForecastPanel} from "./FinanceLifecyclePanels";
+import FinanceDocuments from "./FinanceDocuments";
 import InvoiceTable from "./InvoiceTable";
 import FinanceDialog,{type FinanceForm} from "./FinanceDialog";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
@@ -36,6 +37,7 @@ function downloadCsv(state:FinanceState,month:string){
 }
 export function FinanceWorkspace({state,onCommand,onRefresh}:{state:FinanceState;onCommand:FinanceCommand;onRefresh?:()=>Promise<void>}){
  const [tab,setTab]=useState("overview"),[month,setMonth]=useState(todayInBrazil().slice(0,7));
+ const [documentInvoice,setDocumentInvoice]=useState<string|null>(null);
  const [client,setClient]=useState(""),[project,setProject]=useState(""),[search,setSearch]=useState(""),[status,setStatus]=useState("all");
  const [lifecycleForm,setLifecycleForm]=useState<LifecycleForm|null>(null),[dueFilter,setDueFilter]=useState("all");
  const [form,setForm]=useState<FinanceForm|null>(null),[notice,setNotice]=useState(""),[error,setError]=useState(""),[pending,setPending]=useState(false);
@@ -50,12 +52,13 @@ export function FinanceWorkspace({state,onCommand,onRefresh}:{state:FinanceState
  const cash=state.accounts.reduce((sum,a)=>sum+accountBalance(state,a.id,todayInBrazil()),0);
  const campaigns=state.campaigns.filter(c=>(!client||c.clientId===client)&&(!project||c.projectId===project));
  async function command(action:string,input:Record<string,unknown>,requestId=crypto.randomUUID()){
-  await onCommand(action,input,requestId);if(action==="invoice.create"){setTab(input.direction==="out"?"payables":"receivables");setMonth(String(input.competence));setClient("");setProject("");setSearch("");setStatus("all");setDueFilter("all");}setNotice(action==="invoice.create"&&Number(input.repeat_months)>1?`${input.repeat_months} despesas mensais cadastradas em aberto`:(actionLabels[action]??"Operação registrada."));setError("");
+  await onCommand(action,input,requestId);if(action==="invoice.create"){setTab(input.direction==="out"?"payables":"receivables");setMonth(String(input.competence));setClient("");setProject("");setSearch("");setStatus("all");setDueFilter("all");}setNotice(action==="invoice.create"&&Number(input.repeat_months)>1?`${input.repeat_months} ${input.direction==="in"?"parcelas a receber emitidas em aberto":"despesas mensais cadastradas em aberto"}`:(actionLabels[action]??"Operação registrada."));setError("");
  }
  async function run(action:string,input:Record<string,unknown>){setPending(true);setError("");try{await command(action,input);}catch(e){setError(e instanceof Error?e.message:"Não foi possível concluir.");}finally{setPending(false);}}
- const table=(direction:"in"|"out",list=visible)=><InvoiceTable invoices={list.filter(i=>i.direction===direction)} canWrite={state.canWrite} onSettle={id=>setForm({kind:"settle",id})} onCancel={id=>setForm({kind:"cancel",id})} onEdit={id=>setLifecycleForm({kind:"invoiceEdit",id})}/>;
+ const table=(direction:"in"|"out",list=visible)=><InvoiceTable invoices={list.filter(i=>i.direction===direction)} canWrite={state.canWrite} onSettle={id=>setForm({kind:"settle",id})} onCancel={id=>setForm({kind:"cancel",id})} onEdit={id=>setLifecycleForm({kind:"invoiceEdit",id})} onDocuments={state.canWrite&&onRefresh?setDocumentInvoice:undefined}/>;
  const monthControl=<label className="flex items-center gap-2 text-xs font-semibold text-[#697386]">Competência<input aria-label="Competência financeira" type="month" value={month} onChange={e=>{if(e.target.value)setMonth(e.target.value);}} className={inputClass}/></label>;
  return <div className="mt-6 space-y-5 text-[#090D1C] [&_h2]:font-sans [&_h3]:font-sans [&_h4]:font-sans">
+  {documentInvoice&&state.invoices.find(i=>i.id===documentInvoice)&&<FinanceDocuments invoice={state.invoices.find(i=>i.id===documentInvoice)!} onClose={()=>setDocumentInvoice(null)}/>}
   <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6D35F5]">Gestão financeira</p><h2 className="mt-1 text-2xl font-bold tracking-tight">Financeiro da Rotevo</h2><p className="mt-2 text-sm text-[#697386]">Contratos, compromissos e caixa da Rotevo em um só lugar.</p></div><div className="flex flex-wrap gap-2">{onRefresh&&<button onClick={()=>void onRefresh().catch(e=>setError(e.message))} className={secondary}>Atualizar</button>}{state.canWrite&&<><button onClick={()=>setForm({kind:"invoice",direction:"in"})} className={button}><RotevoTablerIcon name="square-rounded-plus" size={17}/> Nova receita</button><button onClick={()=>setForm({kind:"invoice",direction:"out"})} className={secondary}><RotevoTablerIcon name="square-rounded-plus" size={17}/> Nova despesa</button></>}</div></div>
   <nav aria-label="Seções do financeiro" className="flex gap-1 overflow-x-auto border-b border-[#E3E7F0]">{tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined} className={`shrink-0 border-b-2 px-3 py-3 text-xs font-semibold ${tab===t.id?"border-[#6D35F5] text-[#6D35F5]":"border-transparent text-[#697386] hover:text-[#090D1C]"}`}>{t.label}</button>)}</nav>
   {notice&&<p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}{error&&<p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -84,5 +87,5 @@ function LiveFinanceHub(){
  return <FinanceWorkspace state={state} onRefresh={load} onCommand={async(action,input,requestId)=>{const {financeRequest}=await import("@/lib/finance/api");await financeRequest(false,{action,input,requestId});try{await load();}catch{setError("A operação foi recebida, mas a consulta não atualizou. Atualize antes de repetir.");}}}/>;
 }
 export default function FinanceHub(){
- return process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE==="review"?<EmbeddedFinanceReview/>:process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE==="local"?<LiveFinanceHub/>:<FinanceDisconnected/>;
+ return process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE==="review"?<EmbeddedFinanceReview/>:["local","connected"].includes(process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE??"")?<LiveFinanceHub/>:<FinanceDisconnected/>;
 }

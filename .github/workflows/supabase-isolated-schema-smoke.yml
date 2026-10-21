@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       - name: Prepare detached local Supabase workspace
         shell: bash
         run: |
@@ -39,6 +39,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_team_roles.sql" supabase/migrations/20261015000001_team_fixture.sql
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_harden_profile_authorization.sql" supabase/migrations/20261015000002_profile_hardening_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020204843_operation_workspace_and_editorial.sql" supabase/migrations/20261015000003_operations_workspace_fixture.sql
           mkdir -p supabase/tests/database
           # Legacy vulnerability characterization is kept as an archival test; hardened grants are validated below.
           cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_isolation_test.sql
@@ -91,7 +92,7 @@ jobs:
           export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
           export ROTEVO_LOCAL_INVITE_AUTH_PROBE="YES_LOCAL_ONLY"
           cd "$GITHUB_WORKSPACE"
-          npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/next-test.log" 2>&1 &
+          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/next-test.log" 2>&1 &
           next_pid=$!
           trap 'kill "$next_pid" 2>/dev/null || true' EXIT
           ready=0

@@ -1,12 +1,15 @@
 "use client";
+import ExecutivePlanningSummary from "./ExecutivePlanningSummary";
 import {useEffect,useState} from "react";
+import DynamicDocumentReader from "@/Components/strategic-editor/DynamicDocumentReader";
+import type {RichContent} from "@/lib/planning/richContent";
 import {supabase} from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 type Stage={id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean};
 type ClientProject={id:string;slug:string;title:string;description:string|null;status:string;data?:{planningStages?:Stage[]}|null};
-type VisibleDocument={content:string};
-type Presentation={id:string;status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>}}};
+type VisibleDocument={content:string;richContent?:RichContent};
+type Presentation={id:string;status:string;data?:{ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];executiveDocuments?:Record<string,VisibleDocument>;documents?:Record<string,VisibleDocument>}}};
 const areas=Array.from(new Set(ecosystemDocuments.filter(d=>/^\d{2} /.test(d.area)&&!d.area.startsWith("00 ")).map(d=>d.area)));
 const button="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
 export default function ClientPlanning({projects}:{projects:ClientProject[]}){
@@ -59,7 +62,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
    :<section className="space-y-5">
     <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-[#6D35F5]">Visão Executiva</p><h3 className="mt-1 text-xl font-bold">Explore sua estratégia</h3></div><button type="button" className={button+" border border-[#DDE2ED] bg-white text-[#525B70]"} onClick={()=>{setArea("");setCode("")}}>Voltar à introdução</button></div>
-     <p className="mt-3 max-w-3xl text-sm leading-6 text-[#525B70]">Esta introdução organiza o acesso às áreas estratégicas. As decisões consolidadas serão apresentadas aqui quando houver conteúdo executivo publicado.</p>
+     <ExecutivePlanningSummary documents={visible?.executiveDocuments??{}}/>
      <p className="mt-3 text-xs font-medium text-[#697386]">{publishedDocs.length} {publishedDocs.length===1?"documento disponível":"documentos disponíveis"} para leitura</p>
     </div>
     <section aria-label="Áreas do planejamento" className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
@@ -70,7 +73,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
      <p className="text-xs font-semibold text-[#697386]">{chosenArea.name}</p><h3 className="mt-2 text-xl font-bold">Documentos desta área</h3>
      {chosenArea.docs.length===0?<p className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#525B70]">Ainda não há documentos publicados nesta área.</p>
      :<><div role="group" aria-label="Documentos disponíveis" className="mt-4 flex flex-wrap gap-2">{chosenArea.docs.map(d=><button type="button" key={d.code} aria-pressed={code===d.code} onClick={()=>setCode(d.code)} className={button+" border "+(code===d.code?"border-[#6D35F5] bg-[#EEE8FF] text-[#6034B7]":"border-[#DDE2ED] bg-white text-[#525B70]")}>{d.code} · {d.title}</button>)}</div>
-     {chosen&&<article className="mt-6 border-t border-[#E3E7F0] pt-6"><p className="text-xs font-semibold text-[#6D35F5]">Documento {chosen.code}</p><h4 className="mt-2 text-xl font-bold">{chosen.title}</h4><div className="mt-5 whitespace-pre-wrap break-words rounded-xl bg-[#F6F7FB] p-5 text-sm leading-7 text-[#344054]">{visible?.documents?.[chosen.code]?.content}</div>
+     {chosen&&<article className="mt-6 border-t border-[#E3E7F0] pt-6"><p className="text-xs font-semibold text-[#6D35F5]">Documento {chosen.code}</p><h4 className="mt-2 text-xl font-bold">{chosen.title}</h4>{visible?.documents?.[chosen.code]?.richContent?<DynamicDocumentReader content={visible.documents[chosen.code].richContent!}/>:<div className="mt-5 whitespace-pre-wrap break-words rounded-xl bg-[#F6F7FB] p-5 text-sm leading-7 text-[#344054]">{visible?.documents?.[chosen.code]?.content}</div>}
       <div className="mt-5 flex flex-wrap justify-between gap-3"><button disabled={docIndex<=0} className={button+" border border-[#DDE2ED] disabled:cursor-not-allowed disabled:opacity-40"} onClick={()=>choose(publishedDocs[docIndex-1]?.code??"")}>← Documento anterior</button><button disabled={docIndex<0||docIndex>=publishedDocs.length-1} className={button+" bg-[#6D35F5] text-white disabled:cursor-not-allowed disabled:opacity-40"} onClick={()=>choose(publishedDocs[docIndex+1]?.code??"")}>Próximo documento →</button></div>
      </article>}</>}
     </section>}

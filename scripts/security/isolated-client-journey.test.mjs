@@ -43,7 +43,7 @@ test("synthetic client has two independent projects with different shared data",
  assert.equal(visibleB.data.editorialCalendar.length,0);
  assert.equal(visibleA.data.onboardingChecklist[0].done,true);
  assert.equal(JSON.stringify([visibleA,visibleB]).includes("SEGREDO"),false);
- assert.equal("operationalAgenda" in visibleA.data,false);
+ assert.deepEqual(visibleA.data.operationalAgenda,[],"unshared meetings remain private");
  assert.equal("client_id" in visibleA,false);
 });
 

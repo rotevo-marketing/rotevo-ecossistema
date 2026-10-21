@@ -1,9 +1,11 @@
+import {financeEnvironmentAllowed} from "./environment.ts";
 import {createClient} from "@supabase/supabase-js";
 import {NextResponse} from "next/server";
 export const financeResponse=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{"Cache-Control":"no-store, private","Vary":"Authorization"}});
 export async function financeIdentity(request:Request) {
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
- if(process.env.VERCEL_ENV || url!=="http://127.0.0.1:54321" || process.env.ROTEVO_FINANCE_ENABLED!=="true"||!key)return {error:financeResponse({error:"O Financeiro ainda não foi ativado neste ambiente."},503)};
+ const allowedEnvironment=financeEnvironmentAllowed(url,process.env.VERCEL_ENV,process.env.ROTEVO_FINANCE_ENABLED,process.env.ROTEVO_FINANCE_PRODUCTION_APPROVED);
+ if(!url||!allowedEnvironment || process.env.ROTEVO_FINANCE_ENABLED!=="true"||!key)return {error:financeResponse({error:"O Financeiro ainda não foi ativado neste ambiente."},503)};
  const match=/^Bearer (\S+)$/.exec(request.headers.get("authorization")??"");
  if(!match)return {error:financeResponse({error:"Entre na sua conta para continuar."},401)};
  // Use the caller's JWT. No service key and no client ID supplied by the browser.

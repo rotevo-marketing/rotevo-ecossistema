@@ -40,6 +40,13 @@ jobs:
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261016_staff_role_legacy_boundary.sql" supabase/migrations/20261015000003_staff.sql
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261016_team_access_audit.sql" supabase/migrations/20261015000004_audit.sql
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261016210140_activation_privilege_boundary.sql" supabase/migrations/20261015000005_grants.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261018122353_finance_v2_private_domain.sql" supabase/migrations/20261018122353_finance_v2_private_domain.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261019125535_finance_payables_lifecycle.sql" supabase/migrations/20261019125535_finance_payables_lifecycle.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020204843_operation_workspace_and_editorial.sql" supabase/migrations/20261020204843_operation_workspace_and_editorial.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020210903_private_operational_assets.sql" supabase/migrations/20261020210903_private_operational_assets.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql" supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020234445_finance_receivable_installments.sql" supabase/migrations/20261020234445_finance_receivable_installments.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql" supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql
           supabase start
       - name: Verify registration, first password, project scope, revocation and deactivation
         shell: bash
@@ -56,13 +63,15 @@ jobs:
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export ROTEVO_LOCAL_APP_URL='http://127.0.0.1:3000/'
           export ROTEVO_LOCAL_API_TESTS='YES_LOCAL_ONLY'
+          export ROTEVO_FINANCE_ENABLED=true
+          export NEXT_PUBLIC_ROTEVO_FINANCE_MODE=local
           export ROTEVO_TEAM_INVITES_ENABLED=true
           export ROTEVO_TEAM_MEMBER_STATUS_ENABLED=true
           export ROTEVO_TEAM_PERMISSIONS_ENABLED=true
           export ROTEVO_TEAM_ASSIGNMENTS_ENABLED=true
           export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED=true
           cd "$GITHUB_WORKSPACE"
-          npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/rotevo-team-next.log" 2>&1 &
+          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/rotevo-team-next.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           ready=0
@@ -73,6 +82,11 @@ jobs:
           done
           if [ "$ready" != 1 ]; then tail -n 40 "$RUNNER_TEMP/rotevo-team-next.log"; exit 1; fi
           node scripts/security/team-lifecycle-local-http.mjs
+          export ROTEVO_KEEP_SYNTHETIC_FIXTURES=YES_LOCAL_ONLY
+          node scripts/security/operations-local-http.mjs
+          node scripts/security/operations-finance-local.mjs
+          node scripts/security/operations-final-local.mjs
+          node scripts/security/operations-editorial-local.mjs
       - name: Stop only this disposable local environment
         if: always()
         shell: bash

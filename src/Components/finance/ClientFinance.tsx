@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {balance,brl,displayDate,todayInBrazil,type ClientFinanceState} from "@/lib/finance/model";
 import InvoiceTable from "./InvoiceTable";
+import ClientFinanceView from "@/Components/cliente/ClientFinanceView";
 import FinanceDisconnected from "./FinanceDisconnected";
 import {CampaignList,Metric} from "./FinanceHub";
 export function ClientFinancePanel({data}:{data:ClientFinanceState}){
@@ -15,6 +16,6 @@ function ConnectedClientFinance(){
  const [data,setData]=useState<ClientFinanceState|null>(null),[error,setError]=useState("");
  useEffect(()=>{let live=true;import("@/lib/finance/api").then(m=>m.financeRequest(true)).then(result=>{if(live)setData(result);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[]);
  if(error)return <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>;
- return data?<ClientFinancePanel data={data}/>:<p role="status" className="text-sm text-[#697386]">Consultando suas mensalidades…</p>;
+ return data?<ClientFinanceView data={data}/>:<p role="status" className="text-sm text-[#697386]">Consultando suas mensalidades…</p>;
 }
-export default function ClientFinance(){return process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE==="local"?<ConnectedClientFinance/>:<FinanceDisconnected clientView/>;}
+export default function ClientFinance(){return ["local","connected"].includes(process.env.NEXT_PUBLIC_ROTEVO_FINANCE_MODE??"")?<ConnectedClientFinance/>:<FinanceDisconnected clientView/>;}

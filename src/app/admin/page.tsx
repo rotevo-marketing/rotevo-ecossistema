@@ -1,4 +1,5 @@
 "use client";
+import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -336,11 +337,11 @@ export default function AdminPage() {
       <div className="flex min-h-0 flex-1">
       <aside className={`relative hidden shrink-0 bg-[#0B142A] px-3 py-6 lg:block ${sidebarCollapsed?"w-[76px]":"w-[260px]"}`}>
         <nav aria-label="Menu do estrategista" className="space-y-1.5">
-          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>setWorkspaceTab(item.id)} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><RotevoTablerIcon name={item.icon} size={25} stroke={2.3}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
+          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><RotevoTablerIcon name={item.icon} size={25} stroke={2.3}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
         </nav>
         <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A]">{sidebarCollapsed?"›":"‹"}</button>
       </aside>
-      {mobileMenu&&<aside className="w-full bg-[#0B142A] p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm text-white ${workspaceTab===item.id?"bg-[#6D35F5]":"hover:bg-white/10"}`}>{item.label}</button>)}</div></aside>}
+      {mobileMenu&&<aside className="w-full bg-[#0B142A] p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm text-white ${workspaceTab===item.id?"bg-[#6D35F5]":"hover:bg-white/10"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
       <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

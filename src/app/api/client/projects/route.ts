@@ -1,3 +1,4 @@
+import {emptyWorkspace,workspaceForClient} from "@/lib/operations/model";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { projectForClient, type PrivateProjectRow } from "@/lib/security/projectForClient";
@@ -25,6 +26,9 @@ export async function GET(req:NextRequest) {
     .select("id,client_id,title,slug,description,status,updated_at,data")
     .eq("client_id",profile.client_id).order("updated_at",{ascending:false});
   if (projectError) return fail(503);
-  return NextResponse.json({projects:((projects??[]) as PrivateProjectRow[]).map(projectForClient)},
+  const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
+  if(workspace.error)return fail(503);
+  const modules=workspaceForClient(workspace.data?.data??emptyWorkspace()).modules;
+  return NextResponse.json({projects:((projects??[]) as PrivateProjectRow[]).map(p=>projectForClient(p,modules))},
     {headers:{"Cache-Control":"no-store"}});
 }

@@ -12,6 +12,7 @@ const selectableAreas = ecosystemDocumentAreas.filter((area) => !area.startsWith
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
+  clientId?: string;
   clientName: string;
   clientSlug: string;
   projectTitle: string;
@@ -62,6 +63,7 @@ function getStoredDraft(): NewPlanningDraft | null {
         typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
         typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
     return {
+      clientId:typeof fields.clientId==="string"&&/^[0-9a-f-]{36}$/i.test(fields.clientId)?fields.clientId:undefined,
       clientName: fields.clientName,
       clientSlug: fields.clientSlug,
       projectTitle: fields.projectTitle,
@@ -187,11 +189,11 @@ export default function SelecionarModulosPage() {
     setErrorMessage("");
 
     // Reuse an existing customer without overwriting their registered name or contact details.
-    const existing = await supabase.from("clients")
-      .select("id,name,slug").eq("slug",draft.clientSlug).maybeSingle();
+    const query=supabase.from("clients").select("id,name,slug");
+    const existing=await (draft.clientId?query.eq("id",draft.clientId):query.eq("slug",draft.clientSlug)).maybeSingle();
     let client = existing.data;
     let clientError = existing.error;
-    if (!client && !clientError) {
+    if (!client && !clientError && !draft.clientId) {
       const inserted = await supabase.from("clients")
         .insert({name:draft.clientName,slug:draft.clientSlug})
         .select("id,name,slug").single();

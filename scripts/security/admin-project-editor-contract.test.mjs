@@ -107,10 +107,11 @@ test("new operational owner assignments require an active team member on server"
 
 test("creating a planning project never overwrites an existing client profile",()=>{
  const code=readFileSync(new URL("app/admin/novo-planejamento/modulos/page.tsx",root),"utf8");
- assert.match(code,/const existing = await supabase\.from\("clients"\)/);
+ assert.match(code,/const query=supabase\.from\("clients"\)\.select/);
+ assert.match(code,/draft\.clientId\?query\.eq\("id",draft\.clientId\)/);
  assert.match(code,/\.eq\("slug",draft\.clientSlug\)\.maybeSingle\(\)/);
  assert.doesNotMatch(code,/\.from\("clients"\)\s*\.upsert\(/);
- assert.match(code,/if \(!client && !clientError\)/);
+ assert.match(code,/if \(!client && !clientError && !draft\.clientId\)/);
  assert.match(code,/clientError\?\.code==="23505"/);
 });
 
@@ -213,7 +214,7 @@ test("switching between client projects isolates editor state and late save call
   assert.match(page,new RegExp("<"+name+"[^>]* key=\\{project\\.id\\} projectId=\\{project\\.id\\}"));
  }
  const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
- assert.equal(guards.length,2,"both persistent editor callbacks must verify project identity");
+ assert.equal(guards.length,3,"legacy, rich document and execution callbacks must verify project identity");
  assert.doesNotMatch(page,/<(?:ProjectOnboarding|OperationalAgenda)\b/);
  assert.match(page,/<PlanningScheduleEditor key=\{project\.id\}/);
  assert.doesNotMatch(page,/key=\{project\.id\+project\.updated_at\}/);

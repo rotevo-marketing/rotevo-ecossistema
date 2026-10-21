@@ -112,6 +112,10 @@ jobs:
         run: node --test scripts/security/isolated-client-journey.test.mjs
       - name: Validate strategic document approval and publication workflow
         run: node --test scripts/security/ecosystem-document-workflow.test.mjs
+      - name: Verify operational data, private publication and portal visibility
+        run: node --test scripts/security/operational-integration.test.mjs
+      - name: Verify financial publication gates
+        run: node --test scripts/security/finance-publication.test.mjs
       - name: Reject orphaned legacy components
         run: node scripts/security/legacy-dependency-inventory.mjs --fail-on-orphans
       - name: Prevent deprecated legacy runtime entry points

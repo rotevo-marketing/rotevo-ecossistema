@@ -35,7 +35,7 @@ test('editorial decisions match project, content and current version; unrelated 
  const editorial=(id,status='awaiting_client',version='v2')=>({id,title:id,status,version,visibleToClient:true,publishDate:'2026-10-25'});
  const p=project('a',{editorialCalendar:[editorial('approved'),editorial('changed'),editorial('pending'),editorial('old-version'),editorial('draft','production'),{...editorial('hidden'),visibleToClient:false}],executionTimeline:[task('ordinary')]});
  const decision=(id,version='v2',value='approved')=>({id,project_id:'a',content_id:id,content_version:version,decision:value,decided_at:'2026-10-18T12:00:00Z'});
- const m=view([p],'uid-a',[decision('approved'),decision('changed','v2','changes_requested'),decision('old-version','v1')]);assert.equal(m.pendingDecisions,2);assert.deepEqual(m.attention.map(x=>x.title).sort(),['old-version','pending']);
+ const m=view([p],'uid-a',[decision('approved'),decision('changed','v2','changes_requested'),decision('old-version','v1')]);assert.equal(m.pendingDecisions,2);assert.deepEqual(m.attention.map(x=>x.title).sort(),['changed','old-version','pending']);
 });
 test('unavailable or forbidden approval source is not silently replaced by zero',()=>{
  const p=project('a',{editorialCalendar:[{id:'pending',title:'Pending',status:'awaiting_client',visibleToClient:true,publishDate:today}]});
@@ -65,12 +65,14 @@ test('approval loading paginates instead of treating a truncated first page as c
  assert.equal((await loadOverviewDecisions(db,[p])).length,1000);assert.equal(calls,2);assert.deepEqual(scope,['a']);
  const failing={from(){return {select(){return this;},in(){return this;},order(){return this;},async range(){return {error:{code:'42501'},data:null};}};}};await assert.rejects(()=>loadOverviewDecisions(failing,[p]));
 });
-test('financial summary never queries finance or uses sample money; old decorative sections removed',()=>{
+test('financial summary reads authorized financial API without sample money; old decorative sections removed',()=>{
  const source=readFileSync(new URL('../../src/Components/admin/AdminOperationsOverview.tsx',import.meta.url),'utf8');
- assert.match(source,/Aguardando integração financeira/);assert.doesNotMatch(source,/financeRequest|makeFinanceDemo|\/api\/.*finance|from\(["'].*finance|R\$\s*\d|Distribuição da carga|Próximas publicações/);
+ assert.match(source,/financeRequest\(false\)/);assert.match(source,/financialError/);assert.doesNotMatch(source,/makeFinanceDemo|from\(["'].*finance|R\$\s*\d|Distribuição da carga|Próximas publicações/);
  for(const label of ['Projetos ativos','Tarefas atrasadas','Aguardando decisão','Recebimentos vencidos','Central de Atenção','Minha Rotina','Próximas Reuniões','Projetos em Atenção','Resumo Financeiro'])assert.ok(source.includes(label),label);
  const admin=readFileSync(new URL('../../src/app/admin/page.tsx',import.meta.url),'utf8');assert.match(admin,/setUserId\(userData.user.id\)/);assert.match(admin,/userId=\{userId\}/);assert.match(admin,/<FinanceHub\/>/);assert.doesNotMatch(admin,/<EditorialOperations /);
 });
 test('meetings retain Sunday-first offset consistent with header and real date alignment',()=>{
  const source=readFileSync(new URL('../../src/Components/admin/OperationalHubs.tsx',import.meta.url),'utf8');assert.match(source,/const offset=first.getDay\(\)/);assert.ok(source.includes('["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]'));assert.equal(new Date(2026,10,1).getDay(),0);assert.equal(new Date(2026,9,1).getDay(),4);
 });
+
+test('requested changes require agency action while executive reviews use the default dashboard documents',()=>{const p=project('a',{editorialCalendar:[{id:'feedback',title:'feedback',status:'awaiting_client',version:'v2',visibleToClient:true,publishDate:'2026-10-25'}],ecosystem2027:{selectedDocumentCodes:['01.02'],documents:{'00.01':{content:'Executive objective',reviewStatus:'review'}}}});const m=view([p],'uid-a',[{id:'d',project_id:'a',content_id:'feedback',content_version:'v2',decision:'changes_requested',decided_at:'2026-10-18T12:00:00Z'}]);assert.equal(m.pendingDecisions,1);assert.ok(m.attention.some(x=>x.owner==='Ajuste pela Rotevo'));assert.ok(m.attention.some(x=>x.title==='Revisar documento 00.01'));});

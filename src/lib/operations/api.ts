@@ -1,0 +1,3 @@
+"use client";
+import {supabase} from "@/lib/supabase";
+export async function request<T=unknown>(path:string,method="GET",body?:unknown):Promise<T>{const session=await supabase.auth.getSession();if(session.error||!session.data.session?.access_token)throw Error("Sessão expirada. Entre novamente.");const r=await fetch(path,{method,headers:{Authorization:"Bearer "+session.data.session.access_token,"Content-Type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:"no-store"});const data=await r.json().catch(()=>null);if(!r.ok)throw Error(data?.error??"Não foi possível concluir. Tente novamente.");return data as T;}

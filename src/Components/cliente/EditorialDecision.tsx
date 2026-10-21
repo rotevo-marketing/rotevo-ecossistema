@@ -29,13 +29,10 @@ export default function EditorialDecision({projectId,item,onDecision}:{projectId
   setWorking(true);setError("");
   const {data:auth,error:authError}=await supabase.auth.getUser();
   if(authError||!auth.user){setError("Sua sessão expirou. Entre novamente para registrar a decisão.");setWorking(false);return;}
-  const {data,error:err}=await supabase.from("editorial_approvals").insert({
-    project_id:projectId,content_id:item.id,content_version:version,decision,
-    comment:decision==="changes_requested"?note.trim():null,decided_by:auth.user.id
-  }).select("id,decision,comment,decided_at,content_version").single();
+  const {data,error:err}=await supabase.rpc("rotevo_editorial_decide",{p_project_id:projectId,p_content_id:item.id,p_content_version:version,p_decision:decision,p_comment:decision==="changes_requested"?note.trim():null});
   setWorking(false);
   if(err){setError(err.code==="23505"?"Esta versão já recebeu uma decisão. Atualize a página.":"Não foi possível registrar a decisão. Tente novamente ou contate a equipe Rotevo.");return;}
-  setExisting(data as Decision);setCompleted(true);onDecision?.(decision);
+  setExisting((Array.isArray(data)?data[0]:data) as Decision);setCompleted(true);onDecision?.(decision);
  }
  if(item.status!=="awaiting_client"&&!existing)return null;
  return <section className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4">

@@ -9,7 +9,7 @@ import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor"
 import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
 import PlanningLayoutDemo from "@/Components/admin/PlanningLayoutDemo";
-import DynamicStrategicEditor from "@/Components/strategic-editor/DynamicStrategicEditor";
+import DynamicDocumentEditor from "@/Components/strategic-editor/DynamicDocumentEditor";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
@@ -94,6 +94,7 @@ function PlanejamentoClienteContent() {
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [legacyDirty,setLegacyDirty]=useState(false);
+  const [richDirty,setRichDirty]=useState(false);
   const [editingScope, setEditingScope] = useState(false);
   const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("documents");
   const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
@@ -260,7 +261,7 @@ function PlanejamentoClienteContent() {
       setErrorMessage("Selecione pelo menos um documento para o planejamento.");
       return;
     }
-    if(legacyDirty){setErrorMessage("Salve ou descarte as alterações no editor anterior antes de mudar o escopo.");return;}
+    if(legacyDirty||richDirty){setErrorMessage("Salve ou descarte as alterações do editor antes de mudar o escopo.");return;}
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -450,7 +451,7 @@ function PlanejamentoClienteContent() {
 
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/></div>}
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PlanningLayoutDemo/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Demonstração BlockNote com conteúdo fictício. Para documentos reais utilize o editor anterior, preservado abaixo.</p></div><DynamicStrategicEditor embedded/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor onDirtyChange={setLegacyDirty} key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Edite e salve os documentos deste projeto. Revise e publique a versão autorizada para o cliente. O editor anterior continua preservado abaixo.</p></div><DynamicDocumentEditor projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor onDirtyChange={setLegacyDirty} key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
       {project && !isLoading && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>

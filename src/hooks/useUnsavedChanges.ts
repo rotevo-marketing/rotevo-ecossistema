@@ -1,6 +1,7 @@
 "use client";
 import {useEffect} from "react";
 const drafts=new Set<symbol>();
+export function confirmDiscardChanges(){return drafts.size===0||window.confirm("Há alterações não salvas. Sair desta página e descartá-las?");}
 function warn(event:BeforeUnloadEvent){event.preventDefault();event.returnValue="";}
 function follow(event:MouseEvent){
  if(event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;

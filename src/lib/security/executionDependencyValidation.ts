@@ -34,6 +34,10 @@ export function validExecutionDependencies(data:unknown):boolean{
    if(typeof item.date!=="string"||!validOperationalDate(item.date))return false;
    if(item.time!==undefined&&item.time!==""&&(typeof item.time!=="string"||!validOperationalTime(item.time)))return false;
    if(item.notes!==undefined&&(typeof item.notes!=="string"||item.notes.length>2000))return false;
+   if(item.visibleToClient!==undefined&&typeof item.visibleToClient!=="boolean")return false;
+   if(item.modality!==undefined&&!["online","presencial"].includes(String(item.modality)))return false;
+   for(const [field,max] of [["location",180],["duration",60],["minutes",5000]] as const)if(item[field]!==undefined&&(typeof item[field]!=="string"||(item[field] as string).length>max))return false;
+   for(const field of ["meetingUrl","materialUrl"]){const link=item[field];if(link===undefined||link==="")continue;if(typeof link!=="string"||link.length>2048)return false;try{const u=new URL(link);if(u.protocol!=="https:"||u.username||u.password)return false;}catch{return false;}}
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;
   }

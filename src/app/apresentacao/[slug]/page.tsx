@@ -4,13 +4,14 @@ import {useEffect,useState} from "react";
 import {useParams,useRouter} from "next/navigation";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
+import type {RichContent} from "@/lib/planning/richContent";
 import EcosystemPresentationOverview from "@/Components/apresentacao/EcosystemPresentationOverview";
 
 type PresentationProject={
  id:string;title:string;slug:string;status:string;client_id:string;
  clients:{name:string;slug:string}|{name:string;slug:string}[]|null;
  data:{coverImageUrl?:string|null;deliverySchedule?:Record<string,string>|null;
- ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,{content?:string;publishedContent?:string}>}}|null
+ ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];hiddenExecutiveDocumentCodes?:string[];executiveDocuments?:Record<string,{content:string;richContent?:RichContent}>;documents?:Record<string,{content?:string;richContent?:RichContent;publishedContent?:string;publishedRichContent?:RichContent}>}}|null
 };
 const clientOf=(project:PresentationProject)=>Array.isArray(project.clients)?project.clients[0]:project.clients;
 
@@ -60,6 +61,7 @@ export default function ApresentacaoDinamicaPage(){
   isStrategist={strategist}
   selectedCodes={details.ecosystem2027?.selectedDocumentCodes??[]}
   presentedCodes={details.ecosystem2027?.presentedDocumentCodes??[]}
-  documents={Object.fromEntries(Object.entries(details.ecosystem2027?.documents??{}).flatMap(([code,document])=>{const text=strategist?document.publishedContent:document.content;return typeof text==="string"?[[code,{content:text}]]:[];}))}
+  executiveDocuments={strategist?Object.fromEntries(Object.entries(details.ecosystem2027?.documents??{}).flatMap(([code,document])=>/^00\.0[1-7]$/.test(code)&&!details.ecosystem2027?.hiddenExecutiveDocumentCodes?.includes(code)&&document.publishedContent?[[code,{content:document.publishedContent,...(document.publishedRichContent?{richContent:document.publishedRichContent}:{})}]]:[])):details.ecosystem2027?.executiveDocuments??{}}
+  documents={Object.fromEntries(Object.entries(details.ecosystem2027?.documents??{}).flatMap(([code,document])=>{const text=strategist?document.publishedContent:document.content;const rich=strategist?document.publishedRichContent:document.richContent;return typeof text==="string"?[[code,{content:text,...(rich?{richContent:rich}:{})}]]:[];}))}
  />;
 }

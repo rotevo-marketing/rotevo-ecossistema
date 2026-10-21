@@ -1,0 +1,49 @@
+{
+  "projectId": "kadvzjelkyfwouqmlxaa",
+  "method": "Supabase connector apply_migration",
+  "previousRemoteVersion": "20261016221513",
+  "backup": {
+    "restored": true,
+    "matchingTables": 44,
+    "totalTables": 44,
+    "storageObjectsVerified": 38
+  },
+  "warning": "Remote versions assigned by connector differ from historical source filenames. Do not run blind db push or replay proposal history.",
+  "migrations": [
+    {
+      "file": "supabase/migrations/20261018122353_finance_v2_private_domain.sql",
+      "remoteVersion": "20261021001148",
+      "sha256": "aaf1891b84b3026b27f97e8cd30cb06c081e6dca6f40a586fc5a3b9034d4f6df"
+    },
+    {
+      "file": "supabase/migrations/20261019125535_finance_payables_lifecycle.sql",
+      "remoteVersion": "20261021001255",
+      "sha256": "2c43885de95b5955ed175ef176eb11e2b3b44f52ed484761c458297933bd0db3"
+    },
+    {
+      "file": "supabase/migrations/20261020204843_operation_workspace_and_editorial.sql",
+      "remoteVersion": "20261021001303",
+      "sha256": "9fbc001882870abb89a85439dde5a774831f1b6a3f1be31ef5d26698cbca8818"
+    },
+    {
+      "file": "supabase/migrations/20261020210903_private_operational_assets.sql",
+      "remoteVersion": "20261021001314",
+      "sha256": "374fa089388c8d510380c517c5ba926072eef0dc66557ba8a804476daa82430d"
+    },
+    {
+      "file": "supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql",
+      "remoteVersion": "20261021001320",
+      "sha256": "bd9c69d9236bcc8c2d7838ce23c38d9ce80226056b106066df02db5b394049e9"
+    },
+    {
+      "file": "supabase/migrations/20261020234445_finance_receivable_installments.sql",
+      "remoteVersion": "20261021001329",
+      "sha256": "bf42a7e5a70e113df61dcc8c7bb6929464fb4ae95b331ff08b22f103b3e2040e"
+    },
+    {
+      "file": "supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql",
+      "remoteVersion": "20261021011214",
+      "sha256": "067b1ad339103ab4c21616064565e4caeebfcbb185cd7b8e32cd9c3b55d9181a"
+    }
+  ]
+}

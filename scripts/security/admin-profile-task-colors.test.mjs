@@ -43,7 +43,9 @@ test("in-progress projects are included in production counts and filters",()=>{
 test("admin profile photo is optional and uses the existing account menu",()=>{
  assert.match(admin,/\.select\("avatar_url"\)/);
  assert.match(admin,/setUserAvatar\(/);
- assert.match(menu,/avatarUrl\?<img/);
+ assert.match(menu,/profileAvatar\?<img/);
+ assert.match(menu,/useAccountProfile/);
+ assert.match(menu,/<AccountProfileButton\/>/);
  assert.match(menu,/initials\|\|"U"/);
 });
 test("tasks dashboard includes today's deadlines and meeting agenda",()=>{

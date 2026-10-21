@@ -10,8 +10,9 @@ export type FinanceTransfer = {id:string;from_account_id:string;to_account_id:st
 export type FinanceAudit = {id:number;action:string;created_at:string};
 export type CampaignInvestment = {projectId:string;projectTitle:string;clientId:string;campaignId:string;title:string;platform:string;month:string;budget:number|null;spent:number|null};
 export type FinanceState = {suppliers:FinanceSupplier[];subscriptions:FinanceSubscription[];clients:FinanceClient[];projects:FinanceProject[];accounts:FinanceAccount[];contracts:FinanceContract[];invoices:FinanceInvoice[];settlements:FinanceSettlement[];transfers:FinanceTransfer[];audit:FinanceAudit[];categories:string[];campaigns:CampaignInvestment[];canWrite:boolean};
-export type InvoiceSummary=Pick<FinanceInvoice,"id"|"title"|"competence"|"due_date"|"amount_cents"|"paid_cents"|"cancelled">;
-export type ClientFinanceState={invoices:InvoiceSummary[];settlements:Pick<FinanceSettlement,"id"|"invoice_id"|"amount_cents"|"paid_on">[];campaigns:CampaignInvestment[]};
+export type InvoiceSummary={category?:string}&Pick<FinanceInvoice,"id"|"title"|"competence"|"due_date"|"amount_cents"|"paid_cents"|"cancelled">;
+export type FinanceDocument={id:string;invoice_id:string;original_name:string;purpose:"invoice"|"receipt"};
+export type ClientFinanceState={paymentLinks?:{invoice_id:string;payment_url:string}[];documents?:FinanceDocument[];invoices:InvoiceSummary[];settlements:Pick<FinanceSettlement,"id"|"invoice_id"|"amount_cents"|"paid_on">[];campaigns:CampaignInvestment[]};
 export const defaultCategories=["Mensalidade","Projeto avulso","Equipe","Ferramentas","Assinaturas","Serviços","Estrutura","Mídia","Impostos","Outros"];
 export const emptyFinanceState:FinanceState={suppliers:[],subscriptions:[],clients:[],projects:[],accounts:[],contracts:[],invoices:[],settlements:[],transfers:[],audit:[],categories:defaultCategories,campaigns:[],canWrite:false};
 export const brl=(cents:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);

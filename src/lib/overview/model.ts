@@ -52,7 +52,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
    const item:OverviewItem={key:JSON.stringify([project.id,"task",task.id]),kind:"task",title:task.title,project,owner:task.owner?.trim()||(personal?"Você":"Responsável não informado"),due,priority,reasons,personal,taskPriority:({urgent:0,high:1,normal:2,low:3})[task.priority??"normal"]};
    if(reasons.length)attention.push(item);if(personal)routine.push(item);
   }
-  const selected=[...new Set(Array.isArray(project.data?.ecosystem2027?.selectedDocumentCodes)?project.data.ecosystem2027.selectedDocumentCodes:[])];
+  const selected=[...new Set([...(Array.isArray(project.data?.ecosystem2027?.selectedDocumentCodes)?project.data.ecosystem2027.selectedDocumentCodes:[]),...Object.keys(project.data?.ecosystem2027?.documents??{}).filter(code=>/^00\.0[1-7]$/.test(code))])];
   for(const code of selected){
    if(!/^\d{2}\.\d{2}$/.test(code))continue;const doc=project.data?.ecosystem2027?.documents?.[code];
    if(doc?.reviewStatus!=="review"||typeof doc.content!=="string"||!doc.content.trim())continue;
@@ -73,7 +73,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
  for(const row of decisions){const key=JSON.stringify([row.project_id,row.content_id,row.content_version]);const previous=latest.get(key);if(!previous||row.decided_at>previous.decided_at)latest.set(key,row);}
  const candidates=editorialCandidates(usable);
  if(decisionSource==="ready")for(const {project,item} of candidates){
-  const decision=latest.get(JSON.stringify([project.id,item.id,item.version??""]));if(decision)continue;
+  const decision=latest.get(JSON.stringify([project.id,item.id,item.version??""]));if(decision){if(decision.decision==="changes_requested"){const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Ajuste pela Rotevo",due,priority:due&&due<today?1:2,reasons:["Cliente solicitou ajustes na versão "+decision.content_version],personal:false,taskPriority:2});}continue;}
   const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;if(item.publishDate&&!due)invalidDates++;
   const priority:1|2|3=due&&due<today?1:due&&distance(due,today)<=2?2:3;
   pendingDecisions++;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Decisão do cliente",due,priority,reasons:["Aprovação solicitada; versão sem decisão registrada",...(due&&due<today?["Data prevista de publicação vencida"]:[])],personal:false,taskPriority:2});

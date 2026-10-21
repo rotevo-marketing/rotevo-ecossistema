@@ -5,7 +5,7 @@ import {supabase} from "@/lib/supabase";
 type Props={email:string;name:string;avatarUrl?:string|null;onLogout:()=>Promise<void>};
 export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
  const account=useAccountProfile();
- const profileAvatar=account.avatar||avatarUrl;
+ const profileAvatar=account.profile?account.avatar:avatarUrl;
  const [open,setOpen]=useState(false),[changing,setChanging]=useState(false);
  const rootRef=useRef<HTMLDivElement>(null);
  const triggerRef=useRef<HTMLButtonElement>(null);

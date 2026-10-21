@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/team-lifecycle-isolated.yml'
       - 'scripts/security/team-lifecycle-local-http.mjs'
+      - 'scripts/security/team-profiles-local-http.mjs'
       - 'src/app/api/team/**'
       - 'supabase/migrations/**'
 permissions:
@@ -82,6 +83,7 @@ jobs:
           done
           if [ "$ready" != 1 ]; then tail -n 40 "$RUNNER_TEMP/rotevo-team-next.log"; exit 1; fi
           node scripts/security/team-lifecycle-local-http.mjs
+          node scripts/security/team-profiles-local-http.mjs
           export ROTEVO_KEEP_SYNTHETIC_FIXTURES=YES_LOCAL_ONLY
           node scripts/security/operations-local-http.mjs
           node scripts/security/operations-finance-local.mjs

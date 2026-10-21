@@ -23,6 +23,18 @@ export async function GET(req:NextRequest){
  const {data:members,error:directoryError}=await admin.from("team_members")
   .select("user_id,display_name,job_title,avatar_url,role,active").order("display_name");
  if(directoryError)return fail(503);
+ const userIds=(members??[]).map(item=>item.user_id);
+ const preferences=userIds.length?await admin.from("user_preferences").select("user_id,display_name,avatar_asset_id,updated_at").in("user_id",userIds):{data:[],error:null};
+ if(preferences.error)return fail(503);
+ const prefs=new Map((preferences.data??[]).map(item=>[item.user_id,item]));
+ const avatarIds=(preferences.data??[]).flatMap(item=>item.avatar_asset_id?[item.avatar_asset_id]:[]);
+ const assets=avatarIds.length?await admin.from("project_assets").select("id,storage_path").eq("purpose","avatar").in("id",avatarIds):{data:[],error:null};
+ if(assets.error)return fail(503);
+ const paths=new Map((assets.data??[]).map(item=>[item.id,item.storage_path]));
+ const signed=paths.size?await admin.storage.from("rotevo-private").createSignedUrls([...paths.values()],3600):{data:[],error:null};
+ if(signed.error||signed.data?.some(item=>item.error))return fail(503);
+ const urls=new Map((signed.data??[]).map(item=>[item.path,item.signedUrl]));
+ const directory=(members??[]).map(item=>{const p=prefs.get(item.user_id);return {...item,display_name:p?.display_name||item.display_name,avatar_ref:p?.avatar_asset_id?"asset://"+p.avatar_asset_id:"",avatar_url:p?(p.avatar_asset_id?urls.get(paths.get(p.avatar_asset_id)??"")??null:null):item.avatar_url,profile_updated_at:p?.updated_at??null};});
  const {data:assignments,error:assignmentsError}=await admin.from("team_project_assignments").select("user_id,project_id");
  if(assignmentsError)return fail(503);
  const {data:permissions,error:permissionsError}=await admin.from("team_member_permissions").select("user_id,permission");
@@ -36,5 +48,5 @@ export async function GET(req:NextRequest){
   memberStatus:process.env.ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true",
   adminTransfer:process.env.ROTEVO_TEAM_ADMIN_TRANSFER_ENABLED==="true"
  };
- return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:members??[],projects:projects??[],capabilities},{headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({assignments:assignments??[],permissions:permissions??[],members:directory,projects:projects??[],capabilities},{headers:{"Cache-Control":"no-store, private","Vary":"Authorization"}});
 }

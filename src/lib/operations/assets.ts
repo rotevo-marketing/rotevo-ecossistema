@@ -5,7 +5,11 @@ import {workspaceForClient} from "./model";
 export type Asset={id:string;client_id:string|null;project_id:string|null;invoice_id:string|null;owner_user_id:string;purpose:"planning"|"contract"|"invoice"|"receipt"|"avatar";storage_path:string;original_name:string;visible_to_client:boolean};
 export function financeWriter(value:Identity){return !!value.member?.active&&["strategist","staff"].includes(value.profile.role)&&["admin","finance"].includes(value.member.role);}
 export async function mayReadAsset(value:Identity,asset:Asset):Promise<boolean>{
- if(asset.purpose==="avatar")return asset.owner_user_id===value.userId;
+ if(asset.purpose==="avatar"){
+  if(asset.owner_user_id===value.userId)return true;
+  const own=await value.db.from("user_preferences").select("avatar_asset_id").eq("user_id",value.userId).eq("avatar_asset_id",asset.id).maybeSingle();
+  return !own.error&&!!own.data;
+ }
  if(value.profile.role!=="client"){
   if(administrator(value))return true;
   if(asset.purpose==="invoice"||asset.purpose==="receipt")return financeWriter(value);

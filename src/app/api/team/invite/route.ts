@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
   let input: unknown;
   try { input = await req.json(); } catch { return response("Dados inválidos.", 400); }
   if (!input || typeof input !== "object" || Array.isArray(input)) return response("Dados inválidos.", 400);
-  const { email, displayName, role, temporaryPassword } = input as Record<string, unknown>;
-  if (Object.keys(input).some(key => !["email", "displayName", "role", "temporaryPassword"].includes(key))) return response("Campos não autorizados.", 400);
+  const { email, displayName, role, temporaryPassword, avatarRef } = input as Record<string, unknown>;
+  if (Object.keys(input).some(key => !["email", "displayName", "role", "temporaryPassword", "avatarRef"].includes(key))) return response("Campos não autorizados.", 400);
+  if(avatarRef!==undefined&&(typeof avatarRef!=="string"||avatarRef!==""&&!/^asset:\/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(avatarRef)))return response("Fotografia inválida.",400);
   if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
       typeof displayName !== "string" || displayName.trim().length < 2 || displayName.length > 120 ||
       typeof role !== "string" || !roles.has(role) ||
@@ -52,6 +53,12 @@ export async function POST(req: NextRequest) {
   // Invitations remain disabled until RLS and role activation are explicitly approved.
   if (process.env.ROTEVO_TEAM_INVITES_ENABLED !== "true")
     return response("Convites de equipe aguardam homologação de permissões.", 503);
+  const avatarId=typeof avatarRef==="string"&&avatarRef?avatarRef.slice(8):null;
+  if(avatarId){
+    const photo=await admin.from("project_assets").select("id").eq("id",avatarId).eq("purpose","avatar").eq("owner_user_id",identity.user.id).maybeSingle();
+    if(photo.error)return response("Não foi possível conferir a fotografia.",503);
+    if(!photo.data)return response("Fotografia indisponível para este cadastro.",403);
+  }
   const cleanEmail = email.trim().toLowerCase();
   // Initial password is accepted only over the authenticated server route and never persisted in team metadata.
   const { data: created, error: createError } = await admin.auth.admin.createUser({
@@ -80,6 +87,12 @@ export async function POST(req: NextRequest) {
     const { error: rollbackError } = await admin.auth.admin.deleteUser(created.user.id);
     if (rollbackError) return response("Cadastro incompleto: conta bloqueada e revisão administrativa necessária.",500);
     return response("Não foi possível registrar o colaborador; a criação foi revertida.",503);
+  }
+  const preferences=await admin.from("user_preferences").insert({user_id:created.user.id,display_name:displayName.trim(),avatar_asset_id:avatarId});
+  if(preferences.error){
+    const {error:rollbackError}=await admin.auth.admin.deleteUser(created.user.id);
+    if(rollbackError)return response("Cadastro incompleto: conta bloqueada e revisão administrativa necessária.",500);
+    return response("Não foi possível salvar o perfil; o cadastro foi revertido.",503);
   }
   return NextResponse.json({ ok: true, message: "Usuário cadastrado. O acesso permanece bloqueado até a ativação pelo administrador." },
     { status: 201, headers: { "Cache-Control": "no-store" } });

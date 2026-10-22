@@ -11,7 +11,7 @@ export async function POST(request:Request){
  if(purpose==="planning"){
   const id=form.get("projectId");if(!uuid(id)||!await authorizeProject(a.identity,id,true))return failure(403);
   const p=await a.identity.db.from("planning_projects").select("client_id").eq("id",id).maybeSingle();if(p.error)return failure(503);if(!p.data)return failure(404);clientId=p.data.client_id;projectId=id;
- }else if(purpose!=="avatar"){
+ }else if(purpose!=="avatar"||form.get("clientId")){
   if(!administrator(a.identity)&&!((purpose==="invoice"||purpose==="receipt")&&financeWriter(a.identity)))return failure(403);
   const id=form.get("clientId");if(!uuid(id))return failure(400);const c=await a.identity.db.from("clients").select("id").eq("id",id).maybeSingle();if(c.error)return failure(503);if(!c.data)return failure(404);clientId=id;
   if(purpose==="invoice"||purpose==="receipt"){

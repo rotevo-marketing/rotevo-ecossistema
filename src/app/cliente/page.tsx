@@ -51,6 +51,7 @@ export default function ClientAreaPage(){
  const scopedProjects=useMemo(()=>{const project=projects.find(p=>p.id===selectedProjectId)??projects[0];return project?[project]:[];},[projects,selectedProjectId]);
  const [workspace,setWorkspace]=useState<ClientWorkspace|null>(null);
  const [clientName,setClientName]=useState("");
+ const [clientAvatar,setClientAvatar]=useState("");
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [tab,setTab]=useState<MenuId>("overview");
@@ -75,7 +76,15 @@ export default function ClientAreaPage(){
    ]);
    if(!mounted)return;
    setClientName(clientResult.data?.name??"");
-   if(workspaceResponse?.ok){const payload=await workspaceResponse.json().catch(()=>null);if(mounted&&payload?.workspace)setWorkspace(payload.workspace);}
+   if(workspaceResponse?.ok){const payload=await workspaceResponse.json().catch(()=>null);if(mounted&&payload?.workspace)setWorkspace(payload.workspace);
+     if(mounted&&typeof payload?.clientAvatarRef==="string"){
+       const ref=payload.clientAvatarRef;
+       if(ref.startsWith("asset://")){
+         const id=ref.slice(8);
+         const resolved=await fetch("/api/assets/resolve",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({ids:[id]})}).then(x=>x.ok?x.json():null).catch(()=>null);
+         if(mounted)setClientAvatar(resolved?.links?.[id]??"");
+       }else if(ref.startsWith("https://"))setClientAvatar(ref);
+     }}
    else setError("Não foi possível carregar os serviços autorizados. Atualize a página para tentar novamente.");
    if(!projectResponse?.ok){setError("Não foi possível carregar as informações do projeto.");}
    else{
@@ -100,7 +109,7 @@ export default function ClientAreaPage(){
    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white"><div className="flex w-full items-center justify-between gap-3 px-5 py-5">
       <div className="flex items-center gap-3"><RotevoLogo variant="white" size={27}/><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Portal do Cliente</span></div>
       <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden" aria-expanded={mobileMenu}>Menu</button>
-       <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ADE60A]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{account.avatar?<img src={account.avatar} alt="" className="h-full w-full rounded-full object-cover"/>:(account.profile?.displayName||clientName).trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{account.profile?.displayName||clientName||"Minha conta"}</span><span aria-hidden="true" className="text-xs">▾</span></button>
+       <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ADE60A]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{account.avatar||clientAvatar?<img src={account.avatar||clientAvatar} alt="" className="h-full w-full rounded-full object-cover"/>:(account.profile?.displayName||clientName).trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{account.profile?.displayName||clientName||"Minha conta"}</span><span aria-hidden="true" className="text-xs">▾</span></button>
        {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-[#E3E7F0] bg-white p-2 text-[#090D1C] shadow-xl"><p className="truncate border-b border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#525B70]">{clientName||"Minha conta"}</p><AccountProfileButton/><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="key" size={18}/>Alterar senha</Link><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="logout" size={18}/>Sair</button></div></>}</div></div>
    </div></header>
    <div className="flex w-full flex-1 items-stretch">

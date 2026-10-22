@@ -45,9 +45,9 @@ export default function TeamInviteForm({onInvited}:{onInvited:()=>Promise<void>}
     autoComplete="new-password" value={temporaryPassword} onChange={e=>setTemporaryPassword(e.target.value)}
     className="w-full rounded-lg border border-[#D5D9E6] bg-white px-3 py-2 text-sm"/>
    <p className="mt-1 text-xs text-[#697386]">Use pelo menos 12 caracteres. Transmita a senha por um canal seguro; não a registre no cadastro da equipe.</p></div>
-  <div className="md:col-span-3"><ProfilePhotoField avatarRef={avatarRef} disabled={pending||uploading} onChange={setAvatarRef} onUploading={setUploading}/></div>
-  <div className="md:col-span-3"><button type="submit" disabled={pending||uploading} className="rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Cadastrar usuário</button>
-   <p className="mt-2 text-xs text-[#697386]">O usuário será criado inativo e não terá acesso até a liberação administrativa.</p>
+  <div className="md:col-span-3 rounded-xl border border-[#E3E7F0] bg-white p-4"><p className="mb-3 text-sm font-semibold">Foto do usuário <span className="font-normal text-[#697386]">(opcional)</span></p><ProfilePhotoField avatarRef={avatarRef} disabled={pending||uploading} onChange={setAvatarRef} onUploading={setUploading}/></div>
+  <div className="md:col-span-3 flex flex-col items-end gap-2 border-t border-[#E3E7F0] pt-4"><button type="submit" disabled={pending||uploading} className="rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Cadastrar usuário</button>
+   <p className="text-right text-xs text-[#697386]">O usuário será criado inativo e não terá acesso até a liberação administrativa.</p>
    {error&&<p role="alert" className="mt-2 text-xs text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-2 text-xs text-green-700">{notice}</p>}
   </div>

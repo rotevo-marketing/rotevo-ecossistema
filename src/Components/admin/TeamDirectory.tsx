@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
+import {request} from "@/lib/operations/api";
 import TeamMemberControls,{type TeamCapabilities,type TeamProject} from "./TeamMemberControls";
 import TeamMemberProfileEditor from "./TeamMemberProfileEditor";
 import TeamInviteForm from "./TeamInviteForm";
@@ -13,10 +14,21 @@ const roles:Record<string,string>={admin:"Administrador",strategist:"Estrategist
 export default function TeamDirectory(){
  const [assignments,setAssignments]=useState<Assignment[]>([]),[permissions,setPermissions]=useState<Permission[]>([]);
  const [expanded,setExpanded]=useState<string|null>(null);
+ const [menuOpen,setMenuOpen]=useState<string|null>(null);
  const [projects,setProjects]=useState<TeamProject[]>([]),[capabilities,setCapabilities]=useState<TeamCapabilities>({invites:false,permissions:false,assignments:false,memberStatus:false,adminTransfer:false});
  const [refresh,setRefresh]=useState(0);
  const [showCreate,setShowCreate]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
+ const [removingPhoto,setRemovingPhoto]=useState<string|null>(null);
+ const [photoError,setPhotoError]=useState("");
+ async function removeMemberPhoto(member:Member){
+  if(removingPhoto||!window.confirm(`Remover a fotografia de ${member.display_name}?`))return;
+  setRemovingPhoto(member.user_id);setPhotoError("");
+  try{await request("/api/team/members/profile","PATCH",{userId:member.user_id,displayName:member.display_name,avatarRef:"",expectedUpdatedAt:member.profile_updated_at});setRefresh(v=>v+1);}
+  catch(e){setPhotoError(e instanceof Error?e.message:"Não foi possível remover a foto.");}
+  finally{setRemovingPhoto(null);}
+ }
+
  const [members,setMembers]=useState<Member[]>([]),[loading,setLoading]=useState(true),[unavailable,setUnavailable]=useState(false);
  useEffect(()=>{const updated=()=>setRefresh(n=>n+1);window.addEventListener("rotevo-profile-updated",updated);window.addEventListener("focus",updated);const timer=setInterval(updated,15*60*1000);return()=>{window.removeEventListener("rotevo-profile-updated",updated);window.removeEventListener("focus",updated);clearInterval(timer);};},[]);
  useEffect(()=>{let active=true;async function load(){
@@ -38,10 +50,39 @@ export default function TeamDirectory(){
   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Equipe Rotevo</h2><p className="mt-2 text-sm text-[#525B70]">Colaboradores, funções e responsabilidades, com controle de acesso por projeto.</p></div><button type="button" onClick={()=>setShowCreate(v=>!v)} disabled={!capabilities.invites} className="rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white disabled:bg-[#F1F2F6] disabled:text-[#697386]">{capabilities.invites?(showCreate?"Fechar cadastro":"Novo usuário"):"Cadastro aguardando ativação segura"}</button></div>
   {capabilities.adminTransfer&&<TeamAdminTransferForm members={members} onTransferred={async()=>{setRefresh(n=>n+1)}}/>}
   {capabilities.invites&&showCreate&&<TeamInviteForm onInvited={async()=>{setShowCreate(false);setRefresh(n=>n+1)}}/>}
+  {photoError&&<p role="alert" className="mt-4 text-sm text-red-700">{photoError}</p>}
   {loading?<p className="mt-5 text-sm text-[#697386]">Carregando equipe...</p>:unavailable?
    <p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Não foi possível consultar o diretório da equipe. O acesso exige um administrador ativo e a estrutura de permissões homologada; nenhum cadastro foi alterado.</p>:
    members.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">Nenhum membro cadastrado na nova estrutura. Os usuários e logins atuais permanecem inalterados.</p>:
-   <div className="mt-5 divide-y divide-[#E3E7F0]">{members.map(m=><div key={m.user_id} className="flex items-center gap-3 py-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE8FF] font-semibold text-[#6D35F5]">{m.avatar_url&&(m.avatar_ref||m.avatar_url.startsWith("https://"))?<img src={m.avatar_url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:m.display_name.slice(0,1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{m.display_name}</p><p className="text-xs text-[#697386]">{m.job_title||roles[m.role]||m.role}</p><button type="button" disabled={editing!==null} onClick={()=>setEditing(m.user_id)} className="mt-2 text-xs font-semibold text-[#6D35F5] underline disabled:opacity-40">Editar usuário</button>{editing===m.user_id&&<TeamMemberProfileEditor key={m.user_id} member={m} onCancel={()=>setEditing(null)} onSaved={()=>{setEditing(null);setRefresh(n=>n+1);}}/>}<p className="mt-1 text-xs text-[#697386]">{assignments.filter(a=>a.user_id===m.user_id).length} projeto(s) atribuído(s) · {permissions.filter(p=>p.user_id===m.user_id).length} permissão(ões) específica(s)</p><button type="button" onClick={()=>setExpanded(expanded===m.user_id?null:m.user_id)} className="mt-2 text-xs font-medium text-[#6D35F5] underline" aria-expanded={expanded===m.user_id}> {expanded===m.user_id?"Ocultar atribuições":"Ver atribuições e permissões"} </button>{expanded===m.user_id&&<div className="mt-2 rounded-lg bg-[#F6F7FB] p-3 text-xs text-[#525B70]"><p className="font-semibold">Projetos vinculados</p><p className="mt-1 break-words">{assignments.filter(a=>a.user_id===m.user_id).map(a=>projects.find(p=>p.id===a.project_id)?.title||"Projeto indisponível").join(", ")||"Nenhum vínculo"}</p><p className="mt-3 font-semibold">Permissões específicas</p><p className="mt-1 break-words">{permissions.filter(p=>p.user_id===m.user_id).map(p=>teamPermissionLabel(p.permission)).join(", ")||"Nenhuma permissão específica"}</p></div>}{expanded===m.user_id&&<TeamMemberControls userId={m.user_id} memberRole={m.role} active={m.active} projects={projects} assignments={assignments} permissions={permissions} capabilities={capabilities} onUpdated={async()=>{setRefresh(n=>n+1)}}/>}</div><span className={`rounded-md px-2.5 py-1 text-xs ${m.active?"bg-[#E6F6EA] text-[#176B3C]":"bg-[#ECEEF2] text-[#677084]"}`}>{m.active?"Ativo":"Inativo"}</span></div>)}</div>}
+   <div className="mt-5 divide-y divide-[#E3E7F0]">{members.map(m=>{
+    const projectCount=assignments.filter(a=>a.user_id===m.user_id).length;
+    const permissionCount=permissions.filter(p=>p.user_id===m.user_id).length;
+    const optionsDisabled=editing!==null||removingPhoto!==null;
+    return <div key={m.user_id} className="py-4">
+     <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE8FF] font-semibold text-[#6D35F5]">{m.avatar_url&&(m.avatar_ref||m.avatar_url.startsWith("https://"))?<img src={m.avatar_url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:m.display_name.slice(0,1).toUpperCase()}</div>
+      <div className="min-w-0 flex-1">
+       <p className="truncate text-sm font-semibold text-[#0B142A]">{m.display_name}</p>
+       <p className="mt-0.5 text-xs text-[#697386]">{m.job_title||roles[m.role]||m.role}</p>
+       <p className="mt-1.5 text-xs text-[#697386]">{projectCount} {projectCount===1?"projeto":"projetos"} · {permissionCount} {permissionCount===1?"permissão específica":"permissões específicas"}</p>
+      </div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+       <span className={`rounded-md px-2.5 py-1 text-xs ${m.active?"bg-[#E6F6EA] text-[#176B3C]":"bg-[#ECEEF2] text-[#677084]"}`}>{m.active?"Ativo":"Inativo"}</span>
+       <details open={menuOpen===m.user_id} onToggle={undefined} className="relative">
+        <summary aria-label={`Ações de ${m.display_name}`} aria-expanded={menuOpen===m.user_id} onClick={event=>{event.preventDefault();setMenuOpen(menuOpen===m.user_id?null:m.user_id)}} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-[#DDE1EA] text-xl font-semibold text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5] [&::-webkit-details-marker]:hidden">⋯</summary>
+        {menuOpen===m.user_id&&<div className="absolute right-0 top-full z-30 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-lg">
+         <button type="button" disabled={optionsDisabled} onClick={()=>{setEditing(m.user_id);setMenuOpen(null)}} className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">Editar usuário</button>
+         <button type="button" disabled={optionsDisabled} onClick={()=>{setEditing(m.user_id);setMenuOpen(null)}} className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">Alterar fotografia</button>
+         <button type="button" onClick={()=>{setExpanded(expanded===m.user_id?null:m.user_id);setMenuOpen(null)}} className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm hover:bg-[#F6F7FB]">{expanded===m.user_id?"Ocultar projetos e permissões":"Projetos e permissões"}</button>
+         {!!m.avatar_ref&&<><div className="my-1 border-t border-[#E3E7F0]"/><button type="button" disabled={optionsDisabled} onClick={()=>{setMenuOpen(null);void removeMemberPhoto(m)}} className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-40">Remover fotografia</button></>}
+        </div>}
+       </details>
+      </div>
+     </div>
+     {editing===m.user_id&&<TeamMemberProfileEditor key={m.user_id} member={m} onCancel={()=>setEditing(null)} onSaved={()=>{setEditing(null);setRefresh(n=>n+1)}}/>}
+     {expanded===m.user_id&&<div className="mt-4 rounded-lg bg-[#F6F7FB] p-3 text-xs text-[#525B70]"><p className="font-semibold">Projetos vinculados</p><p className="mt-1 break-words">{assignments.filter(a=>a.user_id===m.user_id).map(a=>projects.find(p=>p.id===a.project_id)?.title||"Projeto indisponível").join(", ")||"Nenhum vínculo"}</p><p className="mt-3 font-semibold">Permissões específicas</p><p className="mt-1 break-words">{permissions.filter(p=>p.user_id===m.user_id).map(p=>teamPermissionLabel(p.permission)).join(", ")||"Nenhuma permissão específica"}</p><TeamMemberControls userId={m.user_id} memberRole={m.role} active={m.active} projects={projects} assignments={assignments} permissions={permissions} capabilities={capabilities} onUpdated={async()=>{setRefresh(n=>n+1)}}/></div>}
+    </div>;
+   })}</div>}
   <p className="mt-5 text-xs leading-5 text-[#697386]">Novos colaboradores começam inativos. Após a troca da senha temporária, ative a conta, conceda a consulta e atribua os projetos. Somente administradores ativos podem alterar acessos.</p>
  </section>;
 }

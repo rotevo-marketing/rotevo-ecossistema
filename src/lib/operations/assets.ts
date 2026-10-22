@@ -7,6 +7,7 @@ export function financeWriter(value:Identity){return !!value.member?.active&&["s
 export async function mayReadAsset(value:Identity,asset:Asset):Promise<boolean>{
  if(asset.purpose==="avatar"){
   if(asset.owner_user_id===value.userId)return true;
+  if(value.profile.role==="client"&&value.profile.client_id){const c=await value.db.from("clients").select("cover_image_url").eq("id",value.profile.client_id).maybeSingle();if(!c.error&&c.data?.cover_image_url==="asset://"+asset.id)return true;}
   if(asset.client_id){
    if(administrator(value))return true;
    if(value.profile.role==="client"&&value.profile.client_id===asset.client_id){const c=await value.db.from("clients").select("cover_image_url").eq("id",asset.client_id).maybeSingle();if(!c.error&&c.data?.cover_image_url==="asset://"+asset.id)return true;}

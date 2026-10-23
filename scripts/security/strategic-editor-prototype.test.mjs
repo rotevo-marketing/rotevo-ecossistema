@@ -13,3 +13,10 @@ test('chart data rejects malformed, negative, infinite and oversized series',()=
 test('images are constrained to local supported formats and size',()=>{assert.equal(imageAllowed({type:'image/png',size:100}),true);for(const file of [{type:'image/svg+xml',size:100},{type:'text/html',size:100},{type:'image/jpeg',size:0},{type:'image/png',size:5*1024*1024}])assert.equal(imageAllowed(file),false);});
 test('prototype fails closed in production even with local flag',()=>{assert.equal(prototypeAllowed('production','true'),false);assert.equal(prototypeAllowed('preview',undefined),true);assert.equal(prototypeAllowed(undefined,undefined),false);assert.equal(prototypeAllowed(undefined,'true'),true);});
 test('prototype components do not import real projects, persistence or Supabase',()=>{for(const path of ['src/Components/strategic-editor/StrategicEditorPrototype.tsx','src/Components/strategic-editor/schema.tsx','src/Components/strategic-editor/demo.ts'])assert.doesNotMatch(readFileSync(path,'utf8'),/supabase|fetch\(|localStorage|\/api\/admin|EcosystemDocumentEditor|PlanningScheduleEditor/);const route=readFileSync('src/app/previa/editor-estrategico/page.tsx','utf8');assert.match(route,/prototypeAllowed/);assert.match(route,/notFound/);});
+
+test('planning workspace simulation has no application persistence and is preview gated',()=>{
+ const content=readFileSync('src/Components/strategic-editor/PlanningWorkspacePreview.tsx','utf8');
+ assert.doesNotMatch(content,/from ["'].*supabase|fetch\(|localStorage|sessionStorage|\/api\//);
+ const route=readFileSync('src/app/previa/planejamento/page.tsx','utf8');
+ assert.match(route,/prototypeAllowed/);assert.match(route,/notFound/);
+});

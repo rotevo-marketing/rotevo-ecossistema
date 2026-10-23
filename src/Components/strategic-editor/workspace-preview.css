@@ -65,3 +65,21 @@
 .pw-insert-menu section>button:hover .pw-element-icon,.pw-insert-menu section>button:focus-visible .pw-element-icon{color:#5123c5;background:#f0ecff;border-color:#ded3ff}
 .pw-insert-menu{min-width:340px;column-gap:12px}
 @media(max-width:767px){.pw-insert-menu{min-width:300px;column-gap:8px;padding-left:12px;padding-right:12px}.pw-insert-menu section>button{gap:7px;padding:7px 5px}.pw-element-icon{width:24px;height:24px}}
+
+/* Project identity: circular registered-photo treatment and compact metadata. */
+.pw-project-title{gap:18px;align-items:center;margin:24px 0 26px}
+.pw-project-photo-wrap{flex-shrink:0}
+.pw-project-photo{display:block;width:72px;height:72px;border-radius:50%;border:3px solid white;background:#f0ecff;box-shadow:0 0 0 1px #e3e7f0;position:relative;padding:0}
+.pw-project-photo img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pw-photo-edit{position:absolute;right:-1px;bottom:0;display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:white;color:#697386;border:1px solid #e3e7f0;box-shadow:0 2px 6px #0b142a09}
+.pw-project-photo:hover .pw-photo-edit{color:#5123c5;background:#f0ecff;border-color:#ded3ff}
+.pw-project-photo-input{display:none}
+.pw-project-identity{min-width:0;display:grid;gap:5px}
+.pw-project-title .pw-project-client{margin:0;font-size:12px;line-height:18px;font-weight:600;color:#525b70}
+.pw-project-identity h1{font-size:28px;line-height:36px;letter-spacing:-.025em;margin:0;overflow-wrap:anywhere}
+.pw-project-meta{display:flex;align-items:center;flex-wrap:wrap;gap:12px;color:#697386;font-size:12px;line-height:20px}
+.pw-meta-divider{width:1px;height:13px;background:#e3e7f0;flex-shrink:0}
+.pw-project-status{font-size:10px;padding:3px 9px;gap:6px;line-height:16px}
+.pw-project-status-dot{height:5px;width:5px;border-radius:50%;background:#8863bc;flex-shrink:0}
+.pw-project-title>.pw-project-client-view{margin-left:auto;align-self:center;flex-shrink:0}
+@media(max-width:767px){.pw-project-title{gap:13px;flex-wrap:nowrap;align-items:center;margin:20px 0 22px}.pw-project-photo{width:58px;height:58px;border-width:2px}.pw-photo-edit{width:21px;height:21px}.pw-project-title .pw-project-client{font-size:11px;line-height:16px}.pw-project-identity{gap:4px;flex:1}.pw-project-identity h1{font-size:23px;line-height:29px}.pw-project-meta{font-size:10px;gap:8px}.pw-project-status{font-size:9px;padding:2px 7px}.pw-project-title>.pw-project-client-view{display:none}}

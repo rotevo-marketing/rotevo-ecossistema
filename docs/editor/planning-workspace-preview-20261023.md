@@ -27,3 +27,14 @@ Módulos globais fora de Projetos aparecem desabilitados por estarem fora do esc
 ## Validação
 
 TypeScript, ESLint dos arquivos novos, testes de isolamento/publicação e build. Inspeção visual e testes no navegador são realizados no deployment Preview, pois o navegador remoto não alcança o localhost deste executor. O resultado final registra o estado efetivo do deployment.
+
+## Homologação da prévia
+
+- Build local completo passou com URL e chave sintéticas locais, sem acessar banco real.
+- TypeScript e ESLint dos componentes novos passaram.
+- 242 testes locais sem dependência de API em execução passaram. O arquivo local-admin-api-negative.test.mjs exige ativação explícita de Next/Supabase locais e foi excluído dessa bateria após o guard bloquear a execução sem essas condições.
+- Deployment inicial de Preview READY: dpl_DAkUCZNUL9yKKdETufw4u8gQVnfX.
+- Navegador: revisão, aprovação e publicação com confirmação passaram. Edição posterior de rascunho preservou a cópia publicada do cliente.
+- Gráfico: preenchimento de Valor 1 de 55 para 60 atualizou a barra e foi preservado após salvar, trocar de documento e voltar.
+- Modo foco abriu e ofereceu saída.
+- Após inspeção visual, títulos passaram a herdar a fonte da interface e os ícones globais receberam nomes acessíveis próprios.

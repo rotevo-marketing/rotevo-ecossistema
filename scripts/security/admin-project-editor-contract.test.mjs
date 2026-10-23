@@ -210,11 +210,11 @@ test("editorial decisions cannot silently approve modified material under the sa
 
 test("switching between client projects isolates editor state and late save callbacks",()=>{
  const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
- for(const name of ["EcosystemDocumentEditor","ExecutionTimelineEditor"]){
+ for(const name of ["DynamicDocumentEditor","ExecutionTimelineEditor"]){
   assert.match(page,new RegExp("<"+name+"[^>]* key=\\{project\\.id\\} projectId=\\{project\\.id\\}"));
  }
  const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
- assert.equal(guards.length,3,"legacy, rich document and execution callbacks must verify project identity");
+ assert.equal(guards.length,2,"document and execution callbacks must verify project identity");
  assert.doesNotMatch(page,/<(?:ProjectOnboarding|OperationalAgenda)\b/);
  assert.match(page,/<PlanningScheduleEditor key=\{project\.id\}/);
  assert.doesNotMatch(page,/key=\{project\.id\+project\.updated_at\}/);

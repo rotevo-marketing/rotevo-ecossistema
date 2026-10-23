@@ -34,7 +34,7 @@ test("current ecosystem document editor uses authorized version-checked endpoint
  assert.match(editor,/\/api\/admin\/project\/update/);
  assert.match(editor,/expectedUpdatedAt:updatedAt/);
  assert.doesNotMatch(editor,/\.from\("planning_projects"\)/);
- assert.match(adminPage,/EcosystemDocumentEditor/);
+ assert.match(adminPage,/DynamicDocumentEditor/);
 });
 
 test("only released snapshots flow to the customer and review steps stay explicit",()=>{
@@ -62,7 +62,7 @@ test("server validates all document transitions before changing project JSON",()
 test("current project admin contains no legacy module selection state",()=>{
  const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
  assert.doesNotMatch(page,/planningModules|moduleCategories|selectedModuleSlugs|saveModuleSelection|toggleModule/);
- assert.match(page,/EcosystemDocumentEditor/);
+ assert.match(page,/DynamicDocumentEditor/);
  assert.match(page,/selectedDocumentCodes/);
 });
 
@@ -77,7 +77,7 @@ test("document workspace provides search and lifecycle progress visibility",()=>
 test("obsolete dynamic legacy module editor is no longer a route",()=>{
  assert.equal(existsSync(fileURLToPath(new URL("../../src/app/admin/planejamentos/[clientSlug]/modulos/[moduleSlug]/page.tsx",import.meta.url))),false);
  const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
- assert.match(page,/EcosystemDocumentEditor/);
+ assert.match(page,/DynamicDocumentEditor/);
 });
 
 test("obsolete demonstration source remains removed",()=>{

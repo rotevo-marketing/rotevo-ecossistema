@@ -126,6 +126,7 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
+  useEffect(()=>{const id=window.requestAnimationFrame(()=>{const section=new URLSearchParams(window.location.search).get("section");if(NAV_ITEMS.some(item=>item.id===section))setWorkspaceTab(section!);});return()=>window.cancelAnimationFrame(id);},[]);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const [mobileMenu,setMobileMenu]=useState(false);
 

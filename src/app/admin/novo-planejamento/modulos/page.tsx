@@ -221,6 +221,7 @@ export default function SelecionarModulosPage() {
       Object.entries(deliverySchedule).filter(([, v]) => v !== "")
     );
 
+    let createdProjectId="";
     try {
       const {data:session,error:sessionError}=await supabase.auth.getSession();
       const token=session.session?.access_token;
@@ -249,6 +250,7 @@ export default function SelecionarModulosPage() {
       if(!response.ok)throw new Error("Não foi possível criar o planejamento autorizado.");
       const result=await response.json();
       if(typeof result?.project?.id!=="string")throw new Error("Não foi possível confirmar a criação do planejamento.");
+      createdProjectId=result.project.id;
     }catch(error){
       setErrorMessage(error instanceof Error?error.message:"Não foi possível criar o planejamento.");
       setIsSaving(false);
@@ -257,7 +259,7 @@ export default function SelecionarModulosPage() {
     setIsSaving(false);
 
     window.localStorage.removeItem("metodo-epc-new-planning-draft");
-    router.push("/admin");
+    router.push(`/admin/planejamentos/${encodeURIComponent(client.slug)}?projectId=${encodeURIComponent(createdProjectId)}`);
   }
 
 

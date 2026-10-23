@@ -1,14 +1,15 @@
-﻿"use client";
+"use client";
 
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { RotevoLogo } from "@/Components/RotevoLogo";
+
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
-import EcosystemDocumentEditor from "@/Components/admin/EcosystemDocumentEditor";
+
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
-import PlanningLayoutDemo from "@/Components/admin/PlanningLayoutDemo";
+import PublishedPlanningPreview from "@/Components/strategic-editor/PublishedPlanningPreview";
+import type {StrategicPlanningData} from "@/Components/strategic-editor/StrategicDocumentEditor";
 import DynamicDocumentEditor from "@/Components/strategic-editor/DynamicDocumentEditor";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +24,7 @@ type ProjectData = {
   coverImageUrl?: string | null;
   planningStages?: PlanningStage[];
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
-  ecosystem2027?: { version?: number; selectedDocumentCodes?: string[]; presentedDocumentCodes?: string[]; documents?: Record<string,{content:string;updatedAt:string}> };
+  ecosystem2027?: StrategicPlanningData["ecosystem2027"];
 };
 
 type PlanningProject = {
@@ -51,30 +52,10 @@ function formatDate(date: string) {
 }
 
 function getStatusLabel(status: PlanningProject["status"]) {
-  if (status === "draft") return "Em produção";
+  if (status === "draft") return "Em elaboração";
   if (status === "in_progress") return "Em andamento";
   if (status === "published") return "Publicado";
   return "Arquivado";
-}
-
-function getStatusClass(status: PlanningProject["status"]) {
-  if (status === "published") {
-    return "bg-emerald-100 text-emerald-700";
-  }
-
-  if (status === "draft") {
-    return "bg-amber-100 text-amber-800";
-  }
-
-  if (status === "in_progress") {
-    return "bg-blue-100 text-blue-700";
-  }
-
-  if (status === "archived") {
-    return "bg-slate-200 text-slate-700";
-  }
-
-  return "bg-slate-100 text-slate-600";
 }
 
 function PlanejamentoClienteContent() {
@@ -92,11 +73,12 @@ function PlanejamentoClienteContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [legacyDirty,setLegacyDirty]=useState(false);
+
+
   const [richDirty,setRichDirty]=useState(false);
+  const [richBusy,setRichBusy]=useState(false);
   const [editingScope, setEditingScope] = useState(false);
-  const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("documents");
+  const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("editor");
   const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
   const [draftPresentedCodes, setDraftPresentedCodes] = useState<string[]>([]);
 
@@ -141,7 +123,7 @@ function PlanejamentoClienteContent() {
         return;
       }
 
-      setUserEmail(userData.user.email ?? "");
+
       // Legacy client-only links still open the latest project. Explicit links
       // select the requested project without crossing the client boundary.
       const projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -261,7 +243,7 @@ function PlanejamentoClienteContent() {
       setErrorMessage("Selecione pelo menos um documento para o planejamento.");
       return;
     }
-    if(legacyDirty||richDirty){setErrorMessage("Salve ou descarte as alterações do editor antes de mudar o escopo.");return;}
+    if(richDirty||richBusy){setErrorMessage("Salve ou descarte as alterações do editor antes de mudar o escopo.");return;}
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -326,21 +308,8 @@ function PlanejamentoClienteContent() {
   }
 
   return (
-    <main className="admin-manage-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-manage-v2 workspace-project-page flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{` .admin-manage-v2, .admin-manage-v2 h1, .admin-manage-v2 h2, .admin-manage-v2 h3, .admin-manage-v2 h4 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
-      <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27}/></Link>
-            <span className="hidden h-6 w-px bg-[#E3E7F0] sm:block"/>
-            <span className="hidden text-sm text-[#697386] sm:block">Administração</span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {userEmail && <div title={userEmail} className="hidden items-center gap-2 sm:flex"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">{userEmail.charAt(0).toUpperCase()}</span><span className="hidden max-w-44 truncate text-xs text-[#525B70] lg:block">{userEmail}</span></div>}
-            <Link href="/admin" className="rounded-xl border border-[#E3E7F0] bg-white px-3 py-2.5 text-xs font-medium text-[#090D1C] sm:px-4 sm:text-sm">Voltar ao painel</Link>
-          </div>
-        </div>
-      </header>
 
       <section className="mx-auto w-full max-w-6xl px-5 pb-5 pt-9 sm:px-8 lg:px-10">
         {isLoading ? (
@@ -370,51 +339,17 @@ function PlanejamentoClienteContent() {
 
         {!isLoading && project ? (
           <>
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#F1F3F7]">
-                    {coverImageUrl ? <img src={coverImageUrl} alt={client?.name ?? "Cliente"} className="h-full w-full object-cover"/> :
-                      <div className="flex h-full w-full items-center justify-center text-xl font-bold text-[#697386]">{(client?.name ?? "C").charAt(0).toUpperCase()}</div>}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-[#697386]">Gerenciar planejamento</p>
-                    <h1 className="mt-1 text-[28px] font-bold leading-tight tracking-[-0.03em] text-[#090D1C]">{project.title}</h1>
-                    <p className="mt-1 text-sm text-[#525B70]">{client?.name ?? "Cliente"}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-lg px-3 py-2 text-xs font-semibold ${getStatusClass(project.status)}`}>{getStatusLabel(project.status)}</span>
-                  <Link href={`/admin/planejamentos/${clientSlug}/acesso`} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium">Configurar acesso</Link>
-                  <Link href={`/apresentacao/${project.slug}`} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">Ver apresentação</Link>
-                </div>
-              </div>
-              {project.description && <p className="mt-5 max-w-3xl text-sm leading-6 text-[#525B70]">{project.description}</p>}
-              <div className="mt-6 flex flex-col gap-4 border-t border-[#E3E7F0] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-[#525B70]">Atualizado em <strong className="font-semibold text-[#090D1C]">{formatDate(project.updated_at)}</strong></p>
-                {project.status === "draft" && <button type="button" onClick={() => handlePublish("published")} disabled={isPublishing}
-                  className="cursor-pointer rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50">{isPublishing ? "Publicando..." : "Publicar apresentação"}</button>}
-                {project.status === "published" && <button type="button" onClick={() => handlePublish("draft")} disabled={isPublishing}
-                  className="cursor-pointer rounded-xl border border-[#E3E7F0] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">{isPublishing ? "Atualizando..." : "Voltar para rascunho"}</button>}
-              </div>
-              {errorMessage && <p role="alert" className="mt-4 text-sm text-red-700">{errorMessage}</p>}
-              {successMessage && <p role="status" className="mt-4 text-sm text-emerald-700">{successMessage}</p>}
-            </div>
+            <section className="pw-project-header"><div className="pw-breadcrumb"><Link href="/admin?section=projects">Projetos</Link><span>/</span>{client?.name}<span>/</span>Planejamento</div><div className="pw-project-title"><div className="pw-project-photo-wrap"><div className="pw-project-photo">{coverImageUrl?<img src={coverImageUrl} alt={`Foto do projeto ${project.title}`}/>:<span>{(client?.name??project.title).charAt(0).toUpperCase()}</span>}</div></div><div className="pw-project-identity"><p className="pw-project-client">{client?.name}</p><h1>{project.title}</h1><div className="pw-project-meta"><span>Planejamento estratégico</span><span className="pw-meta-divider" aria-hidden="true"/><span className="pw-status pw-project-status"><span className="pw-project-status-dot"/>{getStatusLabel(project.status)}</span></div></div><button className="pw-outline pw-project-client-view" onClick={()=>setPlanningTab("preview")}>Visão do cliente ↗</button></div><div className="workspace-project-controls"><span>Atualizado em {formatDate(project.updated_at)}</span><Link href={`/admin/planejamentos/${clientSlug}/acesso?projectId=${project.id}`}>Configurar acesso</Link><Link href={`/apresentacao/${project.slug}`}>Abrir apresentação ↗</Link>{project.status!=="archived"&&<button className="pw-outline" disabled={isPublishing||richDirty||richBusy||isSaving} onClick={()=>{if(window.confirm(project.status==="published"?"Retirar a apresentação do acesso do cliente?":"Disponibilizar ao cliente a apresentação e os documentos já publicados?"))void handlePublish(project.status==="published"?"draft":"published");}}>{isPublishing?"Atualizando…":project.status==="published"?"Retirar apresentação":"Disponibilizar apresentação"}</button>}</div>{errorMessage&&<p role="alert" className="se-notice">{errorMessage}</p>}{successMessage&&<p role="status" className="se-notice">{successMessage}</p>}</section>
 
             {hasEcosystem && <div className="mt-7 space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Documentos selecionados</p><strong className="mt-2 block text-2xl">{selectedDocuments.length}</strong></div>
-                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Marcados para exibição</p><strong className="mt-2 block text-2xl">{presentedCodes.length}</strong></div>
-                <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><p className="text-xs text-[#697386]">Áreas do projeto</p><strong className="mt-2 block text-2xl">{documentAreas.length}</strong></div>
-              </div>
-              <nav aria-label="Seções do planejamento" className="flex flex-wrap gap-2 border-b border-[#E3E7F0] pb-4" role="tablist">{([{id:"documents",label:"Documentos"},{id:"schedule",label:"Cronograma"},{id:"preview",label:"Prévia do Cliente"},{id:"editor",label:"Editor Estratégico"},{id:"execution",label:"Plano de Execução"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} tabIndex={planningTab===item.id?0:-1} onKeyDown={event=>{
+              <nav aria-label="Seções do planejamento" className="pw-project-tabs workspace-project-tabs" role="tablist">{([{id:"editor",label:"Planejamento"},{id:"schedule",label:"Cronograma do projeto"},{id:"execution",label:"Plano de execução"},{id:"preview",label:"Visão do cliente"},{id:"documents",label:"Configurar documentos"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} tabIndex={planningTab===item.id?0:-1} onKeyDown={event=>{
  if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
  event.preventDefault();
  const tabs=Array.from(event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
  const index=tabs.indexOf(event.currentTarget);
  const next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(index+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
  tabs[next]?.click();tabs[next]?.focus();
- }} onClick={()=>setPlanningTab(item.id)} className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold ${planningTab===item.id?"bg-[#6D35F5] text-white":"border border-[#E3E7F0] bg-white text-[#525B70] hover:border-[#6D35F5]"}`}>{item.label}</button>)}</nav>
+ }} disabled={richBusy||isSaving||isPublishing} onClick={()=>setPlanningTab(item.id)} className={planningTab===item.id?"workspace-tab-active":""}>{item.label}</button>)}</nav>
               <div id="planning-panel-documents" role="tabpanel" tabIndex={0} aria-labelledby="planning-tab-documents" hidden={planningTab!=="documents"}>
               <div className="rounded-xl border border-[#E3E7F0] bg-white p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -441,7 +376,7 @@ function PlanejamentoClienteContent() {
                 </div> : <div className="mt-5 space-y-4">
                   {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Marcado para exibição" : "Uso interno"}</span></div>)}</div></section>)}
                 </div>}
-                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Na aba Editor Estratégico, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
+                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Na aba Planejamento, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
               </div>
               </div>
             </div>}
@@ -450,8 +385,8 @@ function PlanejamentoClienteContent() {
       </section>
 
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PlanningLayoutDemo/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><section className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10"><div className="mb-4 rounded-2xl border border-[#E3E7F0] bg-white p-5"><h2 className="text-xl font-bold">Editor Estratégico profissional</h2><p className="mt-2 text-sm text-[#525B70]">Edite e salve os documentos deste projeto. Revise e publique a versão autorizada para o cliente. O editor anterior continua preservado abaixo.</p></div><DynamicDocumentEditor projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/><details className="mt-5 rounded-2xl border border-[#E3E7F0] bg-white p-5"><summary className="cursor-pointer font-semibold">Editor anterior — documentos reais e publicação</summary><EcosystemDocumentEditor onDirtyChange={setLegacyDirty} key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></details></section></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PublishedPlanningPreview data={project.data??{}} status={project.status} title={project.title} clientName={client?.name??""}/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><DynamicDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onBusyChange={setRichBusy} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></div>}
       {project && !isLoading && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>

@@ -4,6 +4,55 @@
 import type { ReactNode } from "react";
 
 const artwork: Record<string, ReactNode> = {
+  "h-2": <>
+    <path d="M17 12a2 2 0 1 1 4 0c0 .591 -.417 1.318 -.816 1.858l-3.184 4.143l4 0" />
+    <path d="M4 6v12" />
+    <path d="M12 6v12" />
+    <path d="M11 18h2" />
+    <path d="M3 18h2" />
+    <path d="M4 12h8" />
+    <path d="M3 6h2" />
+    <path d="M11 6h2" />
+  </>,
+  "align-left": <>
+    <path d="M4 6l16 0" />
+    <path d="M4 12l10 0" />
+    <path d="M4 18l14 0" />
+  </>,
+  "table": <>
+    <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14" />
+    <path d="M3 10h18" />
+    <path d="M10 3v18" />
+  </>,
+  "photo": <>
+    <path d="M15 8h.01" />
+    <path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" />
+    <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" />
+    <path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" />
+  </>,
+  "chart-bar": <>
+    <path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6" />
+    <path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10" />
+    <path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14" />
+    <path d="M4 20h14" />
+  </>,
+  "bulb": <>
+    <path d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7" />
+    <path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3" />
+    <path d="M9.7 17l4.6 0" />
+  </>,
+  "arrows-split": <>
+    <path d="M21 17h-8l-3.5 -5h-6.5" />
+    <path d="M21 7h-8l-3.495 5" />
+    <path d="M18 10l3 -3l-3 -3" />
+    <path d="M18 20l3 -3l-3 -3" />
+  </>,
+  "number-123": <>
+    <path d="M3 10l2 -2v8" />
+    <path d="M9 8h3a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 0 -1 1v2a1 1 0 0 0 1 1h3" />
+    <path d="M17 8h2.5a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1 -1.5 1.5h-1.5h1.5a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1 -1.5 1.5h-2.5" />
+  </>,
+
   "folder-lock": <><path d="M13 19h-8a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v2" />
   <path d="M17 19a1 1 0 0 1 1 -1h3a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-2" />
   <path d="M18 18v-1.5a1.5 1.5 0 1 1 3 0v1.5" /></>,
@@ -259,7 +308,7 @@ const artwork: Record<string, ReactNode> = {
   </>,
 };
 
-export type RotevoIconName = "folder-lock" | "key" | "logout" | "folder-open" | "lock" | "users" | "users-group" | "list-check" | "calendar" | "currency-dollar" | "rocket" | "alert-circle" | "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "brand-youtube" | "brand-linkedin" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
+export type RotevoIconName = "h-2" | "align-left" | "table" | "photo" | "chart-bar" | "bulb" | "arrows-split" | "number-123" | "folder-lock" | "key" | "logout" | "folder-open" | "lock" | "users" | "users-group" | "list-check" | "calendar" | "currency-dollar" | "rocket" | "alert-circle" | "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "brand-youtube" | "brand-linkedin" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
 
 export function RotevoTablerIcon({name, size=24, stroke=2.3, className=""}: {
   name:RotevoIconName; size?:number; stroke?:number; className?:string

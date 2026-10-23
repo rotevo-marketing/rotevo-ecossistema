@@ -58,3 +58,10 @@
 .pw-client-controls select{border-radius:var(--pw-radius-control)}
 @media(max-width:1200px){.pw-project-tabs{gap:20px}.pw-project-tabs>button{font-size:12px}.pw-project-tabs>.pw-settings{font-size:11px}.pw-text-tool{font-size:10px}}
 @media(max-width:767px){.pw-project-title h1{font-size:24px}.pw-project-tabs>button{font-size:12px}.pw-doc-actions .pw-status{font-size:10px}.pw-primary{font-size:11px;padding:9px 11px}.pw-modes>button,.pw-text-tool,.pw-insert{font-size:10px}.pw-sheet{border-radius:12px}.pw-edit-tools{border-radius:12px}.pw-doccode,.pw-save-status{font-size:9px}.pw-context-path{font-size:10px}}
+
+/* Consistent outline icons for familiar document insertion controls. */
+.pw-insert-menu section>button{display:flex;align-items:center;gap:10px;min-height:39px;padding:7px 9px;font-size:12px;line-height:1.5}
+.pw-element-icon{display:grid;place-items:center;flex-shrink:0;width:26px;height:26px;border-radius:7px;color:#697386;background:#f6f7fb;border:1px solid #edf0f8}
+.pw-insert-menu section>button:hover .pw-element-icon,.pw-insert-menu section>button:focus-visible .pw-element-icon{color:#5123c5;background:#f0ecff;border-color:#ded3ff}
+.pw-insert-menu{min-width:340px;column-gap:12px}
+@media(max-width:767px){.pw-insert-menu{min-width:300px;column-gap:8px;padding-left:12px;padding-right:12px}.pw-insert-menu section>button{gap:7px;padding:7px 5px}.pw-element-icon{width:24px;height:24px}}

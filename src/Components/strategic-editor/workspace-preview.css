@@ -4,3 +4,57 @@
 @media(max-width:1023px){.pw-global-nav{display:none!important}.pw-writing-grid.with-inspector{grid-template-columns:minmax(0,1fr)}.pw-properties{position:static;grid-row:1;max-width:none}.pw-properties .pw-data-row{grid-template-columns:minmax(0,1fr) 100px 20px}.pw-project-tabs{overflow:auto;gap:22px}.pw-project-tabs>.pw-settings{margin-left:0}.pw-editor .bn-editor{padding-left:18px!important;padding-right:18px!important}.pw-sheet-kicker{padding-left:18px;padding-right:18px}.pw-text-tool{font-size:9px}}
 @media(max-width:767px){.pw-demo-bar{font-size:9px;padding:6px 12px;gap:7px;flex-wrap:wrap;line-height:1.4}.pw-demo-label{font-size:8px}.pw-topbar{height:62px;padding:0 16px}.pw-topbar>div:first-child{gap:12px}.pw-panel-name{display:none}.pw-user>span:nth-child(2){display:none}.pw-mobile-toggle{display:block}.pw-project-header{padding:18px 16px 0}.pw-breadcrumb{font-size:9px;gap:7px}.pw-project-title{gap:10px;margin:18px 0;flex-wrap:wrap}.pw-project-title h1{font-size:22px}.pw-project-title p{font-size:10px}.pw-project-title>.pw-status{margin-left:auto;font-size:9px}.pw-client-avatar{width:39px;height:39px;font-size:21px}.pw-project-title>.pw-outline{display:none}.pw-project-tabs{gap:22px}.pw-project-tabs>button{font-size:11px}.pw-document-nav{display:none}.pw-document-nav.mobile-open{display:flex;position:fixed;left:0;top:100px;bottom:0;z-index:35;width:290px;overflow:auto;box-shadow:20px 0 50px #0b142a30}.pw-document-main{padding:17px 12px}.pw-context-path{font-size:9px;line-height:1.8}.pw-docbar{align-items:center;gap:8px}.pw-doc-actions{gap:5px}.pw-doc-actions .pw-status{font-size:9px;padding:4px 6px}.pw-primary{font-size:10px;padding:9px 10px}.pw-doccode{font-size:8px}.pw-save-status{font-size:8px}.pw-edit-tools{flex-wrap:wrap;gap:3px;padding:5px;margin-bottom:15px}.pw-modes>button{font-size:9px;padding:6px}.pw-insert{font-size:10px}.pw-edit-tools .pw-tool-spacer{display:none}.pw-text-tool{font-size:9px;margin-left:auto}.pw-sheet{padding:25px 7px 16px;border-radius:8px}.pw-sheet-kicker{padding:0 17px 15px;font-size:7px;letter-spacing:.07em;margin-bottom:19px}.pw-app .bn-editor h1{font-size:25px}.pw-app .bn-editor h2{font-size:18px}.pw-editor .bn-editor,.pw-client-document .bn-editor{padding:0 17px 12px!important;font-size:13px}.pw-app .bn-block-content[data-content-type=table]{overflow-x:auto}.pw-app .bn-block-content[data-content-type=table] table{min-width:400px}.pw-publication-strip{flex-direction:column;align-items:flex-start;gap:9px}.pw-writing-hint{font-size:8px}.pw-secondary{padding:25px 16px}.pw-secondary h2{font-size:25px}.pw-timeline>article{padding:16px 13px;gap:11px}.pw-timeline h3{font-size:12px}.pw-timeline>article>.pw-status{font-size:8px;padding:4px 6px}.pw-timeline>article>span:first-child{width:29px;height:29px;flex-shrink:0;font-size:10px}.pw-client-heading{align-items:flex-start;flex-direction:column}.pw-client-controls{flex-wrap:wrap}.pw-client-controls label{min-width:100%}.pw-execution-list article{padding:17px 12px;gap:12px;flex-wrap:wrap}.pw-execution-list h3{font-size:13px}.pw-execution-list input{flex-shrink:0}.pw-execution-list .pw-status{margin-left:29px}.pw-notice{margin:12px 12px 0;font-size:10px}.is-focus .pw-document-main{padding:17px 12px}.pw-insert-menu{left:-100px;min-width:280px}.pw-dialog{padding:20px}.pw-dialog h2{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.pw-app button{transition:none}}
+
+/* Visual refinement: Rotevo identity guide, approved workspace structure. */
+.pw-app{--pw-radius-control:10px;--pw-radius-item:12px;--pw-radius-card:16px;--pw-radius-dialog:20px;--pw-purple-tint:#f0ecff;--pw-purple-ink:#5123c5;--pw-text-secondary:#525b70}
+.pw-search{border-radius:var(--pw-radius-control);background:#f6f7fb;padding:8px 12px;border-color:var(--pw-border)}
+.pw-search input{font-size:12px;color:var(--pw-text-secondary)}
+.pw-search input::placeholder{color:#697386;opacity:1}
+.pw-nav-title h2{font-size:14px;color:#090d1c}
+.pw-nav-title>span{font-size:10px;color:#697386}
+.pw-status-filter{font-size:11px;color:var(--pw-text-secondary);padding:14px 4px 16px}
+.pw-area-list{gap:8px}
+.pw-area-title{border-radius:var(--pw-radius-item);padding:12px 8px;gap:10px;font-size:12px;color:var(--pw-text-secondary);line-height:1.5}
+.pw-area-title:hover{background:#f6f7fb}
+.pw-area-number{border-radius:9px;width:28px;height:28px;font-size:10px;color:#697386;background:#f9fafd;border-color:var(--pw-border);font-variant-numeric:tabular-nums}
+.pw-area-list>section:has(.pw-doc-list>[aria-current=page])>.pw-area-title{color:var(--pw-purple-ink)}
+.pw-area-list>section:has(.pw-doc-list>[aria-current=page]) .pw-area-number{background:var(--pw-purple-tint);color:var(--pw-purple-ink);border-color:#ded3ff}
+.pw-doc-list{gap:6px;padding:4px 0 8px 0}
+.pw-doc-list>button{position:relative;align-items:flex-start;gap:10px;padding:13px 12px;border:1px solid transparent;border-radius:var(--pw-radius-item);font-size:12px;font-weight:500;color:var(--pw-text-secondary);line-height:1.6;min-height:58px}
+.pw-doc-list>button:hover{background:#f8f5ff;border-color:#ece6fa}
+.pw-doc-list>button[aria-current=page],.pw-doc-list>button[aria-current=page]:hover{background:var(--pw-purple-tint);border-color:#ded3ff;color:var(--pw-purple-ink);font-weight:650;box-shadow:0 3px 12px rgba(81,35,197,.035)}
+.pw-doc-list small{font-size:10px;line-height:1.6;color:#697386;margin-top:5px}
+.pw-doc-list>[aria-current=page] small{color:#6d548e}
+.pw-doc-marker{width:7px;height:7px;border-radius:50%;border:1px solid #a1abba;background:white;margin-top:7px}
+.pw-doc-list>[aria-current=page] .pw-doc-marker{background:#6d35f5;border-color:#6d35f5;box-shadow:0 0 0 3px #e5dcfa}
+.pw-doc-marker.done{height:15px;width:15px;margin-top:3px;border-radius:50%;background:#e8f7ee;color:#16794b;text-align:center;line-height:15px;font-size:10px}
+.pw-doc-list>[aria-current=page] .pw-doc-marker.done{background:#e8f7ee;box-shadow:none;color:#16794b}
+.pw-nav-foot{font-size:10px;color:#697386}
+.pw-status{border-radius:999px;padding:5px 11px;font-size:11px;line-height:1.5}
+.pw-app .pw-outline,.pw-app .pw-primary,.pw-global-nav nav button,.pw-user{border-radius:var(--pw-radius-control)}
+.pw-project-title h1{font-size:28px;letter-spacing:-.025em}
+.pw-project-tabs>button{font-size:13px}
+.pw-project-tabs>.pw-settings{font-size:12px}
+.pw-project-tabs>button>span{border-radius:999px;font-size:11px;padding:2px 7px}
+.pw-context-path{font-size:11px;color:#697386}
+.pw-doccode{font-size:10px;color:#697386}
+.pw-save-status{font-size:10px;color:#697386}
+.pw-edit-tools{border-radius:var(--pw-radius-item);border-color:var(--pw-border);padding:8px 10px}
+.pw-modes>button{font-size:11px;border-radius:8px}
+.pw-text-tool,.pw-insert{font-size:11px}
+.pw-insert{color:var(--pw-purple-ink)}
+.pw-primary{font-size:12px;min-height:40px}
+.pw-outline{font-size:12px;min-height:40px}
+.pw-sheet{border-radius:var(--pw-radius-card);border-color:var(--pw-border);box-shadow:0 4px 20px rgba(9,13,28,.045)}
+.pw-properties{border-radius:var(--pw-radius-card);border-color:var(--pw-border)}
+.pw-properties :is(input,select){border-radius:var(--pw-radius-control)!important}
+.pw-properties>label,.pw-chart-fields legend{font-size:11px!important;color:var(--pw-text-secondary)}
+.pw-properties p,.pw-chart-fields small{color:#697386}
+.pw-insert-menu{border-radius:var(--pw-radius-card);box-shadow:0 12px 36px rgba(9,13,28,.10)}
+.pw-insert-menu section>button{border-radius:8px}
+.pw-insert-menu h3{font-size:10px;color:#697386}
+.pw-dialog{border-radius:var(--pw-radius-dialog)}
+.pw-timeline>article,.pw-execution-list article,.pw-empty-client{border-radius:var(--pw-radius-card)}
+.pw-client-controls select{border-radius:var(--pw-radius-control)}
+@media(max-width:1200px){.pw-project-tabs{gap:20px}.pw-project-tabs>button{font-size:12px}.pw-project-tabs>.pw-settings{font-size:11px}.pw-text-tool{font-size:10px}}
+@media(max-width:767px){.pw-project-title h1{font-size:24px}.pw-project-tabs>button{font-size:12px}.pw-doc-actions .pw-status{font-size:10px}.pw-primary{font-size:11px;padding:9px 11px}.pw-modes>button,.pw-text-tool,.pw-insert{font-size:10px}.pw-sheet{border-radius:12px}.pw-edit-tools{border-radius:12px}.pw-doccode,.pw-save-status{font-size:9px}.pw-context-path{font-size:10px}}

@@ -38,3 +38,7 @@ TypeScript, ESLint dos arquivos novos, testes de isolamento/publicação e build
 - Gráfico: preenchimento de Valor 1 de 55 para 60 atualizou a barra e foi preservado após salvar, trocar de documento e voltar.
 - Modo foco abriu e ofereceu saída.
 - Após inspeção visual, títulos passaram a herdar a fonte da interface e os ícones globais receberam nomes acessíveis próprios.
+
+## Refinamento visual aprovado — 23/10/2026
+
+Usuário aprovou layout, navegação lateral e funções; solicitou exclusivamente adequação visual à identidade Rotevo. Alteração restrita ao CSS da simulação: itens laterais com raio de 12 px, seleção violeta com borda suave, marcadores circulares sem aparência de checkbox, numeração de fases com cantos de 9 px, cartões de 16 px, campos e botões de 10 px e chips arredondados. Inter, navy, roxo e lima preservados. Legibilidade e contraste de metadados reforçados. Sem alterações de comportamento, estrutura, dados ou plataforma operacional.

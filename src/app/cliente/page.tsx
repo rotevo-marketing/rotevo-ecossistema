@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
+import {portalTarget} from "@/lib/ui/navigation";
 import { supabase } from "@/lib/supabase";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
@@ -97,6 +98,7 @@ export default function ClientAreaPage(){
    setLoading(false);
  }load();return()=>{mounted=false};},[router]);
  async function logout(){await supabase.auth.signOut();router.replace("/");}
+ function openModule(module:MenuId,projectId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setTab(module);setMobileMenu(false);}
  const selected=menu.find(item=>item.id===tab)??menu[0];
  const nav=<nav aria-label="Navegação do portal" className="space-y-1.5">
    {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
@@ -119,13 +121,13 @@ export default function ClientAreaPage(){
      </aside>
      {mobileMenu&&<aside className="w-full bg-[#0B142A] px-4 py-6 lg:hidden">{nav}</aside>}
      <div className={`min-w-0 flex-1 px-5 pb-16 pt-9 sm:px-8 ${mobileMenu?"hidden lg:block":""}`}>
-       <div className="mb-7"><p className="mb-1 text-sm text-[#697386]">{tab==="overview"?"Bem-vindo ao seu espaço":"Portal do Cliente"}</p><h1 className="text-3xl font-bold tracking-tight">{tab==="overview"?(clientName?`Olá, ${clientName}!`:"Visão geral"):selected.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{tab==="overview"?"Acompanhe o andamento do seu projeto e saiba o que precisa da sua atenção.":tab==="planning"?"Consulte seus planejamentos estratégicos em um ambiente próprio.":"Informações e entregas do seu projeto, organizadas em um só lugar."}</p></div>
+       <div className="rv-page-heading"><div><p className="mb-1 text-sm text-[#697386]">{tab==="overview"?"Bem-vindo ao seu espaço":"Portal do Cliente"}</p><h1 className="text-3xl font-bold tracking-tight">{tab==="overview"?(clientName?`Olá, ${clientName}!`:"Visão geral"):selected.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{tab==="overview"?"Acompanhe o andamento do seu projeto e saiba o que precisa da sua atenção.":tab==="planning"?"Consulte seus planejamentos estratégicos em um ambiente próprio.":"Informações e entregas do seu projeto, organizadas em um só lugar."}</p></div></div>
        {projects.length>1&&["planning","execution","content","campaigns","meetings"].includes(tab)&&<label className="mb-5 block text-sm font-semibold">Projeto<select value={scopedProjects[0]?.id??""} onChange={e=>setSelectedProjectId(e.target.value)} className="ml-3 max-w-full rounded-xl border border-[#E3E7F0] bg-white p-3">{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}<button type="button" onClick={()=>window.location.reload()} className="ml-3 rounded-lg border border-red-200 px-3 py-2 font-semibold">Tentar novamente</button></div>}
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
        !workspace?<p className="rounded-xl bg-white p-6 text-sm">Seus serviços não puderam ser carregados. Atualize a página.</p>:
        tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
-       tab==="overview"?<ClientOverview projects={projects} workspace={workspace} onNavigate={setTab}/>:
+       tab==="overview"?<ClientOverview projects={projects} workspace={workspace} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning projects={scopedProjects}/>:
        tab==="execution"?<ProjectTimeline projects={scopedProjects}/>:
        tab==="content"?<ClientContent projects={scopedProjects}/> :

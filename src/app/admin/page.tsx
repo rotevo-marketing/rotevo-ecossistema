@@ -330,7 +330,7 @@ export default function AdminPage() {
         <div className="flex w-full items-center justify-between gap-3 px-5 py-5">
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="white" size={27}/></Link><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
+            <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function AdminPage() {
       {mobileMenu&&<aside className="w-full bg-[#0B142A] p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm text-white ${workspaceTab===item.id?"bg-[#6D35F5]":"hover:bg-white/10"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
       <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="rv-page-heading">
           <div>
             <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">{NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">{workspaceTab==="overview"?"Sua central de gestão e rotina. Veja o que precisa de atenção e o que depende de você.":"Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar."}</p>

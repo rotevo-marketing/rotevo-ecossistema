@@ -53,6 +53,7 @@ export default function ApresentacaoDinamicaPage(){
  const details=project.data!;
  if(!strategist&&project.status==="draft")return <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F6F7FB] p-8 text-center"><h1 className="text-2xl font-semibold text-[#090D1C]">Planejamento em desenvolvimento</h1><p className="text-[#697386]">A apresentação estará disponível quando for publicada.</p><Link href="/cliente" className="rounded-xl bg-[#090D1C] px-5 py-3 text-sm text-white">Voltar ao portal</Link></main>;
  return <EcosystemPresentationOverview
+  projectId={project.id}
   clientName={client?.name??project.title}
   projectTitle={project.title}
   coverImageUrl={details.coverImageUrl??null}

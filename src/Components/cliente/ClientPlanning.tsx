@@ -1,4 +1,5 @@
 "use client";
+import {clientDocumentCode} from "@/lib/ui/planningSnapshot";
 import ExecutivePlanningSummary from "./ExecutivePlanningSummary";
 import {useEffect,useState} from "react";
 import DynamicDocumentReader from "@/Components/strategic-editor/DynamicDocumentReader";
@@ -40,7 +41,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
  },[selectedId,selectedSlug,selectedStatus,requestKey]);
  const visible=presentation?.data?.ecosystem2027;
  const allowed=new Set((visible?.selectedDocumentCodes??[]).filter(c=>(visible?.presentedDocumentCodes??[]).includes(c)));
- const publishedDocs=ecosystemDocuments.filter(d=>!d.area.startsWith("00 ")&&d.code!=="01.01"&&allowed.has(d.code)&&!!visible?.documents?.[d.code]?.content?.trim());
+ const publishedDocs=ecosystemDocuments.filter(d=>clientDocumentCode(d.code)&&allowed.has(d.code)&&!!visible?.documents?.[d.code]?.content?.trim());
  const availableAreas=areas.map(name=>({name,docs:publishedDocs.filter(d=>d.area===name)}));
  const chosenArea=availableAreas.find(a=>a.name===area);
  const chosen=chosenArea?.docs.find(d=>d.code===code);

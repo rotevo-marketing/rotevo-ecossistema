@@ -1,5 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
+import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
+import DialogFocus from "@/Components/ui/DialogFocus";
 import {supabase} from "@/lib/supabase";
 import {validOperationalDate} from "@/lib/security/executionDependencyValidation";
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
@@ -14,6 +16,11 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  const [saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const project=projects.find(p=>p.id===projectId);
  const items=useMemo(()=>Array.isArray(project?.data?.editorialCalendar)?project.data.editorialCalendar:[],[project]);
+ const baseline=editing?.id?items.find(item=>item.id===editing.id):blank;
+ const dirty=!!editing&&JSON.stringify(editing)!==JSON.stringify(baseline);
+ useUnsavedChanges(dirty);
+ function discard(){return !saving&&(!dirty||window.confirm("Descartar as alterações não salvas do conteúdo?"));}
+ function close(){if(discard())setEditing(null);}
  const [decisions,setDecisions]=useState<{content_id:string;content_version:string;decision:"approved"|"changes_requested"}[]>([]);
  const [approvalError,setApprovalError]=useState(false);
  useEffect(()=>{let mounted=true;async function load(){
@@ -66,9 +73,9 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  }
  return <div className="mt-7 space-y-5">
   {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-  <EditorialCalendar projects={projects} onNew={id=>{setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
-  {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={()=>setEditing(null)} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">
-    <h3 className="text-base font-semibold">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
+  <EditorialCalendar projects={projects} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
+  {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={close} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">
+    <DialogFocus onClose={close}/>{dirty&&<p role="status" className="rv-unsaved">Alterações não salvas no conteúdo</p>}<h3 className="text-base font-semibold">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
     {!editing.id&&<label className="mt-4 block text-xs font-medium">Projeto<select value={projectId} onChange={e=>{setProjectId(e.target.value);setError("");}} className="mt-1 block w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}
     {error&&<p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {approvalError&&<p className="mt-3 text-xs text-[#916000]">A sincronização de aprovações depende da configuração do banco.</p>}
@@ -85,7 +92,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
-    <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#ADE60A] px-5 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
+    <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={close} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#ADE60A] px-5 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
    </aside></div>}
  </div>;
 }

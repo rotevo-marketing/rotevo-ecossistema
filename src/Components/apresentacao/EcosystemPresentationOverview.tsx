@@ -1,18 +1,20 @@
 "use client";
+import {clientDocumentCode} from "@/lib/ui/planningSnapshot";
 import ExecutivePlanningSummary,{type PublishedStrategicDocument} from "@/Components/cliente/ExecutivePlanningSummary";
 import DynamicDocumentReader from "@/Components/strategic-editor/DynamicDocumentReader";
 import type {RichContent} from "@/lib/planning/richContent";
 import { useState } from "react";
 import Link from "next/link";
+import {planningHref} from "@/lib/ui/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 const iconNames: RotevoIconName[] = ["layout-dashboard","report","shopping-bag","filter-2-search","user","shape","target-arrow","brand-instagram","speakerphone","chart-funnel","bolt","chart-pie","chart-dots-3","device-analytics","alert-square-rounded","timeline-event-text","calendar-heart"];
 function AreaIcon({index}:{index:number}) { return <RotevoTablerIcon name={iconNames[index] ?? "layout-dashboard"} size={26} stroke={2.3} className="h-[26px] w-[26px] shrink-0"/>; }
 
-type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[]; documents?:Record<string,{content:string;richContent?:RichContent}>;executiveDocuments?:Record<string,PublishedStrategicDocument> };
-export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes,documents,executiveDocuments={}}:Props) {
-  const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && d.code!=="01.01" && selectedCodes.includes(d.code) && presentedCodes.includes(d.code)&&Boolean(documents?.[d.code]?.content.trim()));
+type Props = { projectId?:string; clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[]; documents?:Record<string,{content:string;richContent?:RichContent}>;executiveDocuments?:Record<string,PublishedStrategicDocument> };
+export default function EcosystemPresentationOverview({projectId,clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes,documents,executiveDocuments={}}:Props) {
+  const docs = ecosystemDocuments.filter(d=>clientDocumentCode(d.code) && selectedCodes.includes(d.code) && presentedCodes.includes(d.code)&&Boolean(documents?.[d.code]?.content.trim()));
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
   const [menuOpen,setMenuOpen] = useState(false);
@@ -38,7 +40,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B142A] text-white">
       <div className="flex w-full items-center justify-between gap-3 px-5 py-5"><RotevoLogo variant="white" size={27}/>
         <div className="flex items-center gap-2"><button onClick={()=>setMenuOpen(v=>!v)} type="button" aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2.5 text-sm font-medium text-white lg:hidden">Menu</button>
-        <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
+        <Link href={isStrategist?planningHref(clientSlug,projectId):"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
       </div>
     </header>
     <div className="flex w-full flex-1 items-stretch">

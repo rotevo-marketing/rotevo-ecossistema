@@ -1,0 +1,30 @@
+/* Rotevo product tokens. Applied to product surfaces, not document block styles. */
+:root{
+ --rv-canvas:#F6F7FB;--rv-surface:#FFFFFF;--rv-subtle:#EDF0F8;
+ --rv-text:#090D1C;--rv-secondary:#525B70;--rv-muted:#697386;--rv-border:#E3E7F0;
+ --rv-purple:#6D35F5;--rv-purple-dark:#5123C5;--rv-purple-tint:#F0ECFF;
+ --rv-lime:#ADE60A;--rv-lime-hover:#9BCC00;--rv-navy:#0B142A;
+ --rv-success:#16794B;--rv-success-tint:#E8F7EE;--rv-warning:#9A6500;--rv-warning-tint:#FFF5D9;
+ --rv-danger:#BA303A;--rv-danger-tint:#FDECEE;--rv-radius-control:10px;--rv-radius-card:16px;
+ --rv-shadow:0 4px 20px rgb(9 13 28 / 4%);
+}
+.rv-product{background:var(--rv-canvas);color:var(--rv-text)}
+.rv-product :is(h1,h2,h3,h4){font-family:var(--font-body),Arial,sans-serif}
+.rv-product :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid var(--rv-purple);outline-offset:3px}
+.rv-product :is(header,aside)[class*="bg-[#0B142A]"] :is(button,a):focus-visible{outline-color:var(--rv-lime)}
+.rv-product :is(.admin-v2,.client-portal-v2,.ecosystem-presentation-v2) :is(input,textarea,select){accent-color:var(--rv-purple)}
+.rv-product :is(.admin-v2,.client-portal-v2,.ecosystem-presentation-v2) .text-xs{font-size:.8125rem;line-height:1.55}
+.rv-product :is(.admin-v2,.client-portal-v2,.ecosystem-presentation-v2) [class~="rounded-2xl"][class~="bg-white"]{border-radius:var(--rv-radius-card);box-shadow:var(--rv-shadow)}
+.rv-product :is(.admin-v2,.client-portal-v2)>header>div{min-height:74px;padding-top:14px;padding-bottom:14px}
+.rv-product :is(.admin-v2,.client-portal-v2)>footer{background:var(--rv-surface);border-top:1px solid var(--rv-border);color:var(--rv-muted)}
+.rv-product :is(.admin-v2,.client-portal-v2)>footer>div{padding-top:18px;padding-bottom:18px;color:var(--rv-muted)}
+.rv-product nav[aria-label="Menu do estrategista"] [aria-current="page"],.rv-product nav[aria-label="Navegação do portal"] [aria-current="page"]{background:var(--rv-purple-tint);color:var(--rv-purple-dark);box-shadow:inset 3px 0 var(--rv-purple)}
+.rv-page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--rv-border)}
+.rv-page-heading h1{font-size:30px;line-height:1.25;font-weight:700;letter-spacing:-.025em}
+.rv-page-kicker{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--rv-muted);margin-bottom:8px}
+.rv-empty{padding:28px;border:1px dashed var(--rv-border);border-radius:var(--rv-radius-card);background:var(--rv-surface);color:var(--rv-secondary);font-size:14px;line-height:1.7;text-align:center}
+.rv-unsaved{margin:16px 0;padding:10px 14px;border:1px solid #ECD6A2;border-radius:10px;background:var(--rv-warning-tint);color:#805400;font-size:13px}
+.rv-dialog{position:fixed;inset:0;margin:auto;max-height:92dvh;overflow:auto;border:1px solid var(--rv-border);border-radius:20px;background:white;padding:24px;box-shadow:0 24px 64px #0b142a24}
+.rv-dialog::backdrop{background:#0b142a66}
+@media(max-width:767px){.rv-page-heading{gap:16px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:20px}.rv-page-heading h1{font-size:25px}.rv-product :is(.admin-v2,.client-portal-v2) nav button{min-height:44px}.rv-product :is(.admin-v2,.client-portal-v2) input:not([type=checkbox]):not([type=radio]){font-size:16px}}
+@media(prefers-reduced-motion:reduce){.rv-product *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

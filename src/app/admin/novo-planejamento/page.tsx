@@ -408,7 +408,7 @@ export default function NovoPlanejamentoPage() {
                 disabled={isUploading}
                 className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-[#0B142A] px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Escolher módulos
+                Escolher documentos
               </button>
             </div>
           </form>

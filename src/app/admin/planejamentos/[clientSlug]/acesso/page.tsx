@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
+import {temporaryPassword} from "@/lib/ui/temporaryPassword";
+import {planningHref} from "@/lib/ui/navigation";
 
 type ClientRecord = {
   id: string;
@@ -39,10 +41,6 @@ function getStatusClass(status: PlanningProject["status"]) {
   return "bg-slate-100 text-slate-600";
 }
 
-function generatePassword(name: string): string {
-  const firstName = name.trim().split(" ")[0] ?? "cliente";
-  return `${firstName.toLowerCase()}@2026`;
-}
 
 function CopyButton({ value, label }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -72,9 +70,11 @@ function MonoBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function AcessoClientePage() {
+function AcessoClienteContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams=useSearchParams();
+  const requestedProjectId=searchParams.get("projectId");
   const clientSlug = typeof params.clientSlug === "string" ? params.clientSlug : "";
 
   const [project, setProject] = useState<PlanningProject | null>(null);
@@ -98,6 +98,7 @@ export default function AcessoClientePage() {
   const client = project ? getProjectClient(project) : null;
 
   useEffect(() => {
+    let cancelled=false;
     async function load() {
       setIsLoading(true);
       setErrorMessage("");
@@ -122,12 +123,11 @@ export default function AcessoClientePage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("planning_projects")
-        .select(`id, title, slug, status, clients!inner (id, name, slug)`)
-        .eq("clients.slug", clientSlug)
-        .order("updated_at", { ascending: false })
-        .limit(1);
+      if(requestedProjectId!==null&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedProjectId)){setErrorMessage("Identificador de planejamento inválido.");setIsLoading(false);return;}
+      let query=supabase.from("planning_projects").select(`id, title, slug, status, clients!inner (id, name, slug)`).eq("clients.slug",clientSlug);
+      if(requestedProjectId)query=query.eq("id",requestedProjectId);
+      const {data,error}=await query.order("updated_at",{ascending:false}).limit(1);
+      if(cancelled)return;
 
       if (error) {
         setErrorMessage(error.message || "Não foi possível carregar este planejamento.");
@@ -147,13 +147,14 @@ export default function AcessoClientePage() {
       const clientRecord = Array.isArray(found.clients)
         ? found.clients[0]
         : found.clients;
-      const name = clientRecord?.name ?? "";
-      setPassword(generatePassword(name));
+      void clientRecord;
+      setPassword(temporaryPassword());
       setIsLoading(false);
     }
 
     if (clientSlug) load();
-  }, [clientSlug, router]);
+    return()=>{cancelled=true};
+  }, [clientSlug, requestedProjectId, router]);
 
   async function handleCreateAccess() {
     if (!client || !email || !password) return;
@@ -220,7 +221,7 @@ export default function AcessoClientePage() {
       <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4"><Link href="/admin" aria-label="Rotevo - Painel administrativo"><RotevoLogo size={27}/></Link><span className="hidden h-6 w-px bg-[#E3E7F0] sm:block"/><span className="hidden text-sm text-[#697386] sm:block">Administração</span></div>
-          <Link href={`/admin/planejamentos/${clientSlug}`} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium text-[#090D1C] hover:bg-[#F6F7FB]">Voltar ao planejamento</Link>
+          <Link href={planningHref(clientSlug,project?.id??requestedProjectId??undefined)} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-2.5 text-sm font-medium text-[#090D1C] hover:bg-[#F6F7FB]">Voltar ao planejamento</Link>
         </div>
       </header>
 
@@ -580,3 +581,5 @@ function DataRow({
     </div>
   );
 }
+
+export default function AcessoClientePage(){return <Suspense fallback={<p role="status" className="p-6 text-sm">Carregando configuração de acesso…</p>}><AcessoClienteContent/></Suspense>;}

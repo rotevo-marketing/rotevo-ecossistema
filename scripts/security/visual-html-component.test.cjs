@@ -31,7 +31,7 @@ const {visualTemplates} = require('../../src/lib/planning/visualHtml.ts');
 const node = document.getElementById('test-root');
 const root = createRoot(node);
 const click = async label => {
-  const button = [...node.querySelectorAll('button')].find(b => b.textContent === label);
+  const button = [...document.querySelectorAll('button')].find(b => b.textContent === label);
   assert.ok(button, label);
   await React.act(async () => button.dispatchEvent(new window.MouseEvent('click', {bubbles:true})));
 };
@@ -40,15 +40,16 @@ test('editing a visual block previews a template and applies it to the document 
   let applied;
   await React.act(async () => root.render(React.createElement(VisualHtmlBlock, {props:visualTemplates[0].props,editable:true,onChange:value => {applied=value;}})));
   await click('Editar HTML');
-  assert.ok(node.querySelector('dialog[open]'));
-  assert.equal(node.querySelectorAll('textarea').length,3);
+  assert.ok(document.querySelector('body > dialog[open]'));
+  assert.equal(node.querySelector('dialog'),null);
+  assert.equal(document.querySelectorAll('textarea').length,3);
   await click('Mapa mental');
   assert.equal(applied,undefined);
-  assert.match(node.querySelector('.visual-html-preview iframe').srcdoc, /<svg/);
+  assert.match(document.querySelector('.visual-html-preview iframe').srcdoc, /<svg/);
   await click('Aplicar ao documento');
   assert.equal(applied.label,'Mapa de prioridades');
   assert.match(applied.markup, /viewBox/);
-  assert.equal(node.querySelector('dialog'),null);
+  assert.equal(document.querySelector('dialog'),null);
 });
 
 test('client reading renders the same isolated visual without editing controls', async () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import {useMemo, useRef, useState, useEffect} from "react";
+import {createPortal} from "react-dom";
 import {cleanVisualMarkup, validVisualHtmlProps, visualFrameDocument, visualTemplates, VISUAL_HTML_LIMIT, VISUAL_CSS_LIMIT, type VisualHtmlProps} from "@/lib/planning/visualHtml";
 import "./visual-html.css";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
@@ -52,6 +53,6 @@ export default function VisualHtmlBlock({props, editable, onChange}: {props: Vis
   return <div className="visual-html-block">
     {editable && <div className="visual-html-toolbar"><span>HTML personalizado · {props.label}</span><button type="button" onClick={() => setEditing(true)}>Editar HTML</button></div>}
     {props.markup.trim() ? <VisualHtmlFrame props={props}/> : <p>Adicione HTML, CSS ou um modelo visual.</p>}
-    {editing && editable && <VisualHtmlDialog initial={props} onClose={() => setEditing(false)} onApply={value => {onChange(value); setEditing(false);}}/>}
+    {editing && editable && createPortal(<VisualHtmlDialog initial={props} onClose={() => setEditing(false)} onApply={value => {onChange(value); setEditing(false);}}/>, document.body)}
   </div>;
 }

@@ -1,9 +1,10 @@
 "use client";
+import {visualTemplates} from "@/lib/planning/visualHtml";
 import {useEffect,useRef,useState} from "react";
 import type {RotevoIconName} from "@/Components/RotevoTablerIcon";
 import {chartPoints} from "@/lib/strategic-editor/prototype";
 import type {StrategicPartial} from "./schema";
-export const names:Record<string,string>={paragraph:"Texto",heading:"Título",bulletListItem:"Lista",numberedListItem:"Lista numerada",checkListItem:"Checklist",table:"Tabela",image:"Imagem",quote:"Citação",strategic:"Destaque estratégico",indicator:"Indicador",strategicChart:"Gráfico"};
+export const names:Record<string,string>={paragraph:"Texto",heading:"Título",bulletListItem:"Lista",numberedListItem:"Lista numerada",checkListItem:"Checklist",table:"Tabela",image:"Imagem",quote:"Citação",strategic:"Destaque estratégico",indicator:"Indicador",strategicChart:"Gráfico",visualHtml:"HTML personalizado"};
 export function Dialog({title,onClose,children}:{title:string;onClose:()=>void;children:React.ReactNode}){const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const d=ref.current;d?.showModal();return()=>d?.close();},[]);return <dialog ref={ref} className="pw-dialog" onCancel={e=>{e.preventDefault();onClose();}} aria-label={title}><header><h2>{title}</h2><button autoFocus onClick={onClose} aria-label="Fechar janela">✕</button></header>{children}</dialog>;}
 export const tools:{label:string;icon:RotevoIconName;group:string;block:StrategicPartial}[]=[
  {label:"Título",icon:"h-2",group:"Escrita",block:{type:"heading",props:{level:2},content:"Novo título"}},
@@ -13,6 +14,7 @@ export const tools:{label:string;icon:RotevoIconName;group:string;block:Strategi
  {label:"Tabela",icon:"table",group:"Dados",block:{type:"table",content:{type:"tableContent",rows:[{cells:["Categoria","Detalhamento"]},{cells:["",""]}]}}},
  {label:"Indicador",icon:"number-123",group:"Dados",block:{type:"indicator",props:{label:"Nome do indicador",value:"0",context:"Informe o período e a fonte"}}},
  {label:"Gráfico",icon:"chart-bar",group:"Dados",block:{type:"strategicChart",props:{title:"Novo gráfico",series:"Categoria 1:10;Categoria 2:20",unit:""}}},
+ {label:"HTML personalizado",icon:"layout-dashboard",group:"Mídia",block:{type:"visualHtml",props:visualTemplates[0].props}},
  {label:"Decisão",icon:"arrows-split",group:"Estratégia",block:{type:"strategic",props:{kind:"decision",title:"Decisão estratégica"},content:""}},
  {label:"Recomendação",icon:"bulb",group:"Estratégia",block:{type:"strategic",props:{kind:"recommendation",title:"Recomendação"},content:""}},
  {label:"Conclusão",icon:"circle-check",group:"Estratégia",block:{type:"strategic",props:{kind:"conclusion",title:"Conclusão"},content:""}},

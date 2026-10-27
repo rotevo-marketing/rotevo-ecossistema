@@ -8,8 +8,21 @@ import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 
 export function VisualHtmlFrame({props}: {props: VisualHtmlProps}) {
   const source = useMemo(() => visualFrameDocument(props), [props]);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [measured, setMeasured] = useState<{source:string;height:number}|null>(null);
+  useEffect(() => {
+    function resize(event:MessageEvent) {
+      if(event.source!==frame.current?.contentWindow||event.data?.type!=="rotevo:visual-height")return;
+      const height=event.data.height;
+      if(typeof height!=="number"||!Number.isFinite(height)||height<0||height>100000)return;
+      setMeasured({source,height:Math.max(160,Math.ceil(height))});
+    }
+    window.addEventListener("message",resize);
+    return () => window.removeEventListener("message",resize);
+  },[source]);
+  const height=measured?.source===source?measured.height:Math.min(2400,Math.max(160,props.height));
   return <figure className="visual-html-figure">
-    <iframe title={props.label} srcDoc={source} sandbox="" referrerPolicy="no-referrer" loading="lazy" style={{height: Math.min(2400, Math.max(160, props.height))}} />
+    <iframe ref={frame} title={props.label} srcDoc={source} sandbox="allow-scripts" referrerPolicy="no-referrer" loading="lazy" onLoad={() => frame.current?.contentWindow?.postMessage({type:"rotevo:measure"},"*")} style={{height}} />
     <figcaption>{props.description}</figcaption>
   </figure>;
 }
@@ -40,9 +53,9 @@ function VisualHtmlDialog({initial, onApply, onClose}: {initial: VisualHtmlProps
       <label>HTML ou SVG<textarea spellCheck={false} maxLength={VISUAL_HTML_LIMIT} value={draft.markup} onChange={event => setDraft({...draft, markup: event.target.value})}/></label>
       <label>CSS do elemento<textarea spellCheck={false} maxLength={VISUAL_CSS_LIMIT} value={draft.stylesheet} onChange={event => setDraft({...draft, stylesheet: event.target.value})}/></label>
       <label>Descrição para leitura e acessibilidade<textarea className="visual-html-description" maxLength={4000} value={draft.description} onChange={event => setDraft({...draft, description: event.target.value})}/></label>
-      <label>Altura da visualização (px)<input type="number" min={160} max={2400} step={10} value={draft.height} onChange={event => setDraft({...draft, height: Number(event.target.value)})}/></label>
+      <label>Altura inicial da visualização (px)<input type="number" min={160} max={2400} step={10} value={draft.height} onChange={event => setDraft({...draft, height: Number(event.target.value)})}/></label>
     </div><section className="visual-html-preview" aria-label="Prévia do elemento"><h3>Prévia</h3><p>Confira também a leitura no celular. O conteúdo pode usar CSS responsivo.</p><VisualHtmlFrame props={preview}/></section></div>
-    <p className="visual-html-help">Use HTML, CSS e SVG estáticos. Scripts, incorporações e recursos externos não são executados. Gráficos devem trazer valores, escala e descrição.</p>
+    <p className="visual-html-help">Use HTML, CSS e SVG estáticos. A altura se ajusta ao conteúdo. Scripts do conteúdo, incorporações e recursos externos não são executados. Gráficos devem trazer valores, escala e descrição.</p>
     {notice && <p role="status">{notice}</p>}
     <footer><button type="button" onClick={close}>Cancelar</button><button type="button" onClick={prepare}>Atualizar prévia</button><button type="button" className="visual-html-primary" onClick={() => {const result = prepare(); if (result) onApply(result);}}>Aplicar ao documento</button></footer>
   </dialog>;

@@ -56,10 +56,16 @@ test('client reading renders the same isolated visual without editing controls',
   await React.act(async () => root.render(React.createElement(VisualHtmlBlock, {props:visualTemplates[1].props,editable:false,onChange:() => {throw Error('Must not edit from reading mode');}})));
   assert.equal(node.querySelectorAll('button, dialog, textarea').length,0);
   const frame = node.querySelector('iframe');
-  assert.equal(frame.getAttribute('sandbox'),'');
+  assert.equal(frame.getAttribute('sandbox'),'allow-scripts');
   assert.equal(frame.title,'Mapa de prioridades');
   assert.equal(frame.style.height,'480px');
-  assert.match(frame.srcdoc,/script-src 'none'/);
+  assert.match(frame.srcdoc,/script-src 'sha256-/);
+  await React.act(async()=>window.dispatchEvent(new window.MessageEvent('message',{source:frame.contentWindow,data:{type:'rotevo:visual-height',height:3100}})));
+  assert.equal(frame.style.height,'3100px');
+  await React.act(async()=>window.dispatchEvent(new window.MessageEvent('message',{source:window,data:{type:'rotevo:visual-height',height:500}})));
+  assert.equal(frame.style.height,'3100px');
+  await React.act(async()=>window.dispatchEvent(new window.MessageEvent('message',{source:frame.contentWindow,data:{type:'rotevo:visual-height',height:NaN}})));
+  assert.equal(frame.style.height,'3100px');
   assert.ok(node.querySelector('figcaption').textContent.includes('oferta, aquisição e operação'));
   await React.act(async () => root.unmount());
 });

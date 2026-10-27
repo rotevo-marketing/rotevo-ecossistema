@@ -1,4 +1,4 @@
-import {validVisualHtmlProps,visualPlainText} from "./visualHtml.ts";
+import {validVisualHtmlProps,visualPlainText,VISUAL_HTML_LIMIT,VISUAL_CSS_LIMIT} from "./visualHtml.ts";
 export type RichContent={format:"blocknote-v1";blocks:unknown[]};
 const types=new Set(["paragraph","heading","bulletListItem","numberedListItem","checkListItem","table","image","quote","strategic","indicator","strategicChart","visualHtml"]);
 function link(value:string){if(/^asset:\/\/[0-9a-f-]{36}$/i.test(value))return true;try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password;}catch{return false;}}
@@ -35,4 +35,32 @@ export function mapAssetLinks<T>(value:T,links:Record<string,string>,reverse=fal
  const mapping=reverse?Object.fromEntries(Object.entries(links).map(([id,url])=>[url,"asset://"+id])):Object.fromEntries(Object.entries(links).map(([id,url])=>["asset://"+id,url]));
  function walk(v:unknown):unknown{if(typeof v==="string")return mapping[v]??v;if(Array.isArray(v))return v.map(walk);if(v&&typeof v==="object")return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,walk(x)]));return v;}
  return walk(value) as T;
+}
+
+// Return safe, actionable diagnostics without exposing document contents.
+export function richContentError(value:unknown):string|null {
+ if(!value||typeof value!=="object")return "O documento não contém uma estrutura de blocos válida.";
+ const serialized=JSON.stringify(value);
+ if(serialized.length>1200000)return "O documento excede o limite de 1.200.000 caracteres serializados.";
+ if(hasNullCharacter(value))return "O documento contém um caractere nulo (U+0000), incompatível com o armazenamento. Remova esse caractere antes de salvar.";
+ const root=value as Record<string,unknown>;
+ if(Array.isArray(root.blocks)) {
+  if(root.blocks.length>2000)return "O documento excede o limite de 2.000 blocos.";
+  for(const block of root.blocks){
+   if(!block||typeof block!=="object")continue;
+   const b=block as Record<string,unknown>;
+   if(b.type!=="visualHtml")continue;
+   const p=b.props as Record<string,unknown>|undefined;
+   if(typeof p?.markup==="string"&&p.markup.length>VISUAL_HTML_LIMIT)return "Um elemento HTML excede o limite de 80.000 caracteres. Divida-o em elementos menores.";
+   if(typeof p?.stylesheet==="string"&&p.stylesheet.length>VISUAL_CSS_LIMIT)return "O CSS de um elemento excede o limite de 20.000 caracteres.";
+   if(!validVisualHtmlProps(p))return "Confira o título, a descrição e a altura (160 a 2400 px) do elemento HTML.";
+  }
+ }
+ return validRichContent(value)?null:"Documento inválido. Confira os tipos, os identificadores e a estrutura dos blocos e imagens.";
+}
+
+function hasNullCharacter(value:unknown):boolean {
+ if(typeof value==="string")return value.includes("\0");
+ if(Array.isArray(value))return value.some(hasNullCharacter);
+ return !!value&&typeof value==="object"&&Object.entries(value).some(([key,item])=>key.includes("\0")||hasNullCharacter(item));
 }

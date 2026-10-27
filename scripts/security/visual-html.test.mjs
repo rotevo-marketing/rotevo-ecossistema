@@ -1,7 +1,8 @@
 import test from 'node:test';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {cleanVisualMarkup, visualPlainText, visualFrameDocument, validVisualHtmlProps, visualTemplates, VISUAL_HTML_LIMIT, VISUAL_CSS_LIMIT} from '../../src/lib/planning/visualHtml.ts';
+import {cleanVisualMarkup, visualPlainText, visualFrameDocument, validVisualHtmlProps, visualTemplates, VISUAL_HTML_LIMIT, VISUAL_CSS_LIMIT, VISUAL_HEIGHT_SCRIPT} from '../../src/lib/planning/visualHtml.ts';
 import {validRichContent, richText} from '../../src/lib/planning/richContent.ts';
 import {validEcosystemDocumentTransition} from '../../src/lib/security/ecosystemDocumentTransitions.ts';
 
@@ -49,11 +50,14 @@ test('plain document fallback includes visual text, values and descriptions with
 test('frame retains CSP even when CSS or labels try to close their containing elements', () => {
   const source = visualFrameDocument({...props(), label:'</title><script>alert(1)</script>', stylesheet:'</style><script>alert(1)</script><style>@import "https://example.test/a.css";body{background:url(https://example.test)}'});
   const dom = new JSDOM(source).window.document;
-  assert.equal(dom.querySelectorAll('script, iframe, object, embed, base, form').length, 0);
+  assert.equal(dom.querySelectorAll('iframe, object, embed, base, form').length, 0);
+  assert.equal(dom.querySelectorAll('script').length,1);
+  assert.equal(dom.querySelector('script').textContent,VISUAL_HEIGHT_SCRIPT);
   assert.equal(dom.querySelectorAll('style').length, 1);
   const policy = dom.querySelector('meta[http-equiv="Content-Security-Policy"]').content;
-  for (const directive of ["default-src 'none'", "script-src 'none'", "img-src 'none'", "connect-src 'none'", "base-uri 'none'", "form-action 'none'"]) assert.ok(policy.includes(directive));
+  for (const directive of ["default-src 'none'", "img-src 'none'", "connect-src 'none'", "base-uri 'none'", "form-action 'none'"]) assert.ok(policy.includes(directive));
   assert.equal(dom.title, '</title><script>alert(1)</script>');
+  assert.ok(policy.includes("script-src 'sha256-"+createHash('sha256').update(VISUAL_HEIGHT_SCRIPT).digest('base64')+"'"));
 });
 
 test('new visual block rejects malformed data and resource exhaustion while old blocks remain valid', () => {
@@ -78,4 +82,15 @@ test('visual HTML follows review and publication rules and changed CSS preserves
   assert.deepEqual(edited.publishedRichContent,published.richContent);
   edited.publishedRichContent = edited.richContent;
   assert.equal(validEcosystemDocumentTransition(root(published),root(edited)),false);
+});
+
+test('small and extensive HTML/CSS survive exact JSON serialization with unicode and SVG',()=>{
+ for(const markup of ['<p>Ação 🧠 &amp; decisão</p>', '<section>'+('<p>Dimensão: 2 / 5 · ação 🧠</p>'.repeat(2100))+'</section>']){
+  const value=rich({...props(),markup,stylesheet:'.card{color:#743ddb}\n'.repeat(600)});
+  assert.ok(validRichContent(value));
+  const reopened=JSON.parse(JSON.stringify(value));
+  assert.deepEqual(reopened,value);
+  assert.ok(validRichContent(reopened));
+  assert.ok(richText(reopened).includes('ação')||richText(reopened).includes('Ação'));
+ }
 });

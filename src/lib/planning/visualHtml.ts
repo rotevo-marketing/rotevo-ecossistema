@@ -48,13 +48,15 @@ export function validVisualHtmlProps(value: unknown): value is VisualHtmlProps {
 }
 
 const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-export const VISUAL_CSP = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";
+// Only this fixed measurement script may execute; user HTML remains sanitized.
+export const VISUAL_HEIGHT_SCRIPT = '(()=>{let last=0;const report=()=>{const height=Math.ceil(Math.max(document.body.getBoundingClientRect().height,document.body.scrollHeight));if(height!==last){last=height;parent.postMessage({type:"rotevo:visual-height",height},"*")}};new ResizeObserver(report).observe(document.body);addEventListener("load",report);addEventListener("message",event=>{if(event.source===parent&&event.data?.type==="rotevo:measure"){last=0;report()}});report()})()';
+export const VISUAL_CSP = "default-src 'none'; script-src 'sha256-uKvAlcZ0qe+3AA0pY25eFw9xNDaim9SYa6n25IX/zlA='; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";
 
 export function visualFrameDocument(props: VisualHtmlProps): string {
   // Escaping '<' keeps CSS from closing the style element. The frame isolates all selectors;
-  // its CSP blocks URL loads, imports, scripts and requests, including CSS resource URLs.
+  // its CSP blocks URL loads, imports, user scripts and requests, including CSS resource URLs.
   const css = props.stylesheet.slice(0, VISUAL_CSS_LIMIT).replace(/</g, "\\3c ");
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${VISUAL_CSP}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(props.label)}</title><style>*{box-sizing:border-box}html{color-scheme:light}body{margin:0;padding:16px;background:#fff;color:#0b152b;font:15px/1.6 Arial,sans-serif;overflow-wrap:anywhere}svg{display:block;max-width:100%;height:auto}table{max-width:100%;border-collapse:collapse}p{margin:0 0 12px}h1,h2,h3{line-height:1.25}th,td{padding:8px;text-align:left} ${css}</style></head><body>${cleanVisualMarkup(props.markup)}</body></html>`;
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${VISUAL_CSP}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(props.label)}</title><style>*{box-sizing:border-box}html{color-scheme:light}body{margin:0;padding:16px;background:#fff;color:#0b152b;font:15px/1.6 Arial,sans-serif;overflow-wrap:anywhere}svg{display:block;max-width:100%;height:auto}table{max-width:100%;border-collapse:collapse}p{margin:0 0 12px}h1,h2,h3{line-height:1.25}th,td{padding:8px;text-align:left} ${css}</style></head><body>${cleanVisualMarkup(props.markup)}<script>${VISUAL_HEIGHT_SCRIPT}</script></body></html>`;
 }
 
 export const visualTemplates: {name: string; props: VisualHtmlProps}[] = [

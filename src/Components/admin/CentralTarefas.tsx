@@ -27,7 +27,7 @@ const priorities:{id:Priority;name:string;chip:string}[]=[
  {id:"low",name:"Baixa",chip:"bg-[#E7F1FF] text-[#356DAA]"}
 ];
 const getClient=(p:TaskProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
-const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const formatted=(s?:string)=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s)?`${s.slice(8,10)}/${s.slice(5,7)}`:"Sem prazo";
 const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
 const selectClass="max-w-full rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-medium text-[#31394B] focus:outline-none focus:ring-2 focus:ring-[#6D35F5]";
@@ -56,6 +56,8 @@ function ProjectPicker({projects,value,onChange,allowAll=false}:{projects:TaskPr
 }
 export default function CentralTarefas({projects,onChanged,onOpenContent}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
+ const [mineOnly,setMineOnly]=useState(false),[currentUserId,setCurrentUserId]=useState<string|null>(null);
+ useEffect(()=>{let active=true;void supabase.auth.getUser().then(({data})=>{if(active)setCurrentUserId(data.user?.id??null);});return()=>{active=false};},[]);
  const [deadline,setDeadline]=useState<"all"|"today"|"overdue"|"upcoming">("all");
  const [periodMode,setPeriodMode]=useState<"due"|"completed">("due");
  const [periodMonth,setPeriodMonth]=useState("");
@@ -88,6 +90,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
   (projectId==="all"||project.id===projectId)&&
+  (!mineOnly||(!!currentUserId&&task.ownerUserId===currentUserId))&&
   (owner==="all"||(owner==="unassigned"?!task.owner?.trim():task.owner?.trim()===owner))&&
   (status==="all"||(task.status??"planned")===status)&&
   (!periodMonth||(periodMode==="due"?task.dueDate?.startsWith(periodMonth):task.status==="completed"&&typeof task.completedAt==="string"&&task.completedAt.slice(0,7)===periodMonth))&&
@@ -103,7 +106,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
    order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
    urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
- }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode]);
+ }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId]);
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
   if(working)return false;
   setWorking(key);setError("");setNotice("");
@@ -163,7 +166,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch,activityLog:log}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
   if(ok){setDetailKey(null);setDetailDraft(null);}
  }
- const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");};
+ const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");setMineOnly(false);};
  const overdue=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
  const todayCount=tasks.filter(x=>x.task.dueDate===today()&&isOpen(x.task)).length;
  const chipStatus=(task:ExecutionItem)=>statuses.find(s=>s.id===(task.status??"planned"))??statuses[0];
@@ -193,6 +196,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
     <div className="flex flex-wrap items-center gap-2">
      <button type="button" onClick={()=>{setDraft(d=>({...d,projectId:projectId!=="all"?projectId:projects[0]?.id??""}));setCreating(true);setError("");}} className="inline-flex items-center gap-2 rounded-lg bg-[#ADE60A] px-4 py-2 text-xs font-semibold text-[#090D1C] transition hover:bg-[#9BCC00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.9}/> Nova tarefa</button>
      <div className="w-full min-w-[205px] sm:w-[235px]"><ProjectPicker projects={projects} value={projectId} onChange={setProjectId} allowAll/></div>
+     <button type="button" aria-pressed={mineOnly} onClick={()=>setMineOnly(v=>!v)} disabled={!currentUserId} className={buttonClass+(mineOnly?" border-[#6D35F5] bg-[#F2ECFF] text-[#6034B7]":"")}>Minhas tarefas</button>
      <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}><RotevoTablerIcon name="search" size={17} stroke={1.9}/> <span className="hidden sm:inline">Buscar</span></button>
      <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}><RotevoTablerIcon name="filter" size={17} stroke={1.9}/> <span className="hidden sm:inline">Filtros</span></button>
      <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#E3E7F0] bg-white px-2"><RotevoTablerIcon name="arrows-sort" size={17}/><select aria-label="Ordenar tarefas" className="max-w-[150px] cursor-pointer border-0 bg-transparent text-xs font-medium text-[#090D1C] outline-none" value={order} onChange={e=>setOrder(e.target.value as typeof order)}><option value="urgency">Prioridades primeiro</option><option value="due">Prazo</option><option value="priority">Prioridade</option></select></label>

@@ -4,6 +4,8 @@ import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import DialogFocus from "@/Components/ui/DialogFocus";
 import {supabase} from "@/lib/supabase";
 import {validOperationalDate} from "@/lib/security/executionDependencyValidation";
+import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
+import {editorialChannels,editorialChannelIcon} from "@/lib/editorial/channels";
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
 type Client={id:string;name:string;slug:string};
@@ -62,12 +64,14 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(!editing||!project)return;
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
   if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
-  if(!safe(editing.driveUrl??"")){setError("O link do Drive precisa ser um endereço HTTPS.");return;}
+  if(!safe(editing.driveUrl??"")||!safe(editing.briefUrl??"")){setError("Os links de roteiro e material precisam usar HTTPS.");return;}
+  if(!editorialChannels.some(channel=>channel.value===editing.channel)){setError("Selecione um canal da lista.");return;}
+  if(!editing.id&&(!editing.ideaSummary?.trim()||!editing.objective?.trim())){setError("Informe o resumo da ideia e o objetivo do conteúdo.");return;}
   const original=items.find(row=>row.id===editing.id);
   const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
-  const materialFields=["title","channel","format","publishDate","caption","driveUrl","relatedTaskId"] as const;
+  const materialFields=["title","channel","format","publishDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta","relatedTaskId"] as const;
   const ideaDecided=ideaDecisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
-  if(original&&ideaDecided&&original.version===editing.version&&(["title","channel","format"] as const).some(field=>(original[field]??"")!==(editing[field]??""))){setError("Esta ideia já recebeu uma decisão do cliente. Crie uma nova versão antes de alterar título, canal ou formato.");return;}
+  if(original&&ideaDecided&&original.version===editing.version&&(["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"] as const).some(field=>(original[field]??"")!==(editing[field]??""))){setError("Esta ideia já recebeu uma decisão do cliente. Crie uma nova versão antes de alterar título, canal ou formato.");return;}
   if(original&&decided&&original.version===editing.version&&materialFields.some(field=>(original[field]??"")!==(editing[field]??""))){
    setError("Esta versão já recebeu uma decisão do cliente. Informe um novo número de versão antes de alterar o material.");
    return;
@@ -86,13 +90,22 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
     {approvalError&&<p className="mt-3 text-xs text-[#916000]">A sincronização de aprovações depende da configuração do banco.</p>}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
      <label className="text-xs font-medium sm:col-span-2">Título *<input value={editing.title} maxLength={150} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
-     <label className="text-xs font-medium">Canal<input value={editing.channel} onChange={e=>setEditing({...editing,channel:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium">Canal *<div className="mt-1 flex items-center gap-2 rounded-lg border px-3 py-1"><ContentTablerIcon name={editorialChannelIcon(editing.channel)} size={20}/><select value={editing.channel} onChange={e=>setEditing({...editing,channel:e.target.value})} className="min-w-0 flex-1 cursor-pointer bg-white py-1.5 text-sm">{!editorialChannels.some(x=>x.value===editing.channel)&&<option value={editing.channel}>{editing.channel} (legado)</option>}{editorialChannels.map(channel=><option key={channel.value} value={channel.value}>{channel.label}</option>)}</select></div></label>
      <label className="text-xs font-medium">Formato<input value={editing.format} onChange={e=>setEditing({...editing,format:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Data prevista *<input type="date" value={editing.publishDate} onChange={e=>setEditing({...editing,publishDate:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Versão<input value={editing.version??""} maxLength={30} onChange={e=>setEditing({...editing,version:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Situação<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value as EditorialItem["status"]})} className="mt-1 block w-full cursor-pointer rounded-lg border px-3 py-2.5 text-sm">{Object.entries(editorialStatuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
      <label className="text-xs font-medium">Tarefa relacionada<select value={editing.relatedTaskId??""} onChange={e=>setEditing({...editing,relatedTaskId:e.target.value||undefined})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Nenhuma tarefa vinculada</option>{(project.data?.executionTimeline??[]).map(task=><option key={task.id} value={task.id}>{task.title}</option>)}</select><span className="mt-1 block text-[11px] text-[#697386]">Permite consultar a decisão do cliente na Central de Tarefas. Não conclui a tarefa automaticamente.</span></label>
-     <label className="text-xs font-medium">Link para o material no Drive<input type="url" value={editing.driveUrl??""} onChange={e=>setEditing({...editing,driveUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <div className="sm:col-span-2 mt-3 border-t pt-3"><h4 className="text-sm font-semibold">Direcionamento estratégico</h4><p className="text-xs text-[#697386]">Explique o conteúdo de forma simples para facilitar a aprovação.</p></div>
+     <label className="text-xs font-medium sm:col-span-2">Resumo da ideia *<textarea value={editing.ideaSummary??""} onChange={e=>setEditing({...editing,ideaSummary:e.target.value})} rows={2} maxLength={1200} placeholder="Em poucas frases, qual é a proposta?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium sm:col-span-2">Objetivo do conteúdo *<input value={editing.objective??""} onChange={e=>setEditing({...editing,objective:e.target.value})} maxLength={300} placeholder="O que este conteúdo pretende alcançar?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium">Público (opcional)<input value={editing.audience??""} onChange={e=>setEditing({...editing,audience:e.target.value})} maxLength={300} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium">Etapa do funil<select value={editing.funnelStage??""} onChange={e=>setEditing({...editing,funnelStage:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Não especificada</option><option value="Atração">Atração</option><option value="Consideração">Consideração</option><option value="Conversão">Conversão</option><option value="Relacionamento">Relacionamento</option><option value="Retenção">Retenção</option></select></label>
+     <label className="text-xs font-medium sm:col-span-2">Mensagem principal<input value={editing.keyMessage??""} onChange={e=>setEditing({...editing,keyMessage:e.target.value})} maxLength={500} placeholder="Qual ideia o público deve levar consigo?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium sm:col-span-2">CTA (chamada para ação)<input value={editing.cta??""} onChange={e=>setEditing({...editing,cta:e.target.value})} maxLength={300} placeholder="Qual ação queremos incentivar?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <div className="sm:col-span-2 mt-3 border-t pt-3"><h4 className="text-sm font-semibold">Legenda e materiais</h4></div>
+     <label className="text-xs font-medium">Link do roteiro ou briefing<input type="url" value={editing.briefUrl??""} onChange={e=>setEditing({...editing,briefUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <label className="text-xs font-medium">Link do material da publicação<input type="url" value={editing.driveUrl??""} onChange={e=>setEditing({...editing,driveUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Legenda<textarea rows={3} value={editing.caption??""} onChange={e=>setEditing({...editing,caption:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>

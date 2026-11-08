@@ -22,16 +22,19 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  function discard(){return !saving&&(!dirty||window.confirm("Descartar as alterações não salvas do conteúdo?"));}
  function close(){if(discard())setEditing(null);}
  const [decisions,setDecisions]=useState<{content_id:string;content_version:string;decision:"approved"|"changes_requested"}[]>([]);
+ const [ideaDecisions,setIdeaDecisions]=useState<typeof decisions>([]);
  const [approvalError,setApprovalError]=useState(false);
  useEffect(()=>{let mounted=true;async function load(){
-  if(!projectId){setDecisions([]);setApprovalError(false);return;}
+  if(!projectId){setDecisions([]);setIdeaDecisions([]);setApprovalError(false);return;}
   const {data,error}=await supabase.from("editorial_approvals").select("content_id,content_version,decision").eq("project_id",projectId);
+  const ideas=await supabase.from("editorial_idea_approvals").select("content_id,content_version,decision").eq("project_id",projectId);
   if(!mounted)return;
-  setApprovalError(!!error);setDecisions(error?[]:(data??[]) as typeof decisions);
+  setApprovalError(!!error||!!ideas.error);setDecisions(error?[]:(data??[]) as typeof decisions);setIdeaDecisions(ideas.error?[]:(ideas.data??[]) as typeof decisions);
  }void load();return()=>{mounted=false};},[projectId]);
  function displayStatus(item:EditorialItem){
   const decision=decisions.find(x=>x.content_id===item.id&&x.content_version===(item.version??""));
-  return decision?editorialStatuses[decision.decision]:editorialStatuses[item.status]??item.status;
+  const idea=ideaDecisions.find(x=>x.content_id===item.id&&x.content_version===(item.version??""));
+  return decision?editorialStatuses[decision.decision]:item.status==="idea_pending"&&idea?.decision==="approved"?"Ideia aprovada":item.status==="idea_pending"&&idea?.decision==="changes_requested"?"Ajustes solicitados na ideia":editorialStatuses[item.status]??item.status;
  }
 
  async function persist(next:EditorialItem[]){
@@ -63,6 +66,8 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   const original=items.find(row=>row.id===editing.id);
   const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
   const materialFields=["title","channel","format","publishDate","caption","driveUrl","relatedTaskId"] as const;
+  const ideaDecided=ideaDecisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
+  if(original&&ideaDecided&&original.version===editing.version&&(["title","channel","format"] as const).some(field=>(original[field]??"")!==(editing[field]??""))){setError("Esta ideia já recebeu uma decisão do cliente. Crie uma nova versão antes de alterar título, canal ou formato.");return;}
   if(original&&decided&&original.version===editing.version&&materialFields.some(field=>(original[field]??"")!==(editing[field]??""))){
    setError("Esta versão já recebeu uma decisão do cliente. Informe um novo número de versão antes de alterar o material.");
    return;

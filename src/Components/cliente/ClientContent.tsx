@@ -4,18 +4,18 @@ import {ContentTablerIcon,type ContentIconName} from "@/Components/ContentTabler
 import {supabase} from "@/lib/supabase";
 import EditorialDecision from "./EditorialDecision";
 import {type EditorialItem,type EditorialProject} from "./EditorialCalendar";
-type Status="awaiting"|"changes"|"approved"|"published";
+type Status="draft"|"awaiting"|"changes"|"approved"|"scheduled"|"published";
 type Item={id:string;title:string;channel:string;format:string;date:string;status:Status;caption:string;material:string;projectId:string;source:EditorialItem};
-const statuses:Record<Status,string>={awaiting:"Aguardando aprovação",changes:"Ajustes solicitados",approved:"Aprovado",published:"Publicado"};
-const statusColor:Record<Status,string>={awaiting:"bg-[#FFF2DB] text-[#92600C]",changes:"bg-[#EEE8FF] text-[#6034B7]",approved:"bg-[#E0F5E8] text-[#176F40]",published:"bg-[#EDF0F5] text-[#475467]"};
-const filters=[["all","Todos"],["awaiting","Aguardando aprovação"],["changes","Ajustes solicitados"],["approved","Aprovados"],["published","Publicados"]];
+const statuses:Record<Status,string>={draft:"Em preparação",awaiting:"Aguardando aprovação",changes:"Ajustes solicitados",approved:"Aprovado",scheduled:"Agendado",published:"Publicado"};
+const statusColor:Record<Status,string>={draft:"bg-[#EDF0F5] text-[#475467]",awaiting:"bg-[#FFF2DB] text-[#92600C]",changes:"bg-[#EEE8FF] text-[#6034B7]",approved:"bg-[#E0F5E8] text-[#176F40]",scheduled:"bg-[#EAF1FF] text-[#245CC5]",published:"bg-[#EDF0F5] text-[#475467]"};
+const filters=[["all","Todos"],["draft","Em preparação"],["awaiting","Aguardando aprovação"],["changes","Ajustes solicitados"],["approved","Aprovados"],["scheduled","Agendados"],["published","Publicados"]];
 const fmt=(d:string)=>d.split("-").reverse().join("/");
 const channelIcon=(v:string):ContentIconName=>v==="Instagram"?"brand-instagram":v==="YouTube"?"brand-youtube":v==="LinkedIn"?"brand-linkedin":"link";
 export default function ClientContent({projects}:{projects:EditorialProject[]}){
  const [decisions,setDecisions]=useState<{project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";comment:string|null;decided_at:string}[]>([]);
  const [revision,setRevision]=useState(0),[loadError,setLoadError]=useState("");
  useEffect(()=>{let alive=true;const ids=projects.map(p=>p.id);if(!ids.length)return;void (async()=>{const r=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids);if(alive){if(r.error)setLoadError("Não foi possível conferir as aprovações. Atualize antes de decidir.");else{setLoadError("");setDecisions(r.data??[]);}}})();return()=>{alive=false;};},[projects,revision]);
- const items=useMemo<Item[]>(()=>projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>i.visibleToClient===true).map(i=>{const decision=decisions.find(d=>d.project_id===p.id&&d.content_id===i.id&&d.content_version===(i.version??""));const state=decision?.decision??i.status;return {id:p.id+":"+i.id,projectId:p.id,source:i,title:i.title,channel:i.channel,format:i.format,date:i.publishDate,status:state==="approved"?"approved":state==="published"?"published":state==="changes_requested"?"changes":"awaiting",caption:i.caption??"",material:i.driveUrl??""};})),[projects,decisions]);
+ const items=useMemo<Item[]>(()=>projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>i.visibleToClient===true).map(i=>{const decision=decisions.find(d=>d.project_id===p.id&&d.content_id===i.id&&d.content_version===(i.version??""));const state=decision?.decision??i.status;return {id:p.id+":"+i.id,projectId:p.id,source:i,title:i.title,channel:i.channel,format:i.format,date:i.publishDate,status:state==="approved"?"approved":state==="published"?"published":state==="scheduled"?"scheduled":state==="changes_requested"?"changes":state==="awaiting_client"?"awaiting":"draft",caption:i.caption??"",material:i.driveUrl??""};})),[projects,decisions]);
  const [filter,setFilter]=useState("all"),[month,setMonth]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}),[selected,setSelected]=useState<string|null>(null);
  const dialog=useRef<HTMLDialogElement>(null);
  const active=items.find(x=>x.id===selected);

@@ -10,6 +10,9 @@ type Client={id:string;name:string;slug:string};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[];editorialCalendar?:EditorialItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
 type Priority="low"|"normal"|"high"|"urgent";
+const flagColors:Record<Priority,string>={urgent:"#DA3553",high:"#E39429",normal:"#497BD5",low:"#8591A3"};
+const validHttps=(value:string)=>{if(!value.trim())return true;try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&value.length<=2048;}catch{return false;}};
+
 const statuses:{id:Status;name:string;chip:string;bar:string}[]=[
  {id:"planned",name:"Pendente",chip:"bg-[#EDF0F6] text-[#4A5368]",bar:"bg-[#A2ACBD]"},
  {id:"in_progress",name:"Em andamento",chip:"bg-[#DCEBFF] text-[#1659A8]",bar:"bg-[#4C9CF0]"},
@@ -38,19 +41,23 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [query,setQuery]=useState(""),[showSearch,setShowSearch]=useState(false),[showFilters,setShowFilters]=useState(false);
  const [view,setView]=useState<"list"|"board">("list"),[order,setOrder]=useState<"urgency"|"due"|"priority">("urgency");
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
- const [creating,setCreating]=useState(false),[draft,setDraft]=useState({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:""});
+ const blankDraft=()=>({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:"",status:"planned" as Status,driveUrl:"",referenceUrl:"",checklist:[] as {id:string;text:string;done:boolean}[],dependencies:[] as string[]});
+ const [creating,setCreating]=useState(false),[draft,setDraft]=useState(blankDraft);
+ const [newChecklistText,setNewChecklistText]=useState("");
+ const [advanced,setAdvanced]=useState(false);
  const [members,setMembers]=useState<{user_id:string;display_name:string}[]>([]);
  const [teamReady,setTeamReady]=useState(false);
  const [approvalRows,setApprovalRows]=useState<{project_id:string;content_id:string;content_version:string;decision:string;comment:string|null;decided_at:string}[]>([]);
  const [approvalUnavailable,setApprovalUnavailable]=useState(false);
  const [detailKey,setDetailKey]=useState<string|null>(null);
- const [detailDraft,setDetailDraft]=useState<{title:string;description:string;driveUrl:string;dueDate:string;visibleToClient:boolean}|null>(null);
+ const [detailDraft,setDetailDraft]=useState<{title:string;description:string;driveUrl:string;referenceUrl:string;dueDate:string;visibleToClient:boolean;checklist:{id:string;text:string;done:boolean}[];dependencies:string[]}|null>(null);
+ const [detailChecklistText,setDetailChecklistText]=useState("");
  useEffect(()=>{let active=true;void (async()=>{const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");if(active){setTeamReady(!error);setMembers(error?[]:(data??[]));}})();return()=>{active=false};},[]);
  const tasks=useMemo<Item[]>(()=>projects.flatMap(project=>(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[])
   .filter(task=>task&&typeof task.id==="string"&&typeof task.title==="string")
   .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
  const selected=tasks.find(x=>x.project.id+":"+x.task.id===detailKey);
- const openDetails=(x:Item)=>{setDetailKey(x.project.id+":"+x.task.id);setDetailDraft({title:x.task.title,description:x.task.description??"",driveUrl:x.task.driveUrl??"",dueDate:x.task.dueDate??"",visibleToClient:x.task.visibleToClient===true});setError("");};
+ const openDetails=(x:Item)=>{setDetailKey(x.project.id+":"+x.task.id);setDetailDraft({title:x.task.title,description:x.task.description??"",driveUrl:x.task.driveUrl??"",referenceUrl:x.task.referenceUrl??"",dueDate:x.task.dueDate??"",visibleToClient:x.task.visibleToClient===true,checklist:x.task.checklist??[],dependencies:x.task.dependencies??[]});setError("");};
  const linkedContent=selected?(selected.project.data?.editorialCalendar??[]).filter(item=>item.relatedTaskId===selected.task.id):[];
  useEffect(()=>{let mounted=true;const pairs=projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>!!i.relatedTaskId).map(()=>p.id));const ids=[...new Set(pairs)];if(!ids.length){void Promise.resolve().then(()=>{if(mounted){setApprovalRows([]);setApprovalUnavailable(false);}});return()=>{mounted=false;};}void (async()=>{const {data,error}=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids).order("decided_at",{ascending:false}).limit(150);if(mounted){setApprovalUnavailable(!!error);setApprovalRows(error?[]:(data??[]));}})();return()=>{mounted=false};},[projects]);
  const owners=useMemo(()=>[...new Set(tasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
@@ -99,8 +106,11 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const next=patch.status??task.status??"planned";
   if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos antes desta tarefa.");return;}
   if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as tarefas que dependem desta.");return;}
-  const completionPatch=patch.status!==undefined?{completedAt:next==="completed"?(task.status==="completed"?task.completedAt:new Date().toISOString()):undefined}:{};
-  await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch,...completionPatch}:t),project.id+":"+task.id,"Tarefa atualizada.");
+  const completionPatch=patch.status!==undefined?{completedAt:next==="completed"?(task.status==="completed"?task.completedAt:new Date().toISOString()):undefined}:{}; 
+  const changed=Object.keys(patch).filter(k=>JSON.stringify(task[k as keyof ExecutionItem])!==JSON.stringify(patch[k as keyof ExecutionItem]));
+  if(!changed.length)return;
+  const log=[...(task.activityLog??[]),{at:new Date().toISOString(),summary:"Alteração: "+changed.map(k=>({status:"situação",priority:"prioridade",owner:"responsável",dueDate:"prazo",checklist:"checklist"} as Record<string,string>)[k]??k).join(", ")}].slice(-100);
+  await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch,...completionPatch,activityLog:log}:t),project.id+":"+task.id,"Tarefa atualizada.");
  }
  async function createTask(){
   const project=projects.find(p=>p.id===draft.projectId);
@@ -108,22 +118,28 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   if(draft.title.trim().length<3||draft.title.trim().length>140){setError("Informe um título entre 3 e 140 caracteres.");return;}
   if(draft.description.length>2000){setError("A descrição excede 2.000 caracteres.");return;}
   if(draft.dueDate&&!/^\d{4}-\d{2}-\d{2}$/.test(draft.dueDate)){setError("Informe um prazo válido.");return;}
+  if(!validHttps(draft.driveUrl)||!validHttps(draft.referenceUrl)){setError("Os links precisam usar HTTPS válido.");return;}
+  if(draft.dependencies.some(id=>!project.data?.executionTimeline?.some(t=>t.id===id))){setError("Pré-requisito inválido.");return;}
   const member=members.find(x=>x.user_id===draft.ownerUserId);
   if(draft.ownerUserId&&!member){setError("Escolha um responsável válido.");return;}
-  const task:ExecutionItem={id:crypto.randomUUID(),title:draft.title.trim(),description:draft.description.trim(),kind:"task",status:"planned",priority:draft.priority,owner:member?.display_name??"",ownerUserId:member?.user_id??"",dueDate:draft.dueDate,dependencies:[],visibleToClient:false};
+  const task:ExecutionItem={id:crypto.randomUUID(),title:draft.title.trim(),description:draft.description.trim(),kind:"task",status:draft.status,priority:draft.priority,owner:member?.display_name??"",ownerUserId:member?.user_id??"",dueDate:draft.dueDate,driveUrl:draft.driveUrl.trim(),referenceUrl:draft.referenceUrl.trim(),checklist:draft.checklist,dependencies:draft.dependencies,visibleToClient:false,activityLog:[{at:new Date().toISOString(),summary:"Tarefa criada"}]};
   const ok=await persist(project,[...(project.data?.executionTimeline??[]),task],project.id+":create","Tarefa criada no projeto selecionado.");
-  if(ok){setCreating(false);setDraft({title:"",projectId:"",ownerUserId:"",priority:"normal",dueDate:"",description:""});}
+  if(ok){setCreating(false);setDraft(blankDraft());}
  }
  async function saveDetails(){
   if(!selected||!detailDraft)return;
   const title=detailDraft.title.trim(),driveUrl=detailDraft.driveUrl.trim();
   if(title.length<3||title.length>140){setError("O título deve ter entre 3 e 140 caracteres.");return;}
   if(detailDraft.description.length>2000){setError("A descrição deve ter no máximo 2.000 caracteres.");return;}
-  if(driveUrl){try{if(new URL(driveUrl).protocol!=="https:"){setError("O material deve usar HTTPS.");return;}}catch{setError("Informe um link HTTPS válido.");return;}}
+  if(!validHttps(driveUrl)||!validHttps(detailDraft.referenceUrl)){setError("Informe links HTTPS válidos.");return;}
+  if(detailDraft.dependencies.some(id=>id===selected.task.id||!selected.project.data?.executionTimeline?.some(t=>t.id===id))){setError("Pré-requisito inválido.");return;}
+  if(selected.task.status==="completed"&&detailDraft.dependencies.some(id=>selected.project.data?.executionTimeline?.find(t=>t.id===id)?.status!=="completed")){setError("Não é possível adicionar um pré-requisito pendente a uma tarefa concluída.");return;}
   if(detailDraft.dueDate&&!/^\d{4}-\d{2}-\d{2}$/.test(detailDraft.dueDate)){setError("Informe uma data válida.");return;}
-  const patch:Partial<ExecutionItem>={title,description:detailDraft.description.trim(),driveUrl,dueDate:detailDraft.dueDate,visibleToClient:detailDraft.visibleToClient};
+  const patch:Partial<ExecutionItem>={title,description:detailDraft.description.trim(),driveUrl,referenceUrl:detailDraft.referenceUrl.trim(),checklist:detailDraft.checklist,dependencies:detailDraft.dependencies,dueDate:detailDraft.dueDate,visibleToClient:detailDraft.visibleToClient};
+  const changed=Object.keys(patch).filter(k=>JSON.stringify(selected.task[k as keyof ExecutionItem])!==JSON.stringify(patch[k as keyof ExecutionItem]));
+  const log=changed.length?[...(selected.task.activityLog??[]),{at:new Date().toISOString(),summary:"Detalhes atualizados: "+changed.join(", ")}].slice(-100):selected.task.activityLog;
   const previous=selected.project.data?.executionTimeline??[];
-  const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
+  const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch,activityLog:log}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
   if(ok){setDetailKey(null);setDetailDraft(null);}
  }
  const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");};

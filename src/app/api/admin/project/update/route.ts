@@ -88,7 +88,9 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const oldEditorial=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
  const newEditorial=Array.isArray(nextRoot.editorialCalendar)?nextRoot.editorialCalendar:[];
  const oldEditorialById=new Map(oldEditorial.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v]));
- const materialFields=["title","channel","format","publishDate","caption","driveUrl"];
+ const materialFields=["title","channel","format","publishDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"];
+ const ideaFields=["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"];
+ const changedIdeaVersions=new Map<string,string>();
  const changedEditorialVersions=new Map<string,string>();
  for(const entry of newEditorial){
   if(!entry||typeof entry!=="object"||Array.isArray(entry))continue;
@@ -99,6 +101,9 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(materialFields.some(field=>(before[field]??"")!==(item[field]??""))){
    changedEditorialVersions.set(item.id,String(item.version??""));
   }
+  if(ideaFields.some(field=>(before[field]??"")!==(item[field]??""))){
+   changedIdeaVersions.set(item.id,String(item.version??""));
+  }
  }
  if(changedEditorialVersions.size){
   const {data:approvals,error:approvalError}=await admin.from("editorial_approvals")
@@ -106,6 +111,29 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    .in("content_id",[...changedEditorialVersions.keys()]);
   if(approvalError)return fail(503);
   if((approvals??[]).some(approval=>changedEditorialVersions.get(approval.content_id)===approval.content_version))return fail(409);
+ }
+ if(changedIdeaVersions.size){
+  const {data:approvals,error:ideaError}=await admin.from("editorial_idea_approvals")
+   .select("content_id,content_version").eq("project_id",b.projectId)
+   .in("content_id",[...changedIdeaVersions.keys()]);
+  if(ideaError)return fail(503);
+  if((approvals??[]).some(a=>changedIdeaVersions.get(a.content_id)===a.content_version))return fail(409);
+ }
+ if(JSON.stringify(oldRoot.editorialCalendar)!==JSON.stringify(nextRoot.editorialCalendar)){
+  if(!Array.isArray(nextRoot.editorialCalendar)||nextRoot.editorialCalendar.length>300)return fail(400);
+  for(const raw of nextRoot.editorialCalendar){
+   if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+   const item=raw as Record<string,unknown>;
+   for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
+    if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
+   }
+   for(const key of ["briefUrl","driveUrl"]){
+    const url=item[key];
+    if(url===undefined||url===null||url==="")continue;
+    if(typeof url!=="string"||url.length>2048)return fail(400);
+    try{if(new URL(url).protocol!=="https:")return fail(400);}catch{return fail(400);}
+   }
+  }
  }
  // Validate onboarding links on the server as well as in the editor.
  const checklist=nextRoot.onboardingChecklist;

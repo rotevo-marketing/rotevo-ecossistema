@@ -65,7 +65,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
   if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
   if(!safe(editing.driveUrl??"")||!safe(editing.briefUrl??"")){setError("Os links de roteiro e material precisam usar HTTPS.");return;}
-  if(!editorialChannels.some(channel=>channel.value===editing.channel)){setError("Selecione um canal da lista.");return;}
+  if(!editorialChannels.some(channel=>channel.value===editing.channel)&&!(editing.id&&items.some(item=>item.id===editing.id&&item.channel===editing.channel))){setError("Selecione um canal da lista.");return;}
   if(!editing.id&&(!editing.ideaSummary?.trim()||!editing.objective?.trim())){setError("Informe o resumo da ideia e o objetivo do conteúdo.");return;}
   const original=items.find(row=>row.id===editing.id);
   const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));

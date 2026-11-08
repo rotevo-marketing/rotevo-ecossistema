@@ -69,9 +69,11 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const activeCampaigns=campaigns.filter(c=>c.status==="active");
  const nextMeetings=allowed("meetings")?projects.flatMap(p=>(p.data?.operationalAgenda??[]).filter(m=>m.visibleToClient===true&&m.status==="planned"&&m.date>=today).map(m=>({...m,projectId:p.id}))).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))):[];
  const stageCounts=[
-  {label:"Ideias",value:monthContent.filter(i=>i.status==="idea"||i.status==="idea_pending").length},
-  {label:"Produção",value:monthContent.filter(i=>["idea_approved","production","recording","review"].includes(i.status)||hasDecision(ideas,i,"approved")&&i.status==="idea_pending").length},
-  {label:"Aprovação",value:monthContent.filter(i=>i.status==="awaiting_client"&&!hasDecision(final,i)).length},
+  {label:"Ideias",value:monthContent.filter(i=>["idea","idea_pending"].includes(i.status)&&!hasDecision(ideas,i)).length},
+  {label:"Ideias aprovadas",value:monthContent.filter(i=>i.status==="idea_approved"||i.status==="idea_pending"&&hasDecision(ideas,i,"approved")).length},
+  {label:"Produção",value:monthContent.filter(i=>["production","recording","review"].includes(i.status)).length},
+  {label:"Aprovação final",value:monthContent.filter(i=>i.status==="awaiting_client"&&!hasDecision(final,i)||i.status==="changes_requested"||hasDecision(final,i,"changes_requested")&&i.status==="awaiting_client").length},
+  {label:"Aprovados",value:monthContent.filter(i=>i.status==="approved"||i.status==="awaiting_client"&&hasDecision(final,i,"approved")).length},
   {label:"Agendados",value:monthContent.filter(i=>i.status==="scheduled").length},
   {label:"Publicados",value:monthContent.filter(i=>i.status==="published").length}
  ];
@@ -85,7 +87,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const projectUpdate=[...projects].sort((a,b)=>b.updated_at.localeCompare(a.updated_at))[0];
  const hasExecutionData=tasks.length>0;
  const visibleCampaigns=activeCampaigns.length>0;
- const statusTone=["#AE84FA","#5C8EE7","#E7AB42","#31A27A","#0B142A"];
+ const statusTone=["#AE84FA","#29A47E","#5C8EE7","#E7AB42","#299E74","#6D35F5","#0B142A"];
 
  return <div className="space-y-4 pb-5">
   <header className="flex flex-wrap items-center justify-between gap-4">
@@ -139,7 +141,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    {allowed("content")&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5 sm:p-6">
     <div className="flex items-center justify-between gap-2"><h3 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",19)} Produção editorial</h3><span className="text-[11px] capitalize text-[#7B879B]">{monthLabel(month)}</span></div>
     <p className="mt-2 text-xs text-[#718096]">Panorama dos conteúdos previstos no período.</p>
-    {monthContent.length?<><div className="mt-6 grid grid-cols-5 gap-2">{stageCounts.map((s,i)=><div key={s.label} className="min-w-0"><div className="mb-2 h-1.5 rounded-full" style={{backgroundColor:s.value>0?statusTone[i]:"#E8EDF5"}}/><strong className="block text-lg font-extrabold">{s.value}</strong><span className="mt-1 block break-words text-[10px] text-[#738097]">{s.label}</span></div>)}</div><p className="mt-5 text-xs text-[#64738A]">{monthContent.length} conteúdo(s) no mês selecionado.</p></>:
+    {monthContent.length?<><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">{stageCounts.map((s,i)=><div key={s.label} className="min-w-0"><div className="mb-2 h-1.5 rounded-full" style={{backgroundColor:s.value>0?statusTone[i]:"#E8EDF5"}}/><strong className="block text-lg font-extrabold">{s.value}</strong><span className="mt-1 block break-words text-[10px] text-[#738097]">{s.label}</span></div>)}</div><p className="mt-5 text-xs text-[#64738A]">{monthContent.length} conteúdo(s) no mês selecionado.</p></>:
       <p className="mt-5 rounded-xl bg-[#F7F8FB] p-5 text-sm text-[#758198]">Nenhuma publicação compartilhada neste mês.</p>}
     <button type="button" onClick={()=>onNavigate("content")} className={"mt-5 "+linkClass}>Abrir calendário editorial ↗</button>
    </section>}

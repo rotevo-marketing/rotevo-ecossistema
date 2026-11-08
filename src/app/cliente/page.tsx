@@ -56,6 +56,7 @@ export default function ClientAreaPage(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [tab,setTab]=useState<MenuId>("overview");
+ const [focusedContent,setFocusedContent]=useState<string|null>(null);
  const [collapsed,setCollapsed]=useState(false);
  const [mobileMenu,setMobileMenu]=useState(false);
  const [profileOpen,setProfileOpen]=useState(false);
@@ -98,7 +99,7 @@ export default function ClientAreaPage(){
    setLoading(false);
  }load();return()=>{mounted=false};},[router]);
  async function logout(){await supabase.auth.signOut();router.replace("/");}
- function openModule(module:MenuId,projectId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setTab(module);setMobileMenu(false);}
+ function openModule(module:MenuId,projectId?:string,contentId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setFocusedContent(module==="content"?(contentId??null):null);setTab(module);setMobileMenu(false);}
  const selected=menu.find(item=>item.id===tab)??menu[0];
  const nav=<nav aria-label="Navegação do portal" className="space-y-1.5">
    {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
@@ -130,7 +131,7 @@ export default function ClientAreaPage(){
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning projects={scopedProjects}/>:
        tab==="execution"?<ProjectTimeline projects={scopedProjects}/>:
-       tab==="content"?<ClientContent projects={scopedProjects}/> :
+       tab==="content"?<ClientContent projects={scopedProjects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns projects={scopedProjects}/>:
        tab==="onboarding"?<Block title="Etapas do seu projeto" icon="alert-square-rounded"><div className="space-y-4">{projects.flatMap(p=>(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectTitle:p.title}))).length===0?<p className="text-sm text-[#697386]">Nenhuma etapa de onboarding foi compartilhada pela equipe até o momento.</p>:projects.map(p=><div key={p.id}><h3 className="mb-2 text-sm font-semibold">{p.title}</h3><div className="divide-y divide-[#E3E7F0]">{(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=><div key={i.id} className="flex items-center justify-between gap-2 py-3"><span className="text-sm">{i.done?"✓":"○"} {i.title}</span>{i.link&&i.link.startsWith("https://")&&<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6D35F5]">Abrir material ↗</a>}</div>)}</div></div>)}</div></Block> :

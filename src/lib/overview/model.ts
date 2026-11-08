@@ -7,7 +7,7 @@ export type OperationsProject={
  data:{executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];operationalAgenda?:AgendaItem[];ecosystem2027?:{selectedDocumentCodes?:string[];documents?:Record<string,{content?:string;reviewStatus?:string}>}}|null;
  clients:{id:string;name:string;slug:string}|{id:string;name:string;slug:string}[]|null;
 };
-export type OverviewDecision={id:string;project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";decided_at:string};
+export type OverviewDecision={id:string;project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";decided_at:string;phase?:"idea"|"final"};
 export type OverviewSource="loading"|"ready"|"unavailable"|"forbidden";
 export type OverviewItem={key:string;kind:"task"|"editorial"|"document"|"meeting";title:string;project:OperationsProject;owner:string;due?:string;time?:string;priority:1|2|3;reasons:string[];personal:boolean;taskPriority:number};
 export const overviewClient=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
@@ -27,7 +27,7 @@ const distance=(date:string,today:string)=>Math.round((Date.parse(date+"T12:00:0
 const open=(task:ExecutionItem)=>task.status!=="completed"&&task.status!=="cancelled";
 const unique=<T extends {id:string;title:string}>(rows:T[])=>[...new Map(rows.filter(x=>x&&typeof x.id==="string"&&x.id&&typeof x.title==="string").map(x=>[x.id,x])).values()];
 export function editorialCandidates(projects:OperationsProject[]){
- return projects.filter(p=>p.status!=="archived"&&p.status!=="cancelled"&&p.status!=="closed").flatMap(project=>unique(Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(x=>x.status==="awaiting_client"&&x.visibleToClient===true).map(item=>({project,item})));
+ return projects.filter(p=>p.status!=="archived"&&p.status!=="cancelled"&&p.status!=="closed").flatMap(project=>unique(Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(x=>(x.status==="awaiting_client"||x.status==="idea_pending")&&x.visibleToClient===true).map(item=>({project,item})));
 }
 export function buildOperationsOverview(projects:OperationsProject[],userId:string|null,decisions:OverviewDecision[],decisionSource:OverviewSource,today=overviewToday(),now=new Date()){
  const usable=[...new Map(projects.map(p=>[p.id,p])).values()].filter(p=>!["archived","closed","cancelled"].includes(p.status));
@@ -70,13 +70,13 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
   }
  }
  const latest=new Map<string,OverviewDecision>();
- for(const row of decisions){const key=JSON.stringify([row.project_id,row.content_id,row.content_version]);const previous=latest.get(key);if(!previous||row.decided_at>previous.decided_at)latest.set(key,row);}
+ for(const row of decisions){const key=JSON.stringify([row.project_id,row.content_id,row.content_version,row.phase??"final"]);const previous=latest.get(key);if(!previous||row.decided_at>previous.decided_at)latest.set(key,row);}
  const candidates=editorialCandidates(usable);
  if(decisionSource==="ready")for(const {project,item} of candidates){
-  const decision=latest.get(JSON.stringify([project.id,item.id,item.version??""]));if(decision){if(decision.decision==="changes_requested"){const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Ajuste pela Rotevo",due,priority:due&&due<today?1:2,reasons:["Cliente solicitou ajustes na versão "+decision.content_version],personal:false,taskPriority:2});}continue;}
+  const phase=item.status==="idea_pending"?"idea":"final";const decision=latest.get(JSON.stringify([project.id,item.id,item.version??"",phase]));if(decision){if(decision.decision==="changes_requested"){const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Ajuste pela Rotevo",due,priority:due&&due<today?1:2,reasons:["Cliente solicitou ajustes na "+(phase==="idea"?"ideia":"versão final")+" "+decision.content_version],personal:false,taskPriority:2});}continue;}
   const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;if(item.publishDate&&!due)invalidDates++;
   const priority:1|2|3=due&&due<today?1:due&&distance(due,today)<=2?2:3;
-  pendingDecisions++;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Decisão do cliente",due,priority,reasons:["Aprovação solicitada; versão sem decisão registrada",...(due&&due<today?["Data prevista de publicação vencida"]:[])],personal:false,taskPriority:2});
+  pendingDecisions++;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Decisão do cliente",due,priority,reasons:[phase==="idea"?"Ideia aguardando aprovação do cliente":"Material final aguardando aprovação do cliente",...(due&&due<today?["Data prevista de publicação vencida"]:[])],personal:false,taskPriority:2});
  }
  attention.sort((a,b)=>a.priority-b.priority||(a.due??"9999").localeCompare(b.due??"9999")||a.key.localeCompare(b.key));
  const urgency=(x:OverviewItem)=>x.due&&x.due<today?0:x.due===today?1:2;

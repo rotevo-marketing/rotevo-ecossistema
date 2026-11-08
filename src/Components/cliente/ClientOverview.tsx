@@ -92,7 +92,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  ];
 
  return <div className="space-y-4 pb-5">
-  <div className="flex flex-wrap items-center justify-end gap-3">
+  <div className="flex flex-wrap items-center justify-start gap-3">
    {allowed("content")&&<div className="flex items-center gap-2 rounded-lg border border-[#DEE4EF] bg-white p-1.5" aria-label="Filtrar atividades e conteúdos por mês">
     <span className="pl-2 text-[#68778D]">{icon("calendar",17)}</span>
     <button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="cursor-pointer rounded-md bg-[#F4F6FA] px-2.5 py-1.5 text-sm hover:bg-[#E9ECF3]">‹</button>
@@ -113,9 +113,9 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
     {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E6EAF2] px-3 py-3">
-     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#DED1FC] bg-[#F5F0FF] px-3 py-2 text-xs font-bold text-[#6332C7] hover:bg-[#E8DDFC]">{actionLabel(a)} ↗</button>
+     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#DED1FC] bg-[#F5F0FF] px-3 py-2 text-xs font-bold text-[#6332C7] hover:bg-[#E8DDFC]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
     </div>)}</div>:<p className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#738096]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
-    {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}>Ver outras pendências ↗</button>}
+    {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver outras pendências</span></button>}
    </section>}
    {serviceRows.length>0&&<section className={card+" min-w-0"}>
     <h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
@@ -132,12 +132,12 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    {allowed("meetings")&&<section className={card}>
     <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",20)} Reuniões</h2>
     {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#758198]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#758198]">Nenhuma reunião futura compartilhada.</p>}
-    <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}>Ver reuniões ↗</button>
+    <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver reuniões</span></button>
    </section>}
    {allowed("finance")&&<section className={card}>
     <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("currency-dollar",20)} Financeiro</h2>
     <p className="mt-3 text-sm text-[#758198]">{financeError?"Informações financeiras indisponíveis.":!finance?"Conferindo lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
-    <button type="button" onClick={()=>onNavigate("finance")} className={"mt-4 "+linkClass}>Ver financeiro ↗</button>
+    <button type="button" onClick={()=>onNavigate("finance")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver financeiro</span></button>
    </section>}
   </div>
   <section className={card}>

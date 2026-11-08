@@ -13,7 +13,7 @@ const filters=[["all","Todos"],["idea","Ideias"],["idea_approved","Ideias aprova
 const matchesFilter=(item:Item,filter:string)=>filter==="all"||filter==="idea"&&["draft","idea_pending"].includes(item.status)||filter==="production"&&["production","recording","review"].includes(item.status)||item.status===filter;
 const fmt=(d:string)=>d.split("-").reverse().join("/");
 const channelIcon=(v:string):ContentIconName=>v==="Instagram"?"brand-instagram":v==="YouTube"?"brand-youtube":v==="LinkedIn"?"brand-linkedin":"link";
-export default function ClientContent({projects}:{projects:EditorialProject[]}){
+export default function ClientContent({projects,focusContentId,onFocusHandled}:{projects:EditorialProject[];focusContentId?:string|null;onFocusHandled?:()=>void}){
  const [decisions,setDecisions]=useState<{project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";comment:string|null;decided_at:string}[]>([]);
  const [ideaDecisions,setIdeaDecisions]=useState<{project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";comment:string|null;decided_at:string}[]>([]);
  const [revision,setRevision]=useState(0),[loadError,setLoadError]=useState("");
@@ -22,6 +22,7 @@ export default function ClientContent({projects}:{projects:EditorialProject[]}){
  const [filter,setFilter]=useState("all"),[month,setMonth]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}),[selected,setSelected]=useState<string|null>(null);
  const dialog=useRef<HTMLDialogElement>(null);
  const active=items.find(x=>x.id===selected);
+ useEffect(()=>{if(!focusContentId)return;const match=items.find(x=>x.source.id===focusContentId);if(match){setSelected(match.id);onFocusHandled?.();}},[focusContentId,items,onFocusHandled]);
  useEffect(()=>{const d=dialog.current;if(selected&&!d?.open)d?.showModal();if(!selected&&d?.open)d.close();},[selected]);
  const close=()=>setSelected(null);
  const open=(id:string)=>setSelected(id);

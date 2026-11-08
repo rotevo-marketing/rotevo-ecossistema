@@ -20,6 +20,9 @@ export type ExecutionItem = {
   kind?:"deliverable"|"milestone"|"task";
   dependencies?:string[];
   driveUrl?:string;
+  referenceUrl?:string;
+  checklist?:{id:string;text:string;done:boolean}[];
+  activityLog?:{at:string;summary:string}[];
   visibleToClient?:boolean;
 };
 type Project={id:string;title:string;data:{executionTimeline?:ExecutionItem[];deliverySchedule?:Record<string,string>|null}|null};

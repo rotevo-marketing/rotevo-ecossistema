@@ -57,6 +57,10 @@ export function validExecutionDependencies(data:unknown):boolean{
   if(item.documentCode!==undefined&&item.documentCode!==""&&(typeof item.documentCode!=="string"||!/^\d{2}\.\d{2}$/.test(item.documentCode)))return false;
   if(item.ownerUserId!==undefined&&item.ownerUserId!==""&&(typeof item.ownerUserId!=="string"||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).test(item.ownerUserId)))return false;
   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
+  if(item.referenceUrl!==undefined&&item.referenceUrl!==""){if(typeof item.referenceUrl!=="string"||item.referenceUrl.length>2048)return false;try{const u=new URL(item.referenceUrl);if(u.protocol!=="https:"||u.username||u.password)return false;}catch{return false;}}
+  if(item.checklist!==undefined){if(!Array.isArray(item.checklist)||item.checklist.length>50)return false;const listIds=new Set<string>();for(const rawCheck of item.checklist){const check=object(rawCheck);if(!check||typeof check.id!=="string"||check.id.length>128||!check.id||listIds.has(check.id)||typeof check.text!=="string"||!check.text.trim()||check.text.length>240||typeof check.done!=="boolean")return false;listIds.add(check.id);}}
+  if(item.activityLog!==undefined){if(!Array.isArray(item.activityLog)||item.activityLog.length>100)return false;for(const rawEvent of item.activityLog){const ev=object(rawEvent);if(!ev||typeof ev.at!=="string"||ev.at.length>40||Number.isNaN(Date.parse(ev.at))||typeof ev.summary!=="string"||!ev.summary.trim()||ev.summary.length>240)return false;}}
+
   const raw=item.dependencies??[];
   if(!Array.isArray(raw)||raw.length>200)return false;
   if(raw.some((id:unknown)=>typeof id!=="string"||!id.trim()||id.length>128))return false;

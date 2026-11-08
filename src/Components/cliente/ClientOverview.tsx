@@ -73,8 +73,8 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const campaignCount=activeCampaigns.length;
  const meetingsMonth=nextMeetings.filter(m=>m.date.startsWith(month));
  const monthEntries=[
-  ...monthContent.filter(x=>x.publishDate).map(x=>({key:"content:"+x.projectId+":"+x.id,date:x.publishDate,title:x.title,kind:"Conteúdo",kindId:"content" as PortalModule,projectId:x.projectId,contentId:x.id})),
-  ...tasks.filter(x=>x.dueDate?.slice(0,7)===month).map(x=>({key:"execution:"+x.projectId+":"+x.id,date:x.dueDate,title:x.title,kind:"Entrega",kindId:"execution" as PortalModule,projectId:x.projectId,contentId:undefined as string|undefined})),
+  ...monthContent.filter(x=>x.publishDate).map(x=>({key:"content:"+x.projectId+":"+x.id,date:x.publishDate??"",title:x.title,kind:"Conteúdo",kindId:"content" as PortalModule,projectId:x.projectId,contentId:x.id})),
+  ...tasks.filter(x=>x.dueDate?.slice(0,7)===month).map(x=>({key:"execution:"+x.projectId+":"+x.id,date:x.dueDate??"",title:x.title,kind:"Entrega",kindId:"execution" as PortalModule,projectId:x.projectId,contentId:undefined as string|undefined})),
   ...meetingsMonth.map(x=>({key:"meeting:"+x.projectId+":"+x.id,date:x.date,title:x.title,kind:"Reunião",kindId:"meetings" as PortalModule,projectId:x.projectId,contentId:undefined as string|undefined}))
  ].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
  const events=(!approvalsLoading&&!approvalsFailed?[...ideas.map(d=>({...d,phase:"Ideia"})),...final.map(d=>({...d,phase:"Material final"}))]:[])
@@ -119,7 +119,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    </section>}
    {serviceRows.length>0&&<section className={card+" min-w-0"}>
     <h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
-    <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{icon("chevron-right",17)}</span></button>)}</div>
+    <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{"›"}</span></button>)}</div>
    </section>}
   </div>
   {(allowed("content")||allowed("execution")||allowed("meetings"))&&<section className={card}>

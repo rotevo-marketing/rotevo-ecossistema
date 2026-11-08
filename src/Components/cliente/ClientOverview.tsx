@@ -68,108 +68,82 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const campaigns=allowed("campaigns")?projects.flatMap(p=>(p.data?.marketingCampaigns??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectId:p.id}))):[];
  const activeCampaigns=campaigns.filter(c=>c.status==="active");
  const nextMeetings=allowed("meetings")?projects.flatMap(p=>(p.data?.operationalAgenda??[]).filter(m=>m.visibleToClient===true&&m.status==="planned"&&m.date>=today).map(m=>({...m,projectId:p.id}))).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))):[];
- const stageCounts=[
-  {label:"Ideias",value:monthContent.filter(i=>["idea","idea_pending"].includes(i.status)&&!hasDecision(ideas,i)).length},
-  {label:"Ideias aprovadas",value:monthContent.filter(i=>i.status==="idea_approved"||i.status==="idea_pending"&&hasDecision(ideas,i,"approved")).length},
-  {label:"Produção",value:monthContent.filter(i=>["production","recording","review"].includes(i.status)).length},
-  {label:"Aprovação final",value:monthContent.filter(i=>i.status==="awaiting_client"&&!hasDecision(final,i)||i.status==="changes_requested"||hasDecision(final,i,"changes_requested")&&i.status==="awaiting_client").length},
-  {label:"Aprovados",value:monthContent.filter(i=>i.status==="approved"||i.status==="awaiting_client"&&hasDecision(final,i,"approved")).length},
-  {label:"Agendados",value:monthContent.filter(i=>i.status==="scheduled").length},
-  {label:"Publicados",value:monthContent.filter(i=>i.status==="published").length}
- ];
- const events=(!approvalsLoading&&!approvalsFailed?[...ideas.map(d=>({...d,kind:"Ideia"})),...final.map(d=>({...d,kind:"Material final"}))]:[])
-  .filter(d=>publishedContent.some(i=>i.projectId===d.project_id&&i.id===d.content_id))
-  .sort((a,b)=>b.decided_at.localeCompare(a.decided_at)).slice(0,3);
+
+ const monthly=monthContent.length;
+ const campaignCount=activeCampaigns.length;
+ const meetingsMonth=nextMeetings.filter(m=>m.date.startsWith(month));
+ const monthEntries=[
+  ...monthContent.filter(x=>x.publishDate).map(x=>({key:"content:"+x.projectId+":"+x.id,date:x.publishDate,title:x.title,kind:"Conteúdo",kindId:"content" as PortalModule,projectId:x.projectId,contentId:x.id})),
+  ...tasks.filter(x=>x.dueDate?.slice(0,7)===month).map(x=>({key:"execution:"+x.projectId+":"+x.id,date:x.dueDate,title:x.title,kind:"Entrega",kindId:"execution" as PortalModule,projectId:x.projectId,contentId:undefined as string|undefined})),
+  ...meetingsMonth.map(x=>({key:"meeting:"+x.projectId+":"+x.id,date:x.date,title:x.title,kind:"Reunião",kindId:"meetings" as PortalModule,projectId:x.projectId,contentId:undefined as string|undefined}))
+ ].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+ const events=(!approvalsLoading&&!approvalsFailed?[...ideas.map(d=>({...d,phase:"Ideia"})),...final.map(d=>({...d,phase:"Material final"}))]:[])
+   .filter(d=>publishedContent.some(i=>i.projectId===d.project_id&&i.id===d.content_id))
+   .sort((a,b)=>b.decided_at.localeCompare(a.decided_at)).slice(0,4);
  const mostRecent=[...projects].sort((a,b)=>b.updated_at.localeCompare(a.updated_at))[0];
  const shiftMonth=(delta:number)=>setMonth(prev=>{const y=Number(prev.slice(0,4)),m=Number(prev.slice(5));const next=new Date(y,m-1+delta,1);return next.getFullYear()+"-"+String(next.getMonth()+1).padStart(2,"0")});
- const focus=nextTask?.title??activeCampaigns[0]?.title??(contentAttention.length?"Ideias e materiais aguardando validação":null);
- const nextMove=contentAttention.length?"Sua avaliação permite avançar com os conteúdos compartilhados.":nextTask?"Acompanhe a próxima entrega registrada no plano de execução.":activeCampaigns[0]?.nextStep??null;
- const projectUpdate=[...projects].sort((a,b)=>b.updated_at.localeCompare(a.updated_at))[0];
- const hasExecutionData=tasks.length>0;
- const visibleCampaigns=activeCampaigns.length>0;
- const statusTone=["#AE84FA","#29A47E","#5C8EE7","#E7AB42","#299E74","#6D35F5","#0B142A"];
+ const card="rounded-xl border border-[#E3E8F0] bg-white p-5";
+ const metric="rounded-xl border border-[#E3E8F0] bg-white p-4 text-left";
+ const actionLabel=(item:Attention)=>item.kind==="idea"?"Revisar ideia":item.kind==="final"?"Revisar material":"Ver cobrança";
+ const serviceRows:[
+  ...(allowed("execution")?[{name:"Execução do projeto",icon:"chart-dots-3" as RotevoIconName,detail:tasks.length?completed+" de "+tasks.length+" entregas concluídas":"Nenhuma entrega compartilhada",module:"execution" as PortalModule}]:[]),
+  ...(allowed("content")?[{name:"Conteúdo",icon:"calendar" as RotevoIconName,detail:publishedContent.length+" publicações compartilhadas · "+(approvalsFailed?"aprovações indisponíveis":approvalsLoading?"conferindo aprovações":contentAttention.length+" aguardando decisão"),module:"content" as PortalModule}]:[]),
+  ...(allowed("campaigns")?[{name:"Campanhas",icon:"rocket" as RotevoIconName,detail:campaignCount+" campanha(s) ativa(s) compartilhada(s)",module:"campaigns" as PortalModule}]:[])
+ ];
 
  return <div className="space-y-4 pb-5">
-  <header className="flex flex-wrap items-center justify-between gap-4">
-   <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8490A4]">Portal do cliente / Painel executivo</p>
-    <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-[#11182B] sm:text-3xl">Visão geral do projeto</h2>
-    <p className="mt-1 text-sm text-[#69778E]">{clientName||"Seu espaço de acompanhamento"} · Entregas, decisões e próximos movimentos.</p>
-   </div>
-   {allowed("content")&&<div className="flex items-center gap-2 rounded-xl border border-[#E3E8F0] bg-white p-1.5" aria-label="Período dos conteúdos e publicações">
-    <button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="cursor-pointer rounded-lg bg-[#F1F3F8] px-3 py-2 text-sm hover:bg-[#E9EAF4]">‹</button>
-    <span className="min-w-[118px] text-center text-xs font-semibold capitalize">{monthLabel(month)}</span>
-    <button type="button" onClick={()=>shiftMonth(1)} aria-label="Próximo mês" className="cursor-pointer rounded-lg bg-[#F1F3F8] px-3 py-2 text-sm hover:bg-[#E9EAF4]">›</button>
+  <div className="flex flex-wrap items-center justify-end gap-3">
+   {allowed("content")&&<div className="flex items-center gap-2 rounded-lg border border-[#DEE4EF] bg-white p-1.5" aria-label="Filtrar atividades e conteúdos por mês">
+    <span className="pl-2 text-[#68778D]">{icon("calendar",17)}</span>
+    <button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="cursor-pointer rounded-md bg-[#F4F6FA] px-2.5 py-1.5 text-sm hover:bg-[#E9ECF3]">‹</button>
+    <span className="min-w-[120px] text-center text-xs font-semibold capitalize">{monthLabel(month)}</span>
+    <button type="button" onClick={()=>shiftMonth(1)} aria-label="Próximo mês" className="cursor-pointer rounded-md bg-[#F4F6FA] px-2.5 py-1.5 text-sm hover:bg-[#E9ECF3]">›</button>
    </div>}
-  </header>
-  <section className="relative overflow-hidden rounded-2xl bg-[#0B142A] px-5 py-6 text-white sm:px-7 sm:py-7">
-   <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-20 h-72 w-72 rounded-full border border-white/10 shadow-[0_0_0_48px_rgba(255,255,255,0.025),0_0_0_96px_rgba(255,255,255,0.015)]"/>
-   <div className="relative space-y-4">
-    <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-[#ADE60A]">Panorama do projeto</p><p className="text-xs text-[#BCC7DB]">{projectUpdate?"Última atualização registrada: "+new Date(projectUpdate.updated_at).toLocaleDateString("pt-BR"):"Informações compartilhadas pela Rotevo"}</p></div>
-    <div><h3 className="text-xl font-extrabold tracking-tight sm:text-2xl">{focus?"O que está em foco":"Acompanhamento do projeto"}</h3>
-    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#D4DEEB]">{focus??"As próximas entregas e decisões aparecerão aqui conforme forem registradas e compartilhadas."}</p></div>
-    {nextMove&&<div className="max-w-3xl border-t border-white/15 pt-3"><p className="text-[10px] font-bold uppercase tracking-wider text-[#ADE60A]">Próximo movimento</p><p className="mt-1 text-sm text-[#E2E9F3]">{nextMove}</p></div>}
-    <div className="flex flex-wrap gap-3">{allowed("content")&&contentAttention.length>0&&<button type="button" onClick={()=>onNavigate("content",contentAttention[0].projectId,contentAttention[0].contentId)} className="cursor-pointer rounded-lg bg-[#ADE60A] px-4 py-2 text-xs font-extrabold text-[#0B142A] hover:bg-[#C4EF50]">Revisar conteúdo pendente ↗</button>}{hasExecutionData&&<button type="button" onClick={()=>onNavigate("execution",nextTask?.projectId)} className="cursor-pointer rounded-lg border border-white/25 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10">Ver execução ↗</button>}</div>
-   </div>
-  </section>
-  {(allowed("content")||hasExecutionData)&&<div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+  </div>
+  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
    {[
-    ...(allowed("content")?[{label:"Conteúdos do mês",value:String(monthContent.length).padStart(2,"0"),note:monthLabel(month),tone:"#6D35F5",go:"content" as const},
-      {label:"Aguardando sua decisão",value:approvalsLoading?"…":approvalsFailed?"—":contentAttention.length.toString().padStart(2,"0"),note:"Pendências de todos os meses",tone:"#E8AD3C",go:"content" as const}]:[]),
-    ...(hasExecutionData?[{label:"Entregas concluídas",value:completed+"/"+tasks.length,note:"Plano de execução compartilhado",tone:"#3D8AD8",go:"execution" as const}]:[])
-   ].map(card=><button type="button" key={card.label} onClick={()=>onNavigate(card.go)} className={statClass+" cursor-pointer text-left transition-colors hover:border-[#C9B5FC]"}><div className="mb-3 h-[3px] w-9 rounded-full" style={{backgroundColor:card.tone}}/><p className="text-xs font-semibold text-[#65738A]">{card.label}</p><strong className="mt-2 block text-3xl font-extrabold tracking-tight">{card.value}</strong><p className="mt-1 text-xs text-[#758198]">{card.note}</p></button>)}
-  </div>}
-  <div className={"grid items-stretch gap-4 "+(hasExecutionData?"xl:grid-cols-[1.12fr_.88fr]":"grid-cols-1")}>
-   {(allowed("content")||allowed("finance"))&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5 sm:p-6">
-    <div className="flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-base font-extrabold">{icon("alert-circle",19)} Precisa da sua atenção</h3>{attention.length>0&&<span className="rounded-full bg-[#FFF2D8] px-3 py-1 text-[11px] font-bold text-[#9C6710]">{attention.length} pendência(s)</span>}</div>
-    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,6).map((item,i)=><div key={item.contentId??item.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8ECF3] p-3.5">
-     <div className="min-w-0 flex-1"><div className="mb-1.5 flex items-center gap-2">{item.kind!=="finance"?<ContentTablerIcon name={editorialChannelIcon(publishedContent.find(x=>x.id===item.contentId&&x.projectId===item.projectId)?.channel??"")} size={15}/>:icon("currency-dollar",15)}<span className="text-[10px] font-bold uppercase text-[#8F729B]">{item.kind==="idea"?"Ideia para aprovação":item.kind==="final"?"Material para aprovação":"Financeiro"}</span></div>
-      <p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#7A8598]">{item.meta}</p></div>
-     <button type="button" onClick={()=>onNavigate(item.module,item.projectId,item.contentId)} className="cursor-pointer rounded-lg border border-[#D8CBF9] bg-[#F3EEFF] px-3 py-2 text-xs font-bold text-[#6133C6] hover:bg-[#E9DEFF]">{item.kind==="idea"?"Revisar ideia":item.kind==="final"?"Revisar material":"Ver cobrança"} ↗</button></div>)}</div>:
-     <p className="mt-4 rounded-xl bg-[#F7F8FB] p-4 text-sm text-[#758198]">{approvalsLoading?"Conferindo aprovações…":approvalsFailed||financeError?"Algumas pendências não puderam ser verificadas. Consulte o módulo correspondente.":"Nenhuma ação pendente identificada nos registros compartilhados."}</p>}
-    {attention.length>6&&<p className="mt-3 text-xs text-[#697386]">Há mais pendências. Consulte os módulos correspondentes.</p>}
+    {label:"Pendências",value:approvalsLoading?"…":approvalsFailed?"—":String(attention.length).padStart(2,"0"),detail:"Ações aguardando sua decisão",color:"#E7A43C",symbol:"alert-circle" as RotevoIconName,target:(allowed("content")?"content":"finance") as PortalModule},
+    {label:"Conteúdos do mês",value:String(monthly).padStart(2,"0"),detail:monthLabel(month),color:"#7444DE",symbol:"calendar" as RotevoIconName,target:"content" as PortalModule},
+    {label:"Campanhas ativas",value:String(campaignCount).padStart(2,"0"),detail:"Registradas no projeto",color:"#3A8CCD",symbol:"rocket" as RotevoIconName,target:"campaigns" as PortalModule},
+    {label:"Entregas",value:tasks.length?completed+"/"+tasks.length:"—",detail:tasks.length?"Concluídas / compartilhadas":"Sem entregas compartilhadas",color:"#299D78",symbol:"chart-dots-3" as RotevoIconName,target:"execution" as PortalModule}
+   ].filter(m=>allowed(m.target)).map(item=><button type="button" key={item.label} onClick={()=>onNavigate(item.target)} className={metric+" cursor-pointer transition-colors hover:border-[#C7B3F5]"}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-[#58677F]">{item.label}</span><span style={{color:item.color}}>{icon(item.symbol,19)}</span></div>
+    <strong className="mt-2 block text-3xl font-extrabold tracking-tight text-[#11182B]">{item.value}</strong><span className="mt-1 block text-[11px] text-[#758297]">{item.detail}</span></button>)}
+  </div>
+  <div className="grid gap-4 xl:grid-cols-2">
+   {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
+    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E6EAF2] px-3 py-3">
+     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#DED1FC] bg-[#F5F0FF] px-3 py-2 text-xs font-bold text-[#6332C7] hover:bg-[#E8DDFC]">{actionLabel(a)} ↗</button>
+    </div>)}</div>:<p className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#738096]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
+    {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}>Ver outras pendências ↗</button>}
    </section>}
-   {hasExecutionData&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5 sm:p-6">
-    <div className="flex justify-between gap-2"><h3 className="flex items-center gap-2 text-base font-extrabold">{icon("chart-dots-3",19)} Andamento da execução</h3><span className="text-[11px] text-[#7E899A]">Plano de ação</span></div>
-    <div className="mt-6 flex items-end justify-between"><div><p className="text-xs text-[#77839A]">Entregas compartilhadas</p><strong className="mt-1 block text-2xl font-extrabold">{tasks.length?progress+"%":"Sem dados"}</strong></div><p className="text-xs font-semibold text-[#697386]">{completed} de {tasks.length}</p></div>
-    <div role="progressbar" aria-label="Progresso das entregas compartilhadas" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} className="mt-3 h-2 overflow-hidden rounded-full bg-[#E9EDF5]"><div className="h-full rounded-full bg-[#6D35F5]" style={{width:progress+"%"}}/></div>
-    {nextTask?<div className="mt-5 rounded-xl border-l-4 border-[#6D35F5] bg-[#F7F8FB] p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-[#79849B]">Próxima entrega registrada</p><p className="mt-1 text-sm font-semibold">{nextTask.title}</p><p className="mt-1 text-xs text-[#758198]">{nextTask.dueDate&&nextTask.dueDate<today?"Prazo em revisão · ":""}{displayDate(nextTask.dueDate??"")}</p></div>:
-      <p className="mt-5 rounded-xl bg-[#F7F8FB] p-4 text-sm text-[#697386]">Nenhuma próxima entrega com data definida.</p>}
-    <button type="button" onClick={()=>onNavigate("execution",nextTask?.projectId)} className={"mt-4 "+linkClass}>Ver plano de execução ↗</button>
+   {serviceRows.length>0&&<section className={card+" min-w-0"}>
+    <h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
+    <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{icon("chevron-right",17)}</span></button>)}</div>
    </section>}
   </div>
-  <div className={"grid gap-4 "+(visibleCampaigns?"xl:grid-cols-2":"grid-cols-1")}>
-   {allowed("content")&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5 sm:p-6">
-    <div className="flex items-center justify-between gap-2"><h3 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",19)} Produção editorial</h3><span className="text-[11px] capitalize text-[#7B879B]">{monthLabel(month)}</span></div>
-    <p className="mt-2 text-xs text-[#718096]">Panorama dos conteúdos previstos no período.</p>
-    {monthContent.length?<><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">{stageCounts.map((s,i)=><div key={s.label} className="min-w-0"><div className="mb-2 h-1.5 rounded-full" style={{backgroundColor:s.value>0?statusTone[i]:"#E8EDF5"}}/><strong className="block text-lg font-extrabold">{s.value}</strong><span className="mt-1 block break-words text-[10px] text-[#738097]">{s.label}</span></div>)}</div><p className="mt-5 text-xs text-[#64738A]">{monthContent.length} conteúdo(s) no mês selecionado.</p></>:
-      <p className="mt-5 rounded-xl bg-[#F7F8FB] p-5 text-sm text-[#758198]">Nenhuma publicação compartilhada neste mês.</p>}
-    <button type="button" onClick={()=>onNavigate("content")} className={"mt-5 "+linkClass}>Abrir calendário editorial ↗</button>
+  {(allowed("content")||allowed("execution")||allowed("meetings"))&&<section className={card}>
+   <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",20)} Atividades do mês</h2><span className="text-xs capitalize text-[#738198]">{monthLabel(month)}</span></div>
+   {monthEntries.length?<div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{monthEntries.map(e=><button type="button" key={e.key} onClick={()=>onNavigate(e.kindId,e.projectId,e.contentId)} className="cursor-pointer rounded-lg border border-[#E6EAF1] bg-[#FBFCFE] p-3 text-left hover:border-[#C8B6F8]"><p className="text-[11px] font-bold uppercase text-[#7052B2]">{displayDate(e.date)} · {e.kind}</p><p className="mt-2 line-clamp-2 text-sm font-semibold">{e.title}</p></button>)}</div>:
+    <div className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#758198]">Nenhuma atividade compartilhada para o período selecionado.</div>}
+   <p className="mt-3 text-xs text-[#7D899D]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
+  </section>}
+  <div className="grid gap-4 md:grid-cols-2">
+   {allowed("meetings")&&<section className={card}>
+    <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",20)} Reuniões</h2>
+    {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#758198]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#758198]">Nenhuma reunião futura compartilhada.</p>}
+    <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}>Ver reuniões ↗</button>
    </section>}
-   {allowed("campaigns")&&visibleCampaigns&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5 sm:p-6">
-    <h3 className="flex items-center gap-2 text-base font-extrabold">{icon("rocket",19)} Campanhas e iniciativas</h3>
-    <div className="mt-6 flex items-center gap-4"><strong className="text-4xl font-extrabold tracking-tight">{String(activeCampaigns.length).padStart(2,"0")}</strong><span className="text-xs text-[#718096]">Campanhas ativas<br/>compartilhadas</span></div>
-    {activeCampaigns.length?<div className="mt-4 space-y-2">{activeCampaigns.slice(0,2).map(c=><div key={c.id} className="rounded-xl bg-[#F7F8FB] p-3"><p className="text-sm font-semibold">{c.title}</p>{c.nextStep&&<p className="mt-1 text-xs text-[#758198]">Próximo movimento: {c.nextStep}</p>}</div>)}</div>:
-      <p className="mt-4 text-sm leading-6 text-[#758198]">Nenhuma campanha ativa compartilhada neste momento.</p>}
-    <button type="button" onClick={()=>onNavigate("campaigns")} className={"mt-5 "+linkClass}>Ver campanhas ↗</button>
-   </section>}
-  </div>
-  {(nextMeetings.length>0||invoices.length>0||events.length>0||mostRecent)&&<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-   {allowed("meetings")&&nextMeetings.length>0&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5">
-    <span className="inline-flex rounded-lg bg-[#F1EBFF] p-2 text-[#6934CD]">{icon("calendar",21)}</span><h3 className="mt-3 text-sm font-extrabold">Próximas reuniões</h3>
-    {nextMeetings[0]?<><p className="mt-2 text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#77849A]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></>:<p className="mt-2 text-xs leading-5 text-[#718096]">Nenhuma reunião futura compartilhada.</p>}
-    <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}>Ver agenda ↗</button>
-   </section>}
-   {allowed("finance")&&(invoices.length>0||financeError)&&<section className="rounded-2xl border border-[#E3E8F0] bg-white p-5">
-    <span className="inline-flex rounded-lg bg-[#F1EBFF] p-2 text-[#6934CD]">{icon("currency-dollar",21)}</span><h3 className="mt-3 text-sm font-extrabold">Financeiro</h3>
-    <p className="mt-2 text-xs leading-5 text-[#718096]">{financeError?"Consulta financeira indisponível.":!finance?"Consultando lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
+   {allowed("finance")&&<section className={card}>
+    <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("currency-dollar",20)} Financeiro</h2>
+    <p className="mt-3 text-sm text-[#758198]">{financeError?"Informações financeiras indisponíveis.":!finance?"Conferindo lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
     <button type="button" onClick={()=>onNavigate("finance")} className={"mt-4 "+linkClass}>Ver financeiro ↗</button>
    </section>}
-   <section className="rounded-2xl border border-[#E3E8F0] bg-white p-5">
-    <span className="inline-flex rounded-lg bg-[#F1EBFF] p-2 text-[#6934CD]">{icon("clock",21)}</span><h3 className="mt-3 text-sm font-extrabold">Últimas movimentações</h3>
-    {events.length?<div className="mt-3 space-y-3">{events.map((e,i)=><button type="button" key={i} onClick={()=>onNavigate("content",e.project_id,e.content_id)} className="block w-full cursor-pointer text-left"><span className="text-xs font-semibold">{e.kind}: {e.decision==="approved"?"aprovada":"ajustes solicitados"}</span><span className="mt-1 block text-[11px] text-[#77849A]">{new Date(e.decided_at).toLocaleDateString("pt-BR")}</span></button>)}</div>:
-      <p className="mt-2 text-xs leading-5 text-[#718096]">{approvalsLoading?"Consultando histórico…":approvalsFailed?"Não foi possível consultar decisões.":mostRecent?"Projeto "+mostRecent.title+" atualizado em "+new Date(mostRecent.updated_at).toLocaleDateString("pt-BR"):"Nenhuma movimentação compartilhada."}</p>}
-    {allowed("content")&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-4 "+linkClass}>Ver conteúdos ↗</button>}
-   </section>
-  </div>}
+  </div>
+  <section className={card}>
+   <div className="flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold">{icon("clock",20)} Atualizações recentes</h2></div>
+   {events.length?<div className="mt-3 divide-y divide-[#E9EDF3]">{events.map((e,i)=><button type="button" key={e.project_id+e.content_id+i} onClick={()=>onNavigate("content",e.project_id,e.content_id)} className="block w-full cursor-pointer py-3 text-left"><p className="text-sm font-semibold">{e.phase} · {e.decision==="approved"?"Aprovação registrada":"Ajustes solicitados"}</p><p className="mt-1 text-xs text-[#758198]">{new Date(e.decided_at).toLocaleString("pt-BR")}</p></button>)}</div>:
+   <p className="mt-3 text-sm text-[#758198]">{approvalsLoading?"Consultando movimentações…":approvalsFailed?"Histórico de aprovações indisponível.":mostRecent?"Ainda não há decisões editoriais registradas. Última atualização do projeto: "+new Date(mostRecent.updated_at).toLocaleDateString("pt-BR"):"Nenhuma atualização compartilhada."}</p>}
+  </section>
  </div>;
 }

@@ -55,3 +55,22 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - **Contrato UI3:** `scripts/security/ui3-workspace-contract.test.mjs`, incluído no GitHub Actions para testar navegação, estado do projeto, retorno da apresentação e persistência/autorização existente do onboarding.
 - **Sem deploy nem alterações de dados:** todos os commits seguem isolados na branch UI2/UI3.
 - **Verificação ainda necessária:** confirmar conclusão do workflow de HEAD após a última atualização e executar testes autenticados antes de qualquer publicação.
+
+## Rodada — Visões gerais do Estrategista e do Cliente (09/11/2026)
+### Implementado
+- **Visão geral do estrategista** (`AdminOperationsOverview.tsx`): retirado o bloco editorial "Indicadores que importam agora" e substituídos os quatro cartões amplos por uma faixa compacta de indicadores; `Central de Atenção` agora antecede a central de trabalho, com tarefas e compromissos filtráveis. Os indicadores continuam consultando registros autorizados, com estado indisponível quando faltam dados; os cálculos de prioridade, consultas financeiras, atribuições pessoais e decisões foram preservados.
+- **Central de trabalho** (`AdminWorkConsole.tsx`): retirados quatro cartões de contagem redundantes, mantendo as abas Hoje/Atrasadas/Esta semana/Delegadas/Sem prazo/Todas com contagens, filtros por projeto e responsável e lista real de tarefas e reuniões.
+- **Visão geral do cliente** (`ClientOverview.tsx`): priorizadas as ações que exigem decisão (aprovações de ideias/versões finais e cobranças vencidas), removidos os quatro cartões grandes de indicadores, reduzidos os resumos de entregas/conteúdo/campanhas a uma única faixa discreta, excluída a duplicação da seção "Andamento dos serviços" e movida a navegação por mês para junto das atividades do mês.
+- **Estilos** (`src/app/rotevo-ui3.css`): superfícies brancas contínuas, divisores leves, tipografia compacta e indicadores acessíveis. Sem alterações no conteúdo dos documentos estratégicos.
+- **Contratos de teste** (`scripts/security/ui2-visual-contract.test.mjs` e `scripts/security/ui3-workspace-contract.test.mjs`): introduzidas expectativas para a hierarquia UI3, preservação da autorização, filtragem de itens compartilhados e não duplicação de cartões.
+
+### Fronteiras preservadas
+- Nenhuma mudança nas tabelas ou dados financeiros; sem índices fictícios, progresso inventado ou números estimados.
+- Nenhum conteúdo interno ou documento não publicado foi liberado.
+- A fonte de decisões indisponível continua com estado de indisponibilidade, não se presume zero.
+- Publicação e deployment seguem bloqueados até homologação explícita do responsável.
+
+### Pendente da etapa
+- Testes visuais autenticados por perfil e nas larguras 320,375,390,430,768,1024,1440.
+- Verificação de retorno de foco e navegação por teclado em navegador real.
+- Aferir experiência com os dados de clientes autorizados sem modificar registros.

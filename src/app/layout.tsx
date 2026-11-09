@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lora, Inter } from "next/font/google";
 import "./globals.css";
 import "./product-theme.css";
+import "./rotevo-ui2-shared.css";
 
 const lora = Lora({
   variable: "--font-heading",

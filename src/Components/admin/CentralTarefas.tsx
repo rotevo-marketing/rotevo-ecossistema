@@ -6,7 +6,9 @@ import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
 import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
-type Client={id:string;name:string;slug:string};
+import {TaskAvatar,TaskDropdown} from "@/Components/admin/TaskGridCells";
+import {request} from "@/lib/operations/api";
+type Client={id:string;name:string;slug:string;cover_image_url?:string|null};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[];editorialCalendar?:EditorialItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
 type Priority="low"|"normal"|"high"|"urgent";
@@ -33,22 +35,22 @@ const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
 const selectClass="max-w-full rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-medium text-[#31394B] focus:outline-none focus:ring-2 focus:ring-[#6D35F5]";
 const buttonClass="inline-flex items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-semibold text-[#344056] hover:bg-[#F7F7FC]";
 type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
-function ProjectPicker({projects,value,onChange,allowAll=false}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean}){
+function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean;photos?:Record<string,string>}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState("");
  const current=projects.find(p=>p.id===value);
  const selectedName=current?(getClient(current)?.name??"Cliente"):"Todos os projetos";
- const initials=(s:string)=>s.trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+
  const options=projects.filter(p=>((getClient(p)?.name??"Cliente")+" "+p.title).toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
  return <div className="relative min-w-0">
   <button type="button" aria-expanded={open} aria-haspopup="listbox" className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-lg border border-[#DDE2ED] bg-white px-2.5 py-2 text-left hover:border-[#A58ADB]" onClick={()=>{setOpen(v=>!v);setQuery("");}}>
-   <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEE9FF] text-[10px] font-bold text-[#6034B7]">{current?initials(selectedName):"•"}</span>
-   <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{selectedName}</span>{current&&<span className="block truncate text-[11px] text-[#718096]">{current.title}</span>}</span><span aria-hidden="true">⌄</span>
+   <TaskAvatar name={selectedName} src={current?photos[getClient(current)?.id??""]:null} size={32}/>
+   <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{selectedName}</span>{current&&<span className="block truncate text-[11px] text-[#718096]">{current.title}</span>}</span><RotevoTablerIcon name={open?"chevron-up":"chevron-down"} size={17}/>
   </button>
   {open&&<div className="absolute left-0 top-full z-50 mt-1 w-full min-w-[245px] max-w-[440px] rounded-xl border border-[#DCE2EB] bg-white p-2 shadow-xl">
    <input autoFocus type="search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setOpen(false);}} aria-label="Buscar cliente ou projeto" placeholder="Buscar cliente ou projeto..." className="mb-2 w-full rounded-lg border border-[#E0E4EC] p-2 text-sm"/>
    <div role="listbox" aria-label="Selecionar projeto" className="max-h-56 overflow-y-auto">
     {allowAll&&<button type="button" role="option" aria-selected={value==="all"} onClick={()=>{onChange("all");setOpen(false);}} className="w-full cursor-pointer rounded-lg p-2 text-left text-xs hover:bg-[#F3EFFF]">Todos os projetos</button>}
-    {options.map(p=>{const name=getClient(p)?.name??"Cliente";return <button type="button" role="option" aria-selected={value===p.id} key={p.id} onClick={()=>{onChange(p.id);setOpen(false);}} className={"flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 text-left hover:bg-[#F3EFFF] "+(value===p.id?"bg-[#F3EFFF]":"")}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEE9FF] text-[10px] font-bold text-[#6034B7]">{initials(name)}</span><span className="min-w-0"><span className="block truncate text-xs font-semibold">{name}</span><span className="block truncate text-[11px] text-[#718096]">{p.title}</span></span></button>;})}
+    {options.map(p=>{const name=getClient(p)?.name??"Cliente";return <button type="button" role="option" aria-selected={value===p.id} key={p.id} onClick={()=>{onChange(p.id);setOpen(false);}} className={"flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 text-left hover:bg-[#F3EFFF] "+(value===p.id?"bg-[#F3EFFF]":"")}><TaskAvatar name={name} src={photos[getClient(p)?.id??""]} size={32}/><span className="min-w-0"><span className="block truncate text-xs font-semibold">{name}</span><span className="block truncate text-[11px] text-[#718096]">{p.title}</span></span></button>;})}
     {!options.length&&<p className="p-2 text-xs text-[#718096]">Nenhum projeto encontrado.</p>}
    </div><button type="button" onClick={()=>setOpen(false)} className="mt-2 w-full cursor-pointer rounded-md bg-[#F6F7FB] p-2 text-xs">Fechar</button>
   </div>}
@@ -72,14 +74,32 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [creating,setCreating]=useState(false),[draft,setDraft]=useState(blankDraft);
  const [newChecklistText,setNewChecklistText]=useState("");
  const [advanced,setAdvanced]=useState(false);
- const [members,setMembers]=useState<{user_id:string;display_name:string}[]>([]);
+ const [members,setMembers]=useState<{user_id:string;display_name:string;avatar_url?:string|null}[]>([]);
+ const [clientPhotos,setClientPhotos]=useState<Record<string,string>>({});
+
  const [teamReady,setTeamReady]=useState(false);
  const [approvalRows,setApprovalRows]=useState<{project_id:string;content_id:string;content_version:string;decision:string;comment:string|null;decided_at:string}[]>([]);
  const [approvalUnavailable,setApprovalUnavailable]=useState(false);
  const [detailKey,setDetailKey]=useState<string|null>(null);
  const [detailDraft,setDetailDraft]=useState<{title:string;description:string;driveUrl:string;referenceUrl:string;dueDate:string;visibleToClient:boolean;checklist:{id:string;text:string;done:boolean}[];dependencies:string[]}|null>(null);
  const [detailChecklistText,setDetailChecklistText]=useState("");
- useEffect(()=>{let active=true;void (async()=>{const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");if(active){setTeamReady(!error);setMembers(error?[]:(data??[]));}})();return()=>{active=false};},[]);
+ useEffect(()=>{let active=true;void (async()=>{
+  const {data,error}=await supabase.from("team_members").select("user_id,display_name").eq("active",true).order("display_name");
+  if(!active)return;
+  setTeamReady(!error);setMembers(error?[]:(data??[]));
+  try{
+   const response=await request<{members:{user_id:string;display_name:string;avatar_url:string|null}[]}>("/api/team/directory");
+   if(active&&response.members?.length){const photos=new Map(response.members.map(m=>[m.user_id,m.avatar_url]));setMembers(prev=>prev.map(m=>({...m,avatar_url:photos.get(m.user_id)??null}))); }
+  }catch{/* A equipe continua utilizável sem a consulta opcional de avatares. */}
+  try{
+   const response=await request<{clients:{id:string;cover_image_url:string|null}[]}>("/api/admin/clients");
+   if(!active)return;
+   const direct=Object.fromEntries(response.clients.filter(x=>x.cover_image_url?.startsWith("https://")).map(x=>[x.id,x.cover_image_url!]));
+   const refs=response.clients.filter(x=>x.cover_image_url?.startsWith("asset://")).map(x=>({id:x.id,asset:x.cover_image_url!.slice(8)}));
+   if(refs.length){const resolved=await request<{links:Record<string,string>}>("/api/assets/resolve","POST",{ids:[...new Set(refs.map(x=>x.asset))]});refs.forEach(x=>{if(resolved.links[x.asset])direct[x.id]=resolved.links[x.asset];});}
+   if(active)setClientPhotos(direct);
+  }catch{/* Permissões limitadas mantêm iniciais como alternativa segura. */}
+ })();return()=>{active=false};},[]);
  const tasks=useMemo<Item[]>(()=>projects.flatMap(project=>(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[])
   .filter(task=>task&&typeof task.id==="string"&&typeof task.title==="string")
   .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
@@ -206,7 +226,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Central de tarefas</h2><p className="mt-1 text-xs text-[#697386]">Todos os projetos · {filtered.length} tarefa(s) encontrada(s)</p></div>
     <div className="flex flex-wrap items-center gap-2">
      <button type="button" onClick={()=>{setDraft(d=>({...d,projectId:projectId!=="all"?projectId:projects[0]?.id??""}));setCreating(true);setError("");}} className="inline-flex items-center gap-2 rounded-lg bg-[#ADE60A] px-4 py-2 text-xs font-semibold text-[#090D1C] transition hover:bg-[#9BCC00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.9}/> Nova tarefa</button>
-     <div className="w-full min-w-[205px] sm:w-[235px]"><ProjectPicker projects={projects} value={projectId} onChange={setProjectId} allowAll/></div>
+     <div className="w-full min-w-[205px] sm:w-[235px]"><ProjectPicker projects={projects} value={projectId} onChange={setProjectId} allowAll photos={clientPhotos}/></div>
      <button type="button" aria-pressed={mineOnly} onClick={()=>setMineOnly(v=>!v)} disabled={!currentUserId} className={buttonClass+(mineOnly?" border-[#6D35F5] bg-[#F2ECFF] text-[#6034B7]":"")}>Minhas tarefas</button>
      <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}><RotevoTablerIcon name="search" size={17} stroke={1.9}/> <span className="hidden sm:inline">Buscar</span></button>
      <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}><RotevoTablerIcon name="filter" size={17} stroke={1.9}/> <span className="hidden sm:inline">Filtros</span></button>
@@ -233,7 +253,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
    {notice&&<p role="status" className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">{notice}</p>}
    {creating&&<section aria-label="Nova tarefa" className="mt-4 rounded-xl border border-[#DDD4FB] bg-[#FCFAFF] p-4"><h3 className="text-base font-semibold">Nova tarefa</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">
      <label className="text-xs font-medium sm:col-span-2">Nome da tarefa *<input value={draft.title} maxLength={140} onChange={e=>setDraft({...draft,title:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>
-     <div className="text-xs font-medium">Projeto *<div className="mt-1"><ProjectPicker projects={projects} value={draft.projectId} onChange={projectId=>setDraft({...draft,projectId,dependencies:[]})}/></div></div>
+     <div className="text-xs font-medium">Projeto *<div className="mt-1"><ProjectPicker projects={projects} value={draft.projectId} onChange={projectId=>setDraft({...draft,projectId,dependencies:[]})} photos={clientPhotos}/></div></div>
      <label className="text-xs font-medium">Responsável<select disabled={!teamReady||members.length===0} value={draft.ownerUserId} onChange={e=>setDraft({...draft,ownerUserId:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"><option value="">Não atribuído</option>{members.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name}</option>)}</select></label>
      <div className="text-xs font-medium sm:col-span-2">Prioridade<div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{priorities.map(p=><button type="button" key={p.id} aria-pressed={draft.priority===p.id} onClick={()=>setDraft({...draft,priority:p.id})} className={"flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold "+(draft.priority===p.id?"border-[#6D35F5] bg-[#F4F0FF]":"border-[#DDE2ED] bg-white")}><span style={{color:flagColors[p.id]}}><RotevoTablerIcon name="flag" size={18}/></span>{p.name}</button>)}</div></div>
      <label className="text-xs font-medium">Prazo<input type="date" value={draft.dueDate} onChange={e=>setDraft({...draft,dueDate:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>

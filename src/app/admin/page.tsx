@@ -331,7 +331,7 @@ export default function AdminPage() {
         <div className="flex w-full items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="black" size={27}/></Link><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden">Menu</button>
+            <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden"><RotevoTablerIcon name="menu-2" size={19} stroke={1.7}/><span className="sr-only">Menu</span></button>
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function AdminPage() {
         <nav aria-label="Menu do estrategista" className="space-y-0.5">
           {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`rv-ui2-nav-item flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}><RotevoTablerIcon name={item.icon} size={19} stroke={1.7}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
         </nav>
-        <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#DDE1E9] bg-white text-[#6251CA] shadow-sm">{sidebarCollapsed?"›":"‹"}</button>
+        <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#DDE1E9] bg-white text-[#6251CA] shadow-sm"><RotevoTablerIcon name={sidebarCollapsed?"chevron-right":"chevron-left"} size={17} stroke={1.7}/></button>
       </aside>
       {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>

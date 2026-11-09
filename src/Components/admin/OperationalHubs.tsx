@@ -38,7 +38,7 @@ export function AdminOnboardingHub({projects,onChanged}:{projects:HubProject[];o
  const unstarted=overview.filter(p=>p.status==="not_started");
  const visible=overview.filter(x=>(filter==="all"||x.status===filter)&&(`${client(x.project)?.name??""} ${x.project.title}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))));
  const labels:Record<string,string>={not_started:"Não iniciado",pending:"Em preparação",done:"Concluído"};
- return <div className="mt-7 space-y-5">
+ return <div className="rv-ui2-module mt-5 space-y-4">
   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
    {[{label:"Em onboarding",value:totals.started-totals.completed,icon:"lifebuoy" as const},{label:"Concluídos",value:totals.completed,icon:"circle-check" as const},{label:"Etapas pendentes",value:totals.pending,icon:"alert-circle" as const},{label:"Não iniciados",value:totals.notStarted,icon:"clock" as const}].map(k=><div key={k.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><div className="flex items-center justify-between"><p className="text-sm text-[#697386]">{k.label}</p><RotevoTablerIcon name={k.icon} size={19} stroke={1.9} className="text-[#6D35F5]"/></div><p className="mt-2 text-3xl font-bold text-[#090D1C]">{k.value}</p></div>)}
   </div>
@@ -91,7 +91,7 @@ export function AdminMeetingsHub({projects,onChanged}:{projects:HubProject[];onC
  const closeEditor=()=>{if(!confirmDiscardChanges())return;setEditingProject("");setNewOpen(false);};
  const openProject=(id:string)=>{if(!confirmDiscardChanges())return;setEditingProject(id);setNewOpen(false);};
  if(!projects.length)return <div className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-bold">Agenda de reuniões</h2><p className="mt-2 text-sm text-[#697386]">Cadastre um projeto para registrar compromissos, reuniões e acompanhamentos.</p></div>;
- return <div className="mt-7 space-y-5">
+ return <div className="rv-ui2-module mt-5 space-y-4">
   <div className="grid gap-3 sm:grid-cols-3">
    {[{label:"Agendados",value:filtered.filter(x=>x.item.status==="planned").length},{label:"Realizados",value:filtered.filter(x=>x.item.status==="completed").length},{label:"Cancelados",value:filtered.filter(x=>x.item.status==="cancelled").length}].map(x=><div key={x.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><p className="text-sm text-[#697386]">{x.label}</p><p className="mt-2 text-3xl font-bold text-[#090D1C]">{x.value}</p></div>)}
   </div>

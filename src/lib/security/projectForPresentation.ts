@@ -1,5 +1,7 @@
 import {safeLink,projectModules} from "../operations/model.ts";
 import {validRichContent} from "../planning/richContent.ts";
+import {normalizedPlanningAreaSchedule} from "../planning/areaSchedule.ts";
+import {ecosystemDocuments} from "../../data/ecosystem2027.ts";
 // Projection exclusively for the Ecossistema de Crescimento 2027.
 // Never forward unapproved planning JSON to customers.
 type O=Record<string,unknown>;
@@ -23,10 +25,13 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const coverImageUrl=safeLink(data.coverImageUrl,false)?data.coverImageUrl:null;
  const selected=strings(ecosystem.selectedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code));
  const presented=new Set(strings(ecosystem.presentedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code)));
- const visible=row.status==="published"?selected.filter(code=>presented.has(code)):[];
+ // Project visibility and individual publication are independent.
+ // Only in-progress or explicitly published projects can expose approved snapshots.
+ const releaseEnabled=row.status==="in_progress"||row.status==="published";
+ const visible=releaseEnabled?selected.filter(code=>presented.has(code)):[];
  const storedDocuments=object(ecosystem.documents)??{};
  const hiddenExecutive=new Set(strings(ecosystem.hiddenExecutiveDocumentCodes));
- const executiveDocuments=Object.fromEntries(row.status!=="published"?[]:Array.from({length:7},(_,i)=>"00.0"+(i+1)).filter(code=>!hiddenExecutive.has(code)).flatMap(code=>{const doc=object(storedDocuments[code]);if(!doc||typeof doc.publishedContent!=="string"||doc.publishedContent.length>200000||!doc.publishedAt)return [];return [[code,{content:doc.publishedContent,...(validRichContent(doc.publishedRichContent)?{richContent:doc.publishedRichContent}:{})}]];}));
+ const executiveDocuments=Object.fromEntries(!releaseEnabled?[]:Array.from({length:7},(_,i)=>"00.0"+(i+1)).filter(code=>!hiddenExecutive.has(code)).flatMap(code=>{const doc=object(storedDocuments[code]);if(!doc||typeof doc.publishedContent!=="string"||doc.publishedContent.length>200000||!doc.publishedAt)return [];return [[code,{content:doc.publishedContent,...(validRichContent(doc.publishedRichContent)?{richContent:doc.publishedRichContent}:{})}]];}));
  const documents=Object.fromEntries(visible.flatMap(code=>{
   const doc=object(storedDocuments[code]);
   if(!doc||typeof doc.publishedContent!=="string"||doc.publishedContent.length>200000||!doc.publishedAt)return [];
@@ -36,7 +41,9 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
   id:row.id,client_id:row.client_id,title:row.title,slug:row.slug,
   description:row.description,status:row.status,clients:row.clients,
   data:{coverImageUrl,deliverySchedule,
+   planningAreaSchedule:normalizedPlanningAreaSchedule(data.planningAreaSchedule).filter(stage=>stage.visibleToClient),
    ecosystem2027:{version:ecosystem.version===1?1:undefined,
+    catalogDocumentCodes:selected.filter(code=>code!=="01.01"&&!code.startsWith("00.")&&ecosystemDocuments.some(d=>d.code===code)),
     selectedDocumentCodes:visible,presentedDocumentCodes:visible,documents,executiveDocuments}}
  };
 }

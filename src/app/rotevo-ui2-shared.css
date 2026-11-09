@@ -106,3 +106,59 @@
 @media (prefers-reduced-motion:reduce){
  .rv-ui2 *, .rv-ui2 *::before,.rv-ui2 *::after {scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
 }
+
+/* Shared module density. All selectors are scoped to explicitly opted-in modules. */
+.rv-ui2 .rv-ui2-module :is(section,article,div)[class*="rounded-2xl"][class*="bg-white"] {
+ border-radius:11px;
+ box-shadow:0 1px 2px rgba(23,31,49,.028);
+}
+.rv-ui2 .rv-ui2-module :is(section,article,div)[class*="rounded-2xl"][class*="p-6"] {
+ padding:18px;
+}
+.rv-ui2 .rv-ui2-module :is(section,article,div)[class*="rounded-2xl"][class*="p-5"] {
+ padding:16px;
+}
+.rv-ui2 .rv-ui2-module :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+ border-radius:8px;min-height:36px;
+}
+.rv-ui2 .rv-ui2-module :is(input,select,textarea):focus-visible {
+ border-color:#6C5CE7;
+}
+.rv-ui2 .rv-ui2-module table {
+ width:100%;border-collapse:collapse;
+}
+.rv-ui2 .rv-ui2-module table thead {
+ background:#F8F9FC;color:#616C7D;
+}
+.rv-ui2 .rv-ui2-module table th {
+ font-size:11px;font-weight:600;
+ padding-top:10px;padding-bottom:10px;
+ border-bottom:1px solid #E3E6ED;
+}
+.rv-ui2 .rv-ui2-module table td {
+ font-size:12px;padding-top:10px;padding-bottom:10px;
+}
+.rv-ui2 .rv-ui2-module table tbody tr {border-color:#E9EBF1}
+.rv-ui2 .rv-ui2-module table tbody tr:hover {background:#FBFBFF}
+.rv-ui2 .rv-ui2-module :is(h2,h3) {letter-spacing:-.015em}
+.rv-ui2 .rv-ui2-module [role="dialog"] {
+ border-radius:12px;
+ box-shadow:0 16px 48px rgba(22,30,49,.15);
+}
+.rv-ui2 .rv-ui2-module :is(button,a)[aria-current="page"] {
+ color:#6251CA;
+}
+.rv-ui2 .rv-ui2-module [class*="border-[#E3E7F0]"][class*="bg-white"] {
+ border-color:#E3E6ED;
+}
+@media(max-width:767px){
+ .rv-ui2 .rv-ui2-module :is(button,select,input:not([type="checkbox"]):not([type="radio"])) {
+  min-height:40px;
+ }
+ .rv-ui2 .rv-ui2-module table {
+  min-width:max-content;
+ }
+ .rv-ui2 .rv-ui2-module :is(section,article,div)[class*="rounded-2xl"][class*="p-6"] {
+  padding:14px;
+ }
+}

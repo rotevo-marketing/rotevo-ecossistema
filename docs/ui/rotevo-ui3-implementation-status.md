@@ -44,3 +44,14 @@
 
 ## Última verificação
 Após cada commit, consultar o run da branch em GitHub Actions. Execuções intermediárias com falha de contrato antigo/nomes de ícones foram corrigidas posteriormente. **Conferir resultado do HEAD** antes de afirmar que a versão está validada.
+
+## Rodada seguinte — Projetos e Onboarding (09/11/2026)
+- **Projetos:** retirados os três cartões de totais e o segundo cabeçalho decorativo; os números agora aparecem em resumo discreto, com filtros, busca e listagem operacional compactos. A ação principal de edição foi preservada.
+- **Menu de projetos:** as opções de apresentação, acesso, publicação e exclusão continuam disponíveis, com fechamento por Escape, clique externo e retorno do foco.
+- **Acesso:** rota interceptada do Next.js abre o cadastro/configuração existente em um drawer contextual quando a navegação parte do painel. A URL direta e a autorização original permanecem disponíveis, sem criar um segundo fluxo de credenciais.
+- **Apresentação:** abrir a partir da lista inclui uma indicação de origem, e o controle existente retorna à lista Projetos. Abrir de outras origens conserva o comportamento antigo.
+- **Publicação:** confirmação explícita antes de tornar uma apresentação pública para clientes autorizados ou retornar a rascunho. A confirmação esclarece que documentos individuais não são publicados automaticamente.
+- **Onboarding:** removidos os quatro cartões de métricas, substituídos por resumo discreto na listagem; editor lateral simplificado; dez passos padrão agrupados em Formalização, Preparação, Alinhamento e Liberação. Checklists legados e personalizados mantêm sua ordem sem remapeamento ou regravação.
+- **Contrato UI3:** `scripts/security/ui3-workspace-contract.test.mjs`, incluído no GitHub Actions para testar navegação, estado do projeto, retorno da apresentação e persistência/autorização existente do onboarding.
+- **Sem deploy nem alterações de dados:** todos os commits seguem isolados na branch UI2/UI3.
+- **Verificação ainda necessária:** confirmar conclusão do workflow de HEAD após a última atualização e executar testes autenticados antes de qualquer publicação.

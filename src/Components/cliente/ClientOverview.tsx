@@ -104,6 +104,11 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    <p className="mt-3 text-xs text-[#7D899D]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
   </section>}
   <div className="grid gap-4 md:grid-cols-2">
+   {allowed("execution")&&<section className={card}>
+    <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[#323647]">{icon("list-check",17)} Entregas a acompanhar</h2>
+    {nextTask?<div className="mt-3"><p className="text-sm font-medium text-[#323647]">{nextTask.title}</p><p className={`mt-1 text-xs ${nextTask.dueDate&&nextTask.dueDate<today?"font-medium text-[#B33A4D]":"text-[#687487]"}`}>{nextTask.dueDate&&nextTask.dueDate<today?"Prazo vencido · ":"Prazo · "}{displayDate(nextTask.dueDate??"")}</p></div>:<p className="mt-3 text-sm text-[#687487]">Nenhuma entrega aberta com prazo informado.</p>}
+    <button type="button" onClick={()=>onNavigate("execution",nextTask?.projectId)} className={`mt-4 ${linkClass}`}>Consultar entregas</button>
+   </section>}
    {allowed("meetings")&&<section className={card}>
     <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("calendar",20)} Reuniões</h2>
     {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#758198]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#758198]">Nenhuma reunião futura compartilhada.</p>}

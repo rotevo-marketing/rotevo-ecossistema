@@ -69,7 +69,7 @@ test("strategist and client dashboards have substantial UI2 workspace hierarchy"
  assert.match(adminOverview,/rv-ui2-dashboard-intro/);
  assert.match(adminOverview,/rv-ui2-overview-kpi/);
  assert.match(client,/rv-ui2-client-heading/);
- assert.match(client,/tab==="overview"\?"Seu projeto, em perspectiva\."/);
+ assert.match(client,/tab==="overview"\?"Acompanhe seu projeto"/);
 });
 
 test("new workspace hero layouts support small screens and preserve document content",()=>{

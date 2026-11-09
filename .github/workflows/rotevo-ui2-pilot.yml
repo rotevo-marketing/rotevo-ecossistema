@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/security/ui2-visual-contract.test.mjs'
+      - 'scripts/security/client-project-projection.test.mjs'
       - '.github/workflows/rotevo-ui2-pilot.yml'
   workflow_dispatch:
 

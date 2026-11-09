@@ -15,6 +15,22 @@ function publishedArray(v: unknown, names: readonly string[], allowLink=false) {
     const projected: RecordObject = {...fields(item,names), id:item.id, title:item.title, visibleToClient:true};
     for(const key of ["meetingUrl","materialUrl"]){if(names.includes(key)){const link=https(item[key]);if(link)projected[key]=link;else delete projected[key];}}
     if (allowLink) { const link=https(item.driveUrl ?? item.link); if (link) { projected.driveUrl=link; projected.link=link; } }
+    // Editorial fields are shared only when this item was explicitly approved for the portal.
+    // Links and references are allowlisted separately; never copy internal review notes.
+    if (names.includes("briefUrl")) {
+      const brief=https(item.briefUrl);
+      if (brief) projected.briefUrl=brief;
+      else delete projected.briefUrl;
+    }
+    if (names.includes("references") && Array.isArray(item.references)) {
+      projected.references=item.references.flatMap(value=>{
+        const ref=object(value);
+        if (!ref) return [];
+        const url=https(ref.url);
+        if (!url) return [];
+        return [{url,note:typeof ref.note==="string"?ref.note.slice(0,500):""}];
+      }).slice(0,20);
+    }
     if (names.includes("done")) projected.done=item.done === true;
     return [projected];
   });
@@ -41,7 +57,7 @@ export function projectForClient(project:PrivateProjectRow,allowedModules?:reado
       executionTimeline:publishedArray(modules.includes("execution")?data.executionTimeline:[],
         ["phase","status","kind","startDate","dueDate","description","priority","owner"],true),
       editorialCalendar:publishedArray(modules.includes("content")?data.editorialCalendar:[],
-        ["channel","format","publishDate","caption","version","status"],true),
+        ["channel","format","publishDate","caption","version","status","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl","references"],true),
       operationalAgenda:publishedArray(modules.includes("meetings")?data.operationalAgenda:[],["kind","date","time","status","notes","modality","location","duration","minutes","meetingUrl","materialUrl"]),
       marketingCampaigns:Array.isArray(data.marketingCampaigns)&&modules.includes("campaigns")?data.marketingCampaigns.flatMap(value=>{
         const c=object(value);if(!c||c.visibleToClient!==true||typeof c.id!=="string"||typeof c.title!=="string")return [];

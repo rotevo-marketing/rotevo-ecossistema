@@ -15,6 +15,15 @@ function publishedArray(v: unknown, names: readonly string[], allowLink=false) {
     const projected: RecordObject = {...fields(item,names), id:item.id, title:item.title, visibleToClient:true};
     for(const key of ["meetingUrl","materialUrl"]){if(names.includes(key)){const link=https(item[key]);if(link)projected[key]=link;else delete projected[key];}}
     if (names.includes("minutes") && item.minutesVisibleToClient === false) delete projected.minutes;
+    // Only explicitly shared meetings may expose action items, and never internal notes.
+    if (names.includes("minutes") && item.minutesVisibleToClient !== false && Array.isArray(item.actionItems)) {
+      projected.actionItems=item.actionItems.flatMap(value=>{
+        const action=object(value);
+        if(!action||typeof action.id!=="string"||typeof action.title!=="string"||!action.title.trim())return [];
+        return [{id:action.id,title:action.title,owner:typeof action.owner==="string"?action.owner:"",dueDate:typeof action.dueDate==="string"?action.dueDate:""}];
+      }).slice(0,25);
+    }
+
     if (allowLink) { const link=https(item.driveUrl ?? item.link); if (link) { projected.driveUrl=link; projected.link=link; } }
     // Editorial fields are shared only when this item was explicitly approved for the portal.
     // Links and references are allowlisted separately; never copy internal review notes.

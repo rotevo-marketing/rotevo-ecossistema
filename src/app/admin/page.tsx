@@ -292,6 +292,8 @@ export default function AdminPage() {
     project: PlanningProject,
     newStatus: "draft" | "published"
   ) {
+    const action=newStatus==="published"?"Publicar a apresentação deste projeto para os clientes autorizados? Esta ação não publica automaticamente documentos estratégicos individuais.":"Retornar este projeto a rascunho e retirar a apresentação do acesso do cliente?";
+    if(!window.confirm(action))return;
     setIsPublishingId(project.id);
     setErrorMessage("");
     setSuccessMessage("");
@@ -419,7 +421,7 @@ export default function AdminPage() {
                           <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
                           {menuOpen && (
                             <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-xl">
-                              <Link href={"/apresentacao/"+project.slug} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Ver apresentação</Link>
+                              <Link href={"/apresentacao/"+project.slug+"?from=projects"} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Ver apresentação</Link>
                               <Link href={"/admin/planejamentos/"+clientSlug+"/acesso"} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Configurar acesso</Link>
                               {project.status==="draft" && <button type="button" disabled={publishing||deleting} onClick={()=>{setOpenMenuId(null);handlePublishProject(project,"published");}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">{publishing?"Publicando...":"Publicar"}</button>}
                               {project.status==="published" && <button type="button" disabled={publishing||deleting} onClick={()=>{setOpenMenuId(null);handlePublishProject(project,"draft");}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">{publishing?"Atualizando...":"Voltar para rascunho"}</button>}

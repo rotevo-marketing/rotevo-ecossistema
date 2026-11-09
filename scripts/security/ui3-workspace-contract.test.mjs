@@ -55,3 +55,40 @@ test("UI3 leaves published strategic document sheets untouched",()=>{
  assert.doesNotMatch(css,/\.bn-editor\s*\{/);
  assert.match(css,/\.rv-ui3/);
 });
+
+test("strategist overview prioritizes real attention before daily console and secondary summary",()=>{
+ const overview=source("Components/admin/AdminOperationsOverview.tsx");
+ const console=source("Components/admin/AdminWorkConsole.tsx");
+ assert.match(overview,/rv-ui3-overview-summary/);
+ assert.match(overview,/rv-ui3-attention-first/);
+ assert.match(overview,/buildOperationsOverview/);
+ assert.match(overview,/loadOverviewDecisions/);
+ assert.match(overview,/financeRequest\(false\)/);
+ assert.ok(overview.indexOf("rv-ui3-attention-first")<overview.indexOf("<AdminWorkConsole"),"attention before work console");
+ assert.match(console,/rv-ui3-work-console/);
+ assert.match(console,/view===t.id/);
+ assert.match(console,/filter\(r,view\)/);
+ assert.doesNotMatch(console,/grid grid-cols-2 gap-2 sm:grid-cols-4/);
+});
+
+test("client overview prioritizes pending decisions and hides duplicate summary cards",()=>{
+ const overview=source("Components/cliente/ClientOverview.tsx");
+ assert.match(overview,/rv-ui3-client-status/);
+ assert.match(overview,/pendingIdeas/);
+ assert.match(overview,/pendingFinal/);
+ assert.match(overview,/hasDecision\(final,i\)/);
+ assert.match(overview,/visibleToClient===true/);
+ assert.match(overview,/approvalsFailed/);
+ assert.match(overview,/onNavigate\(a.module,a.projectId,a.contentId\)/);
+ assert.ok(overview.indexOf("Precisa da sua atenção")<overview.indexOf("rv-ui3-client-status"));
+ assert.doesNotMatch(overview,/serviceRows\.map/);
+ assert.doesNotMatch(overview,/grid grid-cols-2 gap-3 xl:grid-cols-4/);
+});
+
+test("overview styling does not touch rich document sheets or hide actionable status",()=>{
+ const css=source("app/rotevo-ui3.css");
+ assert.match(css,/rv-ui3-overview-summary/);
+ assert.match(css,/rv-ui3-client-overview-panel/);
+ assert.doesNotMatch(css,/\.se-paper\s*\{/);
+ assert.doesNotMatch(css,/\.bn-editor\s*\{/);
+});

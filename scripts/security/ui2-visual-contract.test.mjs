@@ -82,3 +82,20 @@ test("new workspace hero layouts support small screens and preserve document con
  assert.doesNotMatch(sharedCss,/\.se-paper\s*\{/);
  assert.doesNotMatch(sharedCss,/\.bn-editor\s*\{/);
 });
+
+
+test("UI2 interactive text pairs meet WCAG AA normal-text contrast",()=>{
+ const luminance=(hex)=>{
+  const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+  const linear=rgb.map(c=>c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4);
+  return linear[0]*0.2126+linear[1]*0.7152+linear[2]*0.0722;
+ };
+ const contrast=(a,b)=>{
+  const [lighter,darker]=[luminance(a),luminance(b)].sort((x,y)=>y-x);
+  return (lighter+0.05)/(darker+0.05);
+ };
+ for(const [foreground,background] of [
+  ["#5949D1","#FFFFFF"],["#5949D1","#EDEAFF"],
+  ["#6C5CE7","#FFFFFF"],["#687487","#FFFFFF"]
+ ]) assert.ok(contrast(foreground,background)>=4.5,`${foreground} on ${background}`);
+});

@@ -83,7 +83,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim(),references:refs.map(ref=>({url:ref.url.trim(),note:ref.note.trim()}))};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }
- return <div className="mt-7 space-y-5">
+ return <div className="rv-ui2-module mt-5 space-y-4">
   {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
   <EditorialCalendar projects={projects} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
   {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={close} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">

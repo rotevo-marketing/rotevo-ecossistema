@@ -65,19 +65,22 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
   if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
   if(!safe(editing.driveUrl??"")||!safe(editing.briefUrl??"")){setError("Os links de roteiro e material precisam usar HTTPS.");return;}
+   const refs=(editing.references??[]).filter(ref=>ref.url.trim()||ref.note.trim());
+   if(refs.length>10||refs.some(ref=>!ref.url.trim()||ref.url.length>2048||!safe(ref.url.trim())||ref.note.length>400)){setError("Informe até 10 referências com links HTTPS válidos e observações de até 400 caracteres.");return;}
   if(!editorialChannels.some(channel=>channel.value===editing.channel)&&!(editing.id&&items.some(item=>item.id===editing.id&&item.channel===editing.channel))){setError("Selecione um canal da lista.");return;}
   if(!editing.id&&(!editing.ideaSummary?.trim()||!editing.objective?.trim())){setError("Informe o resumo da ideia e o objetivo do conteúdo.");return;}
   const original=items.find(row=>row.id===editing.id);
   const decided=decisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
   const materialFields=["title","channel","format","publishDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta","relatedTaskId"] as const;
+   const referencesChanged=JSON.stringify(original?.references??[])!==JSON.stringify(refs.map(ref=>({url:ref.url.trim(),note:ref.note.trim()})));
   const ideaDecided=ideaDecisions.some(row=>row.content_id===editing.id&&row.content_version===(editing.version??""));
-  if(original&&ideaDecided&&original.version===editing.version&&(["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"] as const).some(field=>(original[field]??"")!==(editing[field]??""))){setError("Esta ideia já recebeu uma decisão do cliente. Crie uma nova versão antes de alterar título, canal ou formato.");return;}
-  if(original&&decided&&original.version===editing.version&&materialFields.some(field=>(original[field]??"")!==(editing[field]??""))){
+  if(original&&ideaDecided&&original.version===editing.version&&(referencesChanged||(["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"] as const).some(field=>(original[field]??"")!==(editing[field]??"")))){setError("Esta ideia já recebeu uma decisão do cliente. Crie uma nova versão antes de alterar título, canal ou formato.");return;}
+  if(original&&decided&&original.version===editing.version&&(referencesChanged||materialFields.some(field=>(original[field]??"")!==(editing[field]??"")))){
    setError("Esta versão já recebeu uma decisão do cliente. Informe um novo número de versão antes de alterar o material.");
    return;
   }
   if(editing.relatedTaskId&&!project.data?.executionTimeline?.some(t=>t.id===editing.relatedTaskId)){setError("A tarefa vinculada precisa pertencer ao mesmo projeto.");return;}
-  const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim()};
+  const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim(),references:refs.map(ref=>({url:ref.url.trim(),note:ref.note.trim()}))};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }
  return <div className="mt-7 space-y-5">
@@ -103,6 +106,13 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium">Etapa do funil<select value={editing.funnelStage??""} onChange={e=>setEditing({...editing,funnelStage:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Não especificada</option><option value="Atração">Atração</option><option value="Consideração">Consideração</option><option value="Conversão">Conversão</option><option value="Relacionamento">Relacionamento</option><option value="Retenção">Retenção</option></select></label>
      <label className="text-xs font-medium sm:col-span-2">Mensagem principal<input value={editing.keyMessage??""} onChange={e=>setEditing({...editing,keyMessage:e.target.value})} maxLength={500} placeholder="Qual ideia o público deve levar consigo?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">CTA (chamada para ação)<input value={editing.cta??""} onChange={e=>setEditing({...editing,cta:e.target.value})} maxLength={300} placeholder="Qual ação queremos incentivar?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+     <div className="sm:col-span-2 rounded-xl border border-[#E3E7F0] p-3">
+      <div className="flex items-center justify-between gap-2"><div><h4 className="text-sm font-semibold">Referências criativas</h4><p className="mt-1 text-xs text-[#697386]">Links de inspiração e o que aproveitar de cada referência. Campo opcional.</p></div><button type="button" disabled={(editing.references??[]).length>=10} onClick={()=>setEditing({...editing,references:[...(editing.references??[]),{url:"",note:""}]})} className="cursor-pointer rounded-lg border border-[#D8CDF0] px-3 py-2 text-xs font-semibold text-[#6034B7] disabled:opacity-40">+ Adicionar</button></div>
+      {(editing.references??[]).map((ref,i)=><div key={i} className="mt-3 rounded-lg bg-[#F7F8FB] p-3"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold">Referência {i+1}</span><button type="button" onClick={()=>setEditing({...editing,references:(editing.references??[]).filter((_,j)=>j!==i)})} className="cursor-pointer text-xs font-semibold text-[#7B4775]">Remover</button></div>
+       <label className="mt-2 block text-xs font-medium">URL<input type="url" maxLength={2048} placeholder="https://..." value={ref.url} onChange={e=>setEditing({...editing,references:(editing.references??[]).map((r,j)=>j===i?{...r,url:e.target.value}:r)})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+       <label className="mt-2 block text-xs font-medium">O que aproveitar desta referência?<input maxLength={400} value={ref.note} onChange={e=>setEditing({...editing,references:(editing.references??[]).map((r,j)=>j===i?{...r,note:e.target.value}:r)})} placeholder="Ex.: ritmo de edição, narrativa, estilo visual..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+      </div>)}
+     </div>
      <div className="sm:col-span-2 mt-3 border-t pt-3"><h4 className="text-sm font-semibold">Legenda e materiais</h4></div>
      <label className="text-xs font-medium">Link do roteiro ou briefing<input type="url" value={editing.briefUrl??""} onChange={e=>setEditing({...editing,briefUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Link do material da publicação<input type="url" value={editing.driveUrl??""} onChange={e=>setEditing({...editing,driveUrl:e.target.value})} placeholder="https://drive.google.com/..." className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>

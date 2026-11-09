@@ -136,3 +136,14 @@ test("workspace mobile overlays can be dismissed by Escape",()=>{
  assert.match(client,/setProfileOpen\(false\)/);
  assert.match(client,/setMobileMenu\(false\)/);
 });
+
+
+test("switching client projects remounts project-scoped modules without stale document state",()=>{
+ const portal=source("app/cliente/page.tsx");
+ for(const name of ["ClientPlanning","ProjectTimeline","ClientContent","ClientCampaigns","ClientMeetings"]){
+  const prefix="<"+name+" key={scopedProjects[0]?.id??\"no-project\"}";
+  assert.ok(portal.includes(prefix),name+" must reset state when the authorized project changes");
+ }
+ assert.match(source("Components/cliente/ClientPlanning.tsx"),/result\?\.key===requestKey/);
+ assert.match(source("Components/cliente/ClientPlanning.tsx"),/payload\.project\.id!==selected\.id/);
+});

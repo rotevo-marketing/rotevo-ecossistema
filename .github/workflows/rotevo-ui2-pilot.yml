@@ -61,5 +61,18 @@ jobs:
           exit "$status"
       - name: TypeScript
         run: npx tsc --noEmit
-      - name: Next.js build
-        run: npm run build
+      - name: Next.js build (bounded retry for intermittent Google Fonts loader)
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "Next.js build attempt $attempt/3"
+            if npm run build; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Build failed after three attempts. Investigate the actual compilation failure."
+              exit 1
+            fi
+            echo "::warning::Build failed. Retrying once more after an 8-second delay; next/font/google can fail on extensionless Google Fonts URLs."
+            sleep 8
+          done

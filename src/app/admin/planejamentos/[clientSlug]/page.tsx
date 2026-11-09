@@ -26,6 +26,7 @@ type ProjectData = {
   coverImageUrl?: string | null;
   planningStages?: PlanningStage[];
   planningAreaSchedule?: PlanningAreaDelivery[];
+  planningClientAccessEnabled?: boolean;
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   ecosystem2027?: StrategicPlanningData["ecosystem2027"];
 };
@@ -388,6 +389,7 @@ function PlanejamentoClienteContent() {
       </section>
 
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}>
+   <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] bg-white p-4 sm:p-5"><div className="max-w-xl"><h2 className="text-sm font-bold">Leitura progressiva no Portal do Cliente</h2><p className="mt-1 text-xs leading-5 text-[#697386]">Permitir acesso aos documentos já aprovados, publicados e marcados para apresentação, mesmo antes da publicação integral do projeto. Rascunhos e documentos não autorizados continuam privados.</p></div><button type="button" disabled={isSaving||richDirty||richBusy||isPublishing} onClick={async()=>{try{setErrorMessage("");const enabled=project.data?.planningClientAccessEnabled===true;const saved=await saveAuthorizedProjectData(project,{...project.data,planningClientAccessEnabled:!enabled});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);setSuccessMessage(!enabled?"Leitura progressiva habilitada.":"Leitura progressiva desabilitada.");}catch(e){setErrorMessage(e instanceof Error?e.message:"Não foi possível atualizar o acesso.");}}} className={"cursor-pointer rounded-lg px-4 py-2.5 text-xs font-semibold "+(project.data?.planningClientAccessEnabled?"border border-[#D1DBE4] bg-white text-[#4B5563]":"bg-[#6D35F5] text-white")}>{project.data?.planningClientAccessEnabled?"Desabilitar leitura progressiva":"Habilitar leitura progressiva"}</button></div></section>
    <PlanningAreaScheduleEditor key={project.id+"-areas"} initial={project.data?.planningAreaSchedule??[]} selectedDocumentCodes={documentCodes} onSave={async(schedule)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningAreaSchedule:schedule});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>
    <details className="mx-auto w-full max-w-6xl px-5 py-5 sm:px-8 lg:px-10"><summary className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm font-semibold text-[#525B70]">Cronograma operacional anterior (manter dados existentes)</summary>
     <PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>

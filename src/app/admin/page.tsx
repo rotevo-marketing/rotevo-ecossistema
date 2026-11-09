@@ -126,6 +126,22 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  useEffect(()=>{
+    if(!openMenuId)return;
+    const handleKey=(event:KeyboardEvent)=>{
+      if(event.key!=="Escape")return;
+      event.preventDefault();
+      const target=document.getElementById("project-actions-trigger-"+openMenuId);
+      setOpenMenuId(null);
+      target?.focus();
+    };
+    const handlePointer=(event:PointerEvent)=>{
+      if(event.target instanceof Element&&!event.target.closest("[data-project-actions]"))setOpenMenuId(null);
+    };
+    document.addEventListener("keydown",handleKey);
+    document.addEventListener("pointerdown",handlePointer);
+    return()=>{document.removeEventListener("keydown",handleKey);document.removeEventListener("pointerdown",handlePointer);};
+  },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
   useEffect(()=>{const id=window.requestAnimationFrame(()=>{const section=new URLSearchParams(window.location.search).get("section");if(NAV_ITEMS.some(item=>item.id===section))setWorkspaceTab(section!);});return()=>window.cancelAnimationFrame(id);},[]);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
@@ -417,10 +433,10 @@ export default function AdminPage() {
                       </div>
                       <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
                         <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-9 items-center rounded-lg border border-[#E3E6ED] px-3 py-2 text-xs font-medium text-[#323647] hover:bg-[#F6F7FB]">Editar planejamento</Link>
-                        <div className="relative">
-                          <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
+                        <div className="relative" data-project-actions>
+                          <button type="button" id={"project-actions-trigger-"+project.id} aria-controls={"project-actions-menu-"+project.id} aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
                           {menuOpen && (
-                            <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-xl">
+                            <div id={"project-actions-menu-"+project.id} className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-xl">
                               <Link href={"/apresentacao/"+project.slug+"?from=projects"} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Ver apresentação</Link>
                               <Link href={"/admin/planejamentos/"+clientSlug+"/acesso"} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Configurar acesso</Link>
                               {project.status==="draft" && <button type="button" disabled={publishing||deleting} onClick={()=>{setOpenMenuId(null);handlePublishProject(project,"published");}} className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#F6F7FB] disabled:opacity-40">{publishing?"Publicando...":"Publicar"}</button>}

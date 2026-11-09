@@ -1,0 +1,49 @@
+/* UI3 | Workspace foundation. Applies only to opted-in admin/client shells.
+   Rich strategic document content (.se-paper, .bn-editor) intentionally excluded. */
+.rv-ui3{--rv3-canvas:#F6F7FB;--rv3-surface:#fff;--rv3-text:#323647;--rv3-muted:#687487;--rv3-border:#E3E6ED;--rv3-accent:#6C5CE7;--rv3-accent-soft:#EDEAFF;color:var(--rv3-text);font-family:var(--font-body),Inter,Arial,sans-serif}
+.rv-ui3 .rv-ui2-workspace,.rv-ui3 .rv-ui2-client-content{background:var(--rv3-surface)}
+.rv-ui3.admin-v2 .rv-ui2-workspace,.rv-ui3.client-portal-v2 .rv-ui2-client-content{max-width:none;padding:18px clamp(16px,2vw,32px) 40px}
+.rv-ui3.admin-v2 .rv-ui2-workspace .rv-ui2-workspace-heading,.rv-ui3.client-portal-v2 .rv-ui2-client-content .rv-ui2-client-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px;padding:4px 0 16px;border:0;border-bottom:1px solid var(--rv3-border);border-radius:0;background:#fff;box-shadow:none}
+.rv-ui3.admin-v2 .rv-ui2-workspace-heading h1,.rv-ui3.client-portal-v2 .rv-ui2-client-heading h1{margin:0;font-size:20px;line-height:1.4;font-weight:600;letter-spacing:-.025em;color:var(--rv3-text)}
+.rv-ui3 .rv-ui2-heading-eyebrow,.rv-ui3 .rv-ui2-client-eyebrow,.rv-ui3 .rv-ui2-heading-description,.rv-ui3 .rv-ui2-client-heading-copy>p:last-child{display:none}
+.rv-ui3.client-portal-v2 .rv-ui2-client-identity{max-width:220px;min-height:32px;padding:6px 9px;border:1px solid var(--rv3-border);background:#fff;border-radius:8px;color:var(--rv3-muted);font-size:11px;font-weight:500}
+.rv-ui3.client-portal-v2 .rv-ui2-client-identity svg{width:16px;height:16px}
+.rv-ui3 .rv-ui2-heading-primary,.rv-ui3 .rv-ui2-heading-secondary{min-height:36px;padding:8px 12px;font-size:12px;border-radius:8px;box-shadow:none!important}
+.rv-ui3 .rv-ui2-workspace .rv-ui2-stats{margin-top:8px;gap:8px}
+.rv-ui3 .rv-ui2-workspace .rv-ui2-stats .rv-ui2-stat{padding:12px 14px;border-radius:9px;box-shadow:none}
+.rv-ui3.admin-v2 .rv-ui2-overview{gap:12px}
+.rv-ui3.admin-v2 .rv-ui2-dashboard-intro{padding:0;gap:8px}
+.rv-ui3.admin-v2 .rv-ui2-dashboard-label{font-size:10px;color:var(--rv3-muted);font-weight:550}
+.rv-ui3.admin-v2 .rv-ui2-dashboard-intro h2{font-size:16px;font-weight:600}
+.rv-ui3.admin-v2 .rv-ui2-dashboard-intro p{font-size:12px}
+.rv-ui3.admin-v2 .rv-ui2-overview-kpi{min-height:100px;padding:13px 15px;box-shadow:none}
+.rv-ui3.admin-v2 .rv-ui2-overview-kpi::before{display:none}
+.rv-ui3.admin-v2 .rv-ui2-kpi-icon{width:27px;height:27px;border-radius:7px;background:#F6F7FA;color:var(--rv3-muted)}
+.rv-ui3 .rv-ui2-module{margin-top:8px}
+.rv-ui3 .rv-ui2-module :is(button,a,summary,select){transition:background-color .12s ease,border-color .12s ease}
+.rv-ui3 .rv-ui2-module :is(button,a,summary):focus-visible{outline:2px solid var(--rv3-accent);outline-offset:2px}
+.rv-ui3 .rv-ui2-module :is(h2,h3){letter-spacing:-.012em}
+.rv-ui3 :is(.rv-ui2-project-row,.rv-ui2-task-board tbody tr){box-shadow:none}
+.rv-ui3 .rv-ui2-module table thead{background:#F8F9FB}
+.rv-ui3 .rv-ui2-module table th{font-size:11px;color:var(--rv3-muted);font-weight:600;letter-spacing:0}
+.rv-ui3 .rv-ui2-module table tbody tr:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui2-project-list{gap:0}
+.rv-ui3 .rv-ui2-project-row{border-radius:0;border-left:0;border-right:0;border-top:0;padding:12px 6px}
+.rv-ui3 .rv-ui2-project-row:hover{border-color:var(--rv3-border);background:#F9FAFC}
+.rv-ui3 .rv-ui2-client-content :is(.rv-ui2-client-section){box-shadow:none}
+.rv-ui3 .rv-ui2-client-overview{gap:12px}
+.rv-ui3 .rv-ui2-client-overview>.grid,.rv-ui3 .rv-ui2-client-overview>section{box-shadow:none}
+.rv-ui3 .rv-ui2-client-drive article{min-height:unset}
+.rv-ui3 :is(.rv-ui2-module,.rv-ui2-workspace,.rv-ui2-client-content) :is(input,select,textarea){accent-color:var(--rv3-accent)}
+.rv-ui3 :is(.rv-ui2-module,.rv-ui2-workspace,.rv-ui2-client-content) :is(input,select,textarea):focus-visible{outline:2px solid var(--rv3-accent);outline-offset:2px}
+/* Preserve semantic status colors; normalize icons only in global chrome, not document content. */
+.rv-ui3 :is(.rv-ui2-nav-item,.rv-ui2-topbar) svg{stroke-width:1.55}
+@media(max-width:767px){
+.rv-ui3.admin-v2 .rv-ui2-workspace,.rv-ui3.client-portal-v2 .rv-ui2-client-content{padding:14px 14px 36px}
+.rv-ui3.admin-v2 .rv-ui2-workspace .rv-ui2-workspace-heading,.rv-ui3.client-portal-v2 .rv-ui2-client-content .rv-ui2-client-heading{padding:2px 0 12px;gap:10px;background:#fff}
+.rv-ui3.admin-v2 .rv-ui2-workspace-heading h1,.rv-ui3.client-portal-v2 .rv-ui2-client-heading h1{font-size:18px}
+.rv-ui3 .rv-ui2-heading-actions{width:auto;gap:7px}
+.rv-ui3 .rv-ui2-heading-actions>*{flex:initial;min-height:38px}
+.rv-ui3.client-portal-v2 .rv-ui2-client-identity{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){.rv-ui3 *, .rv-ui3 *::before,.rv-ui3 *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}

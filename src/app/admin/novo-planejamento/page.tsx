@@ -205,7 +205,7 @@ export default function NovoPlanejamentoPage() {
   }
 
   return (
-    <main className="admin-new-project-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-new-project-v2 rv-ui2 min-h-screen bg-[#F6F7FB] text-[#323647]">
       <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">
@@ -227,7 +227,7 @@ export default function NovoPlanejamentoPage() {
 
       <style jsx global>{` .admin-new-project-v2, .admin-new-project-v2 h1, .admin-new-project-v2 h2, .admin-new-project-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
       <section className="mx-auto max-w-4xl px-5 pb-20 pt-10 sm:px-8 lg:px-10">
-        <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8 lg:p-10">
+        <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7 lg:p-8">
           <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">
             Criar novo projeto
           </h1>
@@ -406,7 +406,7 @@ export default function NovoPlanejamentoPage() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-[#0B142A] px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Escolher documentos
               </button>
@@ -415,7 +415,7 @@ export default function NovoPlanejamentoPage() {
         </div>
       </section>
 
-      <footer className="bg-[#A7E000]">
+      <footer className="border-t border-[#E3E6ED] bg-white text-[#687487]">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10">
           <span>© 2026 Rotevo. Todos os direitos reservados.</span>
           <span>Rotevo Estratégia &amp; Consultoria</span>

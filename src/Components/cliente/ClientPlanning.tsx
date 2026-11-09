@@ -68,10 +68,10 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
   {!selected?<section className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhum planejamento está vinculado à sua conta.</section>
   :loading?<section role="status" className="rounded-xl bg-white p-6 text-sm text-[#697386]">Carregando planejamento autorizado…</section>
   :error?<section role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-sm text-red-700">{error}<button type="button" className="ml-3 cursor-pointer underline" onClick={()=>setRetry(n=>n+1)}>Tentar novamente</button></section>
-  :<section className="overflow-hidden rounded-2xl border border-[#E3E7F0] bg-white lg:grid lg:min-h-[720px] lg:grid-cols-[300px_minmax(0,1fr)]">
+  :<section className="rv-ui2-client-planning overflow-hidden rounded-xl border border-[#E3E6ED] bg-white lg:grid lg:min-h-[720px] lg:grid-cols-[272px_minmax(0,1fr)]">
    <aside aria-label="Navegação dos documentos do planejamento" className={(mobileReader?"hidden ":"block ")+"min-w-0 border-[#E3E7F0] p-4 lg:block lg:border-r"}>
     <div className="flex items-center justify-between gap-2"><h3 className="font-bold text-[#101828]">Documentos</h3><span className="text-xs text-[#697386]">{lastReleased} disponíveis</span></div>
-    <label className="mt-3 block"><span className="sr-only">Buscar documento</span><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar documento…" className="w-full rounded-xl border border-[#E1E5EE] bg-[#F7F8FB] px-3 py-2.5 text-sm outline-[#6D35F5]"/></label>
+    <label className="mt-3 block"><span className="sr-only">Buscar documento</span><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar documento…" className="w-full rounded-lg border border-[#E3E6ED] bg-[#F8F9FC] px-3 py-2.5 text-sm outline-[#6C5CE7]"/></label>
     <div className="mt-4 max-h-[620px] space-y-2 overflow-y-auto pr-1">
      <button type="button" onClick={()=>choose("executive","executive")} aria-pressed={selectedCode==="executive"} className={"flex w-full cursor-pointer items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold "+(selectedCode==="executive"?"bg-[#EEE8FF] text-[#6034B7]":"hover:bg-[#F7F8FB]")}><span className="text-[#6D35F5]">{activeIcon("layout-dashboard")}</span><span className="flex-1">Visão Executiva</span>{hasExecutive?<span className="text-xs text-[#178052]">{activeIcon("check",15)}</span>:<span className="text-[#8791A4]">{activeIcon("lock",15)}</span>}</button>
      {filteredAreas.map(row=>{
@@ -79,7 +79,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
       const available=row.docs.filter(d=>released.has(d.code)).length;
       return <div key={row.name} className="rounded-xl border border-[#E8EAF1]">
        <button type="button" aria-expanded={expanded} onClick={()=>setOpenedArea(expanded?"":row.name)} className="flex w-full cursor-pointer items-center gap-2 px-3 py-3 text-left">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EFE9FF] text-[11px] font-bold text-[#6034B7]">{row.name.slice(0,2)}</span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EDEAFF] text-[11px] font-semibold text-[#5949D1]">{row.name.slice(0,2)}</span>
         <span className="min-w-0 flex-1"><span className="block text-xs font-semibold text-[#1A2438]">{areaName(row.name)}</span><span className="mt-1 block text-[11px] text-[#697386]">{available} de {row.docs.length} documentos · {row.delivery?.dueDate?date(row.delivery.dueDate):"Previsão a definir"}</span></span>
         {activeIcon(expanded?"chevron-up":"chevron-down",15)}
        </button>
@@ -115,7 +115,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
       </>
       :<div className="mt-4 rounded-xl border border-[#E9E2D7] bg-[#FFF9F0] p-5"><div className="flex items-center gap-2 text-sm font-semibold text-[#7E5A1B]">{activeIcon("calendar",18)} Seu planejamento está sendo construído</div><p className="mt-3 text-sm leading-7 text-[#525B70]">Este documento ainda não foi disponibilizado para leitura. {delivery?.dueDate?"A previsão da etapa é "+date(delivery.dueDate)+".":"A data de disponibilização será informada pela Rotevo."} Assim que a versão for publicada, você poderá consultá-la neste espaço.</p><p className="mt-3 text-xs font-semibold text-[#907C61]">Etapa: {areaStatus(delivery?.status)}</p></div>}
     </article>
-    :<div className="mx-auto max-w-[800px] rounded-2xl border border-[#E4E7EE] bg-white p-7"><div className="text-[#6D35F5]">{activeIcon("folder-open",28)}</div><h3 className="mt-4 text-xl font-bold">Explore seu planejamento</h3><p className="mt-2 max-w-xl text-sm leading-7 text-[#697386]">Selecione uma área e um documento na coluna à esquerda. As seções em elaboração apresentam a previsão de disponibilização; as versões publicadas podem ser lidas integralmente aqui.</p>{published.length>0&&<button type="button" onClick={()=>choose(published[0].code,published[0].area)} className="mt-5 cursor-pointer rounded-lg bg-[#6D35F5] px-4 py-2.5 text-sm font-semibold text-white">Ler primeiro documento disponível</button>}</div>}
+    :<div className="mx-auto max-w-[800px] rounded-2xl border border-[#E4E7EE] bg-white p-7"><div className="text-[#6D35F5]">{activeIcon("folder-open",28)}</div><h3 className="mt-4 text-xl font-bold">Explore seu planejamento</h3><p className="mt-2 max-w-xl text-sm leading-7 text-[#697386]">Selecione uma área e um documento na coluna à esquerda. As seções em elaboração apresentam a previsão de disponibilização; as versões publicadas podem ser lidas integralmente aqui.</p>{published.length>0&&<button type="button" onClick={()=>choose(published[0].code,published[0].area)} className="mt-5 cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1]">Ler primeiro documento disponível</button>}</div>}
    </main>
   </section>}
  </div>;

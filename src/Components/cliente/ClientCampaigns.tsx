@@ -40,7 +40,7 @@ export default function ClientCampaigns({projects}:{projects:{id:string;data:{ma
     <DialogFocus onClose={()=>setOpened(null)}/>
     <div className="flex items-start justify-between gap-3 border-b border-[#E3E6ED] pb-4">
      <div><p className="text-xs text-[#687487]">{active.type} · {active.period}</p><h2 id="client-campaign-drawer-title" className="mt-2 text-lg font-semibold text-[#323647]">{active.title}</h2><p className="mt-1 text-sm text-[#687487]">{active.objective}</p></div>
-     <button type="button" aria-label="Fechar" onClick={()=>setOpened(null)} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] hover:bg-[#F8F9FB]"><ContentTablerIcon name="x" size={18}/></button>
+     <button type="button" aria-label="Fechar" onClick={()=>setOpened(null)} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] hover:bg-[#F8F9FB]"><span aria-hidden="true" className="text-lg leading-none">×</span></button>
     </div>
     <div className="mt-5 space-y-6">
      <section><h3 className="text-sm font-semibold text-[#323647]">Indicadores registrados</h3><p className="mt-1 text-xs text-[#687487]">Investimentos e resultados são informados pela equipe Rotevo; não representam cobranças.</p><dl className="mt-3 divide-y divide-[#E3E6ED] border-y border-[#E3E6ED]">{active.metrics.map(m=><div key={m.label} className="flex items-center justify-between gap-3 py-3"><dt className="text-xs text-[#687487]">{m.label}</dt><dd className="text-sm font-semibold text-[#323647]">{m.value}</dd></div>)}</dl></section>

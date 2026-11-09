@@ -39,7 +39,7 @@ export function projectForClient(project:PrivateProjectRow,allowedModules?:reado
         return [{id:v.id,title:v.title,dueDate:v.dueDate,status:v.status,visibleToClient:true}];
       }).slice(0,15):[],
       executionTimeline:publishedArray(modules.includes("execution")?data.executionTimeline:[],
-        ["phase","status","kind","startDate","dueDate","description"],true),
+        ["phase","status","kind","startDate","dueDate","description","priority","owner"],true),
       editorialCalendar:publishedArray(modules.includes("content")?data.editorialCalendar:[],
         ["channel","format","publishDate","caption","version","status"],true),
       operationalAgenda:publishedArray(modules.includes("meetings")?data.operationalAgenda:[],["kind","date","time","status","notes","modality","location","duration","minutes","meetingUrl","materialUrl"]),

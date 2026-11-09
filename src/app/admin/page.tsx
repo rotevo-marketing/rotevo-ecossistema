@@ -366,34 +366,19 @@ export default function AdminPage() {
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
         {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
-        <div className="rv-ui2-stats mt-6 grid gap-3 sm:grid-cols-3">
-          {[
-            { label: "Total de planejamentos", value: totalProjects },
-            { label: "Em produção", value: inProgressProjects },
-            { label: "Publicados", value: publishedProjects }
-          ].map((metric) => (
-            <div key={metric.label} className="rv-ui2-stat rounded-xl border border-[#E3E6ED] bg-white p-5">
-              <p className="text-xs font-semibold text-[#687487]">{metric.label}</p>
-              <strong className="mt-3 block text-[30px] leading-9 font-semibold tracking-tight tabular-nums">{isLoading ? "..." : metric.value}</strong>
-            </div>
-          ))}
-        </div>
-        <section aria-labelledby="projects-heading" className="rv-ui2-section mt-5 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-6">
+        <section aria-labelledby="projects-heading" className="rv-ui2-section rv-ui3-projects-surface mt-3 bg-white">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="projects-heading" className="text-lg leading-7 font-semibold tracking-[-0.02em]">Projetos recentes</h2>
-              <p className="mt-1 text-sm text-[#697386]">Localize, acompanhe e gerencie seus planejamentos.</p>
+              <h2 id="projects-heading" className="sr-only">Planejamentos cadastrados</h2>
+              <p className="text-xs text-[#687487]">{isLoading?"Carregando...":totalProjects} planejamentos · {inProgressProjects} em produção · {publishedProjects} publicados</p>
             </div>
             {!isLoading && <span className="shrink-0 text-xs text-[#697386]">{visibleProjects.length} de {projects.length}</span>}
           </div>
-          <div className="mt-5 space-y-3">
-            <label htmlFor="admin-search" className="sr-only">Buscar cliente ou planejamento</label>
-            <input id="admin-search" type="search" placeholder="Buscar cliente ou planejamento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="min-h-11 w-full rounded-xl border border-[#E3E7F0] px-4 py-3 text-sm outline-none focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15" />
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar planejamentos">
-              {([{value:"all",label:"Todos"},{value:"draft",label:"Em produção"},{value:"published",label:"Publicados"}] as const).map((f) => (
-                <button key={f.value} type="button" aria-pressed={statusFilter===f.value} onClick={() => {setStatusFilter(f.value);setOpenMenuId(null);}} className={"cursor-pointer rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors " + (statusFilter===f.value ? "border-[#D8D2FF] bg-[#EDEAFF] text-[#5949D1]" : "border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]")}>{f.label}</button>
-              ))}
+          <div className="rv-ui3-projects-filters mt-3 flex flex-col gap-3 border-b border-[#E3E6ED] pb-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar planejamentos">
+              {([{value:"all",label:"Todos"},{value:"draft",label:"Em produção"},{value:"published",label:"Publicados"}] as const).map(f=><button key={f.value} type="button" aria-pressed={statusFilter===f.value} onClick={()=>{setStatusFilter(f.value);setOpenMenuId(null)}} className={"min-h-9 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium "+(statusFilter===f.value?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]")}>{f.label}</button>)}
             </div>
+            <label className="flex w-full items-center gap-2 lg:max-w-[330px]"><span className="sr-only">Buscar cliente ou planejamento</span><input id="admin-search" type="search" placeholder="Buscar cliente ou planejamento..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="min-h-10 w-full rounded-lg border border-[#E3E6ED] bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"/></label>
           </div>
           {errorMessage && <div role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{errorMessage}</div>}
           {successMessage && <div role="status" className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{successMessage}</div>}
@@ -401,7 +386,7 @@ export default function AdminPage() {
           {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
           {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
           {!isLoading && visibleProjects.length>0 && (
-            <div className="rv-ui2-project-list mt-5 space-y-2">
+            <div className="rv-ui2-project-list rv-ui3-project-list mt-2 divide-y divide-[#E3E6ED]">
               {visibleProjects.map((project) => {
                 const client=getProjectClient(project);
                 const clientName=client?.name ?? "Cliente sem nome";
@@ -412,24 +397,24 @@ export default function AdminPage() {
                 const demo=clientSlug==="demo";
                 const menuOpen=openMenuId===project.id;
                 return (
-                  <article key={project.id} className="rv-ui2-project-row relative rounded-xl border border-[#E3E6ED] bg-white p-4 transition-colors hover:border-[#CDC8F4] hover:bg-[#FCFBFF] sm:p-4">
+                  <article key={project.id} className="rv-ui2-project-row rv-ui3-project-row relative bg-white px-2 py-3 transition-colors hover:bg-[#FAFBFE] sm:px-3">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F3F1FC] text-xs font-semibold text-[#6251CA]">
                           {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-cover" /> : <span aria-hidden="true">{clientName.split(" ").slice(0,2).map(w=>w.charAt(0).toUpperCase()).join("")}</span>}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="break-words text-[17px] leading-6 font-bold">{clientName}</h3>
+                            <h3 className="break-words text-[13px] leading-5 font-semibold">{clientName}</h3>
                             <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
                           </div>
                           <p className="mt-1 break-words text-sm text-[#525B70]">{project.title}</p>
                           {project.description && <p className="mt-1 line-clamp-2 text-xs text-[#697386]">{project.description}</p>}
-                          <p className="mt-2 text-xs text-[#697386]">Atualizado em {formatDate(project.updated_at)}</p>
+                          <p className="mt-1 text-[11px] text-[#687487]">Atualizado em {formatDate(project.updated_at)}</p>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                        <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-10 items-center rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]">Editar planejamento</Link>
+                        <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-9 items-center rounded-lg border border-[#E3E6ED] px-3 py-2 text-xs font-medium text-[#323647] hover:bg-[#F6F7FB]">Editar planejamento</Link>
                         <div className="relative">
                           <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
                           {menuOpen && (

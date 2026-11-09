@@ -75,6 +75,9 @@ test("strategist overview prioritizes real attention before daily console and se
 test("client overview prioritizes pending decisions and hides duplicate summary cards",()=>{
  const overview=source("Components/cliente/ClientOverview.tsx");
  assert.match(overview,/rv-ui3-client-status/);
+ assert.match(overview,/Entregas a acompanhar/);
+ assert.match(overview,/nextTask\?\.projectId/);
+ assert.match(overview,/Prazo vencido/);
  assert.match(overview,/pendingIdeas/);
  assert.match(overview,/pendingFinal/);
  assert.match(overview,/hasDecision\(final,i\)/);

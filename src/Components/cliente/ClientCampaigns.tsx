@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
+import DialogFocus from "@/Components/ui/DialogFocus";
 type Metric={label:string;value:string};
 type Campaign={metrics:Metric[];id:string;title:string;type:"Online"|"Offline"|"Híbrida";channels:string;objective:string;status:"planned"|"active"|"completed"|"paused";period:string;actions:string[];result:string;next:string};
 const statusLabels={paused:"Pausada",planned:"Planejada",active:"Em andamento",completed:"Concluída"};
@@ -13,13 +14,42 @@ export default function ClientCampaigns({projects}:{projects:{id:string;data:{ma
  const [opened,setOpened]=useState<string|null>(null);
  const active=campaigns.find(x=>x.id===opened);
  const items=campaigns.filter(x=>filter==="all"||x.type===filter);
- return <div className="rv-ui2-module rv-ui2-client-campaigns space-y-4">
- <section className="rv-ui2-client-section rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold tracking-tight text-[#323647]">Campanhas</h2><p className="mt-2 text-sm text-[#525B70]">Acompanhe as ações de divulgação, relacionamento e crescimento da sua empresa.</p></div><span className="rounded-full bg-[#EEE8FF] px-3 py-1.5 text-xs font-semibold text-[#6034B7]">Campanhas compartilhadas</span></div></section>
- <section className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Resumo das campanhas">{[{name:"Planejadas",value:campaigns.filter(x=>x.status==="planned").length,tone:"text-[#586274]"},{name:"Em andamento",value:campaigns.filter(x=>x.status==="active").length,tone:"text-[#92600C]"},{name:"Concluídas",value:campaigns.filter(x=>x.status==="completed").length,tone:"text-[#176F40]"}].map(x=><div key={x.name} className="rounded-xl border border-[#E3E7F0] bg-white p-3 sm:p-5"><p className="text-[11px] text-[#697386] sm:text-xs">{x.name}</p><p className={`mt-2 text-xl font-bold sm:text-2xl ${x.tone}`}>{x.value}</p></div>)}</section>
- <section className="rv-ui2-client-section rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-bold">Ações e campanhas</h3><div className="flex flex-wrap gap-2" aria-label="Filtrar tipo de campanha">{["all","Online","Offline","Híbrida"].map(type=><button key={type} type="button" aria-pressed={filter===type} onClick={()=>setFilter(type)} className={`cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold ${filter===type?"border-[#6D35F5] bg-[#6D35F5] text-white":"border-[#E3E7F0] text-[#525B70]"}`}>{type==="all"?"Todas":type}</button>)}</div></div>
- {items.length===0&&<p className="mt-5 text-sm text-[#697386]">Nenhuma campanha foi compartilhada neste filtro.</p>}<div className="mt-5 grid gap-3 md:grid-cols-2">{items.map(c=><article key={c.id} className="flex flex-col rounded-xl border border-[#E3E7F0] p-4 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-2"><span className="inline-flex items-center gap-2 text-xs font-semibold text-[#525B70]"><ContentTablerIcon name={c.type==="Online"?"video":c.type==="Offline"?"photo":"link"} size={17}/>{c.type}</span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[c.status]}`}>{statusLabels[c.status]}</span></div><h4 className="mt-3 text-base font-bold text-[#0B142A]">{c.title}</h4><p className="mt-2 text-sm text-[#525B70]">{c.objective}</p><p className="mt-3 text-xs text-[#697386]">{c.channels} · {c.period}</p><button onClick={()=>setOpened(c.id)} type="button" className="mt-4 inline-flex cursor-pointer items-center gap-2 self-start rounded-lg border border-[#DDE2ED] px-3 py-2 text-sm font-semibold text-[#6034B7]"><ContentTablerIcon name="eye" size={17}/> Ver detalhes</button></article>)}</div></section>
- {active&&<section role="region" aria-label="Detalhes da campanha" className="rv-ui2-client-section rounded-xl border border-[#D8D2FF] bg-white p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-[#6034B7]">{active.type} · {active.period}</p><h3 className="mt-1 text-xl font-bold">{active.title}</h3></div><button type="button" onClick={()=>setOpened(null)} aria-label="Fechar detalhes" className="cursor-pointer rounded-lg border px-3 py-2">✕</button></div><div className="mt-5"><h4 className="text-sm font-bold">Indicadores da campanha</h4><p className="mt-1 text-xs text-[#697386]">Indicadores registrados pela equipe. O investimento não representa uma cobrança da Rotevo.</p><div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3">{active.metrics.map(metric=><div key={metric.label} className="rounded-xl bg-[#F6F7FB] p-4"><p className="text-xs text-[#697386]">{metric.label}</p><p className="mt-2 break-words text-lg font-bold text-[#090D1C]">{metric.value}</p></div>)}</div></div>
-
- <div className="mt-5 grid gap-4 md:grid-cols-2"><div><h4 className="text-sm font-bold">O que está sendo feito</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-[#525B70]">{active.actions.map(a=><li key={a}>{a}</li>)}</ul></div><div className="space-y-4"><div><h4 className="text-sm font-bold">Resultado até agora</h4><p className="mt-1 text-sm text-[#525B70]">{active.result}</p></div><div><h4 className="text-sm font-bold">Próximo passo</h4><p className="mt-1 text-sm text-[#525B70]">{active.next}</p></div></div></div></section>}
- <p className="text-xs text-[#697386]">As informações são atualizadas pela equipe Rotevo conforme o acompanhamento das campanhas.</p></div>;
+ return <section className="rv-ui2-module rv-ui2-client-campaigns space-y-3" aria-label="Campanhas compartilhadas">
+  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E6ED] pb-3">
+   <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar tipo de campanha">
+    {(["all","Online","Offline","Híbrida"] as const).map(type=><button key={type} type="button" aria-pressed={filter===type} onClick={()=>{setFilter(type);setOpened(null)}} className={`min-h-9 cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold ${filter===type?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]"}`}>{type==="all"?"Todas":type}</button>)}
+   </div>
+   <span className="text-xs text-[#687487]">{items.length} {items.length===1?"campanha":"campanhas"}</span>
+  </div>
+  {items.length===0?<p className="py-8 text-sm text-[#687487]">Nenhuma campanha foi compartilhada neste filtro.</p>:
+   <div className="overflow-x-auto border-y border-[#E3E6ED]">
+    <table className="w-full min-w-[600px] border-collapse text-left">
+     <thead className="bg-[#F8F9FB] text-[11px] font-semibold text-[#687487]"><tr><th scope="col" className="px-3 py-3">Campanha</th><th scope="col" className="px-3 py-3">Tipo</th><th scope="col" className="px-3 py-3">Situação</th><th scope="col" className="px-3 py-3">Período</th><th scope="col" className="px-3 py-3"><span className="sr-only">Ações</span></th></tr></thead>
+     <tbody className="divide-y divide-[#E3E6ED]">{items.map(c=><tr key={c.id} className="hover:bg-[#FAFBFE]">
+      <td className="px-3 py-3"><button type="button" onClick={()=>setOpened(c.id)} className="cursor-pointer text-left text-[13px] font-semibold text-[#323647] hover:text-[#5949D1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C5CE7]">{c.title}</button><p className="mt-1 max-w-[360px] truncate text-xs text-[#687487]">{c.objective}</p></td>
+      <td className="px-3 py-3 text-xs text-[#687487]">{c.type}</td>
+      <td className="px-3 py-3"><span className={`inline-block rounded-md px-2 py-1 text-[11px] font-semibold ${statusStyles[c.status]}`}>{statusLabels[c.status]}</span></td>
+      <td className="px-3 py-3 text-xs text-[#687487]">{c.period}</td>
+      <td className="px-3 py-3"><button type="button" onClick={()=>setOpened(c.id)} aria-label={`Ver detalhes de ${c.title}`} className="inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-lg hover:bg-[#EDEAFF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C5CE7]"><ContentTablerIcon name="eye" size={17}/></button></td>
+     </tr>)}</tbody>
+    </table>
+   </div>}
+  {active&&<div className="fixed inset-0 z-[120] flex justify-end">
+   <button type="button" aria-label="Fechar detalhes da campanha" onClick={()=>setOpened(null)} className="absolute inset-0 cursor-default bg-[#101828]/45"/>
+   <aside role="dialog" aria-modal="true" aria-labelledby="client-campaign-drawer-title" className="relative z-10 h-full w-full max-w-[560px] overflow-y-auto bg-white px-5 py-5 shadow-xl sm:px-7">
+    <DialogFocus onClose={()=>setOpened(null)}/>
+    <div className="flex items-start justify-between gap-3 border-b border-[#E3E6ED] pb-4">
+     <div><p className="text-xs text-[#687487]">{active.type} · {active.period}</p><h2 id="client-campaign-drawer-title" className="mt-2 text-lg font-semibold text-[#323647]">{active.title}</h2><p className="mt-1 text-sm text-[#687487]">{active.objective}</p></div>
+     <button type="button" aria-label="Fechar" onClick={()=>setOpened(null)} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] hover:bg-[#F8F9FB]"><ContentTablerIcon name="x" size={18}/></button>
+    </div>
+    <div className="mt-5 space-y-6">
+     <section><h3 className="text-sm font-semibold text-[#323647]">Indicadores registrados</h3><p className="mt-1 text-xs text-[#687487]">Investimentos e resultados são informados pela equipe Rotevo; não representam cobranças.</p><dl className="mt-3 divide-y divide-[#E3E6ED] border-y border-[#E3E6ED]">{active.metrics.map(m=><div key={m.label} className="flex items-center justify-between gap-3 py-3"><dt className="text-xs text-[#687487]">{m.label}</dt><dd className="text-sm font-semibold text-[#323647]">{m.value}</dd></div>)}</dl></section>
+     <section><h3 className="text-sm font-semibold text-[#323647]">O que está sendo feito</h3>{active.actions.length?<ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[#687487]">{active.actions.map((action,index)=><li key={index}>{action}</li>)}</ul>:<p className="mt-2 text-sm text-[#687487]">Ações ainda não informadas.</p>}</section>
+     <section><h3 className="text-sm font-semibold text-[#323647]">Resultados e aprendizados</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#687487]">{active.result}</p></section>
+     <section><h3 className="text-sm font-semibold text-[#323647]">Próximo passo</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#687487]">{active.next}</p></section>
+    </div>
+   </aside>
+  </div>}
+  <p className="text-xs text-[#687487]">As informações são atualizadas pela equipe Rotevo conforme o acompanhamento das campanhas.</p>
+ </section>;
 }

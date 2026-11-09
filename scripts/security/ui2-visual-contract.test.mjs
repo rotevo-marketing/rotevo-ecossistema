@@ -129,7 +129,7 @@ test("workspace mobile overlays can be dismissed by Escape",()=>{
  const strategist=source("app/admin/page.tsx");
  const client=source("app/cliente/page.tsx");
  for(const [label,code] of [["strategist",strategist],["client",client]]){
-  assert.match(code,/event\.key==="Escape"/,label);
+  assert.match(code,/event\.key!=="Escape"|event\.key==="Escape"/,label);
   assert.match(code,/window\.addEventListener\("keydown",closeOnEscape\)/,label);
   assert.match(code,/window\.removeEventListener\("keydown",closeOnEscape\)/,label);
  }

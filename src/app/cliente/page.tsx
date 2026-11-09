@@ -101,27 +101,27 @@ export default function ClientAreaPage(){
  async function logout(){await supabase.auth.signOut();router.replace("/");}
  function openModule(module:MenuId,projectId?:string,contentId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setFocusedContent(module==="content"?(contentId??null):null);setTab(module);setMobileMenu(false);}
  const selected=menu.find(item=>item.id===tab)??menu[0];
- const nav=<nav aria-label="Navegação do portal" className="space-y-1.5">
+ const nav=<nav aria-label="Navegação do portal" className="space-y-0.5">
    {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
-       onClick={()=>{setTab(item.id);setMobileMenu(false)}} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-colors ${collapsed?"lg:justify-center lg:px-2":""} ${tab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}>
-       <Icon name={item.icon} size={25}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
+       onClick={()=>{setTab(item.id);setMobileMenu(false)}} className={`rv-ui2-nav-item flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors ${collapsed?"lg:justify-center lg:px-2":""} ${tab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>
+       <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
  </nav>;
- return <main className="client-portal-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+ return <main className="client-portal-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
-   <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white"><div className="flex w-full items-center justify-between gap-3 px-5 py-5">
-      <div className="flex items-center gap-3"><RotevoLogo variant="white" size={27}/><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Portal do Cliente</span></div>
-      <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden" aria-expanded={mobileMenu}>Menu</button>
-       <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ADE60A]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{account.avatar||clientAvatar?<img src={account.avatar||clientAvatar} alt="" className="h-full w-full rounded-full object-cover"/>:(account.profile?.displayName||clientName).trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{account.profile?.displayName||clientName||"Minha conta"}</span><span aria-hidden="true" className="text-xs">▾</span></button>
+   <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]"><div className="flex w-full items-center justify-between gap-3 px-5 py-3">
+      <div className="flex items-center gap-3"><RotevoLogo variant="black" size={27}/><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Portal do Cliente</span></div>
+      <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden" aria-expanded={mobileMenu}>Menu</button>
+       <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#E3E6ED] px-2 py-1.5 hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C5CE7]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{account.avatar||clientAvatar?<img src={account.avatar||clientAvatar} alt="" className="h-full w-full rounded-full object-cover"/>:(account.profile?.displayName||clientName).trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{account.profile?.displayName||clientName||"Minha conta"}</span><span aria-hidden="true" className="text-xs">▾</span></button>
        {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-[#E3E7F0] bg-white p-2 text-[#090D1C] shadow-xl"><p className="truncate border-b border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#525B70]">{clientName||"Minha conta"}</p><AccountProfileButton/><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="key" size={18}/>Alterar senha</Link><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-[#F6F7FB]"><Icon name="logout" size={18}/>Sair</button></div></>}</div></div>
    </div></header>
    <div className="flex w-full flex-1 items-stretch">
-     <aside className={`relative hidden shrink-0 bg-[#0B142A] px-4 py-7 transition-[width] lg:block ${collapsed?"w-[78px]":"w-[286px]"}`}>{nav}
+     <aside className={`rv-ui2-sidebar relative hidden shrink-0 border-r border-[#E3E7F0] bg-white px-2.5 py-5 transition-[width] lg:block ${collapsed?"w-[68px]":"w-[232px]"}`}>{nav}
        <button type="button" aria-label={collapsed?"Expandir menu lateral":"Recolher menu lateral"} title={collapsed?"Expandir menu lateral":"Recolher menu lateral"} onClick={()=>setCollapsed(v=>!v)}
-         className="absolute right-[-13px] top-[48%] z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] font-bold text-[#0B142A]">{collapsed?"›":"‹"}</button>
+         className="absolute right-[-13px] top-[48%] z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#DDE1E9] bg-white font-bold text-[#6251CA] shadow-sm">{collapsed?"›":"‹"}</button>
      </aside>
-     {mobileMenu&&<aside className="w-full bg-[#0B142A] px-4 py-6 lg:hidden">{nav}</aside>}
-     <div className={`min-w-0 flex-1 px-5 pb-16 pt-9 sm:px-8 ${mobileMenu?"hidden lg:block":""}`}>
+     {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white px-4 py-4 lg:hidden">{nav}</aside>}
+     <div className={`rv-ui2-client-content min-w-0 flex-1 px-4 pb-14 pt-7 sm:px-6 lg:px-8 ${mobileMenu?"hidden lg:block":""}`}>
        {tab!=="overview"&&tab!=="planning"&&<div className="rv-page-heading"><div><p className="mb-1 text-sm text-[#697386]">Portal do Cliente</p><h1 className="text-3xl font-bold tracking-tight">{selected.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{tab==="planning"?"Consulte seus planejamentos estratégicos em um ambiente próprio.":"Informações e entregas do seu projeto, organizadas em um só lugar."}</p></div></div>}
        {projects.length>1&&["planning","execution","content","campaigns","meetings"].includes(tab)&&<label className="mb-5 block text-sm font-semibold">Projeto<select value={scopedProjects[0]?.id??""} onChange={e=>setSelectedProjectId(e.target.value)} className="ml-3 max-w-full rounded-xl border border-[#E3E7F0] bg-white p-3">{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}<button type="button" onClick={()=>window.location.reload()} className="ml-3 rounded-lg border border-red-200 px-3 py-2 font-semibold">Tentar novamente</button></div>}
@@ -144,6 +144,6 @@ export default function ClientAreaPage(){
        </Block>}
      </div>
    </div>
-   <footer className="mt-auto shrink-0 bg-[#A7E000]"><div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 text-xs font-medium text-[#090D1C] sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+   <footer className="rv-ui2-footer mt-auto shrink-0 border-t border-[#E6E9F0] bg-white"><div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-xs font-normal text-[#7A8392] sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
  </main>;
 }

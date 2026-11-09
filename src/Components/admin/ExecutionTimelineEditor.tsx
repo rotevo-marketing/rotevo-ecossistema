@@ -1,6 +1,7 @@
 "use client";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import { useEffect, useMemo, useState } from "react";
+import DialogFocus from "@/Components/ui/DialogFocus";
 import { supabase } from "@/lib/supabase";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 import {validOperationalDate} from "@/lib/security/executionDependencyValidation";
@@ -14,6 +15,7 @@ const kinds={deliverable:"Entrega",milestone:"Marco",task:"Tarefa"} as const;
 const validLink=(value:string)=>{if(!value.trim())return true;try{return new URL(value).protocol==="https:";}catch{return false;}};
 export default function ExecutionTimelineEditor({projectId,projectData,updatedAt,onSaved}:Props){
  const [editing,setEditing]=useState<ExecutionItem|null>(null);
+ const closeEditor=()=>{if(saving)return;if(editing&&(editing.title.trim()||editing.id)&&!window.confirm("Descartar alterações não salvas desta entrega?"))return;setEditing(null);setError("")};
  useUnsavedChanges(editing!==null);
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
@@ -92,9 +94,9 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(!window.confirm(`Excluir a entrega "${item.title}"? Esta ação não pode ser desfeita.`))return;
   void persist(items.filter(i=>i.id!==item.id));
  }
- return <section className="mt-6 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-6">
+ return <section className="rv-ui3-execution-editor mt-4 bg-white py-4">
    <div className="flex flex-wrap items-start justify-between gap-3">
-    <div><h2 className="text-xl font-bold">Execução do projeto</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Cadastre entregas, tarefas e marcos que devem compor a linha do tempo. A equipe gerencia; o cliente acompanha apenas os itens liberados.</p></div>
+    <div><h2 className="text-base font-semibold">Entregas e tarefas</h2><p className="sr-only">Cadastre entregas, tarefas e marcos que devem compor a linha do tempo. A equipe gerencia; o cliente acompanha apenas os itens liberados.</p></div>
     <button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...blank});setError("");setSuccess("")}} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]">Adicionar entrega</button>
    </div>
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -104,8 +106,8 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
      <div className="min-w-0 flex-1"><h3 className="break-words text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#5949D1]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===true?"Visível ao cliente":"Interno"}</p></div>
      <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
     </div>)}</div>}
-   {editing&&<div className="mt-5 rounded-xl border border-[#D8D2FF] bg-[#FCFBFF] p-4 sm:p-5">
-     <h3 className="mb-4 text-base font-semibold">{editing.id?"Editar entrega":"Nova entrega"}</h3>
+   {editing&&<div className="fixed inset-0 z-[150] flex justify-end"><button type="button" onClick={closeEditor} aria-label="Fechar edição de entrega" className="absolute inset-0 bg-[#101828]/45"/><aside role="dialog" aria-modal="true" aria-label={editing.id?"Editar entrega":"Nova entrega"} className="relative z-10 h-full w-full max-w-[660px] overflow-y-auto bg-white px-5 py-5 shadow-xl sm:px-7"><DialogFocus onClose={closeEditor}/><div className="flex items-center justify-between gap-3 border-b border-[#E3E6ED] pb-3"><h3 className="text-base font-semibold">{editing.id?"Editar entrega":"Nova entrega"}</h3><button type="button" onClick={closeEditor} className="min-h-9 rounded-lg border border-[#E3E6ED] px-3 text-xs">Fechar</button></div>
+
      <div className="grid gap-4 sm:grid-cols-2">
        <label className="block text-xs font-medium">Título da entrega *
          <input disabled={saving} value={editing.title} maxLength={140} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
@@ -149,9 +151,9 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
      </div>
      <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient!==false} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Exibir entrega na Área do Cliente</label>
      <div className="mt-5 flex flex-wrap justify-end gap-2">
-       <button type="button" disabled={saving} onClick={()=>{setEditing(null);setError("")}} className="cursor-pointer rounded-lg border border-[#D7DCE6] px-4 py-2.5 text-sm disabled:opacity-40">Cancelar</button>
+       <button type="button" disabled={saving} onClick={closeEditor} className="cursor-pointer rounded-lg border border-[#D7DCE6] px-4 py-2.5 text-sm disabled:opacity-40">Cancelar</button>
        <button type="button" disabled={saving} onClick={saveItem} className="cursor-pointer rounded-lg bg-[#0B142A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar entrega"}</button>
      </div>
-   </div>}
+   </aside></div>}
  </section>;
 }

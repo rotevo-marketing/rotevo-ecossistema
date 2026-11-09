@@ -161,3 +161,31 @@
 .workspace-production.rv-ui3 .rv-ui3-document-group .grid{grid-template-columns:minmax(0,1fr) 54px 54px;gap:5px}
 .workspace-production.rv-ui3 .rv-ui3-progressive-settings{padding-left:14px;padding-right:14px}
 }
+
+/* UI3 editorial workspaces: one content base, channel-specific filtered views. */
+.rv-ui3 .rv-ui3-editorial-calendar{min-width:0}
+.rv-ui3 .rv-ui3-editorial-surface{padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-calendar :is(button,select,input):focus-visible,
+.rv-ui3 .rv-ui3-client-editorial :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{border-color:#E3E6ED;border-radius:4px;background:#fff}
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui3-editorial-form label{color:#687487}
+.rv-ui3 .rv-ui3-editorial-form :is(input,textarea,select){border-color:#E3E6ED;border-radius:8px;color:#323647}
+.rv-ui3 .rv-ui3-editorial-form input:focus-visible,
+.rv-ui3 .rv-ui3-editorial-form textarea:focus-visible,
+.rv-ui3 .rv-ui3-editorial-form select:focus-visible{outline:2px solid #6C5CE7;outline-offset:1px}
+.rv-ui3 .rv-ui3-editorial-form-group{background:#fff}
+.rv-ui3 .rv-ui3-campaign-toolbar,.rv-ui3 .rv-ui3-campaign-metrics,.rv-ui3 .rv-ui3-campaign-list{border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-campaign-metrics{margin-top:0}
+.rv-ui3 .rv-ui3-campaign-list table thead th{font-size:11px;font-weight:600;color:#687487}
+.rv-ui3 .rv-ui3-campaign-list table tbody tr:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui3-campaign-list table td{vertical-align:middle}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7{min-width:0}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div{min-width:0}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div button{min-width:0}
+@media(max-width:640px){
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{min-height:44px;padding:3px}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div{min-height:42px;padding:3px}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div button{font-size:9px;line-height:1.2}
+.rv-ui3 .rv-ui3-campaign-metrics>div{gap:4px 8px}
+}

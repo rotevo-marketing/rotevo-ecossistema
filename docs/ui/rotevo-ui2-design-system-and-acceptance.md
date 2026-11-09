@@ -105,5 +105,7 @@ A etapa 06 permanece aberta. Este registro diferencia implementação, verifica�
 3. Comparar telas reais da interface autenticada com a nova composição, sem usar mockups como substitutos.
 4. Validar as larguras 320, 375, 390, 430, 768, 1024 e 1440 px, navegação por teclado, menus, contraste, zoom e tabelas.
 5. Testar edição/salvamento/publicação de forma controlada e com autorização; preservar dados dos clientes e documentos ricos.
-6. Se o limite de implantação ou a falta de sessão autenticada impedir a validação, registrar o impedimento e manter a etapa aberta.
-7. Nunca publicar em produção nem promover a prévia automaticamente.
+6. Decisão do responsável em 09/11/2026: **não criar novas prévias nem deployments intermediários**. Concluir todas as verificações automatizáveis e corrigir falhas na branch, preservando a produção.
+7. Testes visuais reais dependentes de navegador autenticado e validação pós-deployment devem ser identificados como **pendentes por limitação operacional**, nunca marcados como aprovados por inferência.
+8. Quando o código e os testes técnicos estiverem prontos, apresentar o único relatório consolidado da Etapa 06, com o que foi validado, evidências e bloqueios; **pedir autorização expressa antes do único deployment em produção**.
+9. Depois do deployment autorizado, verificar app.rotevo.com.br, monitorar erros e ter o rollback disponível; nunca publicar ou promover automaticamente sem autorização.

@@ -123,7 +123,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   }catch{setError("Falha de conexão. Tente novamente.");}
   finally{setSaving(false);}
  }
- return <div className="mt-7 space-y-5">
+ return <div className="rv-ui2-module mt-5 space-y-4">
   <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-[#090D1C]">Acompanhamento de campanhas</h2><p className="mt-1 text-xs text-[#697386]">Dados informados manualmente. A ROTEVO não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#ADE60A] px-4 py-2.5 text-sm font-semibold text-[#090D1C] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

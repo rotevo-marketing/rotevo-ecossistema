@@ -91,7 +91,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   ...(allowed("campaigns")?[{name:"Campanhas",icon:"rocket" as RotevoIconName,detail:campaignCount+" campanha(s) ativa(s) compartilhada(s)",module:"campaigns" as PortalModule}]:[])
  ];
 
- return <div className="space-y-4 pb-5">
+ return <div className="rv-ui2-module space-y-4 pb-5">
   <div className="flex flex-wrap items-center justify-start gap-3">
    {allowed("content")&&<div className="flex items-center gap-2 rounded-lg border border-[#DEE4EF] bg-white p-1.5" aria-label="Filtrar atividades e conteúdos por mês">
     <span className="pl-2 text-[#68778D]">{icon("calendar",17)}</span>

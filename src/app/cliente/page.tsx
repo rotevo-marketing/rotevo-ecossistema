@@ -117,7 +117,7 @@ export default function ClientAreaPage(){
        <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
  </nav>;
- return <main className="client-portal-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+ return <main className="client-portal-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
    <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]"><div className="flex w-full items-center justify-between gap-3 px-5 py-3">
       <div className="flex items-center gap-3"><RotevoLogo variant="black" size={27}/><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Portal do Cliente</span></div>
@@ -134,9 +134,7 @@ export default function ClientAreaPage(){
      <div className={`rv-ui2-client-content min-w-0 flex-1 px-4 pb-14 pt-7 sm:px-6 lg:px-8 ${mobileMenu?"hidden lg:block":""}`}>
        <header className="rv-page-heading rv-ui2-client-heading">
           <div className="rv-ui2-client-heading-copy">
-            <p className="rv-ui2-client-eyebrow">PORTAL DO CLIENTE <span aria-hidden="true">/</span> {tab==="overview"?"VISÃO GERAL":selected.name.toLocaleUpperCase("pt-BR")}</p>
-            <h1>{tab==="overview"?"Acompanhe seu projeto":selected.name}</h1>
-            <p>{tab==="overview"?"Acompanhe prioridades, próximas entregas e o andamento do seu trabalho com a Rotevo.":tab==="planning"?"Consulte as etapas e os documentos estratégicos compartilhados com sua empresa.":"Consulte informações, arquivos e atividades disponibilizados para sua empresa."}</p>
+            <h1>{tab==="overview"?"Visão geral":selected.name}</h1>
           </div>
           <span className="rv-ui2-client-identity"><RotevoTablerIcon name="users" size={17} stroke={1.7}/>{clientName||"Área do cliente"}</span>
         </header>

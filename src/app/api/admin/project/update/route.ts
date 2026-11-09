@@ -83,6 +83,8 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    const item=value as Record<string,unknown>;
    if(typeof item.id!=="string"||(!uuid.test(item.id)&&!legacyIds.has(item.id))||ids.has(item.id))return fail(400);
    ids.add(item.id);
+   const oldItem=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.find(row=>row&&typeof row==="object"&&!Array.isArray(row)&&(row as Record<string,unknown>).id===item.id):undefined;
+   if(oldItem&&JSON.stringify(oldItem)===JSON.stringify(item))continue; // Preserve untouched legacy meetings.
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
    if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);

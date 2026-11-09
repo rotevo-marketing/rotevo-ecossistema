@@ -83,3 +83,23 @@ test("shared editorial brief reaches client without private fields or unsafe lin
  for(const value of ["PRIVATE_REVIEW_NOTES","PRIVATE_STRATEGY","PRIVATE_OBJECTIVE","INTERNAL_BAD_LINK","javascript:"])
   assert.equal(payload.includes(value),false,value);
 });
+
+test("meeting projection hides private notes and explicitly restricted minutes",()=>{
+ const row={
+  id:"project-meetings",client_id:"tenant-a",title:"Project",slug:"project-meetings",description:null,status:"in_progress",updated_at:"",
+  data:{operationalAgenda:[
+   {id:"shared",title:"Reunião compartilhada",kind:"meeting",date:"2026-11-09",status:"completed",visibleToClient:true,notes:"Pauta compartilhada",minutes:"ATA_RESTRITA",minutesVisibleToClient:false,internalNotes:"SEGREDO_INTERNO",meetingUrl:"https://meet.google.com/example"},
+   {id:"shared-allowed",title:"Reunião aprovada",kind:"meeting",date:"2026-11-08",status:"completed",visibleToClient:true,notes:"Pauta",minutes:"ATA_APROVADA",minutesVisibleToClient:true,internalNotes:"SEGREDO_INTERNO_2"},
+   {id:"legacy",title:"Ata antiga",kind:"meeting",date:"2026-11-07",status:"completed",visibleToClient:true,minutes:"ATA_LEGADA"},
+   {id:"private",title:"Reunião interna",visibleToClient:false,minutes:"ATA_PRIVADA"}
+  ]}
+ };
+ const projection=projectForClient(row);
+ assert.equal(projection.data.operationalAgenda.length,3);
+ assert.equal(projection.data.operationalAgenda[0].minutes,undefined);
+ assert.equal(projection.data.operationalAgenda[0].notes,"Pauta compartilhada");
+ assert.equal(projection.data.operationalAgenda[1].minutes,"ATA_APROVADA");
+ assert.equal(projection.data.operationalAgenda[2].minutes,"ATA_LEGADA");
+ const exposed=JSON.stringify(projection);
+ for(const needle of ["SEGREDO_INTERNO","SEGREDO_INTERNO_2","ATA_RESTRITA","ATA_PRIVADA","Reunião interna"])assert.equal(exposed.includes(needle),false,needle);
+});

@@ -123,8 +123,8 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   }catch{setError("Falha de conexão. Tente novamente.");}
   finally{setSaving(false);}
  }
- return <div className="rv-ui2-module mt-5 space-y-4">
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+ return <div className="rv-ui2-module rv-ui2-campaigns mt-5 space-y-4">
+  <section className="rv-ui2-section rounded-xl border border-[#E3E6ED] bg-white p-5 sm:p-6">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-[#090D1C]">Acompanhamento de campanhas</h2><p className="mt-1 text-xs text-[#697386]">Dados informados manualmente. A ROTEVO não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#ADE60A] px-4 py-2.5 text-sm font-semibold text-[#090D1C] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
     <label className="text-xs font-semibold text-[#525B70]">Projeto<select aria-label="Filtrar projeto de campanhas" value={selectedProjectId} onChange={e=>setProjectFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
@@ -146,7 +146,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
      {name:"Agendamentos",value:totals.appointments===null?"—":totals.appointments.toLocaleString("pt-BR")},
      {name:"Vendas",value:totals.sales===null?"—":totals.sales.toLocaleString("pt-BR")},
      {name:"ROAS",value:roas===null?"—":roas.toLocaleString("pt-BR",{maximumFractionDigits:2})+"×"}
-    ].map(card=><div key={card.name} className="rounded-xl border border-[#E3E7F0] bg-[#FAFBFD] p-4"><p className="text-xs text-[#697386]">{card.name}</p><p className="mt-2 text-2xl font-bold text-[#090D1C]">{card.value}</p></div>)}
+    ].map(card=><div key={card.name} className="rv-ui2-stat rounded-xl border border-[#E3E6ED] bg-[#FAFBFD] p-4"><p className="text-xs text-[#697386]">{card.name}</p><p className="mt-2 text-2xl font-bold text-[#090D1C]">{card.value}</p></div>)}
    </div>
    <details className="mt-4 rounded-lg border border-[#E3E7F0] p-3"><summary className="cursor-pointer text-xs font-semibold text-[#6034B7]">Mais métricas de mídia</summary><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
     {name:"Impressões",value:totals.impressions===null?"—":totals.impressions.toLocaleString("pt-BR")},

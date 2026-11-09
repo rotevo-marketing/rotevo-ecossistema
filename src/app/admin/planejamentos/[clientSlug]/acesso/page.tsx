@@ -216,7 +216,7 @@ function AcessoClienteContent() {
   const clientMessage = `Olá, ${client?.name ?? ""}.\nSeu acesso ao planejamento estratégico está disponível:\n\nURL: https://app.rotevo.com.br\nLogin: ${email}\nSenha provisória: ${password}`;
 
   return (
-    <main className="admin-access-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-access-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]">
       <style jsx global>{` .admin-access-v2, .admin-access-v2 h1, .admin-access-v2 h2, .admin-access-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
       <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
@@ -227,18 +227,18 @@ function AcessoClienteContent() {
 
       <section className="mx-auto w-full max-w-6xl flex-1 px-5 pb-24 pt-9 sm:px-8 lg:px-10">
         {isLoading && (
-          <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+          <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
             <p className="text-slate-500">Carregando...</p>
           </div>
         )}
 
         {!isLoading && errorMessage && (
-          <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+          <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
             <p className="text-sm font-bold text-red-600">Atenção</p>
             <h1 className="mt-4 text-2xl font-bold tracking-[-0.04em]">{errorMessage}</h1>
             <Link
               href="/admin"
-              className="mt-8 inline-flex rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+              className="mt-8 inline-flex rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#5949D1]"
             >
               Voltar ao painel
             </Link>
@@ -248,7 +248,7 @@ function AcessoClienteContent() {
         {!isLoading && project && client && (
           <div className="space-y-6">
             {/* ── Header card ──────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
               <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">
                 Configurar acesso
               </h1>
@@ -258,7 +258,7 @@ function AcessoClienteContent() {
             </div>
 
             {/* ── Client data ───────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
               <p className="text-sm font-bold text-[#090D1C]">
                 Dados do cliente e planejamento
               </p>
@@ -278,7 +278,7 @@ function AcessoClienteContent() {
             </div>
 
             {/* ── Credentials ──────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
               <p className="text-sm font-bold text-[#090D1C]">
                 Credenciais de acesso
               </p>
@@ -332,7 +332,7 @@ function AcessoClienteContent() {
                       type="button"
                       onClick={handleCreateAccess}
                       disabled={isCreating || !email || !password}
-                      className="cursor-pointer rounded-xl bg-[#0B142A] px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="cursor-pointer rounded-lg bg-[#6C5CE7] px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreating ? "Criando acesso..." : "Criar acesso automaticamente"}
                     </button>
@@ -386,7 +386,7 @@ function AcessoClienteContent() {
             </div>
 
             {/* ── Client message ────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
               <p className="text-sm font-bold text-[#090D1C]">
                 Mensagem para o cliente
               </p>
@@ -404,7 +404,7 @@ function AcessoClienteContent() {
             </div>
 
             {/* ── Manual fallback ───────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7">
               <button
                 type="button"
                 onClick={() => setShowManual((v) => !v)}
@@ -541,7 +541,7 @@ function AcessoClienteContent() {
         )}
       </section>
 
-      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+      <footer className="border-t border-[#E3E6ED] bg-white"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
 }

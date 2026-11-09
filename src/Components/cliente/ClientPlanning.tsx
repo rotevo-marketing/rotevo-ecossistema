@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useState} from "react";
 import {clientDocumentCode} from "@/lib/ui/planningSnapshot";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 import {planningAreas,type PlanningAreaDelivery} from "@/lib/planning/areaSchedule";
@@ -12,7 +12,6 @@ type Stage={id:string;title:string;dueDate:string;status:"pending"|"in_progress"
 type ClientProject={id:string;slug:string;title:string;description:string|null;status:string;data?:{planningStages?:Stage[]}|null};
 type VisibleDocument={content:string;richContent?:RichContent};
 type Presentation={id:string;status:string;data?:{planningAreaSchedule?:PlanningAreaDelivery[];ecosystem2027?:{catalogDocumentCodes?:string[];selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>;executiveDocuments?:Record<string,VisibleDocument>}}};
-type CatalogDocument=(typeof ecosystemDocuments)[number];
 const date=(value?:string)=>value?value.split("-").reverse().join("/"):"Previsão a definir";
 const areaName=(name:string)=>name.replace(/^\d{2} /,"");
 const areaStatus=(status?:PlanningAreaDelivery["status"])=>status==="completed"?"Concluída internamente":status==="review"?"Em revisão":status==="in_progress"?"Em elaboração":"Prevista";
@@ -48,7 +47,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
  },[selected?.id,selected?.slug,requestKey]);
  const visible=presentation?.data?.ecosystem2027;
  const catalogCodes=visible?.catalogDocumentCodes??[];
- const knownDocuments=useMemo(()=>ecosystemDocuments.filter(d=>clientDocumentCode(d.code)&&catalogCodes.includes(d.code)),[catalogCodes.join("|")]);
+ const knownDocuments=ecosystemDocuments.filter(d=>clientDocumentCode(d.code)&&catalogCodes.includes(d.code));
  const released=new Set((visible?.selectedDocumentCodes??[]).filter(code=>(visible?.presentedDocumentCodes??[]).includes(code)&&Boolean(visible?.documents?.[code]?.content?.trim())));
  const published=knownDocuments.filter(doc=>released.has(doc.code));
  const schedule=presentation?.data?.planningAreaSchedule??[];

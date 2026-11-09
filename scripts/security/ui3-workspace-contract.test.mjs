@@ -187,6 +187,15 @@ test("meeting minutes and tasks stay project-bound and client-sharing is explici
  const projection=source("lib/security/projectForClient.ts");
  const api=source("app/api/admin/project/update/route.ts");
  assert.match(admin,/internalNotes/);
+ assert.match(admin,/actionItems/);
+ assert.match(admin,/minutesHistory/);
+ assert.match(admin,/Reuniões realizadas e atas registradas são preservadas/);
+ assert.match(portal,/Encaminhamentos definidos/);
+ assert.match(projection,/projected\.actionItems/);
+ assert.match(api,/authenticated server identity/);
+ assert.match(api,/minutesHistory:history/);
+ assert.match(api,/nextIds\.has\(old\.id\)/);
+
  assert.match(admin,/minutesVisibleToClient/);
  assert.match(admin,/relatedTaskId/);
  assert.match(admin,/tasks\.some\(t=>t\.id===editing\.relatedTaskId\)/);

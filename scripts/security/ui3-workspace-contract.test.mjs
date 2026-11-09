@@ -210,3 +210,20 @@ test("meeting minutes and tasks stay project-bound and client-sharing is explici
  assert.match(api,/minutesVisibleToClient/);
  assert.match(api,/validHttps\(item\.meetingUrl\)/);
 });
+
+
+test("client finance only displays payments linked to authorized invoices and preserves financial segregation",()=>{
+ const finance=source("Components/cliente/ClientFinanceView.tsx");
+ const portal=source("Components/finance/ClientFinance.tsx");
+ const contracts=source("Components/cliente/ClientContracts.tsx");
+ assert.match(finance,/data\.settlements\.flatMap\(payment=>/);
+ assert.match(finance,/if\(!invoice\)return \[\]/);
+ assert.doesNotMatch(finance,/entries\.find\(i=>i\.id===payment\.invoice_id\)!/);
+ assert.match(finance,/balance\(i\)/);
+ assert.match(finance,/data\.paymentLinks/);
+ assert.match(finance,/AuthorizedFileLink/);
+ assert.match(finance,/Consulta dos registros autorizados/);
+ assert.match(portal,/financeRequest\(true\)/);
+ assert.match(contracts,/AuthorizedFileLink/);
+ assert.match(contracts,/contract\.history/);
+});

@@ -65,6 +65,7 @@ test("strategist overview prioritizes real attention before daily console and se
  assert.match(overview,/loadOverviewDecisions/);
  assert.match(overview,/financeRequest\(false\)/);
  assert.ok(overview.indexOf("rv-ui3-attention-first")<overview.indexOf("<AdminWorkConsole"),"attention before work console");
+ assert.ok(overview.indexOf("rv-ui3-attention-first")<overview.indexOf("rv-ui3-overview-summary"),"urgent actions before secondary KPI strip");
  assert.match(console,/rv-ui3-work-console/);
  assert.match(console,/view===t.id/);
  assert.match(console,/filter\(r,view\)/);

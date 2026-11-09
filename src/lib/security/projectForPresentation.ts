@@ -23,7 +23,8 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const deliverySchedule=Object.fromEntries(Object.entries(schedule??{})
   .filter(([key,value])=>/^[a-z0-9-]{1,80}$/.test(key)&&typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)));
  const coverImageUrl=safeLink(data.coverImageUrl,false)?data.coverImageUrl:null;
- const selected=strings(ecosystem.selectedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code));
+ const hiddenAreas=new Set(normalizedPlanningAreaSchedule(data.planningAreaSchedule).filter(stage=>!stage.visibleToClient).map(stage=>stage.area.slice(0,2)));
+ const selected=strings(ecosystem.selectedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code)&&!hiddenAreas.has(code.slice(0,2)));
  const presented=new Set(strings(ecosystem.presentedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code)));
  // Project visibility and individual publication are independent.
  // Only in-progress or explicitly published projects can expose approved snapshots.

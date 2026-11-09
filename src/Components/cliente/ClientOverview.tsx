@@ -112,36 +112,36 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   <div className="grid gap-3 xl:grid-cols-2">
    {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
-    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E6EAF2] px-3 py-3">
-     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#DED1FC] bg-[#F5F0FF] px-3 py-2 text-xs font-bold text-[#6332C7] hover:bg-[#E8DDFC]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
+    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E3E6ED] px-3 py-3 transition-colors hover:bg-[#FAFAFE]">
+     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#D8D2FF] bg-[#EDEAFF] px-3 py-2 text-xs font-semibold text-[#5949D1] hover:bg-[#DDD6FF]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
     </div>)}</div>:<p className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#738096]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
     {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver outras pendências</span></button>}
    </section>}
    {serviceRows.length>0&&<section className={card+" min-w-0"}>
-    <h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
+    <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
     <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{"›"}</span></button>)}</div>
    </section>}
   </div>
   {(allowed("content")||allowed("execution")||allowed("meetings"))&&<section className={card}>
-   <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",20)} Atividades do mês</h2><span className="text-xs capitalize text-[#738198]">{monthLabel(month)}</span></div>
+   <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("calendar",20)} Atividades do mês</h2><span className="text-xs capitalize text-[#738198]">{monthLabel(month)}</span></div>
    {monthEntries.length?<div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{monthEntries.map(e=><button type="button" key={e.key} onClick={()=>onNavigate(e.kindId,e.projectId,e.contentId)} className="cursor-pointer rounded-lg border border-[#E6EAF1] bg-[#FBFCFE] p-3 text-left hover:border-[#C8B6F8]"><p className="text-[11px] font-bold uppercase text-[#7052B2]">{displayDate(e.date)} · {e.kind}</p><p className="mt-2 line-clamp-2 text-sm font-semibold">{e.title}</p></button>)}</div>:
     <div className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#758198]">Nenhuma atividade compartilhada para o período selecionado.</div>}
    <p className="mt-3 text-xs text-[#7D899D]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
   </section>}
   <div className="grid gap-4 md:grid-cols-2">
    {allowed("meetings")&&<section className={card}>
-    <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("calendar",20)} Reuniões</h2>
+    <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("calendar",20)} Reuniões</h2>
     {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#758198]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#758198]">Nenhuma reunião futura compartilhada.</p>}
     <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver reuniões</span></button>
    </section>}
    {allowed("finance")&&<section className={card}>
-    <h2 className="flex items-center gap-2 text-base font-extrabold">{icon("currency-dollar",20)} Financeiro</h2>
+    <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("currency-dollar",20)} Financeiro</h2>
     <p className="mt-3 text-sm text-[#758198]">{financeError?"Informações financeiras indisponíveis.":!finance?"Conferindo lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
     <button type="button" onClick={()=>onNavigate("finance")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver financeiro</span></button>
    </section>}
   </div>
   <section className={card}>
-   <div className="flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold">{icon("clock",20)} Atualizações recentes</h2></div>
+   <div className="flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("clock",20)} Atualizações recentes</h2></div>
    {events.length?<div className="mt-3 divide-y divide-[#E9EDF3]">{events.map((e,i)=><button type="button" key={e.project_id+e.content_id+i} onClick={()=>onNavigate("content",e.project_id,e.content_id)} className="block w-full cursor-pointer py-3 text-left"><p className="text-sm font-semibold">{e.phase} · {e.decision==="approved"?"Aprovação registrada":"Ajustes solicitados"}</p><p className="mt-1 text-xs text-[#758198]">{new Date(e.decided_at).toLocaleString("pt-BR")}</p></button>)}</div>:
    <p className="mt-3 text-sm text-[#758198]">{approvalsLoading?"Consultando movimentações…":approvalsFailed?"Histórico de aprovações indisponível.":mostRecent?"Ainda não há decisões editoriais registradas. Última atualização do projeto: "+new Date(mostRecent.updated_at).toLocaleDateString("pt-BR"):"Nenhuma atualização compartilhada."}</p>}
   </section>

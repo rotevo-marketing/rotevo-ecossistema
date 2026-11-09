@@ -126,7 +126,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
  }
  return <div className="rv-ui2-module rv-ui2-campaigns mt-5 space-y-4">
   <section className="rv-ui3-campaign-toolbar bg-white py-3">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="sr-only">Acompanhamento de campanhas</h2><p className="text-xs text-[#687487]">Dados registrados manualmente. A Rotevo não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="sr-only">Acompanhamento de campanhas</h2><p className="text-xs text-[#687487]">Dados informados manualmente. A Rotevo não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
    <div className="mt-3 grid gap-2 border-b border-[#E3E6ED] pb-3 sm:grid-cols-2 xl:grid-cols-5">
     <label className="text-[11px] font-medium text-[#687487]">Projeto<select aria-label="Filtrar projeto de campanhas" value={selectedProjectId} onChange={e=>setProjectFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
     <label className="text-xs font-semibold text-[#525B70]">Plataforma<select aria-label="Filtrar plataforma" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm"><option value="all">Todas as plataformas</option><option>Google Ads</option><option>Meta Ads</option><option>Outro</option></select></label>
@@ -142,7 +142,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
       {name:"Orçamento cadastrado",value:hasBudget?money(monthlyBudget):"—"},
       {name:"Investimento no mês",value:totals.spent===null?"—":money(totals.spent)},
       {name:"Leads",value:totals.leads===null?"—":totals.leads.toLocaleString("pt-BR")},
-      {name:"CPL",value:cpl===null?"—":money(cpl)}
+      {name:"Custo por lead (CPL)",value:cpl===null?"—":money(cpl)}
     ].map(metric=><div key={metric.name} className="flex min-h-9 items-center gap-2 rounded-lg px-2"><span className="text-xs text-[#687487]">{metric.name}</span><strong className="text-[13px] font-semibold tabular-nums text-[#323647]">{metric.value}</strong></div>)}
     <details className="relative"><summary className="min-h-9 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Mais indicadores</summary>
      <div className="mt-2 grid gap-3 rounded-lg border border-[#E3E6ED] bg-[#FAFBFD] p-3 sm:grid-cols-3">

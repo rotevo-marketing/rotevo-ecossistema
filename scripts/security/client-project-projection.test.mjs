@@ -64,3 +64,22 @@ test("client execution timeline independently hides unshared tasks and separates
  assert.match(source,/key=\{\`\$\{item\.projectKey\}:\$\{item\.id\}\`\}/);
  assert.doesNotMatch(source,/new Date\(\)\.toISOString\(\)\.slice\(0,10\)/);
 });
+
+test("shared editorial brief reaches client without private fields or unsafe links",()=>{
+ const p=projectForClient({
+  id:"p3",client_id:"tenant-a",title:"Project",slug:"p3",description:null,status:"in_progress",updated_at:"",
+  data:{editorialCalendar:[
+   {id:"shared",title:"Content",status:"idea_pending",visibleToClient:true,ideaSummary:"Ideia aprovada para consulta",objective:"Educar",audience:"Público informado",funnelStage:"Atração",keyMessage:"Mensagem",cta:"Saiba mais",briefUrl:"https://drive.google.com/file",references:[{url:"https://example.com/reference",note:"Aprovada"},{url:"javascript:alert(1)",note:"INTERNAL_BAD_LINK"}],reviewNotes:"PRIVATE_REVIEW_NOTES",internalStrategy:"PRIVATE_STRATEGY"},
+   {id:"hidden",title:"Private",visibleToClient:false,objective:"PRIVATE_OBJECTIVE"}
+  ]}
+ });
+ const row=p.data.editorialCalendar[0];
+ assert.equal(p.data.editorialCalendar.length,1);
+ assert.equal(row.objective,"Educar");
+ assert.equal(row.ideaSummary,"Ideia aprovada para consulta");
+ assert.equal(row.briefUrl,"https://drive.google.com/file");
+ assert.deepEqual(row.references,[{url:"https://example.com/reference",note:"Aprovada"}]);
+ const payload=JSON.stringify(p);
+ for(const value of ["PRIVATE_REVIEW_NOTES","PRIVATE_STRATEGY","PRIVATE_OBJECTIVE","INTERNAL_BAD_LINK","javascript:"])
+  assert.equal(payload.includes(value),false,value);
+});

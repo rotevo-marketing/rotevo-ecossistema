@@ -62,6 +62,9 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const prevAreaSchedule=(existing.data as Record<string,unknown>|null)?.planningAreaSchedule;
  const nextAreaSchedule=(b.data as Record<string,unknown>).planningAreaSchedule;
  if(JSON.stringify(prevAreaSchedule)!==JSON.stringify(nextAreaSchedule)&&!validPlanningAreaSchedule(nextAreaSchedule))return fail(400);
+ const oldAccess=(existing.data as Record<string,unknown>|null)?.planningClientAccessEnabled;
+ const nextAccess=(b.data as Record<string,unknown>).planningClientAccessEnabled;
+ if(oldAccess!==nextAccess&&typeof nextAccess!=="boolean")return fail(400);
   if(!validEcosystemDocumentTransition(existing.data,b.data)||!validExecutionDependencies(b.data))return fail(400);
  // Only newly assigned or reassigned identities require an active team membership.
  // Historical assignments are preserved without retroactive data migration.

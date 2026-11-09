@@ -37,6 +37,19 @@ jobs:
           node --test scripts/security/client-project-projection.test.mjs
           node --test scripts/security/ecosystem-document-workflow.test.mjs
           node --test scripts/security/progressive-planning-contract.test.mjs
+      - name: UI2 pre-release operational, authorization and client journey regression
+        run: |
+          node --test scripts/security/isolated-client-journey.test.mjs
+          node --test scripts/security/release-readiness-contract.test.mjs
+          node --test scripts/security/staff-access-boundary.test.mjs
+          node --test scripts/security/overview-management.test.mjs
+          node --test scripts/security/admin-project-editor-contract.test.mjs
+          node --test scripts/security/onboarding-link-contract.test.mjs
+          node --test scripts/security/agenda-form-contract.test.mjs
+          node --test scripts/security/campaigns-contract.test.mjs
+          node --test scripts/security/execution-dependencies.test.mjs
+          node --test scripts/security/planning-stages.test.mjs
+          node --test scripts/security/strategic-editor-prototype.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Next.js build

@@ -81,14 +81,8 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const shiftMonth=(delta:number)=>setMonth(prev=>{const y=Number(prev.slice(0,4)),m=Number(prev.slice(5));const next=new Date(y,m-1+delta,1);return next.getFullYear()+"-"+String(next.getMonth()+1).padStart(2,"0")});
  const card="rv-ui3-client-overview-panel bg-white py-4";
  const actionLabel=(item:Attention)=>item.kind==="idea"?"Revisar ideia":item.kind==="final"?"Revisar material":"Ver cobrança";
- const serviceRows=[
-  ...(allowed("execution")?[{name:"Tarefas e entregas",icon:"chart-dots-3" as RotevoIconName,detail:tasks.length?completed+" de "+tasks.length+" entregas concluídas":"Nenhuma entrega compartilhada",module:"execution" as PortalModule}]:[]),
-  ...(allowed("content")?[{name:"Conteúdo",icon:"calendar" as RotevoIconName,detail:publishedContent.length+" publicações compartilhadas · "+(approvalsFailed?"aprovações indisponíveis":approvalsLoading?"conferindo aprovações":contentAttention.length+" aguardando decisão"),module:"content" as PortalModule}]:[]),
-  ...(allowed("campaigns")?[{name:"Campanhas",icon:"rocket" as RotevoIconName,detail:campaignCount+" campanha(s) ativa(s) compartilhada(s)",module:"campaigns" as PortalModule}]:[])
- ];
-
  return <div className="rv-ui2-module rv-ui2-client-overview space-y-4 pb-5">
-  <div className="grid gap-3 xl:grid-cols-2">
+  <div className="space-y-2">
    {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-lg bg-[#FFF5E5] px-2 py-1 text-[11px] font-semibold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
     {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E6ED] py-3 last:border-b-0 hover:bg-[#FAFBFE]">
@@ -96,10 +90,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     </div>)}</div>:<p className="mt-3 border-t border-[#E3E6ED] py-4 text-sm text-[#687487]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
     {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver outras pendências</span></button>}
    </section>}
-   {serviceRows.length>0&&<section className={card+" min-w-0"}>
-    <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("chart-dots-3",20)} Andamento dos serviços</h2>
-    <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{"›"}</span></button>)}</div>
-   </section>}
+
   </div>
   <div className="rv-ui3-client-status flex flex-wrap gap-x-5 gap-y-2 border-y border-[#E3E6ED] py-3" aria-label="Resumo dos serviços compartilhados">
     {allowed("execution")&&<button type="button" onClick={()=>onNavigate("execution")} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs text-[#687487] hover:bg-[#F6F7FB]">{icon("chart-dots-3",16)}Entregas <strong className="tabular-nums text-[#323647]">{tasks.length?completed+"/"+tasks.length:"—"}</strong></button>}

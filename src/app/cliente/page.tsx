@@ -21,7 +21,7 @@ import ClientPlanning from "@/Components/cliente/ClientPlanning";
 import type {OnboardingItem} from "@/Components/admin/ProjectOnboarding";
 
 type Project = {
-  id:string; title:string; slug:string; description:string|null; status:string; updated_at:string;
+  id:string; title:string; slug:string; description:string|null; status:string; updated_at:string; clientAvatarUrl?:string|null;
   data:{marketingCampaigns?:import("@/Components/admin/CampaignsHub").CampaignRecord[];operationalAgenda?:import("@/Components/admin/OperationalAgenda").AgendaItem[];planningStages?:{id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean}[];coverImageUrl?:string|null; deliverySchedule?:Record<string,string>|null; executionTimeline?:ExecutionItem[]; editorialCalendar?:EditorialItem[]; onboardingChecklist?:OnboardingItem[]; ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[]}}|null;
 };
 type MenuId="overview"|"planning"|"execution"|"content"|"campaigns"|"meetings"|"onboarding"|"contract"|"drive"|"finance"|"access";

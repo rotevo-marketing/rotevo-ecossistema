@@ -12,7 +12,7 @@ export function TaskAvatar({name,src,size=30}:{name:string;src?:string|null;size
   {safe?<img src={src!} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(true)} className="h-full w-full object-cover"/>:initials}
  </span>;
 }
-type Option<T extends string>={value:T;label:string;color?:string};
+type Option<T extends string>={value:T;label:string;color?:string;photo?:string|null};
 export function TaskDropdown<T extends string>({label,value,options,onChange,disabled=false,kind="status",avatar}:{
  label:string;value:T;options:Option<T>[];onChange:(value:T)=>void;disabled?:boolean;kind?:"status"|"priority"|"people";avatar?:{name:string;src?:string|null};
 }){
@@ -36,7 +36,7 @@ export function TaskDropdown<T extends string>({label,value,options,onChange,dis
     style={{left:position.left,top:Math.max(8,position.top),minWidth:Math.min(216,Math.max(position.width,160))}}>
     {options.map(opt=><button type="button" role="option" aria-selected={opt.value===value} key={opt.value} onClick={()=>{setOpen(false);if(opt.value!==value)onChange(opt.value);}}
      className={"flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs hover:bg-[#F4F0FF] "+(opt.value===value?"bg-[#F4F0FF] font-semibold":"")}>
-     {kind==="people"?<TaskAvatar name={opt.label} size={22}/>:<span aria-hidden="true" className="h-3.5 w-3.5 rounded" style={{backgroundColor:opt.color??"#8793A5"}}/>}
+     {kind==="people"?<TaskAvatar name={opt.label} src={opt.photo} size={22}/>:<span aria-hidden="true" className="h-3.5 w-3.5 rounded" style={{backgroundColor:opt.color??"#8793A5"}}/>}
      <span className="flex-1 truncate text-[#26314A]">{opt.label}</span>{opt.value===value&&<RotevoTablerIcon name="check" size={15}/>}
     </button>)}
    </div>

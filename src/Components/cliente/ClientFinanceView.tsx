@@ -13,7 +13,7 @@ const labels={paid:"Pago",planned:"Previsto",overdue:"Vencido"};
 export default function ClientFinanceView({data}:{data:ClientFinanceState}){
  const entries:Entry[]=data.invoices.filter(i=>!i.cancelled).map(i=>({id:i.id,title:i.title,due:i.due_date,amount:i.amount_cents/100,paid:i.paid_cents/100,remaining:balance(i)/100,status:balance(i)===0?"paid":i.due_date<todayInBrazil()?"overdue":"planned",paidAt:data.settlements.filter(s=>s.invoice_id===i.id).sort((a,b)=>b.paid_on.localeCompare(a.paid_on))[0]?.paid_on,kind:i.category==="Mensalidade"?"monthly":"oneoff"}));
  const [month,setMonth]=useState(todayInBrazil().slice(0,7));
- const paidEntries:Entry[]=data.settlements.map(payment=>({...entries.find(i=>i.id===payment.invoice_id)!,id:payment.id,invoiceId:payment.invoice_id,title:data.invoices.find(i=>i.id===payment.invoice_id)?.title??"Pagamento confirmado",amount:payment.amount_cents/100,paidAt:payment.paid_on}));
+ const paidEntries:Entry[]=data.settlements.flatMap(payment=>{const invoice=entries.find(i=>i.id===payment.invoice_id);if(!invoice)return [];return [{...invoice,id:payment.id,invoiceId:payment.invoice_id,amount:payment.amount_cents/100,paidAt:payment.paid_on}];});
  const [tab,setTab]=useState<Tab>("upcoming");
  const totalPaid=data.settlements.reduce((n,x)=>n+x.amount_cents/100,0);
  const upcoming=entries.filter(x=>x.status!=="paid").sort((a,b)=>a.due.localeCompare(b.due));

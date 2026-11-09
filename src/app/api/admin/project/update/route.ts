@@ -90,6 +90,22 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
    for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);
+   if(item.actionItems!==undefined){
+    if(!Array.isArray(item.actionItems)||item.actionItems.length>25)return fail(400);
+    const actionIds=new Set<string>();
+    const taskIds=new Set(Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id]:[]):[]);
+    for(const raw of item.actionItems){
+     if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+     const action=raw as Record<string,unknown>;
+     if(typeof action.id!=="string"||!uuid.test(action.id)||actionIds.has(action.id))return fail(400);
+     actionIds.add(action.id);
+     if(typeof action.title!=="string"||action.title.trim().length<3||action.title.length>240)return fail(400);
+     if(typeof action.owner!=="string"||action.owner.length>120||typeof action.dueDate!=="string")return fail(400);
+     if(action.dueDate!==""&&(!/^\d{4}-\d{2}-\d{2}$/.test(action.dueDate)||!Number.isFinite(Date.parse(action.dueDate))))return fail(400);
+     if(action.relatedTaskId!==undefined&&action.relatedTaskId!==""&&(typeof action.relatedTaskId!=="string"||!taskIds.has(action.relatedTaskId)))return fail(400);
+    }
+   }
+
    if(item.visibleToClient!==undefined&&typeof item.visibleToClient!=="boolean")return fail(400);
    if(!validHttps(item.materialUrl)||!validHttps(item.meetingUrl))return fail(400);
   }

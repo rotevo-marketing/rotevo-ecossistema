@@ -82,6 +82,7 @@ function PlanejamentoClienteContent() {
   const [richDirty,setRichDirty]=useState(false);
   const [richBusy,setRichBusy]=useState(false);
   const [editingScope, setEditingScope] = useState(false);
+  const [documentSearch,setDocumentSearch]=useState("");
   const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("editor");
   const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
   const [draftPresentedCodes, setDraftPresentedCodes] = useState<string[]>([]);
@@ -95,6 +96,7 @@ function PlanejamentoClienteContent() {
   useUnsavedChanges(editingScope && (JSON.stringify(draftDocumentCodes)!==JSON.stringify(documentCodes)||JSON.stringify(draftPresentedCodes)!==JSON.stringify(presentedCodes)));
   const selectedDocuments = ecosystemDocuments.filter((doc) => documentCodes.includes(doc.code));
   const documentAreas = Array.from(new Set(selectedDocuments.map((doc) => doc.area)));
+  const matchesDocumentSearch=(doc:{code:string;title:string})=>`${doc.code} ${doc.title}`.toLocaleLowerCase("pt-BR").includes(documentSearch.trim().toLocaleLowerCase("pt-BR"));
 
   useEffect(() => {
     let cancelled = false;
@@ -358,17 +360,18 @@ function PlanejamentoClienteContent() {
               <div className="rv-ui3-documents-config bg-white py-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Gerencie o escopo e a exibição dos documentos do Ecossistema 2027.</p></div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="rv-ui3-documents-search"><span className="sr-only">Buscar documento por nome ou código</span><input type="search" placeholder="Buscar documentos..." value={documentSearch} onChange={event=>setDocumentSearch(event.target.value)} className="min-h-10 w-full rounded-lg border border-[#E3E6ED] px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"/></label>
                     <button type="button" onClick={() => { if(isSaving)return;setEditingScope(!editingScope); setDraftDocumentCodes(documentCodes); setDraftPresentedCodes(presentedCodes); setErrorMessage(""); }} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">{editingScope ? "Cancelar edição" : "Editar documentos"}</button>
                   </div>
                 </div>
                 {editingScope ? <div className="mt-5">
                   <div className="rounded-xl bg-[#F6F7FB] p-4 text-xs text-[#525B70]">Marque os documentos que farão parte do projeto e quais devem ser exibidos ao cliente. Ao retirar um documento, sua exibição também será desmarcada. Os conteúdos já salvos não serão excluídos.</div>
-                  <div className="mt-4 max-h-[660px] space-y-4 overflow-y-auto">
-                    {Array.from(new Set(ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 ")).map((doc) => doc.area))).map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4">
-                      <h3 className="mb-3 text-sm font-bold">{area}</h3>
+                  <div className="rv-ui3-document-groups mt-4 max-h-[660px] space-y-3 overflow-y-auto">
+                    {Array.from(new Set(ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 ") && matchesDocumentSearch(doc)).map((doc) => doc.area))).map((area) => <section key={area} className="rv-ui3-document-group">
+                      <h3 className="mb-2 text-sm font-semibold">{area}</h3>
                       <div className="grid grid-cols-[1fr_64px_64px] gap-2 border-b border-[#E3E7F0] pb-2 text-xs text-[#697386] sm:grid-cols-[1fr_90px_90px]"><span>Documento</span><span className="text-center">Incluir</span><span className="text-center">Exibir</span></div>
-                      {ecosystemDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="grid grid-cols-[1fr_64px_64px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_90px_90px]">
+                      {ecosystemDocuments.filter((doc) => doc.area === area && matchesDocumentSearch(doc)).map((doc) => <div key={doc.code} className="grid grid-cols-[1fr_64px_64px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_90px_90px]">
                         <div className="flex flex-wrap items-baseline gap-2"><span className="text-xs text-[#697386]">{doc.code}</span><span className="text-sm">{doc.title}</span></div>
                         <div className="text-center"><input aria-label={`Incluir ${doc.title}`} type="checkbox" disabled={isSaving} className="h-5 w-5 cursor-pointer accent-[#6D35F5]" checked={draftDocumentCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"include")}/></div>
                         <div className="text-center"><input aria-label={`Exibir ${doc.title}`} type="checkbox" className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30" disabled={isSaving||!draftDocumentCodes.includes(doc.code)} checked={draftPresentedCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"present")}/></div>
@@ -377,8 +380,8 @@ function PlanejamentoClienteContent() {
                   </div>
                   {errorMessage && <p role="alert" className="mt-4 text-sm text-red-700">{errorMessage}</p>}
                   <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#E3E7F0] pt-5"><span className="text-xs text-[#525B70]">{draftDocumentCodes.length} documentos incluídos · {draftPresentedCodes.length} visíveis</span><button type="button" disabled={isSaving || draftDocumentCodes.length === 0} onClick={saveDocumentScope} className="cursor-pointer rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? "Salvando..." : "Salvar alterações"}</button></div>
-                </div> : <div className="mt-5 space-y-4">
-                  {documentAreas.map((area) => <section key={area} className="rounded-xl border border-[#E3E7F0] p-4"><h3 className="mb-3 text-sm font-bold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Marcado para exibição" : "Uso interno"}</span></div>)}</div></section>)}
+                </div> : <div className="rv-ui3-document-groups mt-5 space-y-3">
+                  {documentAreas.filter(area=>selectedDocuments.some(doc=>doc.area===area&&matchesDocumentSearch(doc))).map((area) => <section key={area} className="rv-ui3-document-group"><h3 className="mb-2 text-sm font-semibold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area && matchesDocumentSearch(doc)).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Marcado para exibição" : "Uso interno"}</span></div>)}</div></section>)}
                 </div>}
                 {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Na aba Planejamento, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
               </div>

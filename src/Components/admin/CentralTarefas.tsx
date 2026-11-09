@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import type {ExecutionItem} from "@/Components/cliente/ProjectTimeline";
@@ -37,11 +37,13 @@ const buttonClass="inline-flex items-center gap-2 rounded-lg border border-[#E1E
 type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
 function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean;photos?:Record<string,string>}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState("");
+ const pickerRef=useRef<HTMLDivElement>(null);
+ useEffect(()=>{if(!open)return;const close=(event:PointerEvent)=>{if(!pickerRef.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==="Escape")setOpen(false);};document.addEventListener("pointerdown",close);document.addEventListener("keydown",escape);return()=>{document.removeEventListener("pointerdown",close);document.removeEventListener("keydown",escape);};},[open]);
  const current=projects.find(p=>p.id===value);
  const selectedName=current?(getClient(current)?.name??"Cliente"):"Todos os projetos";
 
  const options=projects.filter(p=>((getClient(p)?.name??"Cliente")+" "+p.title).toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
- return <div className="relative min-w-0">
+ return <div ref={pickerRef} className="relative min-w-0">
   <button type="button" aria-expanded={open} aria-haspopup="listbox" className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-lg border border-[#DDE2ED] bg-white px-2.5 py-2 text-left hover:border-[#A58ADB]" onClick={()=>{setOpen(v=>!v);setQuery("");}}>
    <TaskAvatar name={selectedName} src={current?photos[getClient(current)?.id??""]:null} size={32}/>
    <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{selectedName}</span>{current&&<span className="block truncate text-[11px] text-[#718096]">{current.title}</span>}</span><RotevoTablerIcon name={open?"chevron-up":"chevron-down"} size={17}/>
@@ -52,7 +54,7 @@ function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{proje
     {allowAll&&<button type="button" role="option" aria-selected={value==="all"} onClick={()=>{onChange("all");setOpen(false);}} className="w-full cursor-pointer rounded-lg p-2 text-left text-xs hover:bg-[#F3EFFF]">Todos os projetos</button>}
     {options.map(p=>{const name=getClient(p)?.name??"Cliente";return <button type="button" role="option" aria-selected={value===p.id} key={p.id} onClick={()=>{onChange(p.id);setOpen(false);}} className={"flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 text-left hover:bg-[#F3EFFF] "+(value===p.id?"bg-[#F3EFFF]":"")}><TaskAvatar name={name} src={photos[getClient(p)?.id??""]} size={32}/><span className="min-w-0"><span className="block truncate text-xs font-semibold">{name}</span><span className="block truncate text-[11px] text-[#718096]">{p.title}</span></span></button>;})}
     {!options.length&&<p className="p-2 text-xs text-[#718096]">Nenhum projeto encontrado.</p>}
-   </div><button type="button" onClick={()=>setOpen(false)} className="mt-2 w-full cursor-pointer rounded-md bg-[#F6F7FB] p-2 text-xs">Fechar</button>
+   </div>
   </div>}
  </div>;
 }

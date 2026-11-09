@@ -350,3 +350,69 @@
   .workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"] {min-height:40px;padding:9px 11px}
   .workspace-project-page.rv-ui2 .pw-project-header {border-radius:10px}
 }
+
+
+/* UI2 client workspace composition: shared hierarchy, distinct from document paper. */
+.client-portal-v2.rv-ui2 .rv-ui2-client-content .rv-ui2-client-heading {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 22px;
+  padding:25px 27px;
+  border:1px solid #E6E2F8;
+  border-radius:16px;
+  background:linear-gradient(110deg,#fff 0%,#fff 55%,#F3F1FF 100%);
+  box-shadow:0 4px 18px rgba(65,56,126,.035);
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-heading-copy {min-width:0;max-width:650px}
+.client-portal-v2.rv-ui2 .rv-ui2-client-eyebrow {
+  margin:0 0 12px;
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.12em;
+  color:#6C5CE7;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-eyebrow span {padding:0 5px;color:#B4ABC8}
+.client-portal-v2.rv-ui2 .rv-ui2-client-heading h1 {
+  color:#323647;
+  font-size:clamp(24px,2.2vw,31px);
+  line-height:1.23;
+  letter-spacing:-.035em;
+  font-weight:670;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-heading-copy > p:last-child {
+  margin:11px 0 0;
+  font-size:13px;
+  line-height:1.65;
+  color:#687487;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-identity {
+  display:inline-flex;align-items:center;gap:9px;
+  max-width:240px;
+  padding:9px 12px;
+  border:1px solid #DED9FB;
+  border-radius:9px;
+  background:#fff;
+  color:#5949D1;
+  font-size:12px;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-overview {
+  display:grid;gap:18px;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-overview > .grid,
+.client-portal-v2.rv-ui2 .rv-ui2-client-overview > section {
+  margin:0;
+}
+@media(max-width:767px){
+  .client-portal-v2.rv-ui2 .rv-ui2-client-content .rv-ui2-client-heading {
+    padding:18px 17px;
+    border-radius:13px;
+    background:linear-gradient(140deg,#fff 30%,#F5F3FF 100%);
+  }
+  .client-portal-v2.rv-ui2 .rv-ui2-client-heading h1 {font-size:24px}
+  .client-portal-v2.rv-ui2 .rv-ui2-client-identity {max-width:100%}
+}

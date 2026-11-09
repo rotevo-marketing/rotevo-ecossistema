@@ -69,10 +69,12 @@ test("strategist and client dashboards have substantial UI2 workspace hierarchy"
  assert.match(adminOverview,/rv-ui2-dashboard-intro/);
  assert.match(adminOverview,/rv-ui2-overview-kpi/);
  assert.match(client,/rv-ui2-client-heading/);
- assert.match(client,/tab==="overview"\?"Acompanhe seu projeto"/);
+ assert.match(client,/tab==="overview"\?"Visão geral"/);
+ assert.match(client,/client-portal-v2 rv-ui2 rv-ui3/);
+ assert.match(admin,/admin-v2 rv-ui2 rv-ui3/);
 });
 
-test("new workspace hero layouts support small screens and preserve document content",()=>{
+test("workspace layout remains responsive and preserves document content",()=>{
  const adminCss=source("app/admin/rotevo-ui2.css");
  const sharedCss=source("app/rotevo-ui2-shared.css");
  assert.match(adminCss,/\.rv-ui2-workspace-heading/);

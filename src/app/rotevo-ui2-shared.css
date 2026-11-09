@@ -180,7 +180,8 @@
   color:var(--ui2-text);
   min-width:0;
 }
-.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(h1,h2,h3) {
+/* Restrict operational headings; preserve the typographic rules of rich documents. */
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(.rv-page-heading,.rv-ui2-section,.rv-ui2-client-section) > :is(h1,h2,h3) {
   color:var(--ui2-text);
   letter-spacing:-.025em;
 }

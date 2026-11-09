@@ -356,32 +356,32 @@ export default function AdminPage() {
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
         {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="rv-ui2-stats mt-6 grid gap-3 sm:grid-cols-3">
           {[
             { label: "Total de planejamentos", value: totalProjects },
             { label: "Em produção", value: inProgressProjects },
             { label: "Publicados", value: publishedProjects }
           ].map((metric) => (
-            <div key={metric.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-6">
-              <p className="text-sm font-medium text-[#525B70]">{metric.label}</p>
-              <strong className="mt-3 block text-[34px] leading-10 font-bold tabular-nums">{isLoading ? "..." : metric.value}</strong>
+            <div key={metric.label} className="rv-ui2-stat rounded-xl border border-[#E3E6ED] bg-white p-5">
+              <p className="text-xs font-semibold text-[#687487]">{metric.label}</p>
+              <strong className="mt-3 block text-[30px] leading-9 font-semibold tracking-tight tabular-nums">{isLoading ? "..." : metric.value}</strong>
             </div>
           ))}
         </div>
-        <section aria-labelledby="projects-heading" className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-6 lg:p-8">
+        <section aria-labelledby="projects-heading" className="rv-ui2-section mt-5 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="projects-heading" className="text-2xl leading-8 font-bold tracking-[-0.02em]">Projetos recentes</h2>
+              <h2 id="projects-heading" className="text-lg leading-7 font-semibold tracking-[-0.02em]">Projetos recentes</h2>
               <p className="mt-1 text-sm text-[#697386]">Localize, acompanhe e gerencie seus planejamentos.</p>
             </div>
             {!isLoading && <span className="shrink-0 text-xs text-[#697386]">{visibleProjects.length} de {projects.length}</span>}
           </div>
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-3">
             <label htmlFor="admin-search" className="sr-only">Buscar cliente ou planejamento</label>
             <input id="admin-search" type="search" placeholder="Buscar cliente ou planejamento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="min-h-11 w-full rounded-xl border border-[#E3E7F0] px-4 py-3 text-sm outline-none focus:border-[#6D35F5] focus:ring-2 focus:ring-[#6D35F5]/15" />
             <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar planejamentos">
               {([{value:"all",label:"Todos"},{value:"draft",label:"Em produção"},{value:"published",label:"Publicados"}] as const).map((f) => (
-                <button key={f.value} type="button" aria-pressed={statusFilter===f.value} onClick={() => {setStatusFilter(f.value);setOpenMenuId(null);}} className={"cursor-pointer rounded-full border px-4 py-2 text-sm font-medium " + (statusFilter===f.value ? "border-[#6D35F5] bg-[#F0ECFF] text-[#5123C5]" : "border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]")}>{f.label}</button>
+                <button key={f.value} type="button" aria-pressed={statusFilter===f.value} onClick={() => {setStatusFilter(f.value);setOpenMenuId(null);}} className={"cursor-pointer rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors " + (statusFilter===f.value ? "border-[#D8D2FF] bg-[#EDEAFF] text-[#5949D1]" : "border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]")}>{f.label}</button>
               ))}
             </div>
           </div>
@@ -391,7 +391,7 @@ export default function AdminPage() {
           {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
           {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
           {!isLoading && visibleProjects.length>0 && (
-            <div className="mt-6 space-y-3">
+            <div className="rv-ui2-project-list mt-5 space-y-2">
               {visibleProjects.map((project) => {
                 const client=getProjectClient(project);
                 const clientName=client?.name ?? "Cliente sem nome";
@@ -402,7 +402,7 @@ export default function AdminPage() {
                 const demo=clientSlug==="demo";
                 const menuOpen=openMenuId===project.id;
                 return (
-                  <article key={project.id} className="relative rounded-2xl border border-[#E3E7F0] bg-white p-4 hover:border-[#CDD3E0] sm:p-5">
+                  <article key={project.id} className="rv-ui2-project-row relative rounded-xl border border-[#E3E6ED] bg-white p-4 transition-colors hover:border-[#CDC8F4] hover:bg-[#FCFBFF] sm:p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 flex-1 items-start gap-3">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F0ECFF] text-sm font-semibold text-[#5123C5]">
@@ -419,9 +419,9 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                        <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-10 items-center rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#24304D]">Editar planejamento</Link>
+                        <Link href={"/admin/planejamentos/"+clientSlug+"?projectId="+encodeURIComponent(project.id)} className="inline-flex min-h-10 items-center rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]">Editar planejamento</Link>
                         <div className="relative">
-                          <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#E3E7F0] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
+                          <button type="button" aria-expanded={menuOpen} aria-label={"Mais ações para "+clientName} onClick={()=>setOpenMenuId(menuOpen?null:project.id)} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#E3E6ED] text-xl hover:bg-[#F6F7FB]"><span aria-hidden="true">⋯</span></button>
                           {menuOpen && (
                             <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#E3E7F0] bg-white p-1.5 shadow-xl">
                               <Link href={"/apresentacao/"+project.slug} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-[#F6F7FB]">Ver apresentação</Link>

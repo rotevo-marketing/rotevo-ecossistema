@@ -346,13 +346,17 @@ export default function AdminPage() {
       {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
       <section className="rv-ui2-workspace mx-auto w-full max-w-[1580px] px-4 pb-14 pt-7 sm:px-6 lg:px-8">
-        <div className="rv-page-heading">
-          <div>
-            <h1 className="text-[24px] leading-[32px] font-semibold tracking-[-0.02em] text-[#242B3B]">{NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
-            <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#737D8F]">{workspaceTab==="overview"?"Sua central de gestão e rotina. Veja o que precisa de atenção e o que depende de você.":"Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar."}</p>
+        <header className="rv-page-heading rv-ui2-workspace-heading">
+          <div className="rv-ui2-heading-copy">
+            <p className="rv-ui2-heading-eyebrow">ROTEVO <span aria-hidden="true">/</span> {workspaceTab==="overview"?"CENTRAL DE OPERAÇÕES":"ÁREA DE TRABALHO"}</p>
+            <h1>{workspaceTab==="overview"?"Bom trabalho começa com clareza.":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
+            <p className="rv-ui2-heading-description">{workspaceTab==="overview"?"Acompanhe prioridades, atividades e decisões que movimentam a operação.":workspaceTab==="projects"?"Consulte planejamentos, acompanhe publicações e encontre rapidamente o próximo trabalho.":workspaceTab==="clients"?"Visualize seus relacionamentos, cadastros e vínculos com projetos.":"Organize as entregas desta área em um ambiente simples e consistente."}</p>
           </div>
-          {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5D4ED6]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
-        </div>
+          <div className="rv-ui2-heading-actions">
+            {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="rv-ui2-heading-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.7}/>Novo planejamento</Link>}
+            {workspaceTab==="overview"&&<button type="button" onClick={()=>setWorkspaceTab("tasks")} className="rv-ui2-heading-secondary inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#D8D2FF] bg-white px-4 py-2.5 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F6FF]"><RotevoTablerIcon name="list-check" size={17} stroke={1.7}/>Minhas tarefas</button>}
+          </div>
+        </header>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
         {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>

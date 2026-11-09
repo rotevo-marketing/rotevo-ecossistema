@@ -56,6 +56,10 @@ function ProjectPicker({projects,value,onChange,allowAll=false}:{projects:TaskPr
 }
 export default function CentralTarefas({projects,onChanged,onOpenContent}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
+ const [section,setSection]=useState<"active"|"completed"|"archived">("active");
+ const [completedWindow,setCompletedWindow]=useState<"7"|"30"|"90"|"all">("30");
+ const [page,setPage]=useState(1);
+ const pageSize=20;
  const [mineOnly,setMineOnly]=useState(false),[currentUserId,setCurrentUserId]=useState<string|null>(null);
  useEffect(()=>{let active=true;void supabase.auth.getUser().then(({data})=>{if(active)setCurrentUserId(data.user?.id??null);});return()=>{active=false};},[]);
  const [deadline,setDeadline]=useState<"all"|"today"|"overdue"|"upcoming">("all");
@@ -89,10 +93,12 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   .map(appointment=>({appointment,project,client:getClient(project)}))),[projects]);
  const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
+  (section==="archived"?!!task.archivedAt:!task.archivedAt&&(section==="active"?isOpen(task):task.status==="completed"))&&
+  (section!=="completed"||completedWindow==="all"||!!task.completedAt&&new Date(task.completedAt).getTime()>=Date.now()-Number(completedWindow)*86400000)&&
   (projectId==="all"||project.id===projectId)&&
   (!mineOnly||(!!currentUserId&&task.ownerUserId===currentUserId))&&
   (owner==="all"||(owner==="unassigned"?!task.owner?.trim():task.owner?.trim()===owner))&&
-  (status==="all"||(task.status??"planned")===status)&&
+  (section!=="active"||status==="all"||(task.status??"planned")===status)&&
   (!periodMonth||(periodMode==="due"?task.dueDate?.startsWith(periodMonth):task.status==="completed"&&typeof task.completedAt==="string"&&task.completedAt.slice(0,7)===periodMonth))&&
   (priority==="all"||(task.priority??"normal")===priority)&&
   (deadline==="all"||(deadline==="today"?task.dueDate===today()&&isOpen(task):deadline==="overdue"?!!task.dueDate&&task.dueDate<today()&&isOpen(task):!!task.dueDate&&task.dueDate>today()&&isOpen(task)))&&
@@ -103,10 +109,14 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const dateScore=(t:ExecutionItem)=>t.dueDate??"9999-99-99";
   const openScore=(t:ExecutionItem)=>isOpen(t)?0:1;
   const urgencyScore=(t:ExecutionItem)=>!isOpen(t)?4:t.dueDate&&t.dueDate<today()?0:t.status==="blocked"?1:t.dueDate===today()?2:3;
+  if(section==="completed")return (b.task.completedAt??"").localeCompare(a.task.completedAt??"");
+  if(section==="archived")return (b.task.archivedAt??"").localeCompare(a.task.archivedAt??"");
   return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
    order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
    urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
- }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId]);
+ }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId,section,completedWindow]);
+ const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
+ const paginated=filtered.slice((Math.min(page,pages)-1)*pageSize,Math.min(page,pages)*pageSize);
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
   if(working)return false;
   setWorking(key);setError("");setNotice("");
@@ -131,6 +141,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   if(next==="completed"&&(task.dependencies??[]).some(id=>timeline.find(t=>t.id===id)?.status!=="completed")){setError("Conclua os pré-requisitos antes desta tarefa.");return;}
   if(next!=="completed"&&task.status==="completed"&&timeline.some(t=>t.status==="completed"&&(t.dependencies??[]).includes(task.id))){setError("Reabra primeiro as tarefas que dependem desta.");return;}
   const completionPatch=patch.status!==undefined?{completedAt:next==="completed"?(task.status==="completed"?task.completedAt:new Date().toISOString()):undefined}:{}; 
+  if(patch.archivedAt&&!["completed","cancelled"].includes(task.status??"planned")){setError("Conclua ou cancele a tarefa antes de arquivar.");return;}
   const changed=Object.keys(patch).filter(k=>JSON.stringify(task[k as keyof ExecutionItem])!==JSON.stringify(patch[k as keyof ExecutionItem]));
   if(!changed.length)return;
   const log=[...(task.activityLog??[]),{at:new Date().toISOString(),summary:"Alteração: "+changed.map(k=>({status:"situação",priority:"prioridade",owner:"responsável",dueDate:"prazo",checklist:"checklist"} as Record<string,string>)[k]??k).join(", ")}].slice(-100);
@@ -166,9 +177,9 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const ok=await persist(selected.project,previous.map(x=>x.id===selected.task.id?{...x,...patch,activityLog:log}:x),selected.project.id+":"+selected.task.id,"Detalhes da tarefa atualizados.");
   if(ok){setDetailKey(null);setDetailDraft(null);}
  }
- const reset=()=>{setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");setMineOnly(false);};
- const overdue=tasks.filter(x=>x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
- const todayCount=tasks.filter(x=>x.task.dueDate===today()&&isOpen(x.task)).length;
+ const reset=()=>{setPage(1);setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");setMineOnly(false);};
+ const overdue=tasks.filter(x=>!x.task.archivedAt&&x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
+ const todayCount=tasks.filter(x=>!x.task.archivedAt&&x.task.dueDate===today()&&isOpen(x.task)).length;
  const chipStatus=(task:ExecutionItem)=>statuses.find(s=>s.id===(task.status??"planned"))??statuses[0];
  const chipPriority=(task:ExecutionItem)=>priorities.find(p=>p.id===(task.priority??"normal"))??priorities[2];
  const projectLink=(project:TaskProject)=>`/admin/planejamentos/${getClient(project)?.slug??""}?projectId=${encodeURIComponent(project.id)}`;

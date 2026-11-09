@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect,useState} from "react";
-import {useParams,useRouter} from "next/navigation";
+import {useParams,useRouter,useSearchParams} from "next/navigation";
 import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import type {RichContent} from "@/lib/planning/richContent";
@@ -16,7 +16,7 @@ type PresentationProject={
 const clientOf=(project:PresentationProject)=>Array.isArray(project.clients)?project.clients[0]:project.clients;
 
 export default function ApresentacaoDinamicaPage(){
- const params=useParams(),router=useRouter();
+ const params=useParams(),router=useRouter(),query=useSearchParams();
  const slug=typeof params.slug==="string"?params.slug:"";
  const [project,setProject]=useState<PresentationProject|null>(null);
  const [strategist,setStrategist]=useState(false);
@@ -60,6 +60,7 @@ export default function ApresentacaoDinamicaPage(){
   clientSlug={client?.slug??""}
   projectSlug={project.slug}
   isStrategist={strategist}
+  returnToProjects={query.get("from")==="projects"}
   selectedCodes={details.ecosystem2027?.selectedDocumentCodes??[]}
   presentedCodes={details.ecosystem2027?.presentedDocumentCodes??[]}
   executiveDocuments={strategist?Object.fromEntries(Object.entries(details.ecosystem2027?.documents??{}).flatMap(([code,document])=>/^00\.0[1-7]$/.test(code)&&!details.ecosystem2027?.hiddenExecutiveDocumentCodes?.includes(code)&&document.publishedContent?[[code,{content:document.publishedContent,...(document.publishedRichContent?{richContent:document.publishedRichContent}:{})}]]:[])):details.ecosystem2027?.executiveDocuments??{}}

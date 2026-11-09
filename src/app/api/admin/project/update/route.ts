@@ -75,12 +75,13 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
   const agenda=nextRoot.operationalAgenda;
   if(!Array.isArray(agenda)||agenda.length>500)return fail(400);
+  const legacyIds=new Set(Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]):[]);
   const ids=new Set<string>();
   const validHttps=(value:unknown)=>{if(value===undefined||value==="")return true;if(typeof value!=="string"||value.length>2048)return false;try{return new URL(value).protocol==="https:";}catch{return false;}};
   for(const value of agenda){
    if(!value||typeof value!=="object"||Array.isArray(value))return fail(400);
    const item=value as Record<string,unknown>;
-   if(typeof item.id!=="string"||!uuid.test(item.id)||ids.has(item.id))return fail(400);
+   if(typeof item.id!=="string"||(!uuid.test(item.id)&&!legacyIds.has(item.id))||ids.has(item.id))return fail(400);
    ids.add(item.id);
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
    if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);

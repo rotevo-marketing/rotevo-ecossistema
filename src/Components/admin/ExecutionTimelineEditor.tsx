@@ -92,19 +92,19 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   if(!window.confirm(`Excluir a entrega "${item.title}"? Esta ação não pode ser desfeita.`))return;
   void persist(items.filter(i=>i.id!==item.id));
  }
- return <section className="mt-6 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
+ return <section className="mt-6 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-6">
    <div className="flex flex-wrap items-start justify-between gap-3">
     <div><h2 className="text-xl font-bold">Execução do projeto</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Cadastre entregas, tarefas e marcos que devem compor a linha do tempo. A equipe gerencia; o cliente acompanha apenas os itens liberados.</p></div>
-    <button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...blank});setError("");setSuccess("")}} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-semibold text-white">Adicionar entrega</button>
+    <button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...blank});setError("");setSuccess("")}} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]">Adicionar entrega</button>
    </div>
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {success&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
    {items.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma entrega operacional cadastrada. Os marcos antigos continuarão disponíveis separadamente no portal.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{items.map(item=><div key={item.id} className="flex flex-col items-start justify-between gap-4 py-4 sm:flex-row sm:items-center">
-     <div className="min-w-0 flex-1"><h3 className="break-words text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#6D35F5]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===true?"Visível ao cliente":"Interno"}</p></div>
+     <div className="min-w-0 flex-1"><h3 className="break-words text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#5949D1]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {item.visibleToClient===true?"Visível ao cliente":"Interno"}</p></div>
      <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
     </div>)}</div>}
-   {editing&&<div className="mt-5 rounded-2xl border border-[#D9D0F5] bg-[#FCFBFF] p-4 sm:p-5">
+   {editing&&<div className="mt-5 rounded-xl border border-[#D8D2FF] bg-[#FCFBFF] p-4 sm:p-5">
      <h3 className="mb-4 text-base font-semibold">{editing.id?"Editar entrega":"Nova entrega"}</h3>
      <div className="grid gap-4 sm:grid-cols-2">
        <label className="block text-xs font-medium">Título da entrega *

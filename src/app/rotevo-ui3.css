@@ -75,3 +75,24 @@
 .rv-ui3 .rv-ui3-onboarding-surface table thead{background:#F8F9FB}
 .rv-ui3 .rv-ui3-onboarding-surface table thead th{font-size:11px;font-weight:600;color:var(--rv3-muted)}
 .rv-ui3 .rv-ui3-onboarding-surface table tbody td{padding-top:11px;padding-bottom:11px}
+
+/* UI3 operational overviews: prioritize decisions, tasks and authorized records. */
+.rv-ui3 .rv-ui3-overview-summary{margin-bottom:4px}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi{min-height:36px;padding:6px 8px;border:0!important;box-shadow:none!important;background:transparent!important}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi::before{display:none!important}
+.rv-ui3 .rv-ui3-overview-panel,.rv-ui3 .rv-ui3-work-console,.rv-ui3 .rv-ui3-client-overview-panel{border:0!important;border-radius:0!important;box-shadow:none!important}
+.rv-ui3 .rv-ui3-overview-panel,.rv-ui3 .rv-ui3-work-console{padding:16px 0}
+.rv-ui3 .rv-ui3-attention-first{border-bottom:1px solid #E3E6ED!important}
+.rv-ui3 .rv-ui3-client-overview-panel{padding:15px 0}
+.rv-ui3 .rv-ui3-client-status{margin:6px 0}
+.rv-ui3 .rv-ui3-client-status button:focus-visible,.rv-ui3 .rv-ui3-work-console button:focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui2-overview .rv-ui3-work-console>div:first-child{margin-bottom:4px}
+.rv-ui3 .rv-ui2-overview .rv-ui3-work-console li:last-child{border-bottom:0}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel>div:first-child h2 svg{width:17px;height:17px;stroke-width:1.55}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel>div:first-child h2{font-size:14px;font-weight:600}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel .grid{gap:8px}
+@media(max-width:767px){
+.rv-ui3 .rv-ui3-overview-summary{gap:4px 8px}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi{max-width:100%}
+.rv-ui3 .rv-ui3-client-status{gap:4px 8px}
+}

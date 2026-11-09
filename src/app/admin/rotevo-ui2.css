@@ -1,0 +1,68 @@
+/* Rotevo UI 2.0 — isolated visual pilot on the Strategist workspace.
+   Functional status colors remain distinct; never infer a business status from CSS alone. */
+.rv-ui2 {
+  --ui2-canvas: #F6F7FB;
+  --ui2-surface: #FFFFFF;
+  --ui2-border: #E3E6ED;
+  --ui2-text: #323647;
+  --ui2-muted: #687487;
+  --ui2-accent: #6C5CE7;
+  --ui2-accent-light: #EDEAFF;
+  background: var(--ui2-canvas);
+  color: var(--ui2-text);
+  font-family: var(--font-body), Arial, sans-serif;
+}
+.rv-ui2 .rv-ui2-topbar {box-shadow:0 1px 0 rgba(24,30,48,.025)}
+.rv-ui2 .rv-ui2-sidebar {background:#fff}
+.rv-ui2 .rv-ui2-nav-item {
+  min-height:38px;
+  transition:background-color .14s ease,color .14s ease;
+}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"] {position:relative;font-weight:650}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"]::before {
+  content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;
+  background:var(--ui2-accent);
+}
+.rv-ui2 .rv-ui2-workspace .rv-page-heading {padding-bottom:15px;border-bottom:1px solid var(--ui2-border)}
+.rv-ui2 .rv-ui2-workspace .rv-page-heading h1 {font-weight:650}
+.rv-ui2 .rv-ui2-workspace > section,
+.rv-ui2 .rv-ui2-workspace article,
+.rv-ui2 .rv-ui2-workspace [class*="rounded-2xl"][class*="border"] {
+  box-shadow:0 1px 3px rgba(29,35,53,.025);
+}
+/* Reduce inflated panels only within operational dashboards; leave document sheets unchanged. */
+.rv-ui2 [data-ui2-surface] {
+  border:1px solid var(--ui2-border);
+  border-radius:10px;
+  background:var(--ui2-surface);
+  box-shadow:0 1px 2px rgba(28,37,57,.025);
+}
+.rv-ui2 .rv-ui2-task-board {
+  --ui2-row-line:#E9EBF1;
+  border-color:var(--ui2-border);
+  border-radius:10px;
+}
+.rv-ui2 .rv-ui2-task-board table {border-collapse:collapse; width:100%}
+.rv-ui2 .rv-ui2-task-board thead {background:#F8F9FC;color:#5E697C}
+.rv-ui2 .rv-ui2-task-board thead th {
+  font-weight:600;letter-spacing:0; font-size:11px;
+  border-bottom:1px solid var(--ui2-border);
+  padding-top:11px;padding-bottom:11px;
+}
+.rv-ui2 .rv-ui2-task-board tbody tr {border-color:var(--ui2-row-line)}
+.rv-ui2 .rv-ui2-task-board tbody tr:hover {background:#FBFBFF}
+.rv-ui2 .rv-ui2-task-board tbody td {padding-top:9px;padding-bottom:9px}
+.rv-ui2 .rv-ui2-task-board input:focus-visible,
+.rv-ui2 .rv-ui2-task-board select:focus-visible,
+.rv-ui2 .rv-ui2-task-board button:focus-visible {
+  outline:2px solid var(--ui2-accent);outline-offset:2px;
+}
+.rv-ui2 .rv-ui2-task-board button[aria-pressed="true"] {transition:background-color .12s ease}
+.rv-ui2 .rv-ui2-footer {color:#7B8595}
+@media (prefers-reduced-motion:reduce){
+ .rv-ui2 *, .rv-ui2 *::before, .rv-ui2 *::after {transition-duration:0.01ms!important;animation-duration:0.01ms!important}
+}
+@media(max-width:768px){
+ .rv-ui2 .rv-ui2-workspace {padding-top:18px}
+ .rv-ui2 .rv-ui2-workspace .rv-page-heading h1 {font-size:21px}
+}

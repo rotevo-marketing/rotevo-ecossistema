@@ -59,22 +59,16 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
  const activeContent=readerCode?visible?.documents?.[readerCode]:undefined;
  const activeReleased=!!active&&released.has(active.code);
  const delivery=areaRows.find(row=>row.name===readerArea)?.delivery;
- const lastReleased=published.length,allDocs=knownDocuments.length;
+ const lastReleased=published.length;
  const filteredAreas=areaRows.map(row=>({...row,docs:row.docs.filter(doc=>(doc.code+" "+doc.title).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")))})).filter(row=>!search||row.docs.length);
  const choose=(code:string,area:string)=>{setSelectedCode(code);setOpenedArea(area);setMobileReader(true);};
  const publishedIndex=active?published.findIndex(d=>d.code===active.code):-1;
  const chooseAdjacent=(offset:number)=>{const next=published[publishedIndex+offset];if(next)choose(next.code,next.area);};
- return <div className="space-y-4">
-  <section className="rounded-2xl border border-[#E3E7F0] bg-white px-5 py-5 sm:px-7">
-   <div className="flex flex-wrap items-center justify-between gap-3">
-    <div><p className="text-xs font-bold uppercase tracking-wider text-[#6D35F5]">Planejamento estratégico</p><h2 className="mt-1 text-xl font-bold text-[#0B142A]">{selected?.title??"Planejamento"}</h2><p className="mt-1 text-sm text-[#697386]">Acompanhe as áreas do planejamento e consulte os documentos disponibilizados.</p></div>
-    {!!selected&&<span className="rounded-full bg-[#F4F0FF] px-3 py-1.5 text-xs font-semibold text-[#6034B7]">{lastReleased} de {allDocs||"—"} documentos disponíveis</span>}
-   </div>
-  </section>
+ return <div className="space-y-0">
   {!selected?<section className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhum planejamento está vinculado à sua conta.</section>
   :loading?<section role="status" className="rounded-xl bg-white p-6 text-sm text-[#697386]">Carregando planejamento autorizado…</section>
   :error?<section role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-sm text-red-700">{error}<button type="button" className="ml-3 cursor-pointer underline" onClick={()=>setRetry(n=>n+1)}>Tentar novamente</button></section>
-  :<section className="overflow-hidden rounded-2xl border border-[#E3E7F0] bg-white lg:grid lg:min-h-[580px] lg:grid-cols-[300px_minmax(0,1fr)]">
+  :<section className="overflow-hidden rounded-2xl border border-[#E3E7F0] bg-white lg:grid lg:min-h-[720px] lg:grid-cols-[300px_minmax(0,1fr)]">
    <aside aria-label="Navegação dos documentos do planejamento" className={(mobileReader?"hidden ":"block ")+"min-w-0 border-[#E3E7F0] p-4 lg:block lg:border-r"}>
     <div className="flex items-center justify-between gap-2"><h3 className="font-bold text-[#101828]">Documentos</h3><span className="text-xs text-[#697386]">{lastReleased} disponíveis</span></div>
     <label className="mt-3 block"><span className="sr-only">Buscar documento</span><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar documento…" className="w-full rounded-xl border border-[#E1E5EE] bg-[#F7F8FB] px-3 py-2.5 text-sm outline-[#6D35F5]"/></label>
@@ -105,10 +99,16 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
    <main className={(mobileReader?"block ":"hidden ")+"min-w-0 bg-[#F7F8FC] p-3 sm:p-5 lg:block lg:p-7"}>
     <button type="button" onClick={()=>setMobileReader(false)} className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#E2E5EC] bg-white px-3 py-2 text-xs font-semibold lg:hidden">{activeIcon("arrow-left",16)} Voltar aos documentos</button>
     {selectedCode==="executive"?<div className="mx-auto max-w-[900px] rounded-2xl border border-[#E4E7EE] bg-white p-5 shadow-sm sm:p-8"><p className="text-xs font-bold uppercase tracking-widest text-[#697386]">Visão Executiva</p><h3 className="mt-3 text-2xl font-bold">Síntese estratégica</h3>{executive.length?<div className="mt-5 space-y-5">{executive.map(doc=><section key={doc.code}><details className="rounded-xl border border-[#E3E7F0] p-4"><summary className="cursor-pointer text-sm font-semibold">{doc.code} · {doc.title}</summary><div className="mt-5">{visible?.executiveDocuments?.[doc.code]?.richContent?<DynamicDocumentReader content={visible.executiveDocuments[doc.code].richContent!}/>:<div className="whitespace-pre-wrap break-words text-sm leading-7">{visible?.executiveDocuments?.[doc.code]?.content}</div>}</div></details></section>)}</div>:<p className="mt-5 rounded-xl bg-[#F7F8FB] p-5 text-sm text-[#697386]">A Visão Executiva será apresentada quando a Rotevo disponibilizar os documentos desta seção.</p>}</div>
-    :active?<article className="mx-auto max-w-[960px] overflow-hidden rounded-2xl border border-[#E4E7EE] bg-white px-5 py-7 shadow-sm sm:px-8 sm:py-10">
-     <p className="text-xs font-bold uppercase tracking-widest text-[#8C96A9]">Documento estratégico <span className="ml-2">{active.code}</span></p>
-     <h3 className="mt-4 text-2xl font-bold tracking-tight text-[#0B142A] sm:text-3xl">{active.title}</h3>
-     <div className="my-6 border-t border-[#E9ECF3]"/>
+    :active?<article className="mx-auto w-full max-w-[960px] overflow-hidden rounded-2xl border border-[#E4E7EE] bg-white px-5 py-8 shadow-sm sm:px-8 sm:py-10 lg:px-12">
+     <header className="mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8995AB] sm:text-[11px]">
+       <span>Documento estratégico</span>
+       <span className="normal-case tracking-[0.08em]">{active.code} · {active.title}</span>
+      </div>
+      <div className="mt-5 border-t border-[#E3E8F0] pt-9 sm:pt-12">
+       <h3 className="text-[27px] font-bold leading-tight tracking-tight text-[#0B142A] sm:text-[34px]">{active.title}</h3>
+      </div>
+     </header>
      {activeReleased&&activeContent?
       <><div className="se-client-document-reader">{activeContent.richContent?<DynamicDocumentReader content={activeContent.richContent}/>:<div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#344054]">{activeContent.content}</div>}</div>
        <nav className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-[#E9ECF3] pt-5" aria-label="Navegação entre documentos publicados"><button type="button" disabled={publishedIndex<=0} onClick={()=>chooseAdjacent(-1)} className="cursor-pointer rounded-lg border border-[#DCE2EC] px-3 py-2 text-xs font-semibold disabled:opacity-40">Anterior</button><button type="button" disabled={publishedIndex<0||publishedIndex===published.length-1} onClick={()=>chooseAdjacent(1)} className="cursor-pointer rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Próximo documento</button></nav>

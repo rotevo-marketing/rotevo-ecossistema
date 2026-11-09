@@ -75,6 +75,13 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
   const agenda=nextRoot.operationalAgenda;
   if(!Array.isArray(agenda)||agenda.length>500)return fail(400);
+  // Completed meetings and meetings with a recorded minute are retained to preserve accountability.
+  const nextIds=new Set(agenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]));
+  if(Array.isArray(oldRoot.operationalAgenda)&&oldRoot.operationalAgenda.some(row=>{
+   if(!row||typeof row!=="object"||Array.isArray(row))return false;
+   const old=row as Record<string,unknown>;
+   return typeof old.id==="string"&&!nextIds.has(old.id)&&(old.status==="completed"||(typeof old.minutes==="string"&&old.minutes.trim()!==""));
+  }))return fail(400);
   const legacyIds=new Set(Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]):[]);
   const ids=new Set<string>();
   const validHttps=(value:unknown)=>{if(value===undefined||value==="")return true;if(typeof value!=="string"||value.length>2048)return false;try{return new URL(value).protocol==="https:";}catch{return false;}};

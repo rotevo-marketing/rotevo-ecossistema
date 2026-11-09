@@ -253,6 +253,23 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(new Set((members??[]).map(m=>m.user_id)).size!==changedOwners.length)return fail(400);
  }
 
+ // Append-only audit trail for edited minutes. Attribution and timestamp come from
+ // the authenticated server identity, never from browser-supplied history.
+ if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)&&Array.isArray(nextRoot.operationalAgenda)){
+  const originals=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda:[];
+  const originalById=new Map(originals.filter((value):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value)&&typeof (value as Record<string,unknown>).id==="string").map(value=>[value.id as string,value]));
+  nextRoot.operationalAgenda=nextRoot.operationalAgenda.map(value=>{
+   const current=value as Record<string,unknown>;
+   const previous=originalById.get(current.id as string);
+   const historical=previous&&Array.isArray(previous.minutesHistory)?previous.minutesHistory.slice(-99):[];
+   const before=typeof previous?.minutes==="string"?previous.minutes:"";
+   const after=typeof current.minutes==="string"?current.minutes:"";
+   const changed=before!==after;
+   const history=changed?[...historical,{version:historical.length+1,text:after,changedAt:new Date().toISOString(),changedBy:identity.user.id}]:historical;
+   const {minutesHistory:_ignored,...safeCurrent}=current;
+   return history.length?{...safeCurrent,minutesHistory:history}:safeCurrent;
+  });
+ }
  const nextAt=new Date().toISOString();
  const {data:updated,error:updateError}=await admin.from("planning_projects")
    .update({data:b.data,updated_at:nextAt}).eq("id",b.projectId)

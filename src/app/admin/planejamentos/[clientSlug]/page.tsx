@@ -8,6 +8,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
+import PlanningAreaScheduleEditor from "@/Components/admin/PlanningAreaScheduleEditor";
+import type {PlanningAreaDelivery} from "@/lib/planning/areaSchedule";
 import PublishedPlanningPreview from "@/Components/strategic-editor/PublishedPlanningPreview";
 import type {StrategicPlanningData} from "@/Components/strategic-editor/StrategicDocumentEditor";
 import DynamicDocumentEditor from "@/Components/strategic-editor/DynamicDocumentEditor";
@@ -23,6 +25,7 @@ type ClientRecord = {
 type ProjectData = {
   coverImageUrl?: string | null;
   planningStages?: PlanningStage[];
+  planningAreaSchedule?: PlanningAreaDelivery[];
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   ecosystem2027?: StrategicPlanningData["ecosystem2027"];
 };
@@ -384,7 +387,12 @@ function PlanejamentoClienteContent() {
         ) : null}
       </section>
 
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}><PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/></div>}
+      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}>
+   <PlanningAreaScheduleEditor key={project.id+"-areas"} initial={project.data?.planningAreaSchedule??[]} selectedDocumentCodes={documentCodes} onSave={async(schedule)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningAreaSchedule:schedule});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>
+   <details className="mx-auto w-full max-w-6xl px-5 py-5 sm:px-8 lg:px-10"><summary className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm font-semibold text-[#525B70]">Cronograma operacional anterior (manter dados existentes)</summary>
+    <PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>
+   </details>
+  </div>}
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PublishedPlanningPreview data={project.data??{}} status={project.status} title={project.title} clientName={client?.name??""}/></div>}
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><DynamicDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onBusyChange={setRichBusy} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></div>}
       {project && !isLoading && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}

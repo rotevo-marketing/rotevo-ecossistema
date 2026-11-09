@@ -160,3 +160,9 @@
   .admin-v2.rv-ui2 .rv-ui2-heading-actions > * {flex:1;white-space:nowrap}
   .admin-v2.rv-ui2 .rv-ui2-dashboard-indicator {display:none}
 }
+
+
+@media(max-width:430px){
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions {flex-direction:column;align-items:stretch}
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions > * {width:100%;flex:none}
+}

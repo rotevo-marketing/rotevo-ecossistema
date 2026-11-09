@@ -189,3 +189,19 @@
 .rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div button{font-size:9px;line-height:1.2}
 .rv-ui3 .rv-ui3-campaign-metrics>div{gap:4px 8px}
 }
+
+/* UI3 meetings: a continuous, restrained agenda with private notes outside the client projection. */
+.rv-ui3 .rv-ui3-meetings-surface,.rv-ui3 .rv-ui3-meeting-editor{border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-meetings :is(button,input,select,textarea):focus-visible,
+.rv-ui3 .rv-ui3-meeting-editor :is(button,input,select,textarea):focus-visible,
+.rv-ui3 .rv-ui3-client-meetings :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{border-radius:5px;box-shadow:none}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button[aria-pressed="true"]{background:#EDEAFF;border-color:#6C5CE7;color:#5949D1}
+.rv-ui3 .rv-ui3-meeting-editor .divide-y>div{padding-top:12px;padding-bottom:12px}
+.rv-ui3 .rv-ui3-meeting-editor>div:first-child h2{font-size:14px;font-weight:600}
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-width:0}
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div button{min-width:0}
+@media(max-width:640px){
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-height:42px;padding:3px}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{min-height:48px;padding:4px 2px}
+}

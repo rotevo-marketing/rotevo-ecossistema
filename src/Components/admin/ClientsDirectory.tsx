@@ -43,7 +43,7 @@ export default function ClientsDirectory({projects}:{projects:Project[]}){
  const formDirty=form&&(JSON.stringify(fields)!==JSON.stringify(beforeEdit?{name:beforeEdit.name,contact_name:beforeEdit.contact_name??"",contact_email:beforeEdit.contact_email??"",whatsapp:beforeEdit.whatsapp??""}:empty)||editing?.status!==beforeEdit?.status||photoRef!==(beforeEdit?.cover_image_url??""));
  useUnsavedChanges(formDirty);
  const current=clients.find(c=>c.id===selected);
- return <div className="mt-7 space-y-5">
+ return <div className="rv-ui2-module mt-5 space-y-4">
   <div className="grid gap-3 sm:grid-cols-3">
    {[{label:"Clientes cadastrados",value:clients.length},{label:"Ativos",value:active},{label:"Pausados ou arquivados",value:clients.length-active}].map(m=><div key={m.label} className="rounded-2xl border border-[#E3E7F0] bg-white p-5"><p className="text-sm text-[#697386]">{m.label}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{loading?"…":m.value}</p></div>)}
   </div>

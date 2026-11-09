@@ -270,7 +270,7 @@ export default function SelecionarModulosPage() {
   });
 
   return (
-    <main className="admin-modules-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-modules-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]">
       <style jsx global>{`
         .admin-modules-v2, .admin-modules-v2 h1, .admin-modules-v2 h2, .admin-modules-v2 h3 {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
@@ -357,12 +357,12 @@ export default function SelecionarModulosPage() {
             <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir um documento, marque primeiro “Executar”. Os títulos seguem a base Docs do Notion. A seleção para execução e exibição é configurada por documento.</div>
             <div className="mt-7 flex flex-col gap-3 border-t border-[#E3E7F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-center text-sm font-medium">Voltar aos dados</Link>
-              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
+              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
             </div>
           </form>
         </>}
       </div>
-      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+      <footer className="border-t border-[#E3E6ED] bg-white text-[#687487]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
 }

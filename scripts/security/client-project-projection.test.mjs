@@ -11,7 +11,7 @@ test("public projection strips every unknown internal root and item field", () =
      internalNotes:"PRIVATE_CANARY_ROOT",
      unpublishedStrategy:{password:"PRIVATE_CANARY_NESTED"},
      executionTimeline:[
-       {id:"x",title:"Public work",status:"planned",visibleToClient:true,owner:"PRIVATE_OWNER",internalNotes:"PRIVATE_ITEM"},
+       {id:"x",title:"Public work",status:"planned",visibleToClient:true,owner:"RESPONSAVEL_COMPARTILHADO",ownerUserId:"PRIVATE_OWNER_ID",internalNotes:"PRIVATE_ITEM"},
        {id:"y",title:"Private work",visibleToClient:false}
      ],
      editorialCalendar:[
@@ -23,9 +23,11 @@ test("public projection strips every unknown internal root and item field", () =
  };
  const p=projectForClient(row);
  const payload=JSON.stringify(p);
- for(const secret of ["PRIVATE_CANARY_ROOT","PRIVATE_CANARY_NESTED","PRIVATE_OWNER","PRIVATE_ITEM","PRIVATE_REVIEW","PRIVATE_LINK","Private work","Hidden content"])
+ for(const secret of ["PRIVATE_CANARY_ROOT","PRIVATE_CANARY_NESTED","PRIVATE_OWNER_ID","PRIVATE_ITEM","PRIVATE_REVIEW","PRIVATE_LINK","Private work","Hidden content"])
    assert.equal(payload.includes(secret),false,secret);
  assert.equal(p.data.executionTimeline.length,1);
+ assert.equal(p.data.executionTimeline[0].owner,"RESPONSAVEL_COMPARTILHADO");
+ assert.equal("ownerUserId" in p.data.executionTimeline[0],false);
  assert.equal(p.data.editorialCalendar.length,1);
  assert.equal(p.data.onboardingChecklist[0].done,true);
  assert.equal("client_id" in p,false);

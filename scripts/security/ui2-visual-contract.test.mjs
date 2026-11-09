@@ -58,3 +58,27 @@ test("mobile data tables only force intrinsic width inside scroll containers",()
  assert.match(css,/\.rv-ui2 \.rv-ui2-module :is\(\.overflow-x-auto,\.overflow-auto,\.rv-ui2-task-board\) > table\s*\{\s*min-width:max-content;/);
  assert.doesNotMatch(css,/\.rv-ui2 \.rv-ui2-module table\s*\{\s*min-width:max-content;/);
 });
+
+
+test("strategist and client dashboards have substantial UI2 workspace hierarchy",()=>{
+ const admin=source("app/admin/page.tsx");
+ const adminOverview=source("Components/admin/AdminOperationsOverview.tsx");
+ const client=source("app/cliente/page.tsx");
+ assert.match(admin,/rv-ui2-workspace-heading/);
+ assert.match(admin,/rv-ui2-heading-primary/);
+ assert.match(adminOverview,/rv-ui2-dashboard-intro/);
+ assert.match(adminOverview,/rv-ui2-overview-kpi/);
+ assert.match(client,/rv-ui2-client-heading/);
+ assert.match(client,/tab==="overview"\?"Seu projeto, em perspectiva\."/);
+});
+
+test("new workspace hero layouts support small screens and preserve document content",()=>{
+ const adminCss=source("app/admin/rotevo-ui2.css");
+ const sharedCss=source("app/rotevo-ui2-shared.css");
+ assert.match(adminCss,/\.rv-ui2-workspace-heading/);
+ assert.match(adminCss,/@media\(max-width:430px\)/);
+ assert.match(sharedCss,/\.rv-ui2-client-heading/);
+ assert.match(sharedCss,/@media\(max-width:767px\)/);
+ assert.doesNotMatch(sharedCss,/\.se-paper\s*\{/);
+ assert.doesNotMatch(sharedCss,/\.bn-editor\s*\{/);
+});

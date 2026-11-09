@@ -46,8 +46,8 @@ export default function TeamDirectory(){
    }catch{failed=true}
    if(!active)return;setLoading(false);setUnavailable(failed);setMembers(next);setAssignments(nextAssignments);setPermissions(nextPermissions);
  }void load();return()=>{active=false};},[refresh]);
- return <section className="rv-ui2-module mt-5 rounded-xl border border-[#E3E7F0] bg-white p-5">
-  <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Equipe Rotevo</h2><p className="mt-2 text-sm text-[#525B70]">Colaboradores, funções e responsabilidades, com controle de acesso por projeto.</p></div><button type="button" onClick={()=>setShowCreate(v=>!v)} disabled={!capabilities.invites} className="rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white disabled:bg-[#F1F2F6] disabled:text-[#697386]">{capabilities.invites?(showCreate?"Fechar cadastro":"Novo usuário"):"Cadastro aguardando ativação segura"}</button></div>
+ return <section className="rv-ui2-module rv-ui2-team rv-ui2-section mt-5 rounded-xl border border-[#E3E6ED] bg-white p-5 sm:p-6">
+  <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold tracking-tight">Equipe Rotevo</h2><p className="mt-2 text-sm text-[#525B70]">Colaboradores, funções e responsabilidades, com controle de acesso por projeto.</p></div><button type="button" onClick={()=>setShowCreate(v=>!v)} disabled={!capabilities.invites} className="rounded-lg bg-[#6C5CE7] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:bg-[#F1F2F6] disabled:text-[#697386]">{capabilities.invites?(showCreate?"Fechar cadastro":"Novo usuário"):"Cadastro aguardando ativação segura"}</button></div>
   {capabilities.adminTransfer&&<TeamAdminTransferForm members={members} onTransferred={async()=>{setRefresh(n=>n+1)}}/>}
   {capabilities.invites&&showCreate&&<TeamInviteForm onInvited={async()=>{setShowCreate(false);setRefresh(n=>n+1)}}/>}
   {photoError&&<p role="alert" className="mt-4 text-sm text-red-700">{photoError}</p>}
@@ -58,7 +58,7 @@ export default function TeamDirectory(){
     const projectCount=assignments.filter(a=>a.user_id===m.user_id).length;
     const permissionCount=permissions.filter(p=>p.user_id===m.user_id).length;
     const optionsDisabled=editing!==null||removingPhoto!==null;
-    return <div key={m.user_id} className="py-4">
+    return <div key={m.user_id} className="rounded-lg px-2 py-3.5 transition-colors hover:bg-[#FAFAFE]">
      <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE8FF] font-semibold text-[#6D35F5]">{m.avatar_url&&(m.avatar_ref||m.avatar_url.startsWith("https://"))?<img src={m.avatar_url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:m.display_name.slice(0,1).toUpperCase()}</div>
       <div className="min-w-0 flex-1">

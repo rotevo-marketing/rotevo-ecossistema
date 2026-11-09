@@ -53,7 +53,7 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
  const extend=()=>void persist([...items,...missing.map(title=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false}))]);
  const toggle=(id:string,done:boolean)=>void persist(items.map(item=>item.id===id?{...item,done,updatedAt:new Date().toISOString()}:item));
  const resetMessages=()=>{setError("");};
- return <section className="mt-4 rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6">
+ return <section className="mt-4 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-5">
   <div className="flex flex-wrap items-center justify-between gap-3">
    <h3 className="text-lg font-bold text-[#090D1C]">Checklist do onboarding</h3>
   </div>
@@ -62,14 +62,14 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
    <div className="mt-5 rounded-xl border border-dashed border-[#CBCDD6] bg-[#F6F7FB] p-5">
     <p className="text-sm font-semibold">Este projeto ainda não possui onboarding.</p>
     <p className="mt-2 text-xs text-[#697386]">Inicie com as 10 etapas padrão da ROTEVO. Depois, basta marcar cada item realizado.</p>
-    <button type="button" disabled={saving} onClick={start} className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#ADE60A] px-4 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={19}/>{saving?"Criando...":"Criar checklist padrão"}</button>
+    <button type="button" disabled={saving} onClick={start} className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={19}/>{saving?"Criando...":"Criar checklist padrão"}</button>
    </div>:
    <>
     <div className="mt-5 flex items-center justify-between gap-3 text-sm"><span className="text-[#525B70]">{completed} de {items.length} etapas concluídas</span><strong className="text-[#090D1C]">{Math.round(completed/items.length*100)}%</strong></div>
-    <div role="progressbar" aria-label="Progresso do onboarding" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(completed/items.length*100)} className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#ADE60A] transition-all" style={{width:`${completed/items.length*100}%`}}/></div>
+    <div role="progressbar" aria-label="Progresso do onboarding" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(completed/items.length*100)} className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#6C5CE7] transition-all" style={{width:`${completed/items.length*100}%`}}/></div>
     <div className="mt-4 divide-y divide-[#E3E7F0]">
      {items.map((item,index)=><label key={item.id} className="flex cursor-pointer items-start gap-3 py-3 text-sm">
-      <input type="checkbox" aria-label={`Etapa ${index+1}: ${item.title}`} checked={item.done} disabled={saving} onChange={e=>{resetMessages();toggle(item.id,e.target.checked);}} className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-[#6D35F5] disabled:cursor-wait"/>
+      <input type="checkbox" aria-label={`Etapa ${index+1}: ${item.title}`} checked={item.done} disabled={saving} onChange={e=>{resetMessages();toggle(item.id,e.target.checked);}} className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-[#6C5CE7] disabled:cursor-wait"/>
       <span className={item.done?"text-[#687285]":"font-medium text-[#090D1C]"}>{item.title}</span>
      </label>)}
     </div>
@@ -78,8 +78,8 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
      <p className="text-sm font-semibold text-[#090D1C]">Este projeto usa um checklist anterior ({items.length} etapas).</p>
      <p className="mt-2 text-xs leading-5 text-[#525B70]">O modelo atual possui 10 etapas. Para ver exatamente o checklist padrão, escolha substituir. Você também pode preservar as etapas atuais e adicionar as que faltam.</p>
      <div className="mt-3 flex flex-wrap gap-2">
-      <button type="button" disabled={saving} onClick={()=>setConfirmReplace(true)} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#ADE60A] px-3 py-2.5 text-xs font-semibold text-[#090D1C] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Usar checklist padrão de 10 etapas</button>
-      <button type="button" disabled={saving} onClick={extend} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#C9B8F3] bg-white px-3 py-2.5 text-xs font-semibold text-[#6034B7] disabled:opacity-50">Preservar atuais e adicionar {missing.length} etapas</button>
+      <button type="button" disabled={saving} onClick={()=>setConfirmReplace(true)} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-3 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Usar checklist padrão de 10 etapas</button>
+      <button type="button" disabled={saving} onClick={extend} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#D8D2FF] bg-white px-3 py-2.5 text-xs font-semibold text-[#5949D1] hover:bg-[#EDEAFF] disabled:opacity-50">Preservar atuais e adicionar {missing.length} etapas</button>
      </div>
     </div>}
     {confirmReplace&&<div role="alertdialog" aria-modal="true" aria-label="Confirmar substituição do checklist" className="fixed inset-0 z-[130] flex items-center justify-center bg-[#090D1C]/60 p-4">

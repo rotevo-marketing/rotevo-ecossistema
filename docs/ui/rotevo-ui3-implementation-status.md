@@ -119,3 +119,24 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Integração estruturada entre Campanhas, Tarefas e Conteúdos sem duplicar entradas.
 - Acessibilidade e confirmação de comportamento de aprovação com sessão autenticada, inclusive fontes indisponíveis ou com erros.
 - Teste visual real em desktop e mobile, além de publicação consolidada somente com autorização.
+
+## Rodada — Reuniões, atas e encaminhamentos (09/11/2026)
+
+### Implementado
+- `AdminMeetingsHub`: removidos os três cartões grandes de contagem; agenda, listagem e filtros em área de trabalho compacta; criação e gerenciamento continuam em drawer sem sair do painel.
+- `OperationalAgenda`: modelo de reunião foi ampliado de maneira compatível com JSON existente, mantendo título, data, horário, pauta, responsável, tipo, link e material. Ata e decisões continuam em `minutes`, mas há agora `internalNotes` independente e `minutesVisibleToClient` para escolher explicitamente a visibilidade da ata.
+- **Compatibilidade legada:** se `minutesVisibleToClient` estiver ausente em um registro existente e o compromisso já for compartilhado, a ata continua visível como antes. Novos registros começam com `minutesVisibleToClient:false`.
+- **Encaminhamentos estruturados:** `actionItems` com título, responsável, prazo e vínculo opcional com uma tarefa já existente no mesmo projeto. O vínculo não conclui nem cria tarefas automaticamente.
+- `ProjectForClient`: projeção explícita da ata somente se não estiver bloqueada por `minutesVisibleToClient:false`; notas `internalNotes` e log `minutesHistory` nunca são enviados ao portal. Ações só são projetadas no mesmo contexto de visibilidade da ata, sem campos internos.
+- `ClientMeetings`: três visualizações de uma mesma agenda autorizada, Calendário, Lista e Histórico, incluindo encaminhamentos e responsáveis nas reuniões autorizadas.
+- **Histórico de versões da ata:** a rota de atualização anexa ao JSON um snapshot assinado pelo usuário autenticado, com timestamp do servidor e texto da nova versão, somente quando o conteúdo de `minutes` é alterado. O editor administrativo apresenta o histórico em uma seção recolhível; este histórico não é projetado ao cliente. Em caso de atualização simultânea, segue a proteção `expectedUpdatedAt`.
+- **Retenção:** a rota administrativa impede exclusão destrutiva de reuniões concluídas ou com atas não vazias. O botão de exclusão é desabilitado nesses registros. Reuniões sem ata e não concluídas ainda podem ser excluídas após confirmação.
+- **Validações:** limites de texto, URLs HTTPS, atributos de visibilidade, datas, identificadores e vínculos de tarefas, com preservação de itens legados não alterados. `validExecutionDependencies` valida que cada ação vinculada pertence a uma tarefa do mesmo projeto.
+- **Testes:** `scripts/security/client-project-projection.test.mjs` verifica isolamento de notas internas, atas restritas, históricos e ações; `scripts/security/ui3-workspace-contract.test.mjs` verifica fluxos e contratos de autorização.
+
+### Pendências importantes
+- O histórico da ata atualmente mantém até as 100 últimas revisões no JSON. Antes de utilização jurídica como prova, é necessário projetar trilha de auditoria durável e imutável em banco, com políticas de retenção e controles próprios.
+- A funcionalidade de criar uma tarefa diretamente de um encaminhamento ainda não foi implementada. Atualmente permite vincular tarefas já existentes, preservando o mesmo projeto.
+- Integração automática com Google Meet, Calendar ou Docs não implementada.
+- Falta homologação autenticada do editor de atas, permissões, modo mobile, navegação por teclado e proteção de dados em contas reais.
+- Nenhum deployment ou publicação de registros foi realizado nesta rodada.

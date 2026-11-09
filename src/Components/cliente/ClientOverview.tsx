@@ -91,7 +91,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   ...(allowed("campaigns")?[{name:"Campanhas",icon:"rocket" as RotevoIconName,detail:campaignCount+" campanha(s) ativa(s) compartilhada(s)",module:"campaigns" as PortalModule}]:[])
  ];
 
- return <div className="rv-ui2-module space-y-4 pb-5">
+ return <div className="rv-ui2-module rv-ui2-client-overview space-y-4 pb-5">
   <div className="flex flex-wrap items-center justify-start gap-3">
    {allowed("content")&&<div className="flex items-center gap-2 rounded-lg border border-[#DEE4EF] bg-white p-1.5" aria-label="Filtrar atividades e conteúdos por mês">
     <span className="pl-2 text-[#68778D]">{icon("calendar",17)}</span>
@@ -107,11 +107,11 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     {label:"Campanhas ativas",value:String(campaignCount).padStart(2,"0"),detail:"Registradas no projeto",color:"#3A8CCD",symbol:"rocket" as RotevoIconName,target:"campaigns" as PortalModule},
     {label:"Entregas",value:tasks.length?completed+"/"+tasks.length:"—",detail:tasks.length?"Concluídas / compartilhadas":"Sem entregas compartilhadas",color:"#299D78",symbol:"chart-dots-3" as RotevoIconName,target:"execution" as PortalModule}
    ].filter(m=>allowed(m.target)).map(item=><button type="button" key={item.label} onClick={()=>onNavigate(item.target)} className={metric+" cursor-pointer transition-colors hover:border-[#C7B3F5]"}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-[#58677F]">{item.label}</span><span style={{color:item.color}}>{icon(item.symbol,19)}</span></div>
-    <strong className="mt-2 block text-3xl font-extrabold tracking-tight text-[#11182B]">{item.value}</strong><span className="mt-1 block text-[11px] text-[#758297]">{item.detail}</span></button>)}
+    <strong className="mt-2 block text-[30px] leading-9 font-semibold tracking-tight tabular-nums text-[#323647]">{item.value}</strong><span className="mt-1 block text-[11px] text-[#758297]">{item.detail}</span></button>)}
   </div>
-  <div className="grid gap-4 xl:grid-cols-2">
+  <div className="grid gap-3 xl:grid-cols-2">
    {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
-    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-extrabold text-[#17223A]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
     {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E6EAF2] px-3 py-3">
      <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#DED1FC] bg-[#F5F0FF] px-3 py-2 text-xs font-bold text-[#6332C7] hover:bg-[#E8DDFC]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
     </div>)}</div>:<p className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#738096]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}

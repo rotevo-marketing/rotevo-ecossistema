@@ -96,3 +96,47 @@ test("overview styling does not touch rich document sheets or hide actionable st
  assert.doesNotMatch(css,/\.se-paper\s*\{/);
  assert.doesNotMatch(css,/\.bn-editor\s*\{/);
 });
+
+test("strategic editor UI3 uses compact navigation and preserves safe authorized saving",()=>{
+ const page=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ const shell=source("Components/admin/PlanningAdminShell.tsx");
+ const css=source("app/rotevo-ui3.css");
+ assert.match(shell,/pw-app rv-ui2 rv-ui3 workspace-production/);
+ assert.match(page,/admin-manage-v2 rv-ui2 rv-ui3 workspace-project-page/);
+ assert.match(page,/rv-ui3-planning-tabs/);
+ assert.match(page,/rv-ui3-planning-header/);
+ assert.match(page,/documentSearch/);
+ assert.match(page,/matchesDocumentSearch\(doc\)/);
+ assert.match(page,/saveDocumentScope/);
+ assert.match(page,/expectedUpdatedAt:current\.updated_at/);
+ assert.match(page,/expectedUpdatedAt:project\.updated_at/);
+ assert.match(page,/onSaved=/);
+ assert.match(page,/richDirty\|\|richBusy/);
+ assert.match(css,/rv-ui3-planning-tabs/);
+ assert.match(css,/rv-ui3-document-group/);
+ assert.doesNotMatch(css,/\.se-paper\s*\{/);
+ assert.doesNotMatch(css,/\.bn-editor\s*\{/);
+});
+
+test("scheduling remains editable by area without automatically publishing documents",()=>{
+ const schedule=source("Components/admin/PlanningAreaScheduleEditor.tsx");
+ const planning=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ assert.match(schedule,/rv-ui3-area-schedule/);
+ assert.match(schedule,/onSave\(next\)/);
+ assert.match(schedule,/normalizedPlanningAreaSchedule\(initial\)/);
+ assert.match(schedule,/visibleToClient/);
+ assert.match(planning,/planningClientAccessEnabled/);
+ assert.match(planning,/PlanningScheduleEditor/);
+});
+
+test("execution detail form is a contextual drawer with existing concurrency-safe save",()=>{
+ const execution=source("Components/admin/ExecutionTimelineEditor.tsx");
+ assert.match(execution,/rv-ui3-execution-editor/);
+ assert.match(execution,/DialogFocus/);
+ assert.match(execution,/role="dialog"/);
+ assert.match(execution,/setEditing\(null\)/);
+ assert.match(execution,/expectedUpdatedAt:updatedAt/);
+ assert.match(execution,/saveItem/);
+ assert.match(execution,/dependencies/);
+ assert.match(execution,/visibleToClient/);
+});

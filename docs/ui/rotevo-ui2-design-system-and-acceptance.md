@@ -81,6 +81,29 @@ O verde-lima permanece disponível para a marca, mas deixa de ser uma ação ope
 - Teste autenticado do estrategista e de um cliente real/autorizado, sem modificar dados sensíveis
 - Preview da Vercel READY e acessível, aprovado antes de promover à produção
 
-## Estado de validação
+## Estado de validação — 09/11/2026
 
-A edição estática do código não comprova build nem funcionamento real. Quando o limite da Vercel permitir, executar o build da branch de prévia e validar os itens acima. Não promover à produção sem aprovação do usuário.
+A etapa 06 permanece aberta. Este registro diferencia implementação, verificação automática e inspeção visual em sessão autenticada.
+
+| Verificação | Estado | Evidência / observação |
+|---|---|---|
+| Sistema de tokens e menus de navegação | Implementado | CSS UI2 e shells de estrategista/cliente |
+| Estrutura visual dos workspaces e hierarquia executiva | Implementado em branch | Cabeçalhos operacionais, KPIs e cartões alterados estruturalmente após observação de que a prévia anterior parecia antiga |
+| Dez módulos administrativos | Revisão de código aplicada | Inspeção visual individual ainda pendente |
+| Editor e preservação do conteúdo documental | Revisão de CSS aplicada | Testes autenticados de inserção, persistência e publicação ainda pendentes |
+| Portal do Cliente e módulos compartilhados | Revisão de código aplicada | Testar permissões e estados publicados/não publicados |
+| CSS responsivo e controles de foco | Revisão e contratos estáticos aplicados | Inspeção por viewport/zoom e teclado ainda pendente |
+| GitHub Actions e build Next.js | Acompanhar último commit | Execuções anteriores aprovadas; a última deve ser verificada após cada ajuste |
+| Vercel Preview | Preview anterior READY no commit a7f60f4 | **Não representa** o novo redesign estrutural; gerar nova prévia do HEAD |
+| Homologação visual e funcional autenticada | Pendente | Testar estrategista e cliente autorizado sem alterar dados |
+| Promoção à produção | Não autorizada | Não executar antes de aceite explícito |
+
+### Regras de aceite e bloqueios
+
+1. Não declarar concluída a Etapa 06 apenas por GitHub Actions ou Vercel READY.
+2. Verificar que o deployment exibido corresponde exatamente ao commit aprovado, não a um SHA anterior.
+3. Comparar telas reais da interface autenticada com a nova composição, sem usar mockups como substitutos.
+4. Validar as larguras 320, 375, 390, 430, 768, 1024 e 1440 px, navegação por teclado, menus, contraste, zoom e tabelas.
+5. Testar edição/salvamento/publicação de forma controlada e com autorização; preservar dados dos clientes e documentos ricos.
+6. Se o limite de implantação ou a falta de sessão autenticada impedir a validação, registrar o impedimento e manter a etapa aberta.
+7. Nunca publicar em produção nem promover a prévia automaticamente.

@@ -47,3 +47,14 @@
 .rv-ui3.client-portal-v2 .rv-ui2-client-identity{max-width:100%}
 }
 @media(prefers-reduced-motion:reduce){.rv-ui3 *, .rv-ui3 *::before,.rv-ui3 *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Existing new-planning wizard, presented in its native form inside intercepted modal. */
+.rv3-modal-new-planning .admin-new-project-v2{min-height:0;background:#fff}
+.rv3-modal-new-planning .admin-new-project-v2>header,
+.rv3-modal-new-planning .admin-new-project-v2>footer{display:none}
+.rv3-modal-new-planning .admin-new-project-v2>section{max-width:none;padding:16px 20px 28px}
+.rv3-modal-new-planning .admin-new-project-v2>section>div{padding:0;border:0;box-shadow:none}
+.rv3-modal-new-planning .admin-new-project-v2 h1{font-size:19px;line-height:1.4;font-weight:600;color:#323647}
+.rv3-modal-new-planning .admin-new-project-v2 form{margin-top:18px}
+.rv3-modal-new-planning .admin-new-project-v2 form :is(input,select,textarea){border-radius:8px}
+@media(max-width:640px){.rv3-modal-new-planning .admin-new-project-v2>section{padding:12px 14px 22px}}

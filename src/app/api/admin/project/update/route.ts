@@ -71,6 +71,27 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
  if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
+ // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
+ if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
+  const agenda=nextRoot.operationalAgenda;
+  if(!Array.isArray(agenda)||agenda.length>500)return fail(400);
+  const ids=new Set<string>();
+  const validHttps=(value:unknown)=>{if(value===undefined||value==="")return true;if(typeof value!=="string"||value.length>2048)return false;try{return new URL(value).protocol==="https:";}catch{return false;}};
+  for(const value of agenda){
+   if(!value||typeof value!=="object"||Array.isArray(value))return fail(400);
+   const item=value as Record<string,unknown>;
+   if(typeof item.id!=="string"||!uuid.test(item.id)||ids.has(item.id))return fail(400);
+   ids.add(item.id);
+   if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
+   if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
+   if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
+   for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
+   if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);
+   if(item.visibleToClient!==undefined&&typeof item.visibleToClient!=="boolean")return fail(400);
+   if(!validHttps(item.materialUrl)||!validHttps(item.meetingUrl))return fail(400);
+  }
+ }
+
  // Validate new scope selections, but preserve historical scope during unrelated edits.
  const previousEco=oldRoot.ecosystem2027;
  const nextEco=nextRoot.ecosystem2027;

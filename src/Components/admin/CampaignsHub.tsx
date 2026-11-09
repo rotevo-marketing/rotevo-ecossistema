@@ -2,6 +2,7 @@
 import {useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import DialogFocus from "@/Components/ui/DialogFocus";
 
 export type CampaignStatus="draft"|"active"|"paused"|"finished";
 export type CampaignPlatform="Google Ads"|"Meta Ads"|"Outro";
@@ -124,47 +125,51 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   finally{setSaving(false);}
  }
  return <div className="rv-ui2-module rv-ui2-campaigns mt-5 space-y-4">
-  <section className="rv-ui2-section rounded-xl border border-[#E3E6ED] bg-white p-5 sm:p-6">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-[#090D1C]">Acompanhamento de campanhas</h2><p className="mt-1 text-xs text-[#697386]">Dados informados manualmente. A ROTEVO não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
-   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-    <label className="text-xs font-semibold text-[#525B70]">Projeto<select aria-label="Filtrar projeto de campanhas" value={selectedProjectId} onChange={e=>setProjectFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
+  <section className="rv-ui3-campaign-toolbar bg-white py-3">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="sr-only">Acompanhamento de campanhas</h2><p className="text-xs text-[#687487]">Dados registrados manualmente. A Rotevo não altera anúncios nas plataformas externas.</p></div><button type="button" disabled={projects.length===0} onClick={openNew} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-40"><RotevoTablerIcon name="square-rounded-plus" size={18}/> Nova campanha</button></div>
+   <div className="mt-3 grid gap-2 border-b border-[#E3E6ED] pb-3 sm:grid-cols-2 xl:grid-cols-5">
+    <label className="text-[11px] font-medium text-[#687487]">Projeto<select aria-label="Filtrar projeto de campanhas" value={selectedProjectId} onChange={e=>setProjectFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
     <label className="text-xs font-semibold text-[#525B70]">Plataforma<select aria-label="Filtrar plataforma" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm"><option value="all">Todas as plataformas</option><option>Google Ads</option><option>Meta Ads</option><option>Outro</option></select></label>
     <label className="text-xs font-semibold text-[#525B70]">Situação<select aria-label="Filtrar situação" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm"><option value="all">Todas as situações</option>{Object.entries(statuses).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     <label className="text-xs font-semibold text-[#525B70]">Mês no período da campanha<input type="month" aria-label="Filtrar campanhas por mês ativo" value={monthFilter} onChange={e=>setMonthFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm"/></label>
     <label className="text-xs font-semibold text-[#525B70]">Buscar<input type="search" aria-label="Buscar campanhas" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Campanha ou cliente" className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-2 py-2.5 text-sm"/></label>
    </div>
   </section>
-  <section aria-label="Indicadores do projeto" className="rounded-2xl border border-[#E3E7F0] bg-white p-5">
-   <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 className="text-base font-semibold text-[#090D1C]">Desempenho por projeto</h2><p className="mt-1 text-xs text-[#697386]">Indicadores consolidados apenas dos registros de {monthFilter?monthFilter.split("-").reverse().join("/"):"mês selecionado"} no projeto escolhido. Valores ausentes não são tratados como zero.</p></div><span className="rounded-lg bg-[#F0EBFF] px-3 py-1.5 text-xs font-semibold text-[#6034B7]">{reported.length} de {monthRows.length} campanhas com dados do mês</span></div>
-   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <section aria-label="Indicadores do projeto" className="rv-ui3-campaign-metrics border-b border-[#E3E6ED] py-3">
+   <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
     {[
-     {name:"Campanhas ativas",value:String(scoped.filter(x=>x.item.status==="active").length)},
-     {name:"Orçamento cadastrado",value:hasBudget?money(monthlyBudget):"—"},
-     {name:"Investimento no mês",value:totals.spent===null?"—":money(totals.spent)},
-     {name:"Leads",value:totals.leads===null?"—":totals.leads.toLocaleString("pt-BR")},
-     {name:"Custo por lead (CPL)",value:cpl===null?"—":money(cpl)},
-     {name:"Agendamentos",value:totals.appointments===null?"—":totals.appointments.toLocaleString("pt-BR")},
-     {name:"Vendas",value:totals.sales===null?"—":totals.sales.toLocaleString("pt-BR")},
-     {name:"ROAS",value:roas===null?"—":roas.toLocaleString("pt-BR",{maximumFractionDigits:2})+"×"}
-    ].map(card=><div key={card.name} className="rv-ui2-stat rounded-xl border border-[#E3E6ED] bg-[#FAFBFD] p-4"><p className="text-xs text-[#697386]">{card.name}</p><p className="mt-2 text-2xl font-bold text-[#090D1C]">{card.value}</p></div>)}
+      {name:"Ativas",value:String(scoped.filter(x=>x.item.status==="active").length)},
+      {name:"Orçamento cadastrado",value:hasBudget?money(monthlyBudget):"—"},
+      {name:"Investimento no mês",value:totals.spent===null?"—":money(totals.spent)},
+      {name:"Leads",value:totals.leads===null?"—":totals.leads.toLocaleString("pt-BR")},
+      {name:"CPL",value:cpl===null?"—":money(cpl)}
+    ].map(metric=><div key={metric.name} className="flex min-h-9 items-center gap-2 rounded-lg px-2"><span className="text-xs text-[#687487]">{metric.name}</span><strong className="text-[13px] font-semibold tabular-nums text-[#323647]">{metric.value}</strong></div>)}
+    <details className="relative"><summary className="min-h-9 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Mais indicadores</summary>
+     <div className="mt-2 grid gap-3 rounded-lg border border-[#E3E6ED] bg-[#FAFBFD] p-3 sm:grid-cols-3">
+      {[
+       {name:"Agendamentos",value:totals.appointments===null?"—":totals.appointments.toLocaleString("pt-BR")},
+       {name:"Vendas",value:totals.sales===null?"—":totals.sales.toLocaleString("pt-BR")},
+       {name:"ROAS",value:roas===null?"—":roas.toLocaleString("pt-BR",{maximumFractionDigits:2})+"×"},
+       {name:"Impressões",value:totals.impressions===null?"—":totals.impressions.toLocaleString("pt-BR")},
+       {name:"Cliques",value:totals.clicks===null?"—":totals.clicks.toLocaleString("pt-BR")},
+       {name:"CTR",value:ctr===null?"—":ctr.toLocaleString("pt-BR",{maximumFractionDigits:2})+"%"},
+       {name:"CPC",value:cpc===null?"—":money(cpc)},
+       {name:"Receita atribuída",value:totals.revenue===null?"—":money(totals.revenue)}
+      ].map(metric=><div key={metric.name}><span className="block text-[11px] text-[#687487]">{metric.name}</span><strong className="text-sm font-semibold text-[#323647]">{metric.value}</strong></div>)}
+     </div>
+    </details>
    </div>
-   <details className="mt-4 rounded-lg border border-[#E3E7F0] p-3"><summary className="cursor-pointer text-xs font-semibold text-[#6034B7]">Mais métricas de mídia</summary><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
-    {name:"Impressões",value:totals.impressions===null?"—":totals.impressions.toLocaleString("pt-BR")},
-    {name:"Cliques",value:totals.clicks===null?"—":totals.clicks.toLocaleString("pt-BR")},
-    {name:"CTR",value:ctr===null?"—":ctr.toLocaleString("pt-BR",{maximumFractionDigits:2})+"%"},
-    {name:"CPC",value:cpc===null?"—":money(cpc)},
-    {name:"Receita atribuída",value:totals.revenue===null?"—":money(totals.revenue)}
-   ].map(card=><div key={card.name} className="rounded-lg bg-[#F6F7FB] p-3"><p className="text-xs text-[#697386]">{card.name}</p><strong className="mt-1 block text-sm text-[#090D1C]">{card.value}</strong></div>)}</div></details>
-   <p className="mt-3 text-xs text-[#697386]">Orçamento cadastrado representa o orçamento total informado por campanha, não o gasto no mês. Alcance único não é somado entre campanhas. Resultados de tipos distintos também não são somados.</p>
+   <p className="mt-2 text-[11px] text-[#687487]">{reported.length} de {monthRows.length} campanhas com registros em {monthFilter.split("-").reverse().join("/")}. Ausência de dados não equivale a zero. O orçamento cadastrado não representa o gasto do mês.</p>
   </section>
-  <section aria-label="Lista de campanhas" className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-6"><h2 className="text-base font-semibold text-[#090D1C]">Campanhas do projeto</h2>
+  <section aria-label="Lista de campanhas" className="rv-ui3-campaign-list bg-white py-3"><h2 className="sr-only">Campanhas do projeto</h2>
    <p className="mt-3 text-xs text-[#697386]">{filtered.length} campanha(s) no projeto e filtros selecionados. Os valores de desempenho são registrados por mês, sem duplicar históricos.</p>
    {filtered.length===0?<div className="mt-4 rounded-xl border border-dashed border-[#E3E7F0] p-6 text-center"><p className="text-sm font-semibold">Nenhuma campanha encontrada</p><p className="mt-2 text-xs text-[#697386]">{projects.length===0?"Cadastre um projeto antes de incluir campanhas.":"Cadastre sua primeira campanha ou ajuste os filtros."}</p></div>:
-   <div className="mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full min-w-[850px] text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{["Campanha / Projeto","Plataforma","Situação","Gasto do mês","Resultados do mês","Ação"].map(h=><th key={h} scope="col" className="border-b border-[#E3E7F0] px-3 py-3 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{filtered.map(({item,project})=><tr key={project.id+":"+item.id} className="hover:bg-[#F8F7FC]"><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{item.title}</p><p className="mt-1 text-[#697386]">{client(project)?.name??"Cliente"} · {project.title}</p></td><td className="px-3 py-3">{item.platform}</td><td className="px-3 py-3"><span className={item.status==="active"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":item.status==="paused"?"rounded-lg bg-[#FFF1D4] px-2 py-1 text-[#875400]":"rounded-lg bg-[#EEE8FF] px-2 py-1 text-[#6034B7]"}>{statuses[item.status]??item.status}</span></td><td className="px-3 py-3">{dataFor(item)?.spent==null?"—":money(dataFor(item)!.spent!)}</td><td className="px-3 py-3">{dataFor(item)?.results==null?"—":dataFor(item)!.results+" "+(item.resultLabel||"resultados")}{dataFor(item)?.results!=null&&dataFor(item)!.results!>0&&dataFor(item)?.spent!=null&&<span className="mt-1 block text-[#697386]">{money(dataFor(item)!.spent!/dataFor(item)!.results!)} por resultado</span>}</td><td className="px-3 py-3"><div className="flex gap-2"><button type="button" onClick={()=>openSnapshot(project.id,item)} className="cursor-pointer rounded-lg bg-[#EEE8FF] px-3 py-2 font-semibold text-[#6034B7]">Resultados do mês</button><button type="button" onClick={()=>openEdit(project.id,item)} className="cursor-pointer rounded-lg border border-[#D9C9FA] bg-white px-3 py-2 font-semibold text-[#6034B7]">Gerenciar</button></div></td></tr>)}</tbody></table></div>}
+   <div className="mt-3 overflow-x-auto border-y border-[#E3E6ED]"><table className="w-full min-w-[850px] text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{["Campanha / Projeto","Plataforma","Situação","Gasto do mês","Resultados do mês","Ação"].map(h=><th key={h} scope="col" className="border-b border-[#E3E7F0] px-3 py-3 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{filtered.map(({item,project})=><tr key={project.id+":"+item.id} className="hover:bg-[#F8F7FC]"><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{item.title}</p><p className="mt-1 text-[#697386]">{client(project)?.name??"Cliente"} · {project.title}</p></td><td className="px-3 py-3">{item.platform}</td><td className="px-3 py-3"><span className={item.status==="active"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":item.status==="paused"?"rounded-lg bg-[#FFF1D4] px-2 py-1 text-[#875400]":"rounded-lg bg-[#EEE8FF] px-2 py-1 text-[#6034B7]"}>{statuses[item.status]??item.status}</span></td><td className="px-3 py-3">{dataFor(item)?.spent==null?"—":money(dataFor(item)!.spent!)}</td><td className="px-3 py-3">{dataFor(item)?.results==null?"—":dataFor(item)!.results+" "+(item.resultLabel||"resultados")}{dataFor(item)?.results!=null&&dataFor(item)!.results!>0&&dataFor(item)?.spent!=null&&<span className="mt-1 block text-[#697386]">{money(dataFor(item)!.spent!/dataFor(item)!.results!)} por resultado</span>}</td><td className="px-3 py-3"><div className="flex gap-2"><button type="button" onClick={()=>openSnapshot(project.id,item)} className="min-h-9 cursor-pointer rounded-lg px-3 py-2 font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Resultados do mês</button><button type="button" onClick={()=>openEdit(project.id,item)} className="min-h-9 cursor-pointer rounded-lg border border-[#E3E6ED] bg-white px-3 py-2 font-medium text-[#323647] hover:bg-[#F6F7FB]">Gerenciar</button></div></td></tr>)}</tbody></table></div>}
   </section>
   {snapshotCampaign&&<div className="fixed inset-0 z-[125] flex justify-end">
    <button type="button" aria-label="Fechar registro mensal" onClick={()=>{if(!snapshotSaving){setSnapshotCampaign(null);setError("");}}} className="absolute inset-0 bg-[#090D1C]/55"/>
    <aside role="dialog" aria-modal="true" aria-label="Resultados mensais da campanha" className="relative z-10 h-full w-full max-w-[620px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">
+    <DialogFocus onClose={()=>{if(!snapshotSaving){setSnapshotCampaign(null);setError("");}}}/>
     <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold text-[#090D1C]">Resultados mensais</h2><p className="mt-1 text-xs text-[#697386]">Registro específico desta campanha. O histórico dos outros meses é preservado.</p></div><button type="button" aria-label="Fechar" disabled={snapshotSaving} onClick={()=>{setSnapshotCampaign(null);setError("");}} className="rounded-lg border border-[#E3E7F0] p-2"><RotevoTablerIcon name="x" size={19}/></button></div>
     {error&&<p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#A3223D]">{error}</p>}
     <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -175,7 +180,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
      <label className="text-xs font-semibold sm:col-span-2">Observações do período<textarea rows={3} maxLength={1000} value={snapshotDraft.notes} onChange={e=>setSnapshotDraft({...snapshotDraft,notes:e.target.value})} placeholder="O que mudou, testes realizados e próximos passos" className="mt-1 w-full rounded-lg border border-[#E3E7F0] p-3 text-sm"/></label>
     </div>
     <p className="mt-4 text-xs leading-5 text-[#697386]">Preencha apenas o que foi medido. Dados em branco não viram zero. Evite incluir leads como resultados adicionais caso ambos representem o mesmo evento.</p>
-    <div className="mt-5 flex justify-end gap-2"><button type="button" disabled={snapshotSaving} onClick={()=>setSnapshotCampaign(null)} className="rounded-lg border border-[#E3E7F0] px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={snapshotSaving} onClick={()=>void saveSnapshot()} className="rounded-lg bg-[#ADE60A] px-4 py-2.5 text-sm font-semibold text-[#090D1C] disabled:opacity-50">{snapshotSaving?"Salvando...":"Salvar resultados do mês"}</button></div>
+    <div className="mt-5 flex justify-end gap-2"><button type="button" disabled={snapshotSaving} onClick={()=>setSnapshotCampaign(null)} className="rounded-lg border border-[#E3E7F0] px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={snapshotSaving} onClick={()=>void saveSnapshot()} className="rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-50">{snapshotSaving?"Salvando...":"Salvar resultados do mês"}</button></div>
    </aside>
   </div>}
   {editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar cadastro de campanha" onClick={close} className="absolute inset-0 bg-[#090D1C]/55"/><aside role="dialog" aria-modal="true" aria-label={editing.id?"Editar campanha":"Nova campanha"} className="relative z-10 h-full w-full max-w-[650px] overflow-y-auto bg-white p-5 shadow-2xl sm:p-7">

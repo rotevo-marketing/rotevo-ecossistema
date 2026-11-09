@@ -157,6 +157,9 @@
  }
  /* Wide data tables scroll within their own container instead of forcing all
     module tables beyond the viewport on 320–430 px screens. */
+ .rv-ui2 .rv-ui2-module table {
+  min-width:0;
+ }
  .rv-ui2 .rv-ui2-module :is(.overflow-x-auto,.overflow-auto,.rv-ui2-task-board) > table {
   min-width:max-content;
  }
@@ -164,9 +167,7 @@
   max-width:100%;
   overscroll-behavior-x:contain;
  }
- .rv-ui2 .rv-ui2-module table:not(:where(.overflow-x-auto,.overflow-auto,.rv-ui2-task-board) > table) {
-  min-width:0;
- }
+
  .rv-ui2 .rv-ui2-module :is(section,article,div)[class*="rounded-2xl"][class*="p-6"] {
   padding:14px;
  }

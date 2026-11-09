@@ -9,10 +9,12 @@ export type ExecutionItem = {
   description?:string;
   projectTitle?:string;
   projectKey?:string;
+  projectAvatarUrl?:string;
   documentCode?:string;
   priority?:"low"|"normal"|"high"|"urgent";
   phase?:string;
   owner?:string;
+  ownerAvatarUrl?:string;
   ownerUserId?:string;
   startDate?:string;
   dueDate?:string;
@@ -27,7 +29,7 @@ export type ExecutionItem = {
   activityLog?:{at:string;summary:string}[];
   visibleToClient?:boolean;
 };
-type Project={id:string;title:string;data:{executionTimeline?:ExecutionItem[];deliverySchedule?:Record<string,string>|null}|null};
+type Project={id:string;title:string;clientAvatarUrl?:string|null;data:{executionTimeline?:ExecutionItem[];deliverySchedule?:Record<string,string>|null}|null};
 const labels:Record<string,string>={
   planned:"Planejado",in_progress:"Em andamento",blocked:"Aguardando",completed:"Concluído",cancelled:"Cancelado"
 };
@@ -53,7 +55,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
    for(const project of projects){
      for(const item of project.data?.executionTimeline??[]){
        if(!isExecutionItem(item)||item.visibleToClient!==true||item.archivedAt)continue;
-       items.push({...item,projectTitle:project.title,projectKey:project.id});
+       items.push({...item,projectTitle:project.title,projectKey:project.id,projectAvatarUrl:project.clientAvatarUrl??undefined});
      }
    }
    items.sort((a,b)=>(a.dueDate??"9999").localeCompare(b.dueDate??"9999"));
@@ -94,8 +96,8 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
       </div>:visible.length===0?<p className="mt-6 text-sm text-[#697386]">Nenhuma entrega corresponde a este filtro.</p>:
       view==="list"?<div className="mt-5 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[750px] border-collapse text-left text-sm"><thead className="bg-[#F6F7FB] text-xs font-semibold text-[#525B70]"><tr>{["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"].map(label=><th scope="col" key={label} className="border-b border-[#E3E7F0] px-3 py-3">{label}</th>)}</tr></thead><tbody className="divide-y divide-[#ECEEF4]">{shown.map(item=>{const state=item.status??"planned";const pri=mondayPriority[item.priority??"normal"]??mondayPriority.normal;const url=safeLink(item.driveUrl);return <tr key={`${item.projectKey}:${item.id}`} className="hover:bg-[#FAFAFF]">
        <td className="max-w-[300px] border-l-[3px] px-3 py-3 text-xs font-semibold text-[#1C2942]" style={{borderLeftColor:mondayStatus[state]??mondayStatus.planned}}><span className="block">{item.title}</span>{url&&<a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[11px] text-[#6D35F5] hover:underline">Ver material</a>}</td>
-       <td className="px-3 py-3"><span className="inline-flex max-w-[155px] items-center gap-2"><TaskAvatar name={item.projectTitle??"Projeto"} size={26}/><span className="truncate text-xs" title={item.projectTitle}>{item.projectTitle}</span></span></td>
-       <td className="px-3 py-3">{item.owner?<span className="inline-flex min-w-[110px] items-center gap-2"><TaskAvatar name={item.owner} size={26}/><span className="max-w-[120px] truncate text-xs" title={item.owner}>{item.owner}</span></span>:<span className="text-xs text-[#697386]">Não atribuído</span>}</td>
+       <td className="px-3 py-3"><span className="inline-flex max-w-[155px] items-center gap-2"><TaskAvatar name={item.projectTitle??"Projeto"} src={item.projectAvatarUrl} size={26}/><span className="truncate text-xs" title={item.projectTitle}>{item.projectTitle}</span></span></td>
+       <td className="px-3 py-3">{item.owner?<span className="inline-flex min-w-[110px] items-center gap-2"><TaskAvatar name={item.owner} src={item.ownerAvatarUrl} size={26}/><span className="max-w-[120px] truncate text-xs" title={item.owner}>{item.owner}</span></span>:<span className="text-xs text-[#697386]">Não atribuído</span>}</td>
        <td className="px-3 py-3"><span className="block rounded-md px-3 py-2 text-center text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span></td>
        <td className="px-3 py-3"><span className="flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold text-white" style={{backgroundColor:pri.color}}><RotevoTablerIcon name="flag" size={14}/>{pri.name}</span></td>
        <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-[#525B70]">{formatted(item.dueDate)}</td>
@@ -109,7 +111,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
          {item.description&&<p className="mt-3 text-sm text-[#525B70]">{item.description}</p>}
          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#697386]">
           <span>Prazo: {formatted(item.dueDate)}</span>
-          {item.owner&&<span className="inline-flex items-center gap-2"><TaskAvatar name={item.owner} size={22}/>Responsável: {item.owner}</span>}
+          {item.owner&&<span className="inline-flex items-center gap-2"><TaskAvatar name={item.owner} src={item.ownerAvatarUrl} size={22}/>Responsável: {item.owner}</span>}
           {item.dependencies?.length?<span>Dependências: {item.dependencies.length}</span>:null}
          </div>
          {url&&<a href={url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex cursor-pointer text-sm font-semibold text-[#6D35F5] hover:underline">Ver material no Drive ↗</a>}

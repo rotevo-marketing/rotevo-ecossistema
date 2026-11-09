@@ -33,7 +33,7 @@ const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",ye
 const formatted=(s?:string)=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s)?`${s.slice(8,10)}/${s.slice(5,7)}`:"Sem prazo";
 const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
 const selectClass="max-w-full rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-medium text-[#31394B] focus:outline-none focus:ring-2 focus:ring-[#6D35F5]";
-const buttonClass="inline-flex items-center gap-2 rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-semibold text-[#344056] hover:bg-[#F7F7FC]";
+const buttonClass="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E3E6ED] bg-white px-3 py-2 text-xs font-semibold text-[#485368] transition-colors hover:border-[#D8D2FF] hover:bg-[#F1EEFF]";
 type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
 function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean;photos?:Record<string,string>}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState("");
@@ -212,8 +212,8 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   <div className="w-[126px]"><TaskDropdown label={`Situação de ${x.task.title}`} value={x.task.status??"planned"} options={statusOptions} disabled={!!working||!!x.task.archivedAt} onChange={value=>void updateTask(x.project,x.task,{status:value})}/></div>
   <div className="w-[110px]"><TaskDropdown label={`Prioridade de ${x.task.title}`} kind="priority" value={x.task.priority??"normal"} options={priorityOptions} disabled={!!working} onChange={value=>void updateTask(x.project,x.task,{priority:value})}/></div>
  </div>;
- return <div className="mt-7 space-y-4">
-  <section data-ui2-surface aria-label="Prioridades e reuniões do dia" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E7F0] bg-white p-3 sm:p-4">
+ return <div className="rv-ui2-module rv-ui2-tasks mt-5 space-y-4">
+  <section data-ui2-surface aria-label="Prioridades e reuniões do dia" className="rv-ui2-section flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E3E6ED] bg-white p-3 sm:p-4">
    <div><h2 className="text-sm font-bold">Minha visão do dia</h2><p className="mt-1 text-xs text-[#697386]">Tarefas e reuniões dos projetos · {formatted(today())}</p></div>
    <div className="flex flex-wrap gap-2">
     <button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className={buttonClass}>Hoje <strong>{todayCount}</strong></button>

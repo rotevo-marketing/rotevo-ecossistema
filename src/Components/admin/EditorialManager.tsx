@@ -86,6 +86,10 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  return <div className="rv-ui2-module rv-ui2-editorial rv-ui3-editorial mt-3 space-y-3">
   {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
   <EditorialCalendar projects={projects} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
+  {project&&<details className="rv-ui3-editorial-approval-history border-t border-[#E3E6ED] py-3">
+   <summary className="min-h-9 cursor-pointer rounded-lg px-2 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Consultar histórico de aprovações do projeto</summary>
+   <EditorialApprovalsPanel key={project.id} projectId={project.id} contentTitles={Object.fromEntries(items.map(item=>[item.id,item.title]))}/>
+  </details>}
   {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={close} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[690px] overflow-y-auto border-l border-[#E3E6ED] bg-white p-5 shadow-2xl sm:p-7">
     <DialogFocus onClose={close}/>{dirty&&<p role="status" className="rv-unsaved">Alterações não salvas no conteúdo</p>}<h3 className="border-b border-[#E3E6ED] pb-3 text-base font-semibold text-[#323647]">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
     {!editing.id&&<label className="mt-4 block text-xs font-medium">Projeto<select value={projectId} onChange={e=>{setProjectId(e.target.value);setError("");}} className="mt-1 block w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}

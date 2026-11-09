@@ -95,3 +95,27 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 ### Verificações necessárias
 - Confirmar workflow do commit final desta rodada.
 - Validar alteração, salvamento e recuperação de documentos em navegador autenticado (inclusive documentos HTML extensos), controle de altura, publicação seletiva e acessibilidade mobile.
+
+## Rodada — Conteúdo e Campanhas (09/11/2026)
+
+### Código implementado
+1. `EditorialCalendar.tsx`: filtros por canal baseados exclusivamente nos canais efetivamente presentes nos projetos; todas as visualizações (calendário e lista) reutilizam a mesma coleção `editorialCalendar`, sem replicar registros.
+2. `ClientContent.tsx`: alternância Calendário, Lista e Aprovações, com canal específico, situação e navegação por mês nas visualizações temporais. A visão de Aprovações exibe conteúdos de todos os meses que estão aguardando decisão e mantém o diálogo, as aprovações de ideia/versão e o histórico por versão já existentes.
+3. `EditorialManager.tsx`: editor lateral branco e campos do briefing organizados com divisores mais leves, sem remover estratégia, referências, links, revisão, versões ou controle de compartilhamento. Histórico de decisões por projeto acessível sob demanda via componente existente `EditorialApprovalsPanel`.
+4. `CampaignsHub.tsx`: formulário e listagem preservados, com filtros compactos, indicadores operacionais em faixa discreta e métricas menos frequentes em painel recolhível. Histórico mensal, preenchimento manual, valores ausentes `null`, sem somas indevidas de alcance e resultados heterogêneos.
+5. `CampaignsHub.tsx`: `DialogFocus` aplicado ao editor e ao painel de resultados; os botões principais seguem o roxo aprovado, eliminando aplicações antigas de verde-limão nas ações editadas.
+6. `src/app/rotevo-ui3.css`: ajustes de densidade, divisórias e foco de teclado para os módulos editoriais e de campanhas.
+7. `scripts/security/ui3-workspace-contract.test.mjs`: regressões específicas para os filtros por canal, aprovações condicionadas à versão e visibilidade, histórico mensal e integridade dos cálculos.
+
+### Restrições preservadas
+- Nenhum dado foi duplicado ou migrado. Não foi criado modelo multicanal com distribuições independentes nesta rodada.
+- Nenhuma aprovação foi emitida, versão publicada ou campo interno compartilhado automaticamente.
+- Não houve alteração das políticas de segurança do banco nem das ações em plataformas de publicidade.
+- Não houve deployment; produção e registros dos clientes permanecem inalterados.
+- A interface ainda precisa de homologação autenticada e visual em diferentes telas antes da implantação.
+
+### Pendências
+- Seleção múltipla e distribuição de uma única criação para diversos canais com datas e aprovações independentes, mediante revisão de modelo de dados.
+- Integração estruturada entre Campanhas, Tarefas e Conteúdos sem duplicar entradas.
+- Acessibilidade e confirmação de comportamento de aprovação com sessão autenticada, inclusive fontes indisponíveis ou com erros.
+- Teste visual real em desktop e mobile, além de publicação consolidada somente com autorização.

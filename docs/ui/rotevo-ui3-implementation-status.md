@@ -74,3 +74,24 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Testes visuais autenticados por perfil e nas larguras 320,375,390,430,768,1024,1440.
 - Verificação de retorno de foco e navegação por teclado em navegador real.
 - Aferir experiência com os dados de clientes autorizados sem modificar registros.
+
+## Rodada — Editor de Planejamento Estratégico (09/11/2026)
+
+### Implementações aplicadas na branch
+- **Shell do planejamento:** ativado `rv-ui3` também no `PlanningAdminShell`, garantindo que a identidade seja aplicada ao editor e não apenas à home administrativa.
+- **Cabeçalho do projeto:** reduzidos fotografia, título, metadados e botões contextuais; removido o rodapé lime do workspace de edição; preservadas as funções de acesso, apresentação e publicação.
+- **Abas:** Plano Estratégico, Cronograma, Plano de Execução, Visão do Cliente e Configurar Documentos passam a seguir uma barra compacta com divisória e foco; preservadas teclas ArrowLeft/ArrowRight/Home/End, atributos aria-selected e proibição de trocar durante salvamento.
+- **Documentos:** adicionada busca por nome/código na configuração de escopo; áreas e documentos foram estilizados em linhas compactas, preservando `selectedDocumentCodes`, `presentedDocumentCodes`, conteúdos já salvos e salvamento de escopo autorizado.
+- **Editor estratégico:** expandida a superfície de trabalho, reduzidos os elementos decorativos da navegação de documentos; o conteúdo `.se-paper`, editor BlockNote e HTML personalizado não foram alterados.
+- **Cronograma:** a previsão e situação por área deixaram de aparecer em cartões independentes e passaram a ser editadas em linhas; preservado `planningAreaSchedule` e o cronograma legado recolhido.
+- **Plano de Execução:** entrega nova ou existente abre em drawer acessível com foco e confirmação de descarte; mantidos responsáveis, datas, dependências, vínculo com documentos, visibilidade e persistência compare-and-swap.
+- **Teste automatizado:** `scripts/security/ui3-workspace-contract.test.mjs` cobre estrutura, escopo documental, autorização e persistência.
+
+### Não implementado nesta rodada
+- Reformulação funcional completa do editor de documentos (ferramentas de inserção e modelos); exige homologação visual com documentos ricos reais.
+- Gestão de atas, fluxo multicanal editorial, permissões granulares de equipe ou migração de banco.
+- Aprovação de qualquer documento, mudança de visibilidade de cliente e deployment de produção.
+
+### Verificações necessárias
+- Confirmar workflow do commit final desta rodada.
+- Validar alteração, salvamento e recuperação de documentos em navegador autenticado (inclusive documentos HTML extensos), controle de altura, publicação seletiva e acessibilidade mobile.

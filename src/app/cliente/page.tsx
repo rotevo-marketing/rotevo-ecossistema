@@ -125,7 +125,7 @@ export default function ClientAreaPage(){
        <header className="rv-page-heading rv-ui2-client-heading">
           <div className="rv-ui2-client-heading-copy">
             <p className="rv-ui2-client-eyebrow">PORTAL DO CLIENTE <span aria-hidden="true">/</span> {tab==="overview"?"VISÃO GERAL":selected.name.toLocaleUpperCase("pt-BR")}</p>
-            <h1>{tab==="overview"?"Seu projeto, em perspectiva.":selected.name}</h1>
+            <h1>{tab==="overview"?"Acompanhe seu projeto":selected.name}</h1>
             <p>{tab==="overview"?"Acompanhe prioridades, próximas entregas e o andamento do seu trabalho com a Rotevo.":tab==="planning"?"Consulte as etapas e os documentos estratégicos compartilhados com sua empresa.":"Consulte informações, arquivos e atividades disponibilizados para sua empresa."}</p>
           </div>
           <span className="rv-ui2-client-identity"><RotevoTablerIcon name="users" size={17} stroke={1.7}/>{clientName||"Área do cliente"}</span>

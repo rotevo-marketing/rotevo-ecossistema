@@ -4,6 +4,12 @@
 import type { ReactNode } from "react";
 
 const artwork: Record<string, ReactNode> = {
+  "file-text": <><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-11a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h8l5 5v11a2 2 0 0 1 -2 2z"/><path d="M8 13h8"/><path d="M8 17h8"/></>,
+  "eye": <><path d="M2 12s3.5 -7 10 -7s10 7 10 7s-3.5 7 -10 7s-10 -7 -10 -7"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/></>,
+  "chevron-down": <path d="M6 9l6 6l6 -6"/>,
+  "chevron-up": <path d="M6 15l6 -6l6 6"/>,
+  "arrow-left": <><path d="M5 12h14"/><path d="M5 12l6 -6"/><path d="M5 12l6 6"/></>,
+  "check": <path d="M5 12l5 5l10 -10"/>,
   "h-2": <>
     <path d="M17 12a2 2 0 1 1 4 0c0 .591 -.417 1.318 -.816 1.858l-3.184 4.143l4 0" />
     <path d="M4 6v12" />
@@ -308,7 +314,7 @@ const artwork: Record<string, ReactNode> = {
   </>,
 };
 
-export type RotevoIconName = "h-2" | "align-left" | "table" | "photo" | "chart-bar" | "bulb" | "arrows-split" | "number-123" | "folder-lock" | "key" | "logout" | "folder-open" | "lock" | "users" | "users-group" | "list-check" | "calendar" | "currency-dollar" | "rocket" | "alert-circle" | "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "brand-youtube" | "brand-linkedin" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
+export type RotevoIconName = "file-text" | "eye" | "chevron-down" | "chevron-up" | "arrow-left" | "check" | "h-2" | "align-left" | "table" | "photo" | "chart-bar" | "bulb" | "arrows-split" | "number-123" | "folder-lock" | "key" | "logout" | "folder-open" | "lock" | "users" | "users-group" | "list-check" | "calendar" | "currency-dollar" | "rocket" | "alert-circle" | "lifebuoy" | "hourglass" | "clock" | "square-rounded-plus" | "search" | "filter" | "user-check" | "folder" | "arrows-sort" | "list" | "layout-kanban" | "calendar-week" | "flag" | "link" | "message-circle" | "circle-check" | "view-360-arrow" | "history" | "x" | "layout-dashboard" | "report" | "shopping-bag" | "filter-2-search" | "user" | "shape" | "target-arrow" | "brand-instagram" | "brand-youtube" | "brand-linkedin" | "speakerphone" | "chart-funnel" | "bolt" | "chart-pie" | "chart-dots-3" | "device-analytics" | "alert-square-rounded" | "timeline-event-text" | "calendar-heart";
 
 export function RotevoTablerIcon({name, size=24, stroke=2.3, className=""}: {
   name:RotevoIconName; size?:number; stroke?:number; className?:string

@@ -1,0 +1,108 @@
+/* ROTEVO UI 2.0 — shared operational design system.
+   Scope: strategist, client and planning workspaces. Never override rich document body. */
+.rv-ui2 {
+ --ui2-canvas:#F6F7FB; --ui2-surface:#FFFFFF; --ui2-text:#323647;
+ --ui2-muted:#687487; --ui2-border:#E3E6ED; --ui2-accent:#6C5CE7;
+ --ui2-accent-hover:#5949D1; --ui2-accent-tint:#EDEAFF;
+ --ui2-positive:#18A874; --ui2-warning:#F2AD43;
+ background:var(--ui2-canvas); color:var(--ui2-text);
+ font-family:var(--font-body),Inter,Arial,sans-serif;
+}
+.rv-ui2 :is(button,a,input,select,textarea,summary,[role="tab"]):focus-visible {
+ outline:2px solid #6353D4; outline-offset:3px;
+}
+.rv-ui2 :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {accent-color:var(--ui2-accent)}
+.rv-ui2 :is(button,a,input,select,textarea) {transition:background-color .14s ease,border-color .14s ease,color .14s ease}
+.rv-ui2 :is(button,a)[aria-disabled="true"],.rv-ui2 button:disabled {cursor:not-allowed}
+.rv-ui2 .rv-ui2-topbar {box-shadow:0 1px 0 rgba(24,30,48,.025)}
+.rv-ui2 .rv-ui2-sidebar {background:#fff}
+.rv-ui2 .rv-ui2-nav-item {min-height:38px}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"] {position:relative;font-weight:650}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"]::before {
+ content:"";position:absolute;top:9px;bottom:9px;left:0;width:3px;background:var(--ui2-accent);border-radius:4px
+}
+.rv-ui2 .rv-page-heading {border-color:var(--ui2-border);margin-bottom:20px;padding-bottom:16px}
+.rv-ui2 .rv-page-heading h1 {font-size:23px;font-weight:650;letter-spacing:-.025em}
+.rv-ui2 .rv-page-heading p {font-size:12px;color:#737D8F}
+.rv-ui2 .rv-ui2-client-content {max-width:100%;overflow-x:clip}
+.rv-ui2 .rv-ui2-footer {color:#798397}
+.rv-ui2 .rv-ui2-client-content > :is(section,div):where([class*="rounded-2xl"]) {border-radius:12px}
+.rv-ui2 :where(.rv-ui2-client-content,.rv-ui2-workspace) [class*="border-[#E3E7F0]"][class*="bg-white"] {
+ box-shadow:0 1px 2px rgb(24 31 51 / 3%);
+}
+/* Client modules: smaller controls, gentler surfaces and consistent reading space. */
+.client-portal-v2.rv-ui2 .rv-ui2-client-content :is(button,select,input:not([type="checkbox"]),textarea) {
+ border-radius:8px;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content :is(button,a):where([class*="bg-[#6D35F5]"]):not(:disabled) {
+ background:#6C5CE7;color:white;
+}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content :is([class*="bg-[#F0ECFF]"],[class*="bg-[#EEE8FF]"]) {background:#F1EEFF}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content table {border-collapse:collapse}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content th {font-size:11px;font-weight:600;background:#F8F9FC}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content td {font-size:12px}
+.client-portal-v2.rv-ui2 .rv-ui2-client-content tr {border-color:#E9EBF1}
+/* Distinguish semantic statuses: do not recolor priority, approval or alert cells. */
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) [class*="shadow-xl"] {
+ box-shadow:0 10px 35px rgba(29,39,58,.12);
+}
+/* Planning editor shell: preserve the document body, including BlockNote and custom HTML. */
+.pw-app.rv-ui2 {--pw-navy:#fff;--pw-purple:#6C5CE7;--pw-border:#E3E6ED;--pw-muted:#687487;--pw-lime:#6C5CE7}
+.pw-app.rv-ui2 .pw-topbar {
+ height:60px;min-height:60px;background:#fff;color:#303648;
+ border-bottom:1px solid #E3E6ED;padding:0 20px;
+}
+.pw-app.rv-ui2 .pw-topbar .pw-panel-name {color:#758094;border-left-color:#E3E6ED;font-size:12px}
+.pw-app.rv-ui2 .pw-global-nav {
+ background:#fff;color:#485367;border-right:1px solid #E3E6ED;
+ padding:18px 10px;
+}
+.pw-app.rv-ui2 .pw-global-caption {color:#8993A4;padding-bottom:11px}
+.pw-app.rv-ui2 .pw-global-nav nav {gap:2px}
+.pw-app.rv-ui2 .pw-global-nav nav a {
+ display:flex;align-items:center;gap:11px;min-height:38px;padding:9px 11px;
+ color:#4A5266;border-radius:8px;font-size:12px;text-decoration:none;
+}
+.pw-app.rv-ui2 .pw-global-nav nav a:hover {background:#F6F7FB}
+.pw-app.rv-ui2 .pw-global-nav nav a[aria-current="page"] {
+ background:#EDEAFF;color:#6251CA;font-weight:650;
+}
+.pw-app.rv-ui2 .pw-global-nav nav svg {stroke-width:1.7}
+.pw-app.rv-ui2 .pw-collapse {border-top-color:#E9EBF0;color:#687487}
+.pw-app.rv-ui2 .pw-project-header {border-bottom-color:#E3E6ED}
+.pw-app.rv-ui2 .pw-project-tabs {gap:20px}
+.pw-app.rv-ui2 .pw-project-tabs>button[aria-current="page"] {color:#6C5CE7;border-color:#6C5CE7}
+.pw-app.rv-ui2 .pw-document-nav {
+ width:252px;border-right:1px solid #E3E6ED;background:#fff;
+}
+.pw-app.rv-ui2 .pw-area-title {border-radius:8px}
+.pw-app.rv-ui2 .pw-area-title:hover {background:#F6F7FB}
+.pw-app.rv-ui2 .pw-doc-list>button[aria-current="page"] {background:#EDEAFF;color:#6251CA}
+.pw-app.rv-ui2 .pw-doc-list>button:hover {background:#F6F7FB}
+.pw-app.rv-ui2 .pw-outline {border-color:#DFE4EB;border-radius:8px}
+.pw-app.rv-ui2 .pw-primary {background:#6C5CE7;color:white;border-radius:8px}
+.pw-app.rv-ui2 .pw-document-main {padding:20px 24px}
+.pw-app.rv-ui2 .pw-docbar {gap:10px}
+/* Document toolbar only: no changes to typography, spacing or visuals inside .se-paper. */
+.pw-app.rv-ui2 :is(.se-toolbar,.pw-docbar) button {
+ border-radius:7px;
+}
+.pw-app.rv-ui2 .se-toolbar {border-color:#E3E6ED;background:#FBFCFE;gap:5px}
+.pw-app.rv-ui2 .se-tool {border-radius:7px}
+.pw-app.rv-ui2 .se-tool[aria-pressed="true"] {background:#EDEAFF;color:#6251CA}
+.pw-app.rv-ui2 .se-modebar nav button[aria-current="page"] {color:#6251CA;border-color:#6C5CE7}
+/* Visual presentation is a distinct content surface and must keep its document styles. */
+@media (max-width:1023px){
+ .pw-app.rv-ui2 .pw-document-nav {width:100%}
+ .pw-app.rv-ui2 .pw-document-main {padding:18px 12px}
+}
+@media (max-width:767px){
+ .rv-ui2 .rv-page-heading h1 {font-size:21px}
+ .client-portal-v2.rv-ui2 .rv-ui2-client-content {padding:16px 12px 48px}
+ .pw-app.rv-ui2 .pw-topbar {padding:0 12px}
+ .pw-app.rv-ui2 .pw-project-tabs {gap:14px;overflow-x:auto}
+ .pw-app.rv-ui2 .pw-document-main {padding:12px 8px}
+}
+@media (prefers-reduced-motion:reduce){
+ .rv-ui2 *, .rv-ui2 *::before,.rv-ui2 *::after {scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
+}

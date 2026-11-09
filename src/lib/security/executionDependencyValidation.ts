@@ -40,6 +40,20 @@ export function validExecutionDependencies(data:unknown):boolean{
    for(const field of ["meetingUrl","materialUrl"]){const link=item[field];if(link===undefined||link==="")continue;if(typeof link!=="string"||link.length>2048)return false;try{const u=new URL(link);if(u.protocol!=="https:"||u.username||u.password)return false;}catch{return false;}}
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.relatedTaskId!==undefined&&item.relatedTaskId!==""&&(!Array.isArray(root.executionTimeline)||!executionIds.has(item.relatedTaskId)))return false;
+   if(item.internalNotes!==undefined&&(typeof item.internalNotes!=="string"||item.internalNotes.length>5000))return false;
+   if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return false;
+   if(item.actionItems!==undefined){
+    if(!Array.isArray(item.actionItems)||item.actionItems.length>25)return false;
+    const seenActions=new Set<string>();
+    for(const value of item.actionItems){
+     const action=object(value);
+     if(!action||typeof action.id!=="string"||!action.id||action.id.length>128||seenActions.has(action.id))return false;
+     seenActions.add(action.id);
+     if(typeof action.title!=="string"||action.title.trim().length<3||action.title.length>240||typeof action.owner!=="string"||action.owner.length>120||typeof action.dueDate!=="string"||(action.dueDate!==""&&!validOperationalDate(action.dueDate)))return false;
+     if(action.relatedTaskId!==undefined&&action.relatedTaskId!==""&&!executionIds.has(action.relatedTaskId))return false;
+    }
+   }
+
   }
  }
  const timeline=root.executionTimeline;

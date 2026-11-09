@@ -18,7 +18,7 @@ test("onboarding stays a project-scoped, ten-step checklist with no task creatio
  assert.match(editor,/expectedUpdatedAt:updatedAt/);
  assert.match(editor,/\/api\/admin\/project\/update/);
  assert.doesNotMatch(editor,/executionTimeline:/);
- assert.match(editor,/Etapa \$\{index\+1\}/);
+ assert.match(editor,/Etapa \$\{group\.start\+index\+1\}/);
  assert.match(editor,/Progresso do onboarding/);
 });
 test("existing checklist stages are preserved when applying the current template",()=>{
@@ -32,7 +32,11 @@ test("onboarding management stays project-based with start button and Tabler ico
  assert.match(hub,/Iniciar onboarding/);
  assert.match(hub,/setStarterOpen\(true\)/);
  assert.match(hub,/Gerenciar onboarding/);
- for(const name of ["lifebuoy","alert-circle","clock","circle-check"])assert.ok(hub.includes('name="'+name+'"')||hub.includes('icon:"'+name+'"'),name);
+ assert.match(hub,/RotevoTablerIcon name="square-rounded-plus"/);
+ assert.match(hub,/RotevoTablerIcon name="search"/);
+ assert.match(hub,/totals\.notStarted/);
+ assert.match(hub,/totals\.completed/);
+ assert.match(editor,/standardOrder\?phaseGroups/);
  assert.doesNotMatch(hub,/\["Progresso","chart-pie"\]/);
 });
 

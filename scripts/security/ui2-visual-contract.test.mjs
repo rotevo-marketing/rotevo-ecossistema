@@ -66,7 +66,7 @@ test("strategist and client dashboards have substantial UI2 workspace hierarchy"
  const client=source("app/cliente/page.tsx");
  assert.match(admin,/rv-ui2-workspace-heading/);
  assert.match(admin,/rv-ui2-heading-primary/);
- assert.match(adminOverview,/rv-ui2-dashboard-intro/);
+ assert.match(adminOverview,/rv-ui3-overview-summary/);
  assert.match(adminOverview,/rv-ui2-overview-kpi/);
  assert.match(client,/rv-ui2-client-heading/);
  assert.match(client,/tab==="overview"\?"Visão geral"/);

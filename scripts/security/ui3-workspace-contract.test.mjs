@@ -179,3 +179,25 @@ test("campaign metrics retain monthly manual source, missing values, and per-pro
  assert.match(client,/visibleToClient===true/);
  assert.match(client,/role="dialog"/);
 });
+
+test("meeting minutes and tasks stay project-bound and client-sharing is explicit",()=>{
+ const admin=source("Components/admin/OperationalAgenda.tsx");
+ const hub=source("Components/admin/OperationalHubs.tsx");
+ const portal=source("Components/cliente/ClientMeetings.tsx");
+ const projection=source("lib/security/projectForClient.ts");
+ const api=source("app/api/admin/project/update/route.ts");
+ assert.match(admin,/internalNotes/);
+ assert.match(admin,/minutesVisibleToClient/);
+ assert.match(admin,/relatedTaskId/);
+ assert.match(admin,/tasks\.some\(t=>t\.id===editing\.relatedTaskId\)/);
+ assert.match(admin,/expectedUpdatedAt:updatedAt/);
+ assert.match(admin,/Compartilhar compromisso e pauta/);
+ assert.match(hub,/rv-ui3-meetings/);
+ assert.match(portal,/view==="history"/);
+ assert.match(portal,/visibleToClient===true/);
+ assert.match(projection,/item\.minutesVisibleToClient === false/);
+ assert.doesNotMatch(projection,/internalNotes:"/);
+ assert.match(api,/oldRoot\.operationalAgenda/);
+ assert.match(api,/minutesVisibleToClient/);
+ assert.match(api,/validHttps\(item\.meetingUrl\)/);
+});

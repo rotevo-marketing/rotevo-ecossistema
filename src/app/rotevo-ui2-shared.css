@@ -162,3 +162,99 @@
   padding:14px;
  }
 }
+
+
+/* UI2 follow-up: consolidate the inner workspaces, not just the sidebar.
+   Scope excludes published planning content, document canvas and semantic statuses. */
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) {
+  color:var(--ui2-text);
+  min-width:0;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(h1,h2,h3) {
+  color:var(--ui2-text);
+  letter-spacing:-.025em;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(section,article,div)[class*="bg-white"][class*="border"] {
+  border-color:var(--ui2-border);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(section,article,div)[class*="rounded-2xl"][class*="bg-white"] {
+  border-radius:12px;
+  box-shadow:0 1px 3px rgba(32,40,62,.035);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(section,article,div)[class*="rounded-xl"][class*="bg-white"][class*="border"] {
+  border-radius:10px;
+  box-shadow:0 1px 2px rgba(32,40,62,.025);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  border-radius:9px;
+  border-color:var(--ui2-border);
+  font-family:var(--font-body),Inter,Arial,sans-serif;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):focus-visible {
+  border-color:var(--ui2-accent);
+  outline:2px solid rgba(108,92,231,.25);
+  outline-offset:1px;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="rounded-full"]:not([class*="avatar"]):not([class*="rounded-full"][class*="w-"]) {
+  border-radius:10px;
+}
+/* Previous brand-purple utility strings are replaced only when applied to interactive actions.
+   Do not recolor red/green/amber functional statuses, priority or approval cells. */
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="bg-[#6D35F5]"]:not(:disabled),
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="bg-[#5123C5]"]:not(:disabled) {
+  background-color:var(--ui2-accent);
+  color:#fff;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="bg-[#6D35F5]"]:hover:not(:disabled) {
+  background-color:var(--ui2-accent-hover);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="text-[#6D35F5]"],
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="text-[#5123C5]"] {
+  color:var(--ui2-accent);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="bg-[#F0ECFF]"],
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[class*="bg-[#EEE8FF]"] {
+  background-color:var(--ui2-accent-tint);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[aria-selected="true"],
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a)[aria-current="page"] {
+  font-weight:650;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) table {
+  border-collapse:collapse;
+  font-variant-numeric:tabular-nums;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) table thead {
+  background:#F8F9FC;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) table th {
+  color:#657083;
+  font-weight:650;
+  border-bottom:1px solid var(--ui2-border);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) table tbody tr {
+  border-color:#ECEEF3;
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(dialog,[role="dialog"]) {
+  border-radius:14px;
+  border-color:var(--ui2-border);
+  box-shadow:0 16px 48px rgba(31,39,62,.14);
+}
+.rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,a,select,input,textarea):focus-visible {
+  outline:2px solid var(--ui2-accent);
+  outline-offset:2px;
+}
+@media(max-width:767px) {
+  .rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) {min-width:0}
+  .rv-ui2 :where(.rv-ui2-workspace,.rv-ui2-client-content) :is(button,input,select,textarea) {max-width:100%}
+}
+/* Planning controls only. No selectors reach .se-paper or rich rendered documents. */
+.pw-app.rv-ui2 :is(.pw-project-header,.pw-project-tabs,.pw-docbar,.pw-document-nav,.pw-global-nav) {
+  border-color:var(--ui2-border);
+}
+.pw-app.rv-ui2 :is(.pw-docbar,.pw-project-tabs) button:not(:disabled) {
+  transition:background-color .14s ease,color .14s ease,border-color .14s ease;
+}
+.pw-app.rv-ui2 :is(.pw-document-nav,.pw-global-nav) button:focus-visible {
+  outline:2px solid var(--ui2-accent);outline-offset:2px;
+}

@@ -1,5 +1,6 @@
 "use client";
 import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
+import "./rotevo-ui2.css";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -317,7 +318,7 @@ export default function AdminPage() {
 
 
   return (
-    <main className="admin-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{`
         .admin-v2,
         .admin-v2 h1,
@@ -326,31 +327,31 @@ export default function AdminPage() {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
         }
       `}</style>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0B142A] text-white">
-        <div className="flex w-full items-center justify-between gap-3 px-5 py-5">
-          <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="white" size={27}/></Link><span className="hidden border-l border-white/20 pl-3 text-sm text-[#CAD3E2] sm:inline">Painel do Estrategista</span></div>
+      <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]">
+        <div className="flex w-full items-center justify-between gap-3 px-5 py-3">
+          <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="dark" size={27}/></Link><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-sm lg:hidden">Menu</button>
+            <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden">Menu</button>
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
-      <aside className={`relative hidden shrink-0 bg-[#0B142A] px-3 py-6 lg:block ${sidebarCollapsed?"w-[76px]":"w-[260px]"}`}>
-        <nav aria-label="Menu do estrategista" className="space-y-1.5">
-          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#6D35F5] text-white":"text-[#E2E6EE] hover:bg-white/10"}`}><RotevoTablerIcon name={item.icon} size={25} stroke={2.3}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
+      <aside className={`rv-ui2-sidebar relative hidden shrink-0 border-r border-[#E3E7F0] bg-white px-2.5 py-5 lg:block ${sidebarCollapsed?"w-[68px]":"w-[232px]"}`}>
+        <nav aria-label="Menu do estrategista" className="space-y-0.5">
+          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`rv-ui2-nav-item flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}><RotevoTablerIcon name={item.icon} size={19} stroke={1.7}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
         </nav>
-        <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-[#F6F7FB] bg-[#A7E000] text-[#0B142A]">{sidebarCollapsed?"›":"‹"}</button>
+        <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#DDE1E9] bg-white text-[#6251CA] shadow-sm">{sidebarCollapsed?"›":"‹"}</button>
       </aside>
-      {mobileMenu&&<aside className="w-full bg-[#0B142A] p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm text-white ${workspaceTab===item.id?"bg-[#6D35F5]":"hover:bg-white/10"}`}>{item.label}</button>)}</div></aside>}
+      {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
-      <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10">
+      <section className="rv-ui2-workspace mx-auto w-full max-w-[1580px] px-4 pb-14 pt-7 sm:px-6 lg:px-8">
         <div className="rv-page-heading">
           <div>
-            <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">{NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#525B70]">{workspaceTab==="overview"?"Sua central de gestão e rotina. Veja o que precisa de atenção e o que depende de você.":"Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar."}</p>
+            <h1 className="text-[24px] leading-[32px] font-semibold tracking-[-0.02em] text-[#242B3B]">{NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
+            <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#737D8F]">{workspaceTab==="overview"?"Sua central de gestão e rotina. Veja o que precisa de atenção e o que depende de você.":"Acompanhe seus clientes, projetos, entregas e prioridades em um só lugar."}</p>
           </div>
-          {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#A7E000] px-5 py-3 text-sm font-semibold text-[#090D1C] hover:bg-[#98CC00]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
+          {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2 text-xs font-semibold text-white hover:bg-[#5D4ED6]"><span aria-hidden="true" className="text-xl">+</span>Novo planejamento</Link>}
         </div>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
         {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
@@ -455,7 +456,7 @@ export default function AdminPage() {
       </section>
       </div>
       </div>
-      <footer className="mt-auto shrink-0 bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
+      <footer className="rv-ui2-footer mt-auto shrink-0 border-t border-[#E6E9F0] bg-white"><div className="mx-auto flex max-w-[1580px] flex-col gap-2 px-5 py-4 text-xs font-normal text-[#7A8392] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
     </main>
   );
 }

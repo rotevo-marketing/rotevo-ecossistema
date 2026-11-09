@@ -349,7 +349,7 @@ export default function AdminPage() {
         <header className="rv-page-heading rv-ui2-workspace-heading">
           <div className="rv-ui2-heading-copy">
             <p className="rv-ui2-heading-eyebrow">ROTEVO <span aria-hidden="true">/</span> {workspaceTab==="overview"?"CENTRAL DE OPERAÇÕES":"ÁREA DE TRABALHO"}</p>
-            <h1>{workspaceTab==="overview"?"Bom trabalho começa com clareza.":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
+            <h1>{workspaceTab==="overview"?"Visão geral da operação":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
             <p className="rv-ui2-heading-description">{workspaceTab==="overview"?"Acompanhe prioridades, atividades e decisões que movimentam a operação.":workspaceTab==="projects"?"Consulte planejamentos, acompanhe publicações e encontre rapidamente o próximo trabalho.":workspaceTab==="clients"?"Visualize seus relacionamentos, cadastros e vínculos com projetos.":"Organize as entregas desta área em um ambiente simples e consistente."}</p>
           </div>
           <div className="rv-ui2-heading-actions">

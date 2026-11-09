@@ -200,7 +200,8 @@ test("project creation rejects invalid execution and agenda graphs before insert
 test("editorial decisions cannot silently approve modified material under the same version",()=>{
  const source=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
  assert.match(source,/const changedEditorialVersions=new Map<string,string>\(\)/);
- assert.match(source,/const materialFields=\["title","channel","format","publishDate","caption","driveUrl"\]/);
+ assert.match(source,/const materialFields=\\["title","channel","format","publishDate","caption","driveUrl",/);
+ for(const field of ["briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"])assert.ok(source.includes('"'+field+'"'),"material field "+field+" must remain protected");
  assert.match(source,/admin\.from\("editorial_approvals"\)/);
  assert.match(source,/\.eq\("project_id",b\.projectId\)/);
  assert.match(source,/\.in\("content_id",\[\.\.\.changedEditorialVersions\.keys\(\)\]\)/);

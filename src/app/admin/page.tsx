@@ -130,6 +130,14 @@ export default function AdminPage() {
   useEffect(()=>{const id=window.requestAnimationFrame(()=>{const section=new URLSearchParams(window.location.search).get("section");if(NAV_ITEMS.some(item=>item.id===section))setWorkspaceTab(section!);});return()=>window.cancelAnimationFrame(id);},[]);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const [mobileMenu,setMobileMenu]=useState(false);
+  useEffect(()=>{
+    if(!mobileMenu)return;
+    const closeOnEscape=(event:KeyboardEvent)=>{
+      if(event.key==="Escape")setMobileMenu(false);
+    };
+    window.addEventListener("keydown",closeOnEscape);
+    return()=>window.removeEventListener("keydown",closeOnEscape);
+  },[mobileMenu]);
 
   const totalProjects = projects.length;
 

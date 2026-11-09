@@ -29,7 +29,7 @@ type MenuItem={id:MenuId;name:string;icon:RotevoIconName};
 const menu:MenuItem[]=[
   {id:"overview",name:"Visão geral",icon:"layout-dashboard"},
   {id:"planning",name:"Planejamento",icon:"report"},
-  {id:"execution",name:"Execução do projeto",icon:"chart-dots-3"},
+  {id:"execution",name:"Tarefas e entregas",icon:"chart-dots-3"},
   {id:"content",name:"Conteúdo",icon:"brand-instagram"},
   {id:"campaigns",name:"Campanhas",icon:"rocket"},
   {id:"meetings",name:"Reuniões",icon:"calendar-heart"},

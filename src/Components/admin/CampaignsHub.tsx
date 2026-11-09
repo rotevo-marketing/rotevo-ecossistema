@@ -159,7 +159,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
      </div>
     </details>
    </div>
-   <p className="mt-2 text-[11px] text-[#687487]">{reported.length} de {monthRows.length} campanhas com registros em {monthFilter.split("-").reverse().join("/")}. Ausência de dados não equivale a zero. O orçamento cadastrado não representa o gasto do mês.</p>
+   <p className="mt-2 text-[11px] text-[#687487]">{reported.length} de {monthRows.length} campanhas com registros em {monthFilter.split("-").reverse().join("/")}. Ausência de dados não equivale a zero. O orçamento cadastrado não representa o gasto do mês. Alcance único não é somado entre campanhas. Resultados de tipos distintos também não são somados.</p>
   </section>
   <section aria-label="Lista de campanhas" className="rv-ui3-campaign-list bg-white py-3"><h2 className="sr-only">Campanhas do projeto</h2>
    <p className="mt-3 text-xs text-[#697386]">{filtered.length} campanha(s) no projeto e filtros selecionados. Os valores de desempenho são registrados por mês, sem duplicar históricos.</p>

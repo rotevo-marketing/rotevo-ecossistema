@@ -41,3 +41,20 @@ test("shared stylesheet does not override rich text and keeps focus indicator",(
  assert.doesNotMatch(css,/\.bn-editor\s*\{/);
  assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 });
+
+
+test("all planning entrypoints use the scoped UI2 design system",()=>{
+ for(const path of [
+  "app/admin/novo-planejamento/page.tsx",
+  "app/admin/novo-planejamento/modulos/page.tsx",
+  "app/admin/planejamentos/[clientSlug]/acesso/page.tsx",
+  "app/admin/planejamentos/[clientSlug]/page.tsx"
+ ]) assert.match(source(path),/rv-ui2/,path);
+});
+
+test("mobile data tables only force intrinsic width inside scroll containers",()=>{
+ const css=source("app/rotevo-ui2-shared.css");
+ assert.match(css,/\.rv-ui2 \.rv-ui2-module table\s*\{\s*min-width:0;/);
+ assert.match(css,/\.rv-ui2 \.rv-ui2-module :is\(\.overflow-x-auto,\.overflow-auto,\.rv-ui2-task-board\) > table\s*\{\s*min-width:max-content;/);
+ assert.doesNotMatch(css,/\.rv-ui2 \.rv-ui2-module table\s*\{\s*min-width:max-content;/);
+});

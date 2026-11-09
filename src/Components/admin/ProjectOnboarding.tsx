@@ -27,6 +27,8 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
  const items=Array.isArray(data.onboardingChecklist)?data.onboardingChecklist:[];
  const completed=items.filter(x=>x.done).length;
  const missing=ONBOARDING_STANDARD_STEPS.filter(title=>!items.some(item=>normalize(item.title)===normalize(title)));
+ const standardOrder=items.length===ONBOARDING_STANDARD_STEPS.length&&items.every((item,index)=>normalize(item.title)===normalize(ONBOARDING_STANDARD_STEPS[index]));
+ const phaseGroups=[{title:"Formalização",start:0,end:2},{title:"Preparação",start:2,end:6},{title:"Alinhamento",start:6,end:9},{title:"Liberação",start:9,end:10}] as const;
  async function persist(next:OnboardingItem[]){
   if(saving)return;
   setSaving(true);setError("");
@@ -53,9 +55,9 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
  const extend=()=>void persist([...items,...missing.map(title=>({id:crypto.randomUUID(),title,done:false,visibleToClient:false}))]);
  const toggle=(id:string,done:boolean)=>void persist(items.map(item=>item.id===id?{...item,done,updatedAt:new Date().toISOString()}:item));
  const resetMessages=()=>{setError("");};
- return <section className="mt-4 rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-5">
+ return <section className="mt-3 bg-white py-3">
   <div className="flex flex-wrap items-center justify-between gap-3">
-   <h3 className="text-lg font-bold text-[#090D1C]">Checklist do onboarding</h3>
+   <h3 className="sr-only">Checklist do onboarding</h3>
   </div>
   {error&&<p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#A3223D]">{error}</p>}
   {items.length===0?
@@ -67,11 +69,17 @@ export default function ProjectOnboarding({projectId,data,updatedAt,onSaved}:{pr
    <>
     <div className="mt-5 flex items-center justify-between gap-3 text-sm"><span className="text-[#525B70]">{completed} de {items.length} etapas concluídas</span><strong className="text-[#090D1C]">{Math.round(completed/items.length*100)}%</strong></div>
     <div role="progressbar" aria-label="Progresso do onboarding" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(completed/items.length*100)} className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#6C5CE7] transition-all" style={{width:`${completed/items.length*100}%`}}/></div>
-    <div className="mt-4 divide-y divide-[#E3E7F0]">
-     {items.map((item,index)=><label key={item.id} className="flex cursor-pointer items-start gap-3 py-3 text-sm">
-      <input type="checkbox" aria-label={`Etapa ${index+1}: ${item.title}`} checked={item.done} disabled={saving} onChange={e=>{resetMessages();toggle(item.id,e.target.checked);}} className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-[#6C5CE7] disabled:cursor-wait"/>
-      <span className={item.done?"text-[#687285]":"font-medium text-[#090D1C]"}>{item.title}</span>
-     </label>)}
+    <div className="mt-5 space-y-5">
+     {(standardOrder?phaseGroups:[{title:"Etapas do projeto",start:0,end:items.length}]).map((group,groupIndex)=><section key={group.title} aria-labelledby={`onboarding-phase-${groupIndex}`}>
+      <div className="flex items-center justify-between gap-3 border-b border-[#E3E7F0] pb-2">
+       <h4 id={`onboarding-phase-${groupIndex}`} className="text-xs font-semibold text-[#323647]">{standardOrder?`${String(groupIndex+1).padStart(2,"0")}. ${group.title}`:group.title}</h4>
+       <span className="text-xs tabular-nums text-[#687487]">{items.slice(group.start,group.end).filter(item=>item.done).length}/{group.end-group.start}</span>
+      </div>
+      <div className="divide-y divide-[#F0F1F5]">{items.slice(group.start,group.end).map((item,index)=><label key={item.id} className="flex cursor-pointer items-start gap-3 py-3 text-sm">
+       <input type="checkbox" aria-label={`Etapa ${group.start+index+1}: ${item.title}`} checked={item.done} disabled={saving} onChange={e=>{resetMessages();toggle(item.id,e.target.checked)}} className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-[#6C5CE7] disabled:cursor-wait"/>
+       <span className={item.done?"text-[#687285]":"font-medium text-[#323647]"}>{item.title}</span>
+      </label>)}</div>
+     </section>)}
     </div>
     {saving&&<p role="status" className="mt-2 text-xs text-[#697386]">Salvando alteração...</p>}
     {missing.length>0&&<div className="mt-5 rounded-xl border border-[#D9C9FA] bg-[#F6F2FF] p-4">

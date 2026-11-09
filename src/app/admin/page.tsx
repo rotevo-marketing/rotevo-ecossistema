@@ -326,7 +326,7 @@ export default function AdminPage() {
 
 
   return (
-    <main className="admin-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{`
         .admin-v2,
         .admin-v2 h1,
@@ -356,9 +356,7 @@ export default function AdminPage() {
       <section className="rv-ui2-workspace mx-auto w-full max-w-[1580px] px-4 pb-14 pt-7 sm:px-6 lg:px-8">
         <header className="rv-page-heading rv-ui2-workspace-heading">
           <div className="rv-ui2-heading-copy">
-            <p className="rv-ui2-heading-eyebrow">ROTEVO <span aria-hidden="true">/</span> {workspaceTab==="overview"?"CENTRAL DE OPERAÇÕES":"ÁREA DE TRABALHO"}</p>
-            <h1>{workspaceTab==="overview"?"Visão geral da operação":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
-            <p className="rv-ui2-heading-description">{workspaceTab==="overview"?"Acompanhe prioridades, atividades e decisões que movimentam a operação.":workspaceTab==="projects"?"Consulte planejamentos, acompanhe publicações e encontre rapidamente o próximo trabalho.":workspaceTab==="clients"?"Visualize seus relacionamentos, cadastros e vínculos com projetos.":"Organize as entregas desta área em um ambiente simples e consistente."}</p>
+            <h1>{workspaceTab==="overview"?"Visão geral":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
           </div>
           <div className="rv-ui2-heading-actions">
             {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="rv-ui2-heading-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.7}/>Novo planejamento</Link>}

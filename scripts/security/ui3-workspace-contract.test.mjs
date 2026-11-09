@@ -140,3 +140,42 @@ test("execution detail form is a contextual drawer with existing concurrency-saf
  assert.match(execution,/dependencies/);
  assert.match(execution,/visibleToClient/);
 });
+
+test("editorial admin and client share channel filtering without duplicating content stores",()=>{
+ const calendar=source("Components/cliente/EditorialCalendar.tsx");
+ const admin=source("Components/admin/EditorialManager.tsx");
+ const portal=source("Components/cliente/ClientContent.tsx");
+ assert.match(calendar,/channelFilter/);
+ assert.match(calendar,/Filtrar conteúdos por canal/);
+ assert.match(calendar,/i\.channel===channelFilter/);
+ assert.match(calendar,/visibleToClient===true/);
+ assert.match(admin,/rv-ui3-editorial-form/);
+ assert.match(admin,/ideaSummary/);
+ assert.match(admin,/objective/);
+ assert.match(admin,/references/);
+ assert.match(admin,/visibleToClient/);
+ assert.match(admin,/version/);
+ assert.match(portal,/view==="approvals"\?approvals:displayed/);
+ assert.match(portal,/x\.status==="idea_pending"\|\|x\.status==="awaiting"/);
+ assert.match(portal,/i\.visibleToClient===true/);
+ assert.match(portal,/d\.content_version===\(i\.version\?\?""\)/);
+ assert.match(portal,/EditorialDecision/);
+ assert.match(portal,/EditorialIdeaDecision/);
+ assert.match(portal,/loadError/);
+});
+
+test("campaign metrics retain monthly manual source, missing values, and per-project guards",()=>{
+ const hub=source("Components/admin/CampaignsHub.tsx");
+ const client=source("Components/cliente/ClientCampaigns.tsx");
+ assert.match(hub,/rv-ui3-campaign-metrics/);
+ assert.match(hub,/rv-ui3-campaign-list/);
+ assert.match(hub,/Dados informados manualmente/);
+ assert.match(hub,/Ausência de dados não equivale a zero/);
+ assert.match(hub,/Alcance único não é somado/);
+ assert.match(hub,/monthRows=scoped\.filter/);
+ assert.match(hub,/values\.length\?values\.reduce/);
+ assert.match(hub,/expectedUpdatedAt:project\.updated_at/);
+ assert.match(hub,/DialogFocus/);
+ assert.match(client,/visibleToClient===true/);
+ assert.match(client,/role="dialog"/);
+});

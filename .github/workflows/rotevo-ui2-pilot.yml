@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/security/ui2-visual-contract.test.mjs'
+      - 'scripts/security/ui3-workspace-contract.test.mjs'
       - 'scripts/security/client-project-projection.test.mjs'
       - '.github/workflows/rotevo-ui2-pilot.yml'
   workflow_dispatch:
@@ -32,6 +33,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: UI2 visual contract
         run: node --test scripts/security/ui2-visual-contract.test.mjs
+      - name: UI3 workspace and navigation contract
+        run: node --test scripts/security/ui3-workspace-contract.test.mjs
       - name: Existing project and editorial security contracts
         run: |
           node --test scripts/security/client-project-projection.test.mjs

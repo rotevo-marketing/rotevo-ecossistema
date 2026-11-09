@@ -27,7 +27,8 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
  const presented=new Set(strings(ecosystem.presentedDocumentCodes).filter(code=>/^\d{2}\.\d{2}$/.test(code)));
  // Project visibility and individual publication are independent.
  // Only in-progress or explicitly published projects can expose approved snapshots.
- const releaseEnabled=row.status==="in_progress"||row.status==="published";
+ // Draft projects require an explicit strategist opt-in before gradual releases.
+ const releaseEnabled=row.status==="published"||((row.status==="in_progress"||row.status==="draft")&&data.planningClientAccessEnabled===true);
  const visible=releaseEnabled?selected.filter(code=>presented.has(code)):[];
  const storedDocuments=object(ecosystem.documents)??{};
  const hiddenExecutive=new Set(strings(ecosystem.hiddenExecutiveDocumentCodes));

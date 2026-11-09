@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { RotevoTablerIcon } from "@/Components/RotevoTablerIcon";
+import { TaskAvatar } from "@/Components/admin/TaskGridCells";
 
 export type ExecutionItem = {
   id:string;
@@ -34,6 +35,8 @@ const colors:Record<string,string>={
   planned:"bg-[#ECEFF5] text-[#566073]",in_progress:"bg-[#FFF0D9] text-[#94610A]",
   blocked:"bg-[#EDE8FF] text-[#6437C3]",completed:"bg-[#DFF4E6] text-[#176A3B]",cancelled:"bg-[#F2E9EA] text-[#9C4C59]"
 };
+const mondayStatus:Record<string,string>={planned:"#929BAB",in_progress:"#4089DD",blocked:"#EDAC45",completed:"#12A873",cancelled:"#B2778B"};
+const mondayPriority:Record<string,{name:string;color:string}>={urgent:{name:"Urgente",color:"#D9415C"},high:{name:"Alta",color:"#E89639"},normal:{name:"Normal",color:"#5C80C7"},low:{name:"Baixa",color:"#9CA5B2"}};
 function formatted(value?:string){if(!value)return "A definir";const match=/^(\d{4})-(\d{2})-(\d{2})/.exec(value);return match?`${match[3]}/${match[2]}/${match[1]}`:"A definir";}
 function safeLink(url?:string){if(!url)return null;try{const parsed=new URL(url);return parsed.protocol==="https:"?parsed.href:null;}catch{return null;}}
 function isExecutionItem(value:unknown):value is ExecutionItem{
@@ -89,17 +92,24 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
        <p className="text-sm font-semibold">Nenhuma entrega operacional cadastrada.</p>
        <p className="mt-2 text-sm leading-6 text-[#697386]">Quando a Rotevo disponibilizar as entregas do projeto, você poderá acompanhar aqui o andamento e os próximos passos.</p>
       </div>:visible.length===0?<p className="mt-6 text-sm text-[#697386]">Nenhuma entrega corresponde a este filtro.</p>:
-      <div className={`mt-6 ${view==="timeline"?"border-l-2 border-[#E4E8F0] pl-5":"space-y-3"}`}>
-       {shown.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className={`${view==="timeline"?"relative mb-6":"mb-3"} rounded-xl border border-[#E3E7F0] p-4`}>
-         {view==="timeline"&&<span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#6D35F5]"/>}
+      view==="list"?<div className="mt-5 overflow-x-auto rounded-xl border border-[#E3E7F0]"><table className="w-full min-w-[750px] border-collapse text-left text-sm"><thead className="bg-[#F6F7FB] text-xs font-semibold text-[#525B70]"><tr>{["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"].map(label=><th scope="col" key={label} className="border-b border-[#E3E7F0] px-3 py-3">{label}</th>)}</tr></thead><tbody className="divide-y divide-[#ECEEF4]">{shown.map(item=>{const state=item.status??"planned";const pri=mondayPriority[item.priority??"normal"]??mondayPriority.normal;const url=safeLink(item.driveUrl);return <tr key={`${item.projectKey}:${item.id}`} className="hover:bg-[#FAFAFF]">
+       <td className="max-w-[300px] border-l-[3px] px-3 py-3 text-xs font-semibold text-[#1C2942]" style={{borderLeftColor:mondayStatus[state]??mondayStatus.planned}}><span className="block">{item.title}</span>{url&&<a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[11px] text-[#6D35F5] hover:underline">Ver material</a>}</td>
+       <td className="px-3 py-3"><span className="inline-flex max-w-[155px] items-center gap-2"><TaskAvatar name={item.projectTitle??"Projeto"} size={26}/><span className="truncate text-xs" title={item.projectTitle}>{item.projectTitle}</span></span></td>
+       <td className="px-3 py-3">{item.owner?<span className="inline-flex min-w-[110px] items-center gap-2"><TaskAvatar name={item.owner} size={26}/><span className="max-w-[120px] truncate text-xs" title={item.owner}>{item.owner}</span></span>:<span className="text-xs text-[#697386]">Não atribuído</span>}</td>
+       <td className="px-3 py-3"><span className="block rounded-md px-3 py-2 text-center text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span></td>
+       <td className="px-3 py-3"><span className="flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold text-white" style={{backgroundColor:pri.color}}><RotevoTablerIcon name="flag" size={14}/>{pri.name}</span></td>
+       <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-[#525B70]">{formatted(item.dueDate)}</td>
+      </tr>;})}</tbody></table></div>:<div className="mt-6 border-l-2 border-[#E4E8F0] pl-5">
+       {shown.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className="relative mb-6 rounded-xl border border-[#E3E7F0] p-4">
+         <span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#6D35F5]"/>
          <div className="flex flex-wrap items-start justify-between gap-2">
           <div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.projectTitle}{item.phase?` · ${item.phase}`:""}</p></div>
-          <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${colors[state]??colors.planned}`}>{labels[state]??labels.planned}</span>
+          <span className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span>
          </div>
          {item.description&&<p className="mt-3 text-sm text-[#525B70]">{item.description}</p>}
          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#697386]">
           <span>Prazo: {formatted(item.dueDate)}</span>
-          {item.owner&&<span>Responsável: {item.owner}</span>}
+          {item.owner&&<span className="inline-flex items-center gap-2"><TaskAvatar name={item.owner} size={22}/>Responsável: {item.owner}</span>}
           {item.dependencies?.length?<span>Dependências: {item.dependencies.length}</span>:null}
          </div>
          {url&&<a href={url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex cursor-pointer text-sm font-semibold text-[#6D35F5] hover:underline">Ver material no Drive ↗</a>}

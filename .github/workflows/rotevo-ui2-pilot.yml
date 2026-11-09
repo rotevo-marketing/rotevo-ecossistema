@@ -37,6 +37,7 @@ jobs:
           node --test scripts/security/client-project-projection.test.mjs
           node --test scripts/security/ecosystem-document-workflow.test.mjs
           node --test scripts/security/progressive-planning-contract.test.mjs
+          node --test scripts/security/ui2-presentation-visibility.test.mjs
       - name: UI2 pre-release operational, authorization and client journey regression
         shell: bash
         run: |

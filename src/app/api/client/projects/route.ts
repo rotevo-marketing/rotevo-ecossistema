@@ -29,6 +29,47 @@ export async function GET(req:NextRequest) {
   const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
   if(workspace.error)return fail(503);
   const modules=workspaceForClient(workspace.data?.data??emptyWorkspace()).modules;
-  return NextResponse.json({projects:((projects??[]) as PrivateProjectRow[]).map(p=>projectForClient(p,modules))},
-    {headers:{"Cache-Control":"no-store"}});
+  const source=(projects??[]) as PrivateProjectRow[];
+  const visible=source.map(p=>projectForClient(p,modules));
+  // Restrict avatar enrichment to team members already assigned to explicitly shared tasks.
+  const assignment=new Map<string,string>();
+  for(const project of source){
+   const data=project.data&&typeof project.data==="object"&&!Array.isArray(project.data)?project.data as Record<string,unknown>:{};
+   const tasks=Array.isArray(data.executionTimeline)?data.executionTimeline:[];
+   for(const raw of tasks){
+    if(!raw||typeof raw!=="object"||Array.isArray(raw))continue;
+    const task=raw as Record<string,unknown>;
+    if(task.visibleToClient===true&&typeof task.id==="string"&&typeof task.ownerUserId==="string")
+     assignment.set(project.id+":"+task.id,task.ownerUserId);
+   }
+  }
+  const memberIds=[...new Set(assignment.values())].filter(Boolean);
+  const prefs=memberIds.length?await admin.from("user_preferences").select("user_id,avatar_asset_id").in("user_id",memberIds):{data:[],error:null};
+  if(prefs.error)return fail(503);
+  const clientInfo=await admin.from("clients").select("cover_image_url").eq("id",profile.client_id).maybeSingle();
+  if(clientInfo.error)return fail(503);
+  const cover=clientInfo.data?.cover_image_url??"";
+  const memberAsset=new Map((prefs.data??[]).filter(x=>x.avatar_asset_id).map(x=>[x.user_id,x.avatar_asset_id as string]));
+  const coverAsset=typeof cover==="string"&&cover.startsWith("asset://")?cover.slice(8):"";
+  const assetIds=[...new Set([...memberAsset.values(),...(coverAsset?[coverAsset]:[])])];
+  let signed=new Map<string,string>();
+  if(assetIds.length){
+   const assets=await admin.from("project_assets").select("id,storage_path").eq("purpose","avatar").in("id",assetIds);
+   if(assets.error)return fail(503);
+   const paths=(assets.data??[]).map(x=>x.storage_path);
+   const urls=paths.length?await admin.storage.from("rotevo-private").createSignedUrls(paths,3600):{data:[],error:null};
+   if(urls.error||urls.data?.some(x=>x.error))return fail(503);
+   const byPath=new Map((urls.data??[]).map(x=>[x.path,x.signedUrl]));
+   signed=new Map((assets.data??[]).flatMap(x=>{const url=byPath.get(x.storage_path);return url?[[x.id,url] as [string,string]]:[];}));
+  }
+  const clientAvatarUrl=coverAsset?signed.get(coverAsset)??null:typeof cover==="string"&&cover.startsWith("https://")?cover:null;
+  for(let i=0;i<visible.length;i++){
+   (visible[i] as typeof visible[number]&{clientAvatarUrl?:string|null}).clientAvatarUrl=clientAvatarUrl;
+   for(const task of visible[i].data.executionTimeline){
+    const id=assignment.get(source[i].id+":"+task.id);
+    const asset=id?memberAsset.get(id):undefined;
+    if(asset&&signed.has(asset))task.ownerAvatarUrl=signed.get(asset);
+   }
+  }
+  return NextResponse.json({projects:visible},{headers:{"Cache-Control":"no-store"}});
 }

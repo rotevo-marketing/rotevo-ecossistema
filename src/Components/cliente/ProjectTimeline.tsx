@@ -71,7 +71,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
  const now=new Date();
  const localToday=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
  const next=items.find(item=>item.status!=="completed"&&item.status!=="cancelled"&&item.dueDate&&item.dueDate>=localToday);
- return <div className="space-y-5">
+ return <div className="rv-ui2-module space-y-4">
    <section aria-label="Resumo da execução" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
      {[{label:"Planejadas",value:planned,tone:"border-[#E3E7F0] bg-white text-[#566073]"},{label:"Em andamento",value:inProgress,tone:"border-[#F3D6A6] bg-[#FFFAF0] text-[#94610A]"},{label:"Aguardando",value:waiting,tone:"border-[#DDD2FF] bg-[#F7F3FF] text-[#6437C3]"},{label:"Concluídas",value:completed,tone:"border-[#BCE7CA] bg-[#F2FBF5] text-[#176A3B]"}].map(stat=><div key={stat.label} className={`rounded-2xl border p-4 sm:p-5 ${stat.tone}`}><p className="text-xs font-medium">{stat.label}</p><strong className="mt-2 block text-2xl">{stat.value}</strong></div>)}
    </section>

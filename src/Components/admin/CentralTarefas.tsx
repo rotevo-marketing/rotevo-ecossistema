@@ -75,6 +75,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const blankDraft=()=>({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:"",status:"planned" as Status,driveUrl:"",referenceUrl:"",checklist:[] as {id:string;text:string;done:boolean}[],dependencies:[] as string[]});
  const [creating,setCreating]=useState(false),[draft,setDraft]=useState(blankDraft);
+ const [quickOpen,setQuickOpen]=useState(false),[quickTitle,setQuickTitle]=useState(""),[quickProjectId,setQuickProjectId]=useState("");
  const [newChecklistText,setNewChecklistText]=useState("");
  const [advanced,setAdvanced]=useState(false);
  const [members,setMembers]=useState<{user_id:string;display_name:string;avatar_url?:string|null}[]>([]);
@@ -169,6 +170,17 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   if(!changed.length)return;
   const log=[...(task.activityLog??[]),{at:new Date().toISOString(),summary:"Alteração: "+changed.map(k=>({status:"situação",priority:"prioridade",owner:"responsável",dueDate:"prazo",checklist:"checklist"} as Record<string,string>)[k]??k).join(", ")}].slice(-100);
   await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch,...completionPatch,activityLog:log}:t),project.id+":"+task.id,"Tarefa atualizada.");
+ }
+ async function createQuickTask(){
+  const title=quickTitle.trim();
+  const targetId=projectId!=="all"?projectId:quickProjectId;
+  const project=projects.find(p=>p.id===targetId);
+  if(!project){setError("Selecione o projeto da nova tarefa.");return;}
+  if(title.length<3||title.length>140){setError("O título precisa ter entre 3 e 140 caracteres.");return;}
+  if(working)return;
+  const task:ExecutionItem={id:crypto.randomUUID(),title,description:"",kind:"task",status:"planned",priority:"normal",owner:"",ownerUserId:"",dueDate:"",driveUrl:"",referenceUrl:"",checklist:[],dependencies:[],visibleToClient:false,activityLog:[{at:new Date().toISOString(),summary:"Tarefa criada"}]};
+  const ok=await persist(project,[...(project.data?.executionTimeline??[]),task],project.id+":quick-create","Tarefa criada no projeto selecionado.");
+  if(ok){setQuickTitle("");setQuickOpen(false);}
  }
  async function createTask(){
   const project=projects.find(p=>p.id===draft.projectId);
@@ -280,6 +292,14 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
     </tr>;
    })}</tbody></table></div>:
    <div className="mt-4 flex gap-3 overflow-x-auto pb-3">{statuses.filter(col=>section==="active"?col.id!=="completed"&&col.id!=="cancelled":section==="completed"?col.id==="completed":true).map(col=><section key={col.id} className="w-64 shrink-0 rounded-xl bg-[#F6F7FB] p-3"><h3 className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold"><span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${col.bar}`}/>{col.name}</span><span>{filtered.filter(x=>(x.task.status??"planned")===col.id).length}</span></h3><div className="space-y-2">{paginated.filter(x=>(x.task.status??"planned")===col.id).map(x=><article key={x.project.id+":"+x.task.id} className="rounded-lg border bg-white p-3"><button type="button" onClick={()=>openDetails(x)} className="group inline-flex cursor-pointer items-center gap-1 rounded-md py-1 text-left text-xs font-semibold text-[#4E2CA8] underline decoration-[#C9B8F3] underline-offset-4 hover:bg-[#F2ECFF] hover:text-[#5622C5]">{x.task.title}<span aria-hidden="true">↗</span></button><Link href={projectLink(x.project)} className="mt-2 inline-flex max-w-full items-center gap-2 text-[11px] font-semibold text-[#6034B7] hover:underline"><TaskAvatar name={x.client?.name??"Cliente"} src={clientPhotos[x.client?.id??""]} size={22}/><span className="truncate">{x.client?.name??"Cliente"}</span></Link><div className="mt-2 flex justify-between gap-1 text-[11px] text-[#697386]"><span className="flex min-w-0 items-center gap-1.5">{x.task.ownerUserId&&<TaskAvatar name={x.task.owner||"Responsável"} src={members.find(m=>m.user_id===x.task.ownerUserId)?.avatar_url} size={20}/>}<span className="truncate">{x.task.owner||"Não atribuído"}</span></span><span>{formatted(x.task.dueDate)}</span></div><div className="mt-2 inline-flex items-center gap-1.5 text-[11px]" style={{color:flagColors[x.task.priority??"normal"]}}><RotevoTablerIcon name="flag" size={16}/>{chipPriority(x.task).name}</div><div className="mt-3">{taskControls(x,true)}</div></article>)}</div></section>)}</div>}
+  {view==="list"&&section==="active"&&<div className="border-t border-[#E3E6ED] px-2 py-3">
+   {quickOpen?<form onSubmit={event=>{event.preventDefault();void createQuickTask()}} className="flex flex-wrap items-center gap-2">
+     <label className="min-w-0 flex-[2_1_220px]"><span className="sr-only">Nome da tarefa</span><input autoFocus maxLength={140} value={quickTitle} onChange={event=>setQuickTitle(event.target.value)} placeholder="Nome da nova tarefa..." className="w-full rounded-lg border border-[#E3E6ED] px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"/></label>
+     {projectId==="all"&&<label className="min-w-0 flex-[1_1_200px]"><span className="sr-only">Projeto da nova tarefa</span><select required value={quickProjectId} onChange={event=>setQuickProjectId(event.target.value)} className="w-full rounded-lg border border-[#E3E6ED] px-3 py-2.5 text-sm"><option value="">Selecionar projeto...</option>{projects.map(p=><option key={p.id} value={p.id}>{getClient(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}
+     <button type="submit" disabled={!!working||quickTitle.trim().length<3} className="min-h-10 rounded-lg bg-[#6C5CE7] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Adicionar</button>
+     <button type="button" disabled={!!working} onClick={()=>{setQuickOpen(false);setQuickTitle("")}} className="min-h-10 rounded-lg border border-[#E3E6ED] px-3 py-2 text-xs text-[#687487]">Cancelar</button>
+    </form>:<button type="button" onClick={()=>{setError("");setQuickOpen(true)}} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-medium text-[#687487] hover:bg-[#F6F7FB]"><RotevoTablerIcon name="square-rounded-plus" size={16} stroke={1.55}/> Adicionar tarefa</button>}
+  </div>}
   {filtered.length>pageSize&&<nav aria-label="Paginação de tarefas" className="mt-4 flex items-center justify-end gap-3"><button type="button" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="cursor-pointer rounded-lg border px-3 py-2 text-xs disabled:opacity-40">Anterior</button><span className="text-xs text-[#697386]">Página {Math.min(page,pages)} de {pages}</span><button type="button" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))} className="cursor-pointer rounded-lg border px-3 py-2 text-xs disabled:opacity-40">Próxima</button></nav>}
    </section>
   {selected&&detailDraft&&<div className="fixed inset-0 z-[100] flex justify-end">

@@ -60,6 +60,16 @@ export default function ClientAreaPage(){
  const [collapsed,setCollapsed]=useState(false);
  const [mobileMenu,setMobileMenu]=useState(false);
  const [profileOpen,setProfileOpen]=useState(false);
+ useEffect(()=>{
+  if(!profileOpen&&!mobileMenu)return;
+  const closeOnEscape=(event:KeyboardEvent)=>{
+   if(event.key!=="Escape")return;
+   setProfileOpen(false);
+   setMobileMenu(false);
+  };
+  window.addEventListener("keydown",closeOnEscape);
+  return()=>window.removeEventListener("keydown",closeOnEscape);
+ },[profileOpen,mobileMenu]);
  useEffect(()=>{let mounted=true;async function load(){
    const {data:auth}=await supabase.auth.getUser();
    if(!auth.user){router.replace("/");return;}

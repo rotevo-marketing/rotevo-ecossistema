@@ -109,3 +109,37 @@ A etapa 06 permanece aberta. Este registro diferencia implementação, verifica�
 7. Testes visuais reais dependentes de navegador autenticado e validação pós-deployment devem ser identificados como **pendentes por limitação operacional**, nunca marcados como aprovados por inferência.
 8. Quando o código e os testes técnicos estiverem prontos, apresentar o único relatório consolidado da Etapa 06, com o que foi validado, evidências e bloqueios; **pedir autorização expressa antes do único deployment em produção**.
 9. Depois do deployment autorizado, verificar app.rotevo.com.br, monitorar erros e ter o rollback disponível; nunca publicar ou promover automaticamente sem autorização.
+
+
+## Etapa 06 — evidências técnicas adicionais (09/11/2026)
+
+### Validações automatizadas
+
+- Workflow de UI2 reforçado com casos de controle de acesso da equipe, isolamento entre projetos, decisões editoriais, integrações operacionais, planejamento, onboarding, campanhas e contratos de publicação.
+- Novo teste comportamental `scripts/security/ui2-presentation-visibility.test.mjs`: projeção sintética que não expõe rascunhos, documentos de área oculta, documentos não publicados nem campos internos; exige liberação explícita para projetos em rascunho.
+- Troca do projeto no Portal do Cliente reinicializa os módulos dependentes de projeto, evitando filtros e documentos do projeto anterior.
+- A camada visual agora preserva navegação Escape no painel administrativo e no portal.
+- Incidente conhecido de compilação externa: `next/font/google` no Next.js 16.4.2 pode falhar em `loader.js` ao receber URL do Google Fonts sem extensão. CI mantém até três tentativas com falha definitiva após a terceira; **não** alterar tipografia de produção nem considerar a build aprovada se todas as tentativas falharem.
+- Teste legado sobre campos de materiais editoriais foi atualizado para contemplar novos campos protegidos pela API. Não foi removida a validação de edição sob a mesma versão.
+
+### Inspeção no Supabase (somente consultas SELECT, sem leitura de documentos nem alterações)
+
+- Ambiente conectado: projeto Rotevo; cinco clientes, cinco planejamentos e cinco espaços de trabalho.
+- Integridade referencial: zero projetos órfãos, zero espaços órfãos e zero perfis de cliente com vínculo não nulo para cliente inexistente.
+- Perfis: cinco vínculos de cliente válidos e 11 perfis `role=client` sem `client_id`. Estes 11 não devem ser associados automaticamente a clientes. A finalidade (teste/cadastro pendente) depende de verificação humana e é independente da UI2.
+- Todas as 11 tabelas críticas conferidas possuem RLS habilitada; o bucket `rotevo-private` é privado.
+- Referências de avatar: zero referências inválidas nos perfis e nas imagens de capa dos clientes, conforme conferência por agregação.
+
+### Baseline da implantação
+
+- Implantação de produção preservada: SHA `40616321197e3033d9938403333ba3176cfa46a4`, status READY na verificação de 09/11/2026.
+- A branch UI2 é descendente da versão em produção (comparação GitHub `ahead`, sem commits `behind`), mas também contém mudanças anteriores de projeção para o cliente na rota `/api/client/projects`. Conferir este diff funcional antes da promoção; não presumir que a branch seja apenas CSS.
+- Não gerar novas prévias por decisão explícita do responsável. A validação de aparência e os testes autenticados ficam separados dos testes que podem ser realizados somente em CI.
+
+### Plano de publicação segura, condicionado à aprovação
+
+1. Congelar o SHA exato e exigir GitHub Actions verde com build Next.js, TypeScript, contratos de segurança e regressões expandidas.
+2. Registrar o deployment de produção atual como referência para rollback. Observar que a Vercel Hobby restringe rollback ao deployment de produção imediatamente anterior.
+3. Conferir se a configuração de ambiente de produção é a mesma do deployment atual; evitar qualquer mudança de schema, env ou dados.
+4. Solicitar aprovação expressa para o único deployment final no domínio `app.rotevo.com.br`.
+5. Após publicar, conferir navegação, login, indicadores e fluxos de leitura por perfil autorizado, além de logs de erro; caso haja falha severa, reverter para a última versão estável.

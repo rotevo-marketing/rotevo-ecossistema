@@ -99,3 +99,27 @@ test("UI2 interactive text pairs meet WCAG AA normal-text contrast",()=>{
   ["#6C5CE7","#FFFFFF"],["#687487","#FFFFFF"]
  ]) assert.ok(contrast(foreground,background)>=4.5,`${foreground} on ${background}`);
 });
+
+
+test("UI2 preserves authenticated client module visibility and published document gating",()=>{
+ const portal=source("app/cliente/page.tsx");
+ const planning=source("Components/cliente/ClientPlanning.tsx");
+ assert.match(portal,/supabase\.auth\.getUser\(\)/);
+ assert.match(portal,/profile\.role!==\"client\"\|\|!profile\.client_id/);
+ assert.match(portal,/!workspace\.modules\.includes\(tab as never\)/);
+ assert.match(planning,/presentedDocumentCodes/);
+ assert.match(planning,/selectedDocumentCodes/);
+ assert.match(planning,/const published=knownDocuments\.filter\(doc=>released\.has\(doc\.code\)\)/);
+ assert.match(planning,/visibleToClient/);
+});
+
+test("UI2 preserves strategist authorization and concurrency-safe planning saves",()=>{
+ const planning=source("app/admin/planejamentos/[clientSlug]/page.tsx");
+ assert.match(planning,/profile\?\.role !== "strategist"/);
+ assert.match(planning,/expectedUpdatedAt:current\.updated_at/);
+ assert.match(planning,/expectedUpdatedAt:project\.updated_at/);
+ assert.match(planning,/if\(richDirty\|\|richBusy\)/);
+ assert.match(planning,/onSaved=/);
+ assert.match(planning,/aria-selected=\{planningTab===item\.id\}/);
+ assert.match(planning,/event\.key==="ArrowRight"/);
+});

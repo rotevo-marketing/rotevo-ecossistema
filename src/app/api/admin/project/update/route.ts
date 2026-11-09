@@ -97,6 +97,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const oldEditorialById=new Map(oldEditorial.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v]));
  const materialFields=["title","channel","format","publishDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"];
  const ideaFields=["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"];
+ const referencesChanged=(before:Record<string,unknown>,after:Record<string,unknown>)=>JSON.stringify(before.references??[])!==JSON.stringify(after.references??[]);
  const changedIdeaVersions=new Map<string,string>();
  const changedEditorialVersions=new Map<string,string>();
  for(const entry of newEditorial){
@@ -105,10 +106,10 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(typeof item.id!=="string")continue;
   const before=oldEditorialById.get(item.id);
   if(!before||String(before.version??"")!==String(item.version??""))continue;
-  if(materialFields.some(field=>(before[field]??"")!==(item[field]??""))){
+  if(referencesChanged(before,item)||materialFields.some(field=>(before[field]??"")!==(item[field]??""))){
    changedEditorialVersions.set(item.id,String(item.version??""));
   }
-  if(ideaFields.some(field=>(before[field]??"")!==(item[field]??""))){
+  if(referencesChanged(before,item)||ideaFields.some(field=>(before[field]??"")!==(item[field]??""))){
    changedIdeaVersions.set(item.id,String(item.version??""));
   }
  }
@@ -133,6 +134,15 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    const item=raw as Record<string,unknown>;
    for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
     if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
+   }
+   if(item.references!==undefined){
+    if(!Array.isArray(item.references)||item.references.length>10)return fail(400);
+    for(const ref of item.references){
+     if(!ref||typeof ref!=="object"||Array.isArray(ref))return fail(400);
+     const entry=ref as Record<string,unknown>;
+     if(typeof entry.url!=="string"||entry.url.length>2048||typeof entry.note!=="string"||entry.note.length>400)return fail(400);
+     try{const u=new URL(entry.url);if(u.protocol!=="https:"||u.username||u.password)return fail(400);}catch{return fail(400);}
+    }
    }
    for(const key of ["briefUrl","driveUrl"]){
     const url=item[key];

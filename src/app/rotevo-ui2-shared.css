@@ -258,3 +258,85 @@
 .pw-app.rv-ui2 :is(.pw-document-nav,.pw-global-nav) button:focus-visible {
   outline:2px solid var(--ui2-accent);outline-offset:2px;
 }
+
+
+/* Rotevo UI2 — actual authenticated planning workspace, distinct from the demo shell.
+   Do not style .se-paper, .bn-editor or any rendered strategic document. */
+.workspace-project-page.rv-ui2 {
+  --pw-purple:var(--ui2-accent);
+  --pw-border:var(--ui2-border);
+  --pw-muted:var(--ui2-muted);
+  color:var(--ui2-text);
+}
+.workspace-project-page.rv-ui2 .pw-project-header {
+  background:#fff;
+  border:1px solid var(--ui2-border);
+  border-radius:12px;
+  box-shadow:0 1px 3px rgba(26,36,57,.03);
+}
+.workspace-project-page.rv-ui2 .pw-breadcrumb {
+  color:var(--ui2-muted);
+  font-size:11px;
+}
+.workspace-project-page.rv-ui2 .pw-project-identity h1 {
+  color:var(--ui2-text);
+  font-weight:650;
+  letter-spacing:-.028em;
+}
+.workspace-project-page.rv-ui2 .pw-project-meta,
+.workspace-project-page.rv-ui2 .pw-project-client {
+  color:var(--ui2-muted);
+}
+.workspace-project-page.rv-ui2 .workspace-project-tabs {
+  gap:8px;
+  padding:5px;
+  border:1px solid var(--ui2-border);
+  border-radius:11px;
+  background:#fff;
+  overflow-x:auto;
+  scrollbar-width:thin;
+}
+.workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"] {
+  flex-shrink:0;
+  min-height:38px;
+  padding:9px 13px;
+  border-radius:7px;
+  border:1px solid transparent;
+  color:#667185;
+  background:transparent;
+  font-size:12px;
+  font-weight:550;
+  line-height:1.35;
+  white-space:nowrap;
+}
+.workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"]:hover:not(:disabled) {
+  color:var(--ui2-accent);
+  background:#F7F6FF;
+}
+.workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"][aria-selected="true"] {
+  background:var(--ui2-accent-tint);
+  border-color:#DDD6FF;
+  color:#5949D1;
+  font-weight:650;
+  box-shadow:none;
+}
+.workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"]:focus-visible {
+  outline:2px solid var(--ui2-accent);
+  outline-offset:2px;
+}
+.workspace-project-page.rv-ui2 [role="tabpanel"] > :is(section,div)[class*="rounded-xl"][class*="bg-white"] {
+  border-color:var(--ui2-border);
+  border-radius:12px;
+}
+.workspace-project-page.rv-ui2 [role="tabpanel"] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  accent-color:var(--ui2-accent);
+}
+.workspace-project-page.rv-ui2 :is(.se-toolbar,.pw-docbar,.pw-document-nav,.pw-project-header) button:focus-visible {
+  outline:2px solid var(--ui2-accent);
+  outline-offset:2px;
+}
+@media (max-width:767px) {
+  .workspace-project-page.rv-ui2 .workspace-project-tabs {gap:4px;padding:4px}
+  .workspace-project-page.rv-ui2 .workspace-project-tabs > button[role="tab"] {min-height:40px;padding:9px 11px}
+  .workspace-project-page.rv-ui2 .pw-project-header {border-radius:10px}
+}

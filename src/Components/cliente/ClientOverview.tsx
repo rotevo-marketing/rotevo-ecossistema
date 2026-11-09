@@ -16,7 +16,6 @@ type Decision={project_id:string;content_id:string;content_version:string;decisi
 type Attention={title:string;meta:string;kind:"idea"|"final"|"finance";projectId?:string;contentId?:string;module:PortalModule};
 const icon=(name:RotevoIconName,size=19)=><RotevoTablerIcon name={name} size={size} stroke={1.8}/>;
 const monthLabel=(month:string)=>new Intl.DateTimeFormat("pt-BR",{month:"long",year:"numeric"}).format(new Date(Number(month.slice(0,4)),Number(month.slice(5))-1,1));
-const statClass="rounded-2xl border border-[#E3E8F0] bg-white px-4 py-4 sm:px-5";
 const linkClass="cursor-pointer text-xs font-semibold text-[#6533CF] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
 
 
@@ -62,14 +61,12 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const attention=[...contentAttention,...financeAttention];
  const tasks=allowed("execution")?projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t.visibleToClient===true).map(t=>({...t,projectId:p.id}))):[];
  const completed=tasks.filter(t=>t.status==="completed").length;
- const progress=tasks.length?Math.round(completed/tasks.length*100):0;
  const today=todayInBrazil();
  const nextTask=[...tasks].filter(t=>!["completed","cancelled"].includes(t.status??"planned")&&t.dueDate).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""))[0];
  const campaigns=allowed("campaigns")?projects.flatMap(p=>(p.data?.marketingCampaigns??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectId:p.id}))):[];
  const activeCampaigns=campaigns.filter(c=>c.status==="active");
  const nextMeetings=allowed("meetings")?projects.flatMap(p=>(p.data?.operationalAgenda??[]).filter(m=>m.visibleToClient===true&&m.status==="planned"&&m.date>=today).map(m=>({...m,projectId:p.id}))).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))):[];
 
- const monthly=monthContent.length;
  const campaignCount=activeCampaigns.length;
  const meetingsMonth=nextMeetings.filter(m=>m.date.startsWith(month));
  const monthEntries=[
@@ -82,8 +79,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    .sort((a,b)=>b.decided_at.localeCompare(a.decided_at)).slice(0,4);
  const mostRecent=[...projects].sort((a,b)=>b.updated_at.localeCompare(a.updated_at))[0];
  const shiftMonth=(delta:number)=>setMonth(prev=>{const y=Number(prev.slice(0,4)),m=Number(prev.slice(5));const next=new Date(y,m-1+delta,1);return next.getFullYear()+"-"+String(next.getMonth()+1).padStart(2,"0")});
- const card="rounded-xl border border-[#E3E8F0] bg-white p-5";
- const metric="rounded-xl border border-[#E3E8F0] bg-white p-4 text-left";
+ const card="rv-ui3-client-overview-panel bg-white py-4";
  const actionLabel=(item:Attention)=>item.kind==="idea"?"Revisar ideia":item.kind==="final"?"Revisar material":"Ver cobrança";
  const serviceRows=[
   ...(allowed("execution")?[{name:"Tarefas e entregas",icon:"chart-dots-3" as RotevoIconName,detail:tasks.length?completed+" de "+tasks.length+" entregas concluídas":"Nenhuma entrega compartilhada",module:"execution" as PortalModule}]:[]),
@@ -92,29 +88,12 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  ];
 
  return <div className="rv-ui2-module rv-ui2-client-overview space-y-4 pb-5">
-  <div className="flex flex-wrap items-center justify-start gap-3">
-   {allowed("content")&&<div className="flex items-center gap-2 rounded-lg border border-[#DEE4EF] bg-white p-1.5" aria-label="Filtrar atividades e conteúdos por mês">
-    <span className="pl-2 text-[#68778D]">{icon("calendar",17)}</span>
-    <button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="cursor-pointer rounded-md bg-[#F4F6FA] px-2.5 py-1.5 text-sm hover:bg-[#E9ECF3]">‹</button>
-    <span className="min-w-[120px] text-center text-xs font-semibold capitalize">{monthLabel(month)}</span>
-    <button type="button" onClick={()=>shiftMonth(1)} aria-label="Próximo mês" className="cursor-pointer rounded-md bg-[#F4F6FA] px-2.5 py-1.5 text-sm hover:bg-[#E9ECF3]">›</button>
-   </div>}
-  </div>
-  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-   {[
-    {label:"Pendências",value:approvalsLoading?"…":approvalsFailed?"—":String(attention.length).padStart(2,"0"),detail:"Ações aguardando sua decisão",color:"#E7A43C",symbol:"alert-circle" as RotevoIconName,target:(allowed("content")?"content":"finance") as PortalModule},
-    {label:"Conteúdos do mês",value:String(monthly).padStart(2,"0"),detail:monthLabel(month),color:"#7444DE",symbol:"calendar" as RotevoIconName,target:"content" as PortalModule},
-    {label:"Campanhas ativas",value:String(campaignCount).padStart(2,"0"),detail:"Registradas no projeto",color:"#3A8CCD",symbol:"rocket" as RotevoIconName,target:"campaigns" as PortalModule},
-    {label:"Entregas",value:tasks.length?completed+"/"+tasks.length:"—",detail:tasks.length?"Concluídas / compartilhadas":"Sem entregas compartilhadas",color:"#299D78",symbol:"chart-dots-3" as RotevoIconName,target:"execution" as PortalModule}
-   ].filter(m=>allowed(m.target)).map(item=><button type="button" key={item.label} onClick={()=>onNavigate(item.target)} className={metric+" cursor-pointer transition-colors hover:border-[#C7B3F5]"}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-[#58677F]">{item.label}</span><span style={{color:item.color}}>{icon(item.symbol,19)}</span></div>
-    <strong className="mt-2 block text-[30px] leading-9 font-semibold tracking-tight tabular-nums text-[#323647]">{item.value}</strong><span className="mt-1 block text-[11px] text-[#758297]">{item.detail}</span></button>)}
-  </div>
   <div className="grid gap-3 xl:grid-cols-2">
    {(allowed("content")||allowed("finance"))&&<section className={card+" min-w-0"}>
-    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-full bg-[#FFF1D8] px-2.5 py-1 text-[11px] font-bold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
-    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E3E6ED] px-3 py-3 transition-colors hover:bg-[#FAFAFE]">
-     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg border border-[#D8D2FF] bg-[#EDEAFF] px-3 py-2 text-xs font-semibold text-[#5949D1] hover:bg-[#DDD6FF]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
-    </div>)}</div>:<p className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#738096]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]"><span className="text-[#D99523]">{icon("alert-circle",22)}</span>Precisa da sua atenção</h2><span className="rounded-lg bg-[#FFF5E5] px-2 py-1 text-[11px] font-semibold text-[#966017]">{approvalsLoading?"…":attention.length+" pendência(s)"}</span></div>
+    {attention.length?<div className="mt-4 space-y-2.5">{attention.slice(0,5).map((a,i)=><div key={a.contentId??a.title+":"+i} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E6ED] py-3 last:border-b-0 hover:bg-[#FAFBFE]">
+     <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#1A2640]">{a.title}</p><p className="mt-1 text-xs text-[#78859B]">{a.meta}</p></div><button type="button" onClick={()=>onNavigate(a.module,a.projectId,a.contentId)} className="cursor-pointer rounded-lg px-3 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>{actionLabel(a)}</span></button>
+    </div>)}</div>:<p className="mt-3 border-t border-[#E3E6ED] py-4 text-sm text-[#687487]">{approvalsLoading?"Conferindo pendências…":approvalsFailed||financeError?"Não foi possível confirmar todas as pendências.":"Nenhuma ação pendente registrada."}</p>}
     {attention.length>5&&<button type="button" onClick={()=>onNavigate("content")} className={"mt-3 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver outras pendências</span></button>}
    </section>}
    {serviceRows.length>0&&<section className={card+" min-w-0"}>
@@ -122,9 +101,14 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     <div className="mt-3 divide-y divide-[#E9EDF3]">{serviceRows.map(s=><button type="button" key={s.name} onClick={()=>onNavigate(s.module)} className="flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left hover:bg-[#F9FAFD]"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 text-[#6842C4]">{icon(s.icon,19)}</span><div><p className="text-sm font-semibold">{s.name}</p><p className="mt-1 text-xs leading-5 text-[#7A8599]">{s.detail}</p></div></div><span className="shrink-0 text-[#7052B2]">{"›"}</span></button>)}</div>
    </section>}
   </div>
+  <div className="rv-ui3-client-status flex flex-wrap gap-x-5 gap-y-2 border-y border-[#E3E6ED] py-3" aria-label="Resumo dos serviços compartilhados">
+    {allowed("execution")&&<button type="button" onClick={()=>onNavigate("execution")} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs text-[#687487] hover:bg-[#F6F7FB]">{icon("chart-dots-3",16)}Entregas <strong className="tabular-nums text-[#323647]">{tasks.length?completed+"/"+tasks.length:"—"}</strong></button>}
+    {allowed("content")&&<button type="button" onClick={()=>onNavigate("content")} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs text-[#687487] hover:bg-[#F6F7FB]">{icon("calendar",16)}Conteúdos do mês <strong className="tabular-nums text-[#323647]">{monthContent.length}</strong></button>}
+    {allowed("campaigns")&&<button type="button" onClick={()=>onNavigate("campaigns")} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs text-[#687487] hover:bg-[#F6F7FB]">{icon("rocket",16)}Campanhas ativas <strong className="tabular-nums text-[#323647]">{campaignCount}</strong></button>}
+  </div>
   {(allowed("content")||allowed("execution")||allowed("meetings"))&&<section className={card}>
-   <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("calendar",20)} Atividades do mês</h2><span className="text-xs capitalize text-[#738198]">{monthLabel(month)}</span></div>
-   {monthEntries.length?<div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{monthEntries.map(e=><button type="button" key={e.key} onClick={()=>onNavigate(e.kindId,e.projectId,e.contentId)} className="cursor-pointer rounded-lg border border-[#E6EAF1] bg-[#FBFCFE] p-3 text-left hover:border-[#C8B6F8]"><p className="text-[11px] font-bold uppercase text-[#7052B2]">{displayDate(e.date)} · {e.kind}</p><p className="mt-2 line-clamp-2 text-sm font-semibold">{e.title}</p></button>)}</div>:
+   <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-[14px] font-semibold text-[#323647]">{icon("calendar",17)} Atividades do mês</h2><div className="flex items-center gap-1" aria-label="Filtrar atividades por mês"><button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="min-h-9 min-w-9 rounded-lg text-sm text-[#687487] hover:bg-[#F6F7FB]">‹</button><span className="min-w-[120px] text-center text-xs font-medium capitalize text-[#687487]">{monthLabel(month)}</span><button type="button" onClick={()=>shiftMonth(1)} aria-label="Próximo mês" className="min-h-9 min-w-9 rounded-lg text-sm text-[#687487] hover:bg-[#F6F7FB]">›</button></div></div>
+   {monthEntries.length?<div className="mt-3 divide-y divide-[#E3E6ED]">{monthEntries.map(e=><button type="button" key={e.key} onClick={()=>onNavigate(e.kindId,e.projectId,e.contentId)} className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-[#FAFBFE]"><p className="text-xs font-medium text-[#687487]">{displayDate(e.date)} · {e.kind}</p><p className="line-clamp-2 text-sm font-medium text-[#323647]">{e.title}</p></button>)}</div>:
     <div className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#758198]">Nenhuma atividade compartilhada para o período selecionado.</div>}
    <p className="mt-3 text-xs text-[#7D899D]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
   </section>}

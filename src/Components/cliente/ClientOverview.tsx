@@ -86,7 +86,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const metric="rounded-xl border border-[#E3E8F0] bg-white p-4 text-left";
  const actionLabel=(item:Attention)=>item.kind==="idea"?"Revisar ideia":item.kind==="final"?"Revisar material":"Ver cobrança";
  const serviceRows=[
-  ...(allowed("execution")?[{name:"Execução do projeto",icon:"chart-dots-3" as RotevoIconName,detail:tasks.length?completed+" de "+tasks.length+" entregas concluídas":"Nenhuma entrega compartilhada",module:"execution" as PortalModule}]:[]),
+  ...(allowed("execution")?[{name:"Tarefas e entregas",icon:"chart-dots-3" as RotevoIconName,detail:tasks.length?completed+" de "+tasks.length+" entregas concluídas":"Nenhuma entrega compartilhada",module:"execution" as PortalModule}]:[]),
   ...(allowed("content")?[{name:"Conteúdo",icon:"calendar" as RotevoIconName,detail:publishedContent.length+" publicações compartilhadas · "+(approvalsFailed?"aprovações indisponíveis":approvalsLoading?"conferindo aprovações":contentAttention.length+" aguardando decisão"),module:"content" as PortalModule}]:[]),
   ...(allowed("campaigns")?[{name:"Campanhas",icon:"rocket" as RotevoIconName,detail:campaignCount+" campanha(s) ativa(s) compartilhada(s)",module:"campaigns" as PortalModule}]:[])
  ];

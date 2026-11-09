@@ -46,7 +46,7 @@ export default function TeamDirectory(){
    }catch{failed=true}
    if(!active)return;setLoading(false);setUnavailable(failed);setMembers(next);setAssignments(nextAssignments);setPermissions(nextPermissions);
  }void load();return()=>{active=false};},[refresh]);
- return <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6">
+ return <section className="rv-ui2-module mt-5 rounded-xl border border-[#E3E7F0] bg-white p-5">
   <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Equipe Rotevo</h2><p className="mt-2 text-sm text-[#525B70]">Colaboradores, funções e responsabilidades, com controle de acesso por projeto.</p></div><button type="button" onClick={()=>setShowCreate(v=>!v)} disabled={!capabilities.invites} className="rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white disabled:bg-[#F1F2F6] disabled:text-[#697386]">{capabilities.invites?(showCreate?"Fechar cadastro":"Novo usuário"):"Cadastro aguardando ativação segura"}</button></div>
   {capabilities.adminTransfer&&<TeamAdminTransferForm members={members} onTransferred={async()=>{setRefresh(n=>n+1)}}/>}
   {capabilities.invites&&showCreate&&<TeamInviteForm onInvited={async()=>{setShowCreate(false);setRefresh(n=>n+1)}}/>}

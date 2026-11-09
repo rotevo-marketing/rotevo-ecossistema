@@ -312,7 +312,7 @@ function PlanejamentoClienteContent() {
   }
 
   return (
-    <main className="admin-manage-v2 workspace-project-page flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-manage-v2 rv-ui2 workspace-project-page flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{` .admin-manage-v2, .admin-manage-v2 h1, .admin-manage-v2 h2, .admin-manage-v2 h3, .admin-manage-v2 h4 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
 
       <section className="mx-auto w-full max-w-6xl px-5 pb-5 pt-9 sm:px-8 lg:px-10">

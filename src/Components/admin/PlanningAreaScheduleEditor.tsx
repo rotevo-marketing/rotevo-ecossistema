@@ -21,10 +21,10 @@ export default function PlanningAreaScheduleEditor({initial,selectedDocumentCode
  useUnsavedChanges(dirty);
  const modify=(area:string,patch:Partial<PlanningAreaDelivery>)=>setRows(items=>items.map(item=>item.area===area?{...item,...patch}:item));
  return <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8 lg:px-10">
-  <div className="rounded-2xl border border-[#E3E7F0] bg-white p-5 sm:p-7">
+  <div className="rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-6">
    <div className="flex items-center gap-2"><RotevoTablerIcon name="calendar" size={23}/><h2 className="text-xl font-bold">Liberação das áreas estratégicas</h2></div>
    <p className="mt-2 text-sm leading-6 text-[#525B70]">Configure o prazo previsto e o andamento de cada área do planejamento. O cliente verá as áreas autorizadas e suas datas. Concluir uma área ou informar uma data não publica seus documentos automaticamente.</p>
-   <div className="mt-5 space-y-3">{rows.map(row=><div key={row.area} className="grid items-center gap-3 rounded-xl border border-[#E3E7F0] bg-[#FAFBFD] p-4 md:grid-cols-[minmax(185px,1fr)_160px_185px_100px]">
+   <div className="mt-5 space-y-3">{rows.map(row=><div key={row.area} className="grid items-center gap-3 rounded-lg border border-[#E3E6ED] bg-[#FAFBFD] p-4 md:grid-cols-[minmax(185px,1fr)_160px_185px_100px]">
     <div><strong className="text-sm text-[#101828]">{row.area}</strong><p className="mt-1 text-xs text-[#697386]">Publicação individual em Configurar documentos e no editor</p></div>
     <label className="text-xs font-semibold text-[#525B70]">Previsão<input type="date" value={row.dueDate} onChange={e=>modify(row.area,{dueDate:e.target.value})} disabled={saving} className="mt-1 block w-full rounded-lg border border-[#DDE2ED] bg-white p-2.5 text-sm"/></label>
     <label className="text-xs font-semibold text-[#525B70]">Andamento<select value={row.status} onChange={e=>modify(row.area,{status:e.target.value as PlanningAreaDelivery["status"]})} disabled={saving} className="mt-1 block w-full rounded-lg border border-[#DDE2ED] bg-white p-2.5 text-sm">{statuses.map(status=><option key={status.id} value={status.id}>{status.name}</option>)}</select></label>

@@ -15,6 +15,7 @@ on:
       - 'scripts/security/ui3-sql-baseline.mjs'
       - 'scripts/finance/database-isolated.sql'
       - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - 'docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'
       - 'scripts/security/client-project-projection.test.mjs'
       - 'scripts/security/team-my-access-api-behavior.test.mjs'
       - 'scripts/security/admin-project-api-behavior.test.mjs'

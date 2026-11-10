@@ -102,3 +102,16 @@ Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/dat
 **Validação adicional do esquema hospedado (consulta apenas de catálogo):** `authenticated` não pode alterar `profiles.role` nem `profiles.client_id`, mas pode alterar `profiles.full_name`; o antigo gate G1 está coberto pelo estado atual e não precisa ser reaberto sem nova evidência.
 
 **Ação final necessária:** preparar espelho Supabase isolado a partir de baseline verificado, testar o SQL proposto com identidades reais *sintéticas*, preservar o editor do estrategista e obter autorização explícita para a eventual mudança sensível no banco hospedado. Nenhuma alteração em produção nesta rodada.
+
+## 10. Rodada adicional — autenticação administrativa e RLS sintética ampliada
+
+- **GitHub Actions**: [execução 42742142119](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42742142119), resultado **SUCCESS**. A UI3, TypeScript, build e testes existentes permaneceram íntegros depois de incluir o guard de troca inicial de senha em quatro rotas de projeto:
+  - `/api/admin/project` (consulta de JSON pelo servidor);
+  - `/api/admin/project/update`;
+  - `/api/admin/project/status`;
+  - `/api/admin/project/delete`.
+- `scripts/security/client-project-projection.test.mjs` agora verifica que JWT é validado e a marca `app_metadata.rotevo_password_reset_required` é analisada **antes** da criação do cliente privilegiado e da consulta ao perfil. Sem alterações em contas/senhas/roles reais.
+- **PostgreSQL 17 inteiramente descartável**: [execução 42742451497](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42742451497), resultado **SUCCESS**. O laboratório `scripts/security/pg-planning-json-lab.sql` comprova com fixtures: cliente A só vê metadados do projeto A; cliente B só vê os de B; ambas as identidades recebem negação ao selecionar o JSON privado; papel anônimo não recebe JSON nem metadados; `service_role` preserva leitura autorizada para endpoints.
+- **Abrangência limitada**: o laboratório reproduz um recorte de grants e RLS em PostgreSQL, não uma cópia da instância completa de Auth/Storage/RPC do Supabase Rotevo. Não é homologação conectada das contas reais ou prova de migração segura no ambiente hospedado.
+- A base conectada ainda mostra apenas a branch Supabase principal; a criação de ambiente hospedado isolado pode implicar custos e não foi executada. O fluxo ponta a ponta autenticado de Cliente/Equipe depende do navegador Work, indisponível nesta sessão.
+- **Gate continua NO-GO**: somente após espelho Supabase isolado com migrações reconciliadas, testes reais de roles/RLS e editor, acessibilidade/navegação em Work, aprovação específica para alterar grants hospedados e validação pós-release.

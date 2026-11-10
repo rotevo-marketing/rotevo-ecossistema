@@ -40,25 +40,25 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   return decision?editorialStatuses[decision.decision]:item.status==="idea_pending"&&idea?.decision==="approved"?"Ideia aprovada":item.status==="idea_pending"&&idea?.decision==="changes_requested"?"Ajustes solicitados na ideia":editorialStatuses[item.status]??item.status;
  }
 
- async function persist(next:EditorialItem[]){
-  if(!project||saving)return;
+ async function persist(next:EditorialItem[],target=project,focus=true){
+  if(!target||saving)return;
   setSaving(true);setError("");setNotice("");
-  const payload={...(project.data??{}),editorialCalendar:next};
+  const payload={...(target.data??{}),editorialCalendar:next};
   try {
    const {data:session,error:authError}=await supabase.auth.getSession();
    const token=session.session?.access_token;
    if(authError||!token){setError("Sessão expirada. Entre novamente para salvar.");return;}
    const response=await fetch("/api/admin/project/update",{
     method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
-    body:JSON.stringify({projectId:project.id,expectedUpdatedAt:project.updated_at,data:payload}),cache:"no-store"
+    body:JSON.stringify({projectId:target.id,expectedUpdatedAt:target.updated_at,data:payload}),cache:"no-store"
    });
    if(response.status===409){setError("Esse projeto foi modificado em outra sessão. Atualize a página para evitar sobrescrever informações.");return;}
    if(!response.ok){setError("Não foi possível salvar o conteúdo. Confira as permissões.");return;}
    const result=await response.json();
    if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar a atualização do conteúdo.");return;}
-   onChanged(project.id,result.project.data as Project["data"],result.project.updated_at);
-   const saved=next.find(x=>x.id===editing?.id)??next[next.length-1];if(saved)setFocusItem({projectId:project.id,contentId:saved.id,channel:saved.channel,publishDate:saved.publishDate,nonce:Date.now()});
-   setEditing(null);setNotice("Conteúdo atualizado. Canal e mês selecionados no calendário.");
+   onChanged(target.id,result.project.data as Project["data"],result.project.updated_at);
+   if(focus){const saved=next.find(x=>x.id===editing?.id)??next[next.length-1];if(saved)setFocusItem({projectId:target.id,contentId:saved.id,channel:saved.channel,publishDate:saved.publishDate,nonce:Date.now()});setEditing(null);setNotice("Conteúdo atualizado. Canal e mês selecionados no calendário.");}
+   else setNotice("Situação editorial atualizada. As decisões anteriores foram preservadas.");
   }catch{setError("Falha de conexão ao salvar o conteúdo.");}
   finally{setSaving(false);}
  }
@@ -88,7 +88,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  }
  return <div className="rv-ui2-module rv-ui2-editorial rv-ui3-editorial mt-3 space-y-3">
   {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-  <EditorialCalendar projects={projects} focusItem={focusItem} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
+  <EditorialCalendar projects={projects} focusItem={focusItem} onStatusChange={(id,item,status)=>{if(["approved","changes_requested","idea_approved"].includes(status)){setError("A aprovação formal exige uma decisão registrada no fluxo do cliente.");return;}const target=projects.find(p=>p.id===id);if(!target)return;const existing=target.data?.editorialCalendar??[];void persist(existing.map(row=>row.id===item.id?{...row,status}:row),target,false);}} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
   {project&&<details className="rv-ui3-editorial-approval-history border-t border-[#E3E6ED] py-3">
    <summary className="min-h-9 cursor-pointer rounded-lg px-2 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Consultar histórico de aprovações do projeto</summary>
    <EditorialApprovalsPanel key={project.id} projectId={project.id} contentTitles={Object.fromEntries(items.map(item=>[item.id,item.title]))}/>

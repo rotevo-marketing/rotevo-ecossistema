@@ -109,6 +109,21 @@ await request(path(pA,"task","task-shared")+"&cursor="+encodeURIComponent(Buffer
 // Exactly 10 messages per author are accepted in any rolling 60-second window.
 for(let i=0;i<8;i++)await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Rate test "+i),201);
 await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Rate test overflow"),429);
+// Concurrent requests from a distinct actor must not bypass the atomic database trigger.
+const burst=await makeUser("burst","client",cA);
+const attempts=await Promise.all(Array.from({length:16},(_,i)=>fetch(new URL("/api/collaboration/messages",app),{
+ method:"POST",headers:{Authorization:"Bearer "+burst.token,"Content-Type":"application/json"},
+ body:JSON.stringify(msg(pA,"task","task-shared","Concurrent test "+i))
+})));
+const accepted=attempts.filter(res=>res.status===201).length;
+const blocked=attempts.filter(res=>res.status===429).length;
+assert.equal(accepted,10,"only ten concurrent messages may be inserted per author");
+assert.equal(blocked,6,"remaining concurrent requests must be throttled");
+assert.equal(attempts.length,accepted+blocked,"no unexpected status in concurrent requests");
+const burstRows=await must(service.from("rotevo_collaboration_messages")
+ .select("id").eq("author_user_id",burst.id).eq("project_id",pA),"count concurrent messages");
+assert.equal(burstRows.length,10,"database must persist exactly ten messages");
+console.log("PASS concurrent collaboration rate limiting: 10 accepted and 6 rejected");
 await must(service.from("client_workspaces").update({data:{modules:["content"],contracts:[],folders:[]}}).eq("client_id",cA),"disable execution");
 await request(path(pA,"task","task-shared"),a,"GET",undefined,403);
 assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,9);

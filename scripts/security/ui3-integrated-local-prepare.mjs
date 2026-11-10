@@ -12,7 +12,7 @@ assert.ok(!existsSync(join(target,'supabase/.temp/project-ref')),'refuse a linke
 const repo=realpathSync(new URL('../..',import.meta.url));
 assert.ok(relative(repo,target).startsWith('..'),'refuse repository migration directory');
 const migrationDir=join(target,'supabase/migrations');mkdirSync(migrationDir,{recursive:true});
-for(const [i,file] of [...baselineFiles,'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'].entries()){
+for(const [i,file] of [...baselineFiles,'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql','docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'].entries()){
  writeFileSync(join(migrationDir,String(20261110000000+i)+'_synthetic_lab.sql'),readFileSync(new URL('../../'+file,import.meta.url)));
 }
-console.log('Prepared selected SQL baseline plus grant proposal in detached local test project. No hosted execution.');
+console.log('Prepared selected SQL baseline plus grant and editorial RPC proposals in detached local test project. No hosted execution.');

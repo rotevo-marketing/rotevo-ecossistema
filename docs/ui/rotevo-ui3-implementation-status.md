@@ -238,3 +238,23 @@ Pendências prioritárias após o teste deste ajuste: validar navegador Voltar/A
 - **Limite de aceite:** esta rodada não autenticou novas identidades reais de cliente ou equipe. Não foi executada escrita em banco nem testes de isolamento por duas contas reais; estes permanecem pendentes. A homologação deve seguir as recomendações de *deny by default* e autorização por solicitação/recurso.
 - **Próximos testes:** navegador autenticado com perfil cliente e staff autorizados, isolamento entre tenants/projetos, módulos permitidos/proibidos, arquivos autorizados e acesso negado; persistência HTML e financeiro em ambiente sintético.
 - **Publicação:** commits apenas na branch isolada, sem merge na main, mudanças em produção, flags ou dados reais. Prévia Git/Vercel pode ser gerada automaticamente. Validar o CI do HEAD antes de aceitar.
+
+## Revalidação de perfis — controles administrativos e testes (10/11/2026)
+
+### Observações
+- O CI referente ao commit `276f8eed` da rodada anterior foi concluído com sucesso; a prévia `b5dc038` foi confirmada como READY.
+- O código de `/api/client/projects` deriva `client_id` do perfil autenticado e projeta campos explícitos para o cliente; `/api/team/my-access` restringe a consulta a colaboradores ativos e exige autorização por projeto para apresentar nomes de projetos.
+- Identificada divergência com a regra de troca inicial de senha: as ações administrativas `/api/team/assignments`, `/api/team/permissions`, `/api/team/members/status` e `/api/team/admin/transfer` não aplicavam o mesmo bloqueio obrigatório existente nas rotas de consulta e convite.
+- As quatro rotas agora rejeitam a sessão marcada com `rotevo_password_reset_required` com HTTP 403, **imediatamente após verificar o JWT e antes de consultar permissões ou executar mutações**. Flags de habilitação, lógica de privilégios, regras de projeto e operações foram preservadas.
+- A regressão em `scripts/security/client-project-projection.test.mjs` exige a ordem do guard nas quatro rotas. Todos os registros usados são fixtures de teste, sem modificações de usuários ou projetos.
+
+### Situação de homologação
+- Verificar workflow do commit de teste e a prévia correspondente antes de declarar aceite automatizado final.
+- Não foi executada autenticação como cliente real nem colaborador real nesta sessão. Os testes de autorização entre contas, negação por tenant e responsividade por perfil permanecem pendentes do navegador autenticado em Work.
+- Proteções de Vercel, dados reais, perfis, permissões e produção inalterados. Nenhuma flag foi ativada, nenhuma migração foi executada.
+
+### Próxima sequência
+1. Obter sessão autorizada de cliente e de colaborador no navegador do Work, sem fornecer credenciais no chat.
+2. Executar matriz positiva/negativa por perfil, módulo, projeto, documento, API e estado de senha.
+3. Homologar persistência HTML, concorrência e financeiro em ambiente isolado com dados sintéticos.
+4. Somente após aceite consolidado preparar release, sem promoção automática a produção.

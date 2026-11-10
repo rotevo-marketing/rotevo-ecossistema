@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'scripts/security/ui2-visual-contract.test.mjs'
       - 'scripts/security/ui3-workspace-contract.test.mjs'
+      - 'scripts/security/ui3-main-parity.test.mjs'
+      - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
       - 'scripts/security/ui3-raw-json-release-gate.test.mjs'
       - 'scripts/security/ui3-contrast.test.mjs'
@@ -46,6 +48,8 @@ jobs:
         run: node --test scripts/security/ui2-visual-contract.test.mjs
       - name: UI3 workspace and navigation contract
         run: node --test scripts/security/ui3-workspace-contract.test.mjs
+      - name: Main-only release feature equivalence guards
+        run: node --test scripts/security/ui3-main-parity.test.mjs
       - name: Authenticated audit regressions (synthetic DOM only)
         run: node --test scripts/security/ui3-authenticated-findings.test.mjs
       - name: Existing project and editorial security contracts

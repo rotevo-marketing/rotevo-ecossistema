@@ -58,7 +58,7 @@ export async function GET(req:NextRequest){
  const v=await authorized(req,b);if("error" in v)return fail(v.error??503);
  const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,content_version,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:false}).limit(100);
  if(error)return fail(503);
- return NextResponse.json({messages:(data??[]).reverse(),currentUserId:v.userId},{headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({messages:(data??[]).reverse().map(m=>({id:m.id,author_kind:m.author_kind,mine:m.author_id===v.userId,message_type:m.message_type,content_version:m.content_version,body:m.body,created_at:m.created_at}))},{headers:{"Cache-Control":"no-store"}});
 }
 export async function POST(req:NextRequest){
  let b:Req;
@@ -75,5 +75,5 @@ export async function POST(req:NextRequest){
  if((count??0)>=15)return fail(429);
  const {data,error}=await v.admin.from("project_collaboration_messages").insert({project_id:b.projectId,item_type:b.itemType,item_id:b.itemId,content_version:v.version,message_type:kind,body:b.body.trim(),author_id:v.userId,author_kind:v.role}).select("id,author_id,author_kind,message_type,content_version,body,created_at").single();
  if(error||!data)return fail(503);
- return NextResponse.json({message:data},{status:201,headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({message:{id:data.id,author_kind:data.author_kind,mine:true,message_type:data.message_type,content_version:data.content_version,body:data.body,created_at:data.created_at}},{status:201,headers:{"Cache-Control":"no-store"}});
 }

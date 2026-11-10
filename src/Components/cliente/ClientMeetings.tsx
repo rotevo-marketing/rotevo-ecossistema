@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
+import {todayInBrazil} from "@/lib/finance/model";
 type Action={id:string;title:string;owner:string;dueDate:string};
 type Meeting={id:string;title:string;date:string;time:string;duration:string;place:string;kind:"online"|"presencial";status:"confirmed"|"done"|"cancelled";notes:string;minutes?:string;actionItems?:Action[];meetingUrl?:string;materialUrl?:string;material?:string};
 const format=(d:string)=>d.split("-").reverse().join("/");
@@ -9,7 +10,7 @@ const colors={confirmed:"bg-[#E0F5E8] text-[#176F40]",done:"bg-[#EDF0F5] text-[#
 type SharedMeeting={id:string;title:string;date:string;time?:string;duration?:string;location?:string;modality?:"online"|"presencial";status:string;notes?:string;minutes?:string;actionItems?:Action[];meetingUrl?:string;materialUrl?:string;visibleToClient?:boolean};
 export default function ClientMeetings({projects}:{projects:{id:string;data:{operationalAgenda?:SharedMeeting[]}|null}[]}){
  const events:Meeting[]=projects.flatMap(p=>(p.data?.operationalAgenda??[]).filter(e=>e.visibleToClient===true).map(e=>({id:p.id+":"+e.id,title:e.title,date:e.date,time:e.time||"Horário a definir",duration:e.duration||"Duração a definir",place:e.location||"Local a definir",kind:e.modality??"online",status:e.status==="completed"?"done":e.status==="cancelled"?"cancelled":"confirmed",notes:e.notes??"",minutes:e.minutes,actionItems:e.actionItems,meetingUrl:e.meetingUrl,materialUrl:e.materialUrl})));
- const [month,setMonth]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")});
+ const [month,setMonth]=useState(()=>todayInBrazil().slice(0,7));
  const [selected,setSelected]=useState<string|null>(null);
  const [view,setView]=useState<"calendar"|"list"|"history">("calendar");
  const dialog=useRef<HTMLDialogElement>(null);

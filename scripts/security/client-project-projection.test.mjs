@@ -117,3 +117,14 @@ test("client project endpoint rejects sessions requiring password reset before p
  assert.match(route,/\.eq\("client_id",profile\.client_id\)/);
  assert.match(route,/projectForClient\(p,modules\)/);
 });
+
+
+test("privileged project and team directory reads reject password-reset-required sessions",()=>{
+ for(const path of ["app/api/admin/projects/route.ts","app/api/team/directory/route.ts"]){
+  const src=readFileSync(new URL("../../src/"+path,import.meta.url),"utf8");
+  const reset=src.indexOf("rotevo_password_reset_required");
+  const profile=src.indexOf('.from("profiles")');
+  assert.ok(reset>0&&profile>reset,path+" must deny before profile and data queries");
+  assert.match(src,/return fail\(403\)/);
+ }
+});

@@ -32,7 +32,8 @@ try {
  page.on("pageerror",error=>diagnosticEvents.push({kind:"browser-error",name:error.name,message:error.message.slice(0,180)}));
  page.on("response",response=>{const u=new URL(response.url());if(u.pathname.includes("/auth/v1/token")||u.pathname.includes("/rest/v1/profiles"))diagnosticEvents.push({kind:"api",path:u.pathname,status:response.status()});});
 
- await page.goto(new URL("/estrategista/login",app).href,{waitUntil:"domcontentloaded"});
+ await page.goto(new URL("/estrategista/login",app).href,{waitUntil:"networkidle"});
+ await page.waitForTimeout(500); // Allow initial Next.js hydration before submitting the form.
  await page.getByLabel("E-mail").fill(email);
  await page.getByLabel("Senha",{exact:true}).fill(password);
  await page.getByRole("button",{name:"Acessar Ecossistema"}).click();

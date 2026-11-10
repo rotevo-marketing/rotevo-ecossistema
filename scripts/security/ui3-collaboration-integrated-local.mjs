@@ -35,9 +35,9 @@ async function request(path,actor,method="GET",body,expected=200){
 }
 function path(projectId,resourceType,resourceId){return "/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});}
 function msg(projectId,resourceType,resourceId,body){return {projectId,resourceType,resourceId,body};}
+await must(service.from("clients").insert([{id:cA,name:"Collab synthetic A",slug:"collab-a"},{id:cB,name:"Collab synthetic B",slug:"collab-b"}]),"clients");
 const admin=await makeUser("admin","strategist"),a=await makeUser("a","client",cA),b=await makeUser("b","client",cB),
  reader=await makeUser("reader","staff"),denied=await makeUser("denied","staff"),reset=await makeUser("reset","client",cA,true);
-await must(service.from("clients").insert([{id:cA,name:"Collab synthetic A",slug:"collab-a"},{id:cB,name:"Collab synthetic B",slug:"collab-b"}]),"clients");
 const emptyWorkspace={modules:["content","execution"],contracts:[],folders:[]};
 await must(service.from("client_workspaces").insert([{client_id:cA,data:emptyWorkspace},{client_id:cB,data:emptyWorkspace}]),"workspaces");
 const base={executionTimeline:[{id:"task-shared",title:"Shared",visibleToClient:true},{id:"task-internal",title:"Private",visibleToClient:false}],

@@ -1,7 +1,7 @@
 "use client";
 import {useCompactLayout} from "@/hooks/useCompactLayout";
 import DialogFocus from "@/Components/ui/DialogFocus";
-import {useEffect,useMemo,useState} from "react";
+import {Fragment,useEffect,useMemo,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
@@ -23,6 +23,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const [statusFilter,setStatusFilter]=useState("all");
  const [channelFilter,setChannelFilter]=useState("all");
  const [dayFilter,setDayFilter]=useState("");
+ const [listSearch,setListSearch]=useState("");
  useEffect(()=>{if(!focusItem)return;setProjectFilter(focusItem.projectId);setChannelFilter(focusItem.channel);if(focusItem.publishDate)setMonth(focusItem.publishDate.slice(0,7));setDayFilter("");setView("month");setSelected(null);},[focusItem]);
  const [clientDecisions,setClientDecisions]=useState<{project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";comment?:string|null;decided_at?:string}[]>([]);
  const [ideaDecisions,setIdeaDecisions]=useState<typeof clientDecisions>([]);
@@ -39,6 +40,8 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const days=new Date(y,m,0).getDate();
  const calendarDays=Array.from({length:Math.ceil((offset+days)/7)*7},(_,i)=>i-offset+1);
  const monthItems=filteredItems.filter(i=>i.publishDate?.startsWith(month));
+ const listItems=monthItems.filter(i=>(!dayFilter||i.publishDate===dayFilter)&&(!listSearch.trim()||[i.title,i.projectTitle,i.channel,i.owner??""].join(" ").toLocaleLowerCase("pt-BR").includes(listSearch.trim().toLocaleLowerCase("pt-BR")))).sort((a,b)=>a.publishDate.localeCompare(b.publishDate));
+ const groupedList=Object.entries(listItems.reduce<Record<string,typeof listItems>>((acc,i)=>{const p=projects.find(p=>p.id===i.projectId);const c=Array.isArray(p?.clients)?p?.clients[0]:p?.clients;const name=c?.name??"Cliente";(acc[name]??=[]).push(i);return acc;},{}));
  const prev=()=>{setDayFilter("");const d=new Date(y,m-2,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  const next=()=>{setDayFilter("");const d=new Date(y,m,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  return <div className="rv-ui3-editorial-calendar space-y-3">
@@ -62,6 +65,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
     <button type="button" aria-label="Próximo mês" onClick={next} className="cursor-pointer rounded-lg border px-3 py-2">›</button>
    </div>
    {view==="list"&&dayFilter&&<p className="mb-3 text-sm text-[#525B70]">Publicações de {fmt(dayFilter)} <button type="button" className="ml-2 font-semibold text-[#5949D1]" onClick={()=>setDayFilter("")}>Ver o mês inteiro</button></p>}
+   {view==="list"&&<label className="mb-3 block text-xs text-[#697386]">Pesquisar conteúdo<input value={listSearch} onChange={e=>setListSearch(e.target.value)} placeholder="Conteúdo, cliente, canal ou responsável" className="mt-1 block min-h-10 w-full rounded-lg border border-[#E3E7F0] bg-white px-3 text-sm text-[#323647] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"/></label>}
    {view==="month"?<div className="grid grid-cols-7 gap-1">
     {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d=><p key={d} className="py-2 text-center text-[10px] font-semibold text-[#697386] sm:text-xs">{d}</p>)}
     {calendarDays.map((d,i)=>{const key=`${month}-${String(d).padStart(2,"0")}`;const rows=d>0&&d<=days?monthItems.filter(item=>item.publishDate===key):[];return <div key={i} className="min-h-14 overflow-hidden rounded-lg border border-[#E3E7F0] p-1 sm:min-h-24 sm:p-2">
@@ -70,8 +74,23 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
        title={item.title} className={`mt-1 block w-full cursor-pointer truncate rounded-md px-1 py-1 text-left text-[10px] font-medium transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5] sm:px-2 sm:text-xs ${decisionStatus(item)==="approved"||decisionStatus(item)==="scheduled"||decisionStatus(item)==="published"?"bg-[#E0F5E8] text-[#176F40]":decisionStatus(item)==="changes_requested"?"bg-[#FFF1D4] text-[#875400]":decisionStatus(item)==="awaiting_client"?"bg-[#EEE8FF] text-[#6034B7]":"bg-[#EDF0F6] text-[#525B70]"}`}>{item.title}</button>)}
       {rows.length>2&&<button type="button" aria-label={`Ver os ${rows.length} conteúdos de ${fmt(key)}`} onClick={()=>{setView("list");setDayFilter(key);}} className="mt-1 block min-h-8 text-xs font-semibold text-[#5949D1]">+{rows.length-2} · Ver todos</button>}
     </div>})}
-   </div>:monthItems.length?<div className="space-y-2">{monthItems.filter(item=>!dayFilter||item.publishDate===dayFilter).sort((a,b)=>a.publishDate.localeCompare(b.publishDate)).map(item=><button type="button" key={item.projectId+item.id} onClick={()=>setSelected(item.projectId+":"+item.id)} className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-2 border-b border-[#E3E6ED] px-2 py-3 text-left hover:bg-[#FAFBFE]"><div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.projectTitle} · {item.channel} · {item.format}</p></div><div className="text-right text-xs"><p>{fmt(item.publishDate)}</p><p className="mt-1 text-[#687487]">{editorialStatuses[decisionStatus(item) as EditorialItem["status"]]??decisionStatus(item)}</p></div></button>)}</div>:
-    <p className="py-8 text-center text-sm text-[#697386]">Nenhum conteúdo neste mês.</p>}
+   </div>:<div className="overflow-x-auto rounded-xl border border-[#E3E7F0] bg-white">
+    <table className="w-full min-w-[860px] border-collapse text-left text-xs">
+     <thead className="bg-[#F7F8FC] text-[#596579]"><tr>{["Conteúdo","Projeto","Responsável","Situação","Prioridade","Prazo"].map(head=><th key={head} scope="col" className="border-b border-r border-[#E3E7F0] px-3 py-3 font-semibold">{head}</th>)}</tr></thead>
+     <tbody>{groupedList.map(([clientName,rows])=><Fragment key={clientName}>
+      <tr className="bg-[#F5F2FF]"><th colSpan={6} className="border-b border-[#E3E7F0] px-3 py-2.5 text-sm font-semibold text-[#6034B7]">{clientName} <span className="ml-2 font-normal text-[#687487]">({rows.length} conteúdos)</span></th></tr>
+      {rows.map(item=><tr key={item.projectId+":"+item.id} className="hover:bg-[#F9FAFE]">
+       <td className="max-w-[340px] border-b border-r border-[#E9ECF3] px-3 py-3"><button type="button" onClick={()=>setSelected(item.projectId+":"+item.id)} className="max-w-full cursor-pointer text-left font-semibold text-[#5949D1] hover:underline focus-visible:outline-2 focus-visible:outline-[#6C5CE7]">{item.title}</button><p className="mt-1 text-[11px] text-[#788398]">{item.channel} · {item.format}</p></td>
+       <td className="max-w-[170px] border-b border-r border-[#E9ECF3] px-3 py-3 text-[#525B70]" title={item.projectTitle}>{projects.find(p=>p.id===item.projectId)?.title??item.projectTitle}</td>
+       <td className="border-b border-r border-[#E9ECF3] px-3 py-3 text-[#525B70]">{item.owner?.trim()||"Não atribuído"}</td>
+       <td className="border-b border-r border-[#E9ECF3] px-3 py-3"><span className="inline-flex rounded-md bg-[#EEE8FF] px-2 py-1.5 font-medium text-[#6034B7]">{editorialStatuses[decisionStatus(item) as EditorialItem["status"]]??decisionStatus(item)}</span></td>
+       <td className="border-b border-r border-[#E9ECF3] px-3 py-3"><span className={"inline-flex rounded-md px-2 py-1.5 font-medium "+(item.priority==="urgent"?"bg-[#FCE5E8] text-[#AA354A]":item.priority==="high"?"bg-[#FFF0D6] text-[#966200]":item.priority==="low"?"bg-[#EAF1FF] text-[#285CBA]":"bg-[#F1F3F7] text-[#525B70]")}>{({low:"Baixa",normal:"Normal",high:"Alta",urgent:"Urgente"} as const)[item.priority??"normal"]}</span></td>
+       <td className="whitespace-nowrap border-b border-[#E9ECF3] px-3 py-3 text-[#525B70]">{fmt(item.publishDate)}</td>
+      </tr>)}
+     </Fragment>)}</tbody>
+    </table>
+    {listItems.length===0&&<p className="p-6 text-center text-sm text-[#697386]">Nenhum conteúdo corresponde aos filtros deste mês.</p>}
+   </div>}
    {view==="month"&&monthItems.length===0&&<p className="mt-4 text-center text-xs text-[#697386]">Nenhuma publicação cadastrada para este período.</p>}
   </div>
   {active&&<div className="fixed inset-0 z-[110] flex justify-end">

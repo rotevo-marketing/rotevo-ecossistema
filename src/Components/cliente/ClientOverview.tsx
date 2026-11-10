@@ -100,8 +100,8 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   {(allowed("content")||allowed("execution")||allowed("meetings"))&&<section className={card}>
    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-[14px] font-semibold text-[#323647]">{icon("calendar",17)} Atividades do mês</h2><div className="flex items-center gap-1" aria-label="Filtrar atividades por mês"><button type="button" onClick={()=>shiftMonth(-1)} aria-label="Mês anterior" className="min-h-9 min-w-9 rounded-lg text-sm text-[#687487] hover:bg-[#F6F7FB]">‹</button><span className="min-w-[120px] text-center text-xs font-medium capitalize text-[#687487]">{monthLabel(month)}</span><button type="button" onClick={()=>shiftMonth(1)} aria-label="Próximo mês" className="min-h-9 min-w-9 rounded-lg text-sm text-[#687487] hover:bg-[#F6F7FB]">›</button></div></div>
    {monthEntries.length?<div className="mt-3 divide-y divide-[#E3E6ED]">{monthEntries.map(e=><button type="button" key={e.key} onClick={()=>onNavigate(e.kindId,e.projectId,e.contentId)} className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-[#FAFBFE]"><p className="text-xs font-medium text-[#687487]">{displayDate(e.date)} · {e.kind}</p><p className="line-clamp-2 text-sm font-medium text-[#323647]">{e.title}</p></button>)}</div>:
-    <div className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#758198]">Nenhuma atividade compartilhada para o período selecionado.</div>}
-   <p className="mt-3 text-xs text-[#7D899D]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
+    <div className="mt-4 rounded-lg bg-[#F7F8FB] p-4 text-sm text-[#606D82]">Nenhuma atividade compartilhada para o período selecionado.</div>}
+   <p className="mt-3 text-xs text-[#606D82]">Reúne publicações, entregas e reuniões compartilhadas. A data prevista não confirma que a atividade foi realizada.</p>
   </section>}
   <div className="grid gap-4 md:grid-cols-2">
    {allowed("execution")&&<section className={card}>
@@ -111,19 +111,19 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    </section>}
    {allowed("meetings")&&<section className={card}>
     <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("calendar",20)} Reuniões</h2>
-    {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#758198]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#758198]">Nenhuma reunião futura compartilhada.</p>}
+    {nextMeetings[0]?<div className="mt-3"><p className="text-sm font-semibold">{nextMeetings[0].title}</p><p className="mt-1 text-xs text-[#606D82]">{displayDate(nextMeetings[0].date)}{nextMeetings[0].time?" · "+nextMeetings[0].time:""}</p></div>:<p className="mt-3 text-sm text-[#606D82]">Nenhuma reunião futura compartilhada.</p>}
     <button type="button" onClick={()=>onNavigate("meetings")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver reuniões</span></button>
    </section>}
    {allowed("finance")&&<section className={card}>
     <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("currency-dollar",20)} Financeiro</h2>
-    <p className="mt-3 text-sm text-[#758198]">{financeError?"Informações financeiras indisponíveis.":!finance?"Conferindo lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
+    <p className="mt-3 text-sm text-[#606D82]">{financeError?"Informações financeiras indisponíveis.":!finance?"Conferindo lançamentos…":invoices.length?invoices.length+" lançamento(s) em aberto.":"Nenhum lançamento pendente identificado."}</p>
     <button type="button" onClick={()=>onNavigate("finance")} className={"mt-4 "+linkClass}><span className="inline-flex items-center gap-1.5"><ContentTablerIcon name="eye" size={16}/>Ver financeiro</span></button>
    </section>}
   </div>
   <section className={card}>
    <div className="flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-[#323647]">{icon("clock",20)} Atualizações recentes</h2></div>
-   {events.length?<div className="mt-3 divide-y divide-[#E9EDF3]">{events.map((e,i)=><button type="button" key={e.project_id+e.content_id+i} onClick={()=>onNavigate("content",e.project_id,e.content_id)} className="block w-full cursor-pointer py-3 text-left"><p className="text-sm font-semibold">{e.phase} · {e.decision==="approved"?"Aprovação registrada":"Ajustes solicitados"}</p><p className="mt-1 text-xs text-[#758198]">{new Date(e.decided_at).toLocaleString("pt-BR")}</p></button>)}</div>:
-   <p className="mt-3 text-sm text-[#758198]">{approvalsLoading?"Consultando movimentações…":approvalsFailed?"Histórico de aprovações indisponível.":mostRecent?"Ainda não há decisões editoriais registradas. Última atualização do projeto: "+new Date(mostRecent.updated_at).toLocaleDateString("pt-BR"):"Nenhuma atualização compartilhada."}</p>}
+   {events.length?<div className="mt-3 divide-y divide-[#E9EDF3]">{events.map((e,i)=><button type="button" key={e.project_id+e.content_id+i} onClick={()=>onNavigate("content",e.project_id,e.content_id)} className="block w-full cursor-pointer py-3 text-left"><p className="text-sm font-semibold">{e.phase} · {e.decision==="approved"?"Aprovação registrada":"Ajustes solicitados"}</p><p className="mt-1 text-xs text-[#606D82]">{new Date(e.decided_at).toLocaleString("pt-BR")}</p></button>)}</div>:
+   <p className="mt-3 text-sm text-[#606D82]">{approvalsLoading?"Consultando movimentações…":approvalsFailed?"Histórico de aprovações indisponível.":mostRecent?"Ainda não há decisões editoriais registradas. Última atualização do projeto: "+new Date(mostRecent.updated_at).toLocaleDateString("pt-BR"):"Nenhuma atualização compartilhada."}</p>}
   </section>
  </div>;
 }

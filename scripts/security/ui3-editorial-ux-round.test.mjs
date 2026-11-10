@@ -52,7 +52,7 @@ test("client and strategist details are two-pane, keeping formal approvals separ
  assert.match(calendar,/Rotevo · Detalhes do conteúdo/);
  assert.match(client,/visibleToClient===true/);
 });
-test("bidirectional comments remain explicitly gated, not deceptive or client writable",()=>{
+test("bidirectional comments use the shared component rather than an unsafe direct client writer",()=>{
  assert.match(calendar,/ProjectConversation/);
  assert.match(client,/ProjectConversation/);
  assert.doesNotMatch(manager,/\/api\/editorial\/comments/);

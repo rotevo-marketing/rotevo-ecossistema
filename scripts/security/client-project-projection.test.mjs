@@ -128,3 +128,23 @@ test("privileged project and team directory reads reject password-reset-required
   assert.match(src,/return fail\(403\)/);
  }
 });
+
+
+test("privileged team mutations deny reset-required sessions before access or change",()=>{
+ const routes=[
+  "app/api/team/assignments/route.ts",
+  "app/api/team/permissions/route.ts",
+  "app/api/team/members/status/route.ts",
+  "app/api/team/admin/transfer/route.ts"
+ ];
+ for(const path of routes){
+  const src=readFileSync(new URL("../../src/"+path,import.meta.url),"utf8");
+  const authenticate=src.indexOf("auth.getUser(");
+  const guard=src.indexOf("identity.user.app_metadata?.rotevo_password_reset_required===true");
+  const readProfile=src.indexOf('.from("profiles")');
+  const mutation=src.indexOf('admin.rpc(');
+  assert.ok(authenticate>=0&&guard>authenticate&&readProfile>guard,path+" must reject after authentication and before querying privileged resources");
+  if(mutation>=0)assert.ok(mutation>guard,path+" must reject before RPC mutation");
+  assert.match(src.slice(guard,readProfile),/return fail\(403/);
+ }
+});

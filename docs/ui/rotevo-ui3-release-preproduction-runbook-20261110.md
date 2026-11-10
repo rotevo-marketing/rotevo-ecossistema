@@ -4,7 +4,7 @@
 
 ## 1. Candidato técnico e fontes
 
-- Branch: `feat/rotevo-ui2-pilot-20261109` (não usar SHA antigo; congelar o SHA somente após todos os testes).
+- Branch atual: `release/rotevo-ui3-rc-20261110`, PR #5. A reconciliação Git foi concluída; não reiniciar conflitos já resolvidos. Congelar o SHA de implantação somente após todos os gates.
 - CI integrada com Auth/PostgREST/Storage/Playwright: [42807510496](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42807510496), sete grupos aprovados em ambiente sintético.
 - CI de comparação de catálogo: [42809470419](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42809470419), exact parity para as 162 colunas (nomes, tipo e nullability), 36 registros de políticas (nome/comando e RLS ativo) e 15 assinaturas de funções (inclui SECURITY DEFINER). Os corpos de funções, grants, triggers, índices, defaults, owners, extensões e Auth/Storage gerenciados **não** foram comprovados idênticos.
 - CI de concessões e aborto/recuperação: [42809566139](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42809566139), aprovado em Postgres descartável.
@@ -26,7 +26,7 @@
 1. **Backup externo privado, validado e restaurável**, produzido antes da primeira alteração hospedada. Consultar [Supabase Backup and Restore using CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore). Para instâncias sem backup automático, usar `supabase db dump` para roles, schema e dados, com armazenamento criptografado **fora** do repositório público/GitHub Actions. Nunca enviar credenciais, dumps, JWT ou dados dos clientes para issues, logs, mensagens ou artifacts públicos.
 2. Validar a restauração em alvo temporário e independente. Backup lógico do Postgres não inclui os bytes do Supabase Storage: preservar também os objetos necessários, separadamente e de maneira privada. Confirmar as janelas de recuperação e impacto sobre sessões/autenticação.
 3. Verificar, além do snapshot de catálogo, as definições e ACLs de funções, policies `USING/WITH CHECK`, triggers, extensões, roles e dependências aplicáveis em `public`, `rotevo_finance`, `rotevo_operations`, `auth` e `storage`. Usar diff somente de metadados, sem dados de clientes. Resolver qualquer diferença que afete autorização.
-4. Resolver a divergência de seis commits exclusivos da `main` por revisão de equivalência, sem reintroduzir componentes V2 obsoletos na arquitetura em abas da UI3. Manter regressões de Equipe, convites, transferências, autorização e recuperação de senha.
+4. Preservar a reconciliação já concluída dos commits exclusivos da `main` e confirmar que o PR #5 permanece sem conflitos, sem reintroduzir componentes V2 obsoletos. Manter as evidências aprovadas de Equipe, convites, transferências, autorização e recuperação de senha; merge continua condicionado aos gates de dados e publicação.
 5. Concluir avaliação manual de leitor de tela e navegação por teclado nas telas internas críticas. Para a identidade Equipe no ambiente hospedado, criar uma conta de teste adequadamente autorizada, sem alterar perfis de clientes.
 6. Congelar commit do release; exigir GitHub Actions e Vercel READY para o **mesmo SHA**. Registrar o código de produção antes da promoção.
 
@@ -52,3 +52,18 @@
 **NÃO COMPROVADO / bloqueio:** backup privado/restauração real, equivalência integral dos corpos de funções e ACLs, avaliação manual assistiva e identidade hospedada da Equipe, reconciliação/merge da `main`, execução de grants e RPCs hospedadas e homologação no domínio final.
 
 **Decisão:** NO-GO até os bloqueios essenciais terem evidências verificáveis. READY na prévia não autoriza uma promoção irreversível de produção.
+
+
+## 7. Atualização do backup privado, 10/11/2026
+
+O painel Supabase foi acessado por autenticação segura. Organização Free, projeto saudável, tela Scheduled backups: **Free Plan does not include project backups**. Nenhum upgrade, PITR, branch paga, reset de senha ou nova credencial foi criado. O painel confirmou que o session pooler IPv4 é gratuito. A confirmação visual do plano não é prova de backup existente.
+
+**Storage preservado:** cópia dos três buckets por download autorizado, sem alterar nomes, conteúdo ou políticas. Inventários agregados antes/depois da cópia coincidem: 50 objetos, 27.151.977 bytes. Pacote privado fora do GitHub, criptografado com AES-256-GCM; chave em arquivo privado separado. O pacote foi decifrado e restaurado em diretório local independente, com validação de CRC e SHA-256 individual para os 50 arquivos. O utilitário de recuperação entregue também foi executado sobre o pacote real, com resultado positivo. O manifesto com chaves originais de objetos e hashes individuais fica apenas dentro do pacote criptografado.
+
+**Limite:** esse pacote contém bytes e caminhos dos objetos, não o banco, Auth, RLS, ACLs, configurações dos buckets ou metadados do serviço. O ensaio foi de recuperação em filesystem privado, não de importação em um serviço Supabase. Ainda é obrigatório produzir e ensaiar o backup do banco antes de qualquer SQL hospedado.
+
+**Banco bloqueado nesta sessão:** o navegador remoto alcança o Dashboard, mas o ambiente de execução não resolve os hosts de conexão direta e do session pooler verificado no painel. Não há conexão PostgreSQL privada provisionada nem ferramentas PostgreSQL/Docker disponíveis nesse ambiente. O conector SQL não exporta `pg_dump` para um arquivo privado. Nenhuma linha de cliente foi transportada por resultados SQL, logs públicos ou artifacts do GitHub como substituto de um dump completo.
+
+O aplicativo Windows do usuário não implica acesso deste ambiente ao terminal ou disco desse Windows: os recursos nativos expostos nesta sessão são de um desktop remoto Linux. A próxima intervenção indispensável é executar a exportação privada em máquina administrativa confiável com conectividade ao projeto, usando ferramentas compatíveis com PostgreSQL 17 e credenciais locais protegidas. Não enviar senhas, connection strings ou dados do banco pelo chat; não colocar dumps em GitHub Actions público. Salvar schema/dados, owners/ACLs e definições de roles; registrar separadamente limitações de roles gerenciados/segredos e configurações externas. O script Windows existente registra `clusterRolesIncluded=false` e, sozinho, não fecha o requisito de recuperação completa. Sua listagem de archive e SHA-256 também não substituem o ensaio de restauração.
+
+Após receber o pacote por um meio privado aprovado, restaurar em alvo isolado e verificar tabelas, integridade, identidades, funções, grants e metadados de Storage, reconciliando-os com os bytes preservados. Não restaurar sobre produção. A avaliação assistiva humana e os demais gates deste procedimento continuam obrigatórios. **NO-GO mantido.**

@@ -3,7 +3,7 @@
 ## Identificação
 - Repositório: `rotevo-marketing/rotevo-ecossistema`
 - Branch estável de candidato: `release/rotevo-ui3-rc-20261110`
-- PR de integração com main: [#5](https://github.com/rotevo-marketing/rotevo-ecossistema/pull/5), **DRAFT / mergeable=false / dirty** no último preflight. Não executar merge forçado.
+- PR de integração com main: [#5](https://github.com/rotevo-marketing/rotevo-ecossistema/pull/5), **DRAFT / mergeable=true**, conflitos resolvidos. Estado de checks `unstable` sujeito à revisão abaixo; não executar merge forçado.
 - Ambiente Vercel preview do candidato: READY. Produção `app.rotevo.com.br` continua no SHA `bec8ee26`, sem promoção UI3.
 - Nenhum serviço pago criado; nenhuma modificação em dados/grants/identidades hospedadas.
 
@@ -61,3 +61,43 @@ Um job antigo de `security-checks.yml` falhou por ausência de `npm ci` no grupo
 - A Vercel reportou prévia **READY** para o candidato; produção continua `bec8ee26` com aliases preservados.
 
 **Bloqueio real restante:** falta backup **atual, privado e restaurável**, incluindo bytes do Storage, e avaliação assistiva humana; sem essas provas não se deve aplicar grants/RPCs hospedadas nem promover a UI3. O conector Supabase não fornece a saída segura de um `pg_dump` para um destino privado e não é aceitável transportar dados reais via logs públicos. A pesquisa de nomes de arquivo no Drive conectado não identificou backup atual de novembro, sem excluir possíveis cópias em outros locais.
+
+
+## Rodada de recuperação privada — 10/11/2026
+
+### Estado retomado, sem reiniciar homologações
+
+Referência inicial desta rodada: `ed0708e545f51e4e29513a1f4beace330e4c1cfc`, branch `release/rotevo-ui3-rc-20261110`. PR #5 aberto, draft, mergeable=true; nenhum conflito foi reaberto ou resolvido novamente.
+
+As execuções [42815189969](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42815189969) e [42814518276](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42814518276) foram conferidas: SUCCESS. Comparação de arquivos confirmou ausência de diferença no código/dependências relevantes entre os SHAs aprovados e o candidato consultado. As baterias aprovadas não foram reiniciadas manualmente. Os seis checks de segurança associados ao commit consultado também estavam aprovados. Eventuais execuções automáticas disparadas pela atualização documental seguem o workflow existente, sem alterar seus gates.
+
+Vercel do projeto correto `rotevo-ecossistema`: `dpl_H8qQzb7hfbMmaZTSJni2N65DD343`, READY, Preview, código `ed0708e5`. O estado combinado do GitHub permanece failure/unstable por dois projetos adicionais (`metodo-epc-q5ap` e `metodo-epc-txjz`) com status Vercel failure, enquanto `Vercel – rotevo-ecossistema` está success. Não declarar todos os checks verdes nem remover configurações desses projetos sem revisar as regras de publicação. Nenhuma promoção de produção foi feita.
+
+### Backup: o que foi realizado
+
+- Dashboard Supabase autenticado pelo procedimento seguro do Work: plano Free confirmado, projeto saudável, sem backups agendados disponibilizados. Não foi contratado upgrade ou qualquer add-on.
+- Os bytes dos três buckets foram copiados por download autorizado. Nenhum objeto foi renomeado, sobrescrito, excluído ou reenviado ao Supabase.
+- Inventário agregado antes/depois da cópia: **50 objetos, 27.151.977 bytes**, sem divergência de contagem ou tamanho por bucket.
+- Pacote criptografado **AES-256-GCM**, armazenado privadamente fora do repositório/GitHub. Chave binária guardada em arquivo privado separado e nunca impressa. Não inserir chave, nomes de objetos, conteúdo, URLs assinadas ou links privados de recuperação neste relatório público.
+- Restauração em **filesystem local isolado**, sem conexão ao Supabase: todos os **50 arquivos** recuperados; CRC e SHA-256 individual conferidos. O utilitário entregue de recuperação foi executado sobre o mesmo pacote e confirmou os 50 arquivos e os 27.151.977 bytes.
+- SHA-256 do pacote criptografado: `fd332643fae02103ad62d09e41daf22a8b5dfc1007a41e5c15f8f5f6b849e500`. Tamanho do arquivo criptografado: 26.059.739 bytes. Criado em 10/11/2026, 13:12 UTC (10:12 em Brasília).
+
+| Escopo | Resultado |
+| --- | --- |
+| Cópia dos bytes e caminhos dos objetos Storage | Comprovada para os 50 objetos observados |
+| Decifração, CRC, SHA-256 e restauração local dos arquivos | PASS |
+| Banco PostgreSQL, Auth, RLS, owners/ACLs e roles | Não exportados/restaurados nesta rodada |
+| Metadados/configuração e restauração do serviço Supabase Storage | Não comprovados pelo pacote de bytes |
+| Recuperação completa do projeto antes do rollout | Ainda bloqueada |
+
+As quantidades e tamanhos coincidentes não afirmam um snapshot transacional conjunto entre banco e Storage. A reconciliação temporal e de metadados deve ocorrer junto do backup do banco.
+
+### Bloqueios comprovados e ação indispensável
+
+O ambiente de execução não conseguiu resolver nem o host PostgreSQL direto nem o session pooler gratuito obtido no painel. Não há conexão privada provisionada, clientes PostgreSQL ou Docker disponíveis nessa sessão. O acesso ao navegador remoto não disponibiliza o terminal/disco do computador Windows do usuário. Por isso **nenhum backup do banco foi produzido**, e não foi declarado sucesso de restauração de banco com base em mera listagem ou contagens.
+
+É indispensável executar a exportação privada em uma máquina administrativa confiável com conectividade ao projeto. Usar conexão privada protegida, PostgreSQL 17 compatível, salvar schema/dados/owners/ACLs/roles e tratar configurações gerenciadas/segredos separadamente. O script Windows existente produz archive de banco, mas registra ausência de roles globais e de restauração verificada; não confundi-lo com recuperação completa. A restauração precisa ser ensaiada em alvo independente, nunca em produção. Não solicitar ou transmitir senha de banco no chat.
+
+A avaliação assistiva humana residual continua pendente; os resultados de Chromium/ARIA/teclado já aprovados permanecem válidos, mas não foram reclassificados como teste humano de leitor de tela. A capacidade exposta nesta sessão não fornece acesso ao leitor de tela do Windows do usuário. Também permanecem os gates de revisão final de autorização, SQL hospedado G2/RPC e homologação pós-implantação definidos no procedimento.
+
+**Decisão final desta rodada: NO-GO para produção.** Houve avanço verificável na preservação privada e recuperável dos arquivos de Storage. Falta a recuperação comprovada do banco. Nenhuma alteração em dados, grants, RLS, contas ou configurações de produção foi executada; sem serviços pagos e sem merge do PR #5.

@@ -51,6 +51,39 @@ try{
  // it MUST NOT be certified as a production schema mirror when there is any drift.
  const schemaMirrorReady=missing.length===0&&mismatched.length===0&&extra.length===0;
  console.log(schemaMirrorReady?'PASS full table/column-count parity':'NO-GO full hosted schema mirror: synthetic lab remains selective');
+ // Hosted security catalog measured read-only: policy counts and known application function names.
+ const expectedPolicies={
+ 'public.client_users':2,'public.client_workspaces':1,'public.clients':5,
+ 'public.editorial_approvals':1,'public.editorial_idea_approvals':1,
+ 'public.finance_invoice_links':0,'public.planning_projects':6,'public.profiles':3,
+ 'public.project_assets':0,'public.team_audit_events':0,'public.team_member_permissions':1,
+ 'public.team_members':1,'public.team_project_assignments':1,'public.user_preferences':0
+ };
+ const policyRows=(await pg.query(`select n.nspname||'.'||c.relname as name,
+ c.relrowsecurity as rls,count(p.polname)::integer as policies
+ from pg_class c join pg_namespace n on n.oid=c.relnamespace
+ left join pg_policy p on p.polrelid=c.oid
+ where n.nspname in ('public','rotevo_finance') and c.relkind='r'
+ group by n.nspname,c.relname,c.relrowsecurity`)).rows;
+ const policyDiff=policyRows.filter(r=>!r.rls||(r.name in expectedPolicies&&expectedPolicies[r.name]!==r.policies)).map(r=>({name:r.name,rls:r.rls,hosted:expectedPolicies[r.name]??0,lab:r.policies}));
+ const expectedRpcs=[
+ 'public.is_strategist','public.rotevo_change_team_access','public.rotevo_client_finance',
+ 'public.rotevo_editorial_decide','public.rotevo_editorial_idea_decide',
+ 'public.rotevo_finance_mutate','public.rotevo_finance_snapshot',
+ 'public.rotevo_transfer_team_admin','rotevo_finance.allowed',
+ 'rotevo_finance.campaigns','rotevo_finance.client_snapshot','rotevo_finance.mutate',
+ 'rotevo_finance.snapshot','rotevo_operations.can_read_editorial','rotevo_operations.can_read_project'
+ ];
+ const rpcRows=(await pg.query(`select n.nspname||'.'||p.proname as name from pg_proc p
+ join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in ('public','rotevo_finance','rotevo_operations') order by 1`)).rows;
+ const rpcFound=new Set(rpcRows.map(r=>r.name));
+ const rpcMissing=expectedRpcs.filter(n=>!rpcFound.has(n));
+ const rpcExtra=rpcRows.filter(r=>!expectedRpcs.includes(r.name)).map(r=>r.name);
+ console.log('HOSTED_SECURITY_CATALOG_RECONCILIATION',JSON.stringify({policies:policyDiff,rpcMissing,rpcExtra}));
+ const securityCatalogParity=policyDiff.length===0&&rpcMissing.length===0&&rpcExtra.length===0;
+ console.log(securityCatalogParity?'PASS hosted function-name and RLS-policy-count parity':'NO-GO hosted function/policy metadata parity: inspect discrepancies');
+
 
  await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);
  await pg.exec(read('docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'));

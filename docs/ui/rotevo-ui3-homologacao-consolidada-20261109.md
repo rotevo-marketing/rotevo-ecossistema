@@ -322,3 +322,28 @@ As primeiras execuções do navegador falharam pela ausência de suporte à Ubun
 4. **Implantação:** nenhum merge/deployment de produção realizado ou autorizado.
 
 **Próxima etapa:** concluir matriz visual dos painéis do Estrategista e do Cliente e a revisão do pacote de alteração G2/rollback; somente após aceite integral solicitar autorização específica para migração hospedada e release.
+
+## 17. Matriz responsiva dos três portais em navegador isolado — 10/11/2026
+
+**GitHub Actions:** [execução 42758775354](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42758775354), commit `b4a76997`, conclusão **SUCCESS**.
+
+Ampliação do laboratório temporário com Playwright Chromium, Next.js e Supabase Auth/PostgREST/Storage reais (banco e identidades **sintéticos**). As rotas reais de login foram utilizadas para os três papéis; o script novo `scripts/security/ui3-portal-browser-local.mjs` inicia sessões fictícias de cliente e estrategista, verifica a tela de Visão geral e a ausência do conteúdo `internalNotes` no Portal.
+
+| Perfil / tela de entrada | 320 | 375 | 390 | 430 | 768 | 1024 | 1440 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Estrategista / Visão geral | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+| Cliente / Visão geral | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+| Equipe / Meu acesso | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+
+**Critério testado:** largura `document.documentElement.scrollWidth <= clientWidth + 1`, heading esperado renderizado e login na rota correspondente. Na Equipe, houve verificação adicional de projeto atribuído, acesso Financeiro negado, retorno por logout e foco via Tab. **Não extrapolar estes testes a todos os módulos, componentes internos, contrastes ou leitor de tela.**
+
+**Evidências de 390 px, exclusivamente dados fictícios:** [artifact GitHub Actions](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42758775354/artifacts/13735899992), contendo capturas de Estrategista, Cliente e Equipe. Retenção de cinco dias. A instalação e as contas temporárias foram descartadas pelo runner.
+
+### Gating residual para publicação
+
+1. **Acessibilidade assistiva e telas internas:** leitor de tela, contrastes finais, menus/modais e todas as seções nos viewports selecionados permanecem pendentes de conferência específica; a matriz acima aprova somente as telas de entrada.
+2. **Exemplares publicados:** leitura visual de documentos de planejamento, contratos e faturas no Portal com arquivos e conteúdo fictícios, sem publicar registros reais.
+3. **Banco hospedado:** bloquear `authenticated` de ler e escrever `planning_projects.data`; a proposta foi provada com PostgreSQL e Supabase isolados, mas o ambiente hospedado continua com grants amplos. Exigem-se migração revisada, esquema completo reconciliado, rollback sem reabertura de acesso e autorização separada.
+4. **Equipe hospedada:** não há identidade `staff` na base principal; a UI já passou em Supabase descartável, mas a prévia protegida não foi testada com colaborador real.
+
+**Nenhuma mudança em produção ou nas contas reais. A publicação permanece NO-GO até o aceite desses requisitos.**

@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/rotevo-ui2-pilot-20261109
+      - release/rotevo-ui3-rc-20261110
     paths:
       - 'scripts/security/ui3-integrated-local-prepare.mjs'
       - 'scripts/security/ui3-integrated-local-http.mjs'

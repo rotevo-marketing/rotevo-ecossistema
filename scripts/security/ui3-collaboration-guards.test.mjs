@@ -22,6 +22,7 @@ test("only explicitly shared items can have client-facing discussion",()=>{
  assert.equal(resourceIsVisible(data,"content","draft"),false);
  assert.equal(resourceIsVisible(data,"task","missing"),false);
  assert.equal(resourceIsVisible({}, "task", "t1"),false);
+ assert.equal(resourceIsVisible({executionTimeline:[{id:"t1",visibleToClient:true},{id:"t1",visibleToClient:false}]},"task","t1"),false);
  assert.equal(requiredModule("task"),"execution");
  assert.equal(requiredModule("content"),"content");
 });

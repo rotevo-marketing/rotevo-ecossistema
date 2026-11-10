@@ -24,7 +24,8 @@ export function resourceIsVisible(data:unknown,resourceType:ResourceType,resourc
  const root=item(data) as ProjectData|null;if(!root)return false;
  const key=resourceType==="task"?"executionTimeline":"editorialCalendar";
  const rows=root[key];if(!Array.isArray(rows))return false;
- return rows.some((value:unknown)=>{const entry=item(value);return entry?.id===resourceId&&entry.visibleToClient===true;});
+ const matches=rows.map((value:unknown)=>item(value)).filter((entry):entry is Item=>entry?.id===resourceId);
+ return matches.length===1&&matches[0].visibleToClient===true;
 }
 export function requiredModule(resourceType:ResourceType):"execution"|"content"{
  return resourceType==="task"?"execution":"content";

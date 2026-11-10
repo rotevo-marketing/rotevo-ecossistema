@@ -23,7 +23,10 @@ const admin=await identity("strategist"),client=await identity("client");
 const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");
 await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"client association");
-await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"draft",data:{internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE"}}),"project");
+const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visualHtml",props:{label:"Documento publicado sintético",description:"Leitura autorizada",height:300,markup:"<section><p>PLANNING_PUBLIC_CANARY</p></section>",stylesheet:"section{padding:12px}p{color:#344054}"},children:[]}]};
+const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
+const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const sharedContract={id:randomUUID(),title:"Contrato Sintético Visível",status:"active",service:"Planejamento Estratégico",summary:"Escopo aprovado para teste exclusivamente sintético.",scope:["Diagnóstico autorizado","Planejamento autorizado"],startDate:"2026-11-10",endDate:"2027-02-10",signedDate:"2026-11-10",documentUrl:"",visibleToClient:true,history:[{id:randomUUID(),title:"Contrato formalizado",date:"2026-11-10"}]};
 const privateContract={...sharedContract,id:randomUUID(),title:"PRIVATE_CONTRACT_CANARY",visibleToClient:false};
 await must(db.from("client_workspaces").insert({client_id:clientId,data:{modules:["planning","content","meetings","contract","finance"],contracts:[sharedContract,privateContract],folders:[]}}),"workspace");
@@ -99,6 +102,28 @@ try {
  await contractTabs.getByRole("tab",{name:"Resumo"}).click();
  console.log("PASS synthetic shared contract visual, four tabs, authorized scope and hidden contract excluded");
 
+ // Published strategic document: browser-rendered released HTML/CSS, not the private draft.
+ await customer.setViewportSize({width:1440,height:900});
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Planejamento",exact:true}).click();
+ await customer.getByRole("button",{name:"Ler primeiro documento disponível"}).click();
+ await customer.getByText("PLANNING_PUBLIC_CANARY").waitFor({timeout:15000});
+ assert.equal(await customer.getByText("PLANNING_DRAFT_SECRET").count(),0,"private draft must not be displayed");
+ assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"internal notes must remain absent");
+ for(const width of [320,375,390,430,768,1024,1440]){
+  await customer.setViewportSize({width,height:900});
+  await customer.waitForTimeout(100);
+  const measure=await customer.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
+  assert.ok(measure.scroll<=measure.viewport+1,"Published planning overflow at "+width+"px: "+JSON.stringify(measure));
+  await customer.getByText("PLANNING_PUBLIC_CANARY").waitFor();
+  console.log("PASS published planning responsive viewport",width,"px");
+ }
+ await customer.setViewportSize({width:390,height:900});
+ await customer.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-published-planning-390.png",fullPage:true});
+ await customer.addScriptTag({content:axe.source});
+ const planScan=await customer.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
+ console.log("ACCESSIBILITY published planning",JSON.stringify(planScan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,280)}))}))));
+ assert.equal(planScan.violations.filter(v=>v.impact==="serious"||v.impact==="critical").length,0,"published planning critical/serious WCAG violations");
+ console.log("PASS synthetic published planning HTML/CSS, private draft exclusion and seven viewports");
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"private data stays hidden");
  await customer.close();
  const strategist=await session("strategist",admin,"/estrategista/login","/admin");

@@ -17,6 +17,7 @@ on:
       - 'scripts/security/ui3-contrast.test.mjs'
       - 'scripts/security/ui3-sql-baseline.mjs'
       - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - 'docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'
       - 'src/app/api/presentation/project/route.ts'
       - '.github/workflows/ui3-supabase-local-api-lab.yml'
   workflow_dispatch:

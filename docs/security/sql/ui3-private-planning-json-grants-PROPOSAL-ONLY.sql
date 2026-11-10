@@ -38,9 +38,7 @@ BEGIN
  OR has_column_privilege('authenticated','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','UPDATE')
  OR has_column_privilege('anon','public.planning_projects','data','UPDATE')
- OR has_table_privilege('authenticated','public.planning_projects','UPDATE')
- OR has_table_privilege('authenticated','public.planning_projects','SELECT')
- THEN RAISE EXCEPTION 'Private project JSON or broad browser table grant still accessible'; END IF;
+ THEN RAISE EXCEPTION 'Private project JSON still accessible to browser roles'; END IF;
  IF NOT has_column_privilege('service_role','public.planning_projects','data','UPDATE')
  OR NOT has_column_privilege('authenticated','public.planning_projects','title','SELECT')
  OR NOT has_column_privilege('service_role','public.planning_projects','data','SELECT')

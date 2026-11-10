@@ -258,3 +258,12 @@ Pendências prioritárias após o teste deste ajuste: validar navegador Voltar/A
 2. Executar matriz positiva/negativa por perfil, módulo, projeto, documento, API e estado de senha.
 3. Homologar persistência HTML, concorrência e financeiro em ambiente isolado com dados sintéticos.
 4. Somente após aceite consolidado preparar release, sem promoção automática a produção.
+
+## Homologação sintética de isolamento de módulos e arquivos (10/11/2026)
+
+- Confirmados os resultados `success` do workflow UI2/UI3 da rodada anterior (commit `0679aa44`) e a prévia de desenvolvimento READY do commit documental `d2cda38`.
+- Na inspeção de `src/lib/operations/assets.ts`, os checks de documento privado de **planejamento** e **financeiro** permitiam continuar quando a configuração de workspace do cliente estava ausente (`allowed === null`). Ajustados ambos para **negar por padrão** sem autorização explícita do respectivo módulo, antes de consultar documento publicado ou snapshot financeiro. Os controles adicionais por cliente, projeto, fatura, visibilidade e referência continuam obrigatórios.
+- Criadas regressões sintéticas em `scripts/security/client-project-projection.test.mjs`: módulos compartilhados proibidos pela configuração do cliente não chegam à projeção e a resolução de ativos privados exige módulo liberado, `client_id` correspondente e referências autorizadas.
+- Nenhum usuário, projeto, documento, fatura ou dado real foi lido ou modificado como parte desses novos testes; somente branch Git.
+- Ainda é necessário obter sessões apropriadas de **cliente** e **colaborador** no navegador do Work e testar em ambiente autenticado, especialmente isolamento multi-tenant e módulos desabilitados. A prévia Vercel exige autenticação de deployment; **não desativar a proteção**.
+- Após verificar o CI deste commit, prosseguir à persistência HTML e operações financeiras com fixtures isoladas, sem ativar Financeiro nos dados reais.

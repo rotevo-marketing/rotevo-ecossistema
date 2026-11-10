@@ -37,3 +37,14 @@
 - Em incidente, desligar flags e reverter aplicação compatível. **Não reabrir** grants privados e não apagar mensagens como rollback automático.
 
 **Confidencialidade:** não publicar dumps, logs de clientes, tokens, e-mails nem conteúdo real no GitHub.
+
+## Atualização: concorrência e reconciliação hospedada (10/11/2026)
+
+- [GitHub Actions 42926099312](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42926099312): **SUCCESS**. Ensaio integrado em Supabase local descartável: 16 requisições POST concorrentes com um único autor, **10 mensagens gravadas (201)** e **6 bloqueadas (429)**, contagem de registros confirmada; demais fluxos integrados PASS.
+- [GitHub Actions 42926106439](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42926106439): **SUCCESS** nos 6 jobs de desenvolvimento, incluindo build e TypeScript, para o código do commit `6598390c`.
+- Consulta **somente de leitura** ao projeto hospedado: `public.rotevo_collaboration_messages` ainda **não existe**. `public.planning_projects` possui RLS habilitado e 6 políticas, mas `authenticated` mantém SELECT e UPDATE efetivos sobre a coluna privada `data`. **G2 segue pendente.**
+- Security Advisor hospedado também indica três funções `SECURITY DEFINER` executáveis por `authenticated`: `public.is_strategist()`, `public.rotevo_editorial_decide(...)`, `public.rotevo_editorial_idea_decide(...)`. Essas funções exigem revisão de seus predicados e efeito antes de se cogitar revogar acesso; nem toda função `SECURITY DEFINER` é necessariamente uma vulnerabilidade. Referência: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+- O Security Advisor registrou também proteção contra senhas vazadas desabilitada, dependente de avaliação da disponibilidade/configuração do Auth no plano. Referência: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+- A suite isolada **não** substitui testes manuais de acessibilidade, homologação autenticada Vercel, revisão de schema real, backup restaurável, autorização específica de mudanças do banco nem ativação dos dois flags.
+
+**Decisão: não publicar UI 3.0; não aplicar nenhuma proposta SQL hospedada.** Os resultados são favoráveis para o código de conversas, mas a correção G2 e a decisão de contingência seguem fora do laboratório.

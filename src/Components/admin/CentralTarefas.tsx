@@ -261,8 +261,8 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   if(ok){setDetailKey(null);setDetailDraft(null);}
  }
  const reset=()=>{setPage(1);setProjectId("all");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setPeriodMode("due");setPeriodMonth("");setQuery("");setMineOnly(false);};
- const overdue=tasks.filter(x=>!x.task.archivedAt&&x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
- const todayCount=tasks.filter(x=>!x.task.archivedAt&&x.task.dueDate===today()&&isOpen(x.task)).length;
+ const overdue=tasks.filter(x=>!x.task.archivedAt&&!x.task.deletedAt&&x.task.dueDate&&x.task.dueDate<today()&&isOpen(x.task)).length;
+ const todayCount=tasks.filter(x=>!x.task.archivedAt&&!x.task.deletedAt&&x.task.dueDate===today()&&isOpen(x.task)).length;
  const chipStatus=(task:ExecutionItem)=>statuses.find(s=>s.id===(task.status??"planned"))??statuses[0];
  const statusOptions=statuses.map(s=>({value:s.id,label:s.name,color:({planned:"#8E9BAF",in_progress:"#4D96E8",blocked:"#F2AA39",completed:"#12A66C",cancelled:"#B57A89"} as Record<Status,string>)[s.id]}));
  const priorityOptions=priorities.map(p=>({value:p.id,label:p.name,color:flagColors[p.id]}));
@@ -279,7 +279,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
    <div className="flex flex-wrap gap-2">
     <button type="button" onClick={()=>{setDeadline("today");setStatus("all");}} className={buttonClass}>Hoje <strong>{todayCount}</strong></button>
     <button type="button" onClick={()=>{setDeadline("overdue");setStatus("all");}} className={"inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#F3C889] bg-[#FFF2DC] px-3 py-2 text-xs font-semibold text-[#9A520B] hover:bg-[#FCE8C0] "+(deadline==="overdue"?"ring-2 ring-[#E6A34C]":"")}>Atrasadas <strong>{overdue}</strong></button>
-    <button type="button" onClick={()=>{setDeadline("all");setStatus("all");}} className={buttonClass}>Todas <strong>{tasks.length}</strong></button>
+    <button type="button" onClick={()=>{setDeadline("all");setStatus("all");}} className={buttonClass}>Todas <strong>{tasks.filter(x=>!x.task.deletedAt).length}</strong></button>
     <span className="inline-flex items-center gap-2 rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.9}/> Reuniões hoje: {todayAppointments.length}</span>
    </div>
   </section>

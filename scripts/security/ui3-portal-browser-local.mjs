@@ -217,7 +217,7 @@ try {
  await newEditorial.waitFor();
  await newEditorial.locator("select").first().selectOption(secondProjectId);
  await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
- await newEditorial.getByLabel("Canal *").selectOption("YouTube");
+ await newEditorial.locator("select").nth(1).selectOption("YouTube");
  const editorialDate=new Date().toISOString().slice(0,7)+"-15";
  await newEditorial.getByLabel("Data prevista *").fill(editorialDate);
  await newEditorial.getByLabel("Resumo da ideia *").fill("Canal novo e visualização contextual do calendário.");

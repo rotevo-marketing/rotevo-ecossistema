@@ -77,8 +77,26 @@ try {
  await customer.getByText("Planejamento autorizado").waitFor();
  await contractTabs.getByRole("tab",{name:"Resumo"}).click();
  await customer.getByText("Escopo aprovado para teste exclusivamente sintético.").waitFor();
+ for(const width of [320,375,390,430,768,1024,1440]){
+  await customer.setViewportSize({width,height:900});
+  await customer.waitForTimeout(100);
+  const measure=await customer.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
+  assert.ok(measure.scroll<=measure.viewport+1,"Contract page overflow at "+width+"px: "+JSON.stringify(measure));
+  await customer.getByRole("heading",{name:"Contrato Sintético Visível"}).waitFor();
+  console.log("PASS shared contract responsive viewport",width,"px");
+ }
  await customer.setViewportSize({width:390,height:900});
  await customer.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-shared-contract-390.png",fullPage:true});
+ for(const label of ["Resumo","Escopo contratado","Documento","Histórico"]){
+  const tab=contractTabs.getByRole("tab",{name:label});
+  await tab.click();
+  await customer.addScriptTag({content:axe.source});
+  const scan=await customer.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
+  const serious=scan.violations.filter(v=>v.impact==="serious"||v.impact==="critical");
+  console.log("ACCESSIBILITY shared contract",label,JSON.stringify(scan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,280)}))}))));
+  assert.equal(serious.length,0,"Shared contract "+label+" WCAG issues: "+JSON.stringify(serious.map(v=>({id:v.id,nodes:v.nodes.length}))));
+ }
+ await contractTabs.getByRole("tab",{name:"Resumo"}).click();
  console.log("PASS synthetic shared contract visual, four tabs, authorized scope and hidden contract excluded");
 
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"private data stays hidden");

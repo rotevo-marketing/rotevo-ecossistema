@@ -64,7 +64,7 @@ export async function GET(req:NextRequest){
  const params=parseResource({projectId:req.nextUrl.searchParams.get("projectId"),resourceId:req.nextUrl.searchParams.get("resourceId"),resourceType:req.nextUrl.searchParams.get("resourceType")});
  if(!params)return fail(400);
  const session=await authorize(req,params,false);
- if("status" in session)return fail(session.status);
+ if("status" in session && typeof session.status==="number")return fail(session.status);
  const before=req.nextUrl.searchParams.get("before");
  if(before&&(!Number.isFinite(Date.parse(before))||before.length>50))return fail(400);
  let query=session.admin.from("rotevo_collaboration_messages")
@@ -84,7 +84,7 @@ export async function POST(req:NextRequest){
  const body=parseMessageBody((raw as Record<string,unknown>).body);
  if(body===null)return fail(400);
  const session=await authorize(req,params,true);
- if("status" in session)return fail(session.status);
+ if("status" in session && typeof session.status==="number")return fail(session.status);
  const {data,error}=await session.admin.from("rotevo_collaboration_messages").insert({
   project_id:params.projectId,resource_type:params.resourceType,resource_id:params.resourceId,
   author_user_id:session.userId,author_role:session.role,body

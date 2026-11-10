@@ -15,7 +15,7 @@ test('main team management functionality remains in UI3 tabbed admin',()=>{
 test('legacy team management route resolves to UI3 protected tab',()=>{
  const route=source('src/app/admin/equipe/page.tsx');
  assert.match(route,/redirect\("\/admin\?section=team"\)/);
- assert.match(source('src/app/admin/page.tsx'),/searchParams\.get\("section"\)/);
+ assert.match(source('src/app/admin/page.tsx'),/URLSearchParams\(window\.location\.search\)\.get\("section"\)/);
 });
 test('team access and lifecycle routes from main remain available',()=>{
  for(const path of [

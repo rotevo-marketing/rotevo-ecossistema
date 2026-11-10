@@ -99,10 +99,14 @@ RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',true);
 SET ROLE anon;
 DO $
- DECLARE n bigint; denied boolean:=false;
+ DECLARE n bigint; denied boolean:=false; no_metadata boolean:=false;
+ BEGIN
  BEGIN
  SELECT count(*) INTO n FROM public.planning_projects;
  IF n<>0 THEN RAISE EXCEPTION 'anonymous project metadata exposed'; END IF;
+ EXCEPTION WHEN insufficient_privilege THEN no_metadata:=true;
+ END;
+ -- A privilege-denied SELECT is stricter than a zero-row RLS result.
  BEGIN
  PERFORM data FROM public.planning_projects;
  EXCEPTION WHEN insufficient_privilege THEN denied:=true;

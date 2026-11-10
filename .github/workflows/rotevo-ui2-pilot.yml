@@ -11,6 +11,7 @@ on:
       - 'scripts/security/ui3-raw-json-release-gate.test.mjs'
       - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
       - 'scripts/security/client-project-projection.test.mjs'
+      - 'scripts/security/team-my-access-api-behavior.test.mjs'
       - '.github/workflows/rotevo-ui2-pilot.yml'
   workflow_dispatch:
 
@@ -80,6 +81,7 @@ jobs:
             scripts/security/team-project-access-behavior.test.mjs \
             scripts/security/client-assets-behavior.test.mjs \
             scripts/security/client-project-api-behavior.test.mjs \
+            scripts/security/team-my-access-api-behavior.test.mjs \
             scripts/security/ui3-raw-json-release-gate.test.mjs \
             scripts/security/finance-publication.test.mjs \
             scripts/security/operational-integration.test.mjs \

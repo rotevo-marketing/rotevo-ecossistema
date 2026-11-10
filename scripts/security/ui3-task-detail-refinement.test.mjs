@@ -20,5 +20,5 @@ test("detail properties reuse full-label inline dropdowns without affecting tabl
 test("checklist progress and operational sections remain editable",()=>{
  assert.match(task,/detailDraft\.checklist\.filter\(item=>item\.done\)\.length/);
  assert.match(task,/onClick=\{\(\)=>void saveDetails\(\)\}/);
- assert.match(task,/O envio de mensagens ainda não está habilitado/);
+ assert.match(task,/ProjectConversation/);
 });

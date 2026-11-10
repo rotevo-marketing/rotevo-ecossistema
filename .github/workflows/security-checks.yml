@@ -234,6 +234,10 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_activation_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_activation_isolated -f scripts/security/activation-boundary-isolated.sql
+      - name: Test private collaboration table grants in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_collaboration_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_collaboration_isolated -f scripts/security/db-collaboration-isolated.sql
 
   typecheck:
     name: TypeScript verification

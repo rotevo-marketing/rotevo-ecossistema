@@ -111,7 +111,7 @@ for(let i=0;i<8;i++)await request("/api/collaboration/messages",a,"POST",msg(pA,
 await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Rate test overflow"),429);
 await must(service.from("client_workspaces").update({data:{modules:["content"],contracts:[],folders:[]}}).eq("client_id",cA),"disable execution");
 await request(path(pA,"task","task-shared"),a,"GET",undefined,403);
-assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,1);
+assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,9);
 await must(service.from("planning_projects").update({data:{executionTimeline:base.executionTimeline,editorialCalendar:base.editorialCalendar.map(x=>({...x,visibleToClient:false}))}}).eq("id",pA),"unshare content");
 await request(path(pA,"content","content-shared"),a,"GET",undefined,403);
 await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Hidden now"),403);

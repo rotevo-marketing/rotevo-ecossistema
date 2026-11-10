@@ -17,7 +17,7 @@ function decodeCursor(raw:string|null):{created_at:string;id:string}|null|false{
   if(!value||typeof value!=="object"||Array.isArray(value))return false;
   const row=value as Record<string,unknown>;
   if(typeof row.created_at!=="string"||row.created_at.length>45||
-     !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(row.created_at)||
+     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(row.created_at)||
      !Number.isFinite(Date.parse(row.created_at))||
      typeof row.id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.id))return false;
   return {created_at:row.created_at,id:row.id};

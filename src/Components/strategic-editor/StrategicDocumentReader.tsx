@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {useCreateBlockNote} from "@blocknote/react";
 import {BlockNoteView} from "@blocknote/mantine";
 import {pt} from "@blocknote/core/locales";
@@ -8,7 +8,7 @@ import {assetReferences,mapAssetLinks,validRichContent,type RichContent} from "@
 import {strategicSchema,type StrategicPartial} from "./schema";
 import "@blocknote/mantine/style.css";
 import "./editor.css";
-function Reader({content}:{content:RichContent}){const editor=useCreateBlockNote({schema:strategicSchema,initialContent:content.blocks as StrategicPartial[],dictionary:pt});return <div className="se-root se-document-reader"><div className="se-paper"><BlockNoteView editor={editor} editable={false} theme="light" formattingToolbar={false} slashMenu={false} sideMenu={false} filePanel={false} tableHandles={false}/></div></div>;}
+function Reader({content}:{content:RichContent}){const editor=useCreateBlockNote({schema:strategicSchema,initialContent:content.blocks as StrategicPartial[],dictionary:pt});const root=useRef<HTMLDivElement>(null);useEffect(()=>{root.current?.querySelector<HTMLElement>(".tiptap")?.setAttribute("aria-label","Conteúdo do documento estratégico");},[]);return <div ref={root} className="se-root se-document-reader"><div className="se-paper"><BlockNoteView editor={editor} editable={false} theme="light" formattingToolbar={false} slashMenu={false} sideMenu={false} filePanel={false} tableHandles={false}/></div></div>;}
 export default function StrategicDocumentReader({content}:{content:RichContent}){
  const key=JSON.stringify(content);const [result,setResult]=useState<{key:string;content?:RichContent;error?:string}|null>(null);
  useEffect(()=>{let live=true;const refs=assetReferences(content);if(!refs.length)return;

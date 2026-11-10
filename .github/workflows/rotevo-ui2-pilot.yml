@@ -65,6 +65,29 @@ jobs:
             echo "::endgroup::"
           done
           exit "$status"
+      - name: Comprehensive offline regression matrix (no customer data)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for spec in \
+            scripts/finance/domain.test.mjs \
+            scripts/finance/lifecycle.test.mjs \
+            scripts/security/document-html-persistence.test.cjs \
+            scripts/security/visual-html.test.mjs \
+            scripts/security/visual-html-component.test.cjs \
+            scripts/security/team-project-access-behavior.test.mjs \
+            scripts/security/finance-publication.test.mjs \
+            scripts/security/operational-integration.test.mjs \
+            scripts/security/auth-schema-preflight.test.mjs \
+            scripts/security/admin-route-contract.test.mjs \
+            scripts/security/admin-profile-task-colors.test.mjs \
+            scripts/security/only-ecosystem-2027.test.mjs \
+            scripts/security/client-account-rollback.test.mjs \
+            scripts/security/owner-bootstrap-contract.test.mjs; do
+            echo "::group::Offline homologation: $spec"
+            node --test "$spec"
+            echo "::endgroup::"
+          done
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Next.js build (bounded retry for intermittent Google Fonts loader)

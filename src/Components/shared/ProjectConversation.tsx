@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useId,useState} from "react";
 import {request} from "@/lib/operations/api";
 
 type Message={id:string;author_role:"client"|"staff"|"strategist";body:string;created_at:string};
@@ -10,6 +10,7 @@ const label=(role:Message["author_role"])=>role==="client"?"Cliente":"Equipe Rot
 export default function ProjectConversation({projectId,resourceType,resourceId}:{
  projectId:string;resourceType:"task"|"content";resourceId:string;
 }){
+ const messageId=useId();
  const [messages,setMessages]=useState<Message[]>([]);
  const [body,setBody]=useState("");
  const [loading,setLoading]=useState(true);
@@ -45,10 +46,10 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
     </li>)}
     {!messages.length&&<li className="text-xs text-[#697386]">Nenhuma mensagem registrada.</li>}
    </ol>}
-  {error&&<p role="alert" className="mt-3 text-xs text-red-700">{error}</p>}
+  {error&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p role="alert" className="text-xs text-red-700">{error}</p><button type="button" onClick={()=>{setLoading(true);void reload();}} className="rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold">Tentar novamente</button></div>}
   <form className="mt-4 space-y-2" onSubmit={send}>
-   <label htmlFor="conversation-message" className="block text-xs font-semibold">Nova mensagem</label>
-   <textarea id="conversation-message" value={body} maxLength={3000} rows={3} disabled={saving} onChange={event=>setBody(event.target.value)}
+   <label htmlFor={messageId} className="block text-xs font-semibold">Nova mensagem</label>
+   <textarea id={messageId} value={body} maxLength={3000} rows={3} disabled={saving} onChange={event=>setBody(event.target.value)}
     className="w-full rounded-lg border border-[#CFD4DF] p-3 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]" />
    <div className="flex justify-end"><button type="submit" disabled={saving||!body.trim()||loading||!!error}
     className="rounded-lg bg-[#6D35F5] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">{saving?"Enviando...":"Enviar mensagem"}</button></div>

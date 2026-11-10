@@ -30,6 +30,7 @@ try{
  await page.getByRole("button",{name:"Acessar Ecossistema"}).click();
  await page.waitForURL("**/cliente",{timeout:25000});
  // Use the actual portal navigation rather than mounting a synthetic component.
+ await page.getByRole("button",{name:"Menu",exact:true}).click();
  const menu=page.getByRole("navigation",{name:"Navegação do portal"});
  await menu.getByRole("button",{name:"Tarefas e entregas"}).click();
  await page.getByText("Tarefa acessível").waitFor({timeout:20000});

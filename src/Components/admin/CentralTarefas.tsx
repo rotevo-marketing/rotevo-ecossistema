@@ -66,7 +66,7 @@ function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{proje
 }
 export default function CentralTarefas({projects,onChanged,onOpenContent}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
- const [section,setSection]=useState<"active"|"completed"|"archived">("active");
+ const [section,setSection]=useState<"active"|"completed"|"archived"|"trash">("active");
  const [completedWindow,setCompletedWindow]=useState<"7"|"30"|"90"|"all">("30");
  const [completionNow,setCompletionNow]=useState(()=>Date.now());
  useEffect(()=>{
@@ -87,10 +87,12 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [visibleColumns,setVisibleColumns]=useState({project:true,owner:true,status:true,priority:true,due:true});
  const columnLabels={project:"Projeto",owner:"Responsável",status:"Situação",priority:"Prioridade",due:"Prazo"} as const;
  const columnKeys=Object.keys(columnLabels) as (keyof typeof columnLabels)[];
- const columnSpan=2+columnKeys.filter(key=>visibleColumns[key]).length;
+ const columnSpan=3+columnKeys.filter(key=>visibleColumns[key]).length;
  const [view,setView]=useState<"list"|"board">("list"),[order,setOrder]=useState<"urgency"|"due"|"priority">("urgency");
  const [groupMode,setGroupMode]=useState<"client"|"project"|"flat">("client");
  const [collapsedGroups,setCollapsedGroups]=useState<Record<string,boolean>>({});
+ const [selectedKeys,setSelectedKeys]=useState<string[]>([]);
+ const [rowMenuKey,setRowMenuKey]=useState<string|null>(null);
  const [working,setWorking]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const blankDraft=()=>({title:"",projectId:"",ownerUserId:"",priority:"normal" as Priority,dueDate:"",description:"",status:"planned" as Status,driveUrl:"",referenceUrl:"",checklist:[] as {id:string;text:string;done:boolean}[],dependencies:[] as string[]});
  const [creating,setCreating]=useState(false),[draft,setDraft]=useState(blankDraft);
@@ -136,7 +138,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   .map(appointment=>({appointment,project,client:getClient(project)}))),[projects]);
  const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
-  (section==="archived"?!!task.archivedAt:!task.archivedAt&&(section==="active"?isOpen(task):task.status==="completed"))&&
+  (section==="trash"?!!task.deletedAt:!task.deletedAt&&(section==="archived"?!!task.archivedAt:!task.archivedAt&&(section==="active"?isOpen(task):task.status==="completed")))&&
   (section!=="completed"||completedWindow==="all"||!!task.completedAt&&new Date(task.completedAt).getTime()>=completionNow-Number(completedWindow)*86400000)&&
   (projectId==="all"||project.id===projectId)&&
   (!mineOnly||(!!currentUserId&&task.ownerUserId===currentUserId))&&
@@ -161,6 +163,9 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
  const paginated=filtered.slice((Math.min(page,pages)-1)*pageSize,Math.min(page,pages)*pageSize);
  const groupedTaskRows=groupTaskRows(paginated,collapsedGroups,groupMode);
+ const keyOf=(item:Item)=>item.project.id+":"+item.task.id;
+ const selectedItems=tasks.filter(item=>selectedKeys.includes(keyOf(item)));
+ const allPageSelected=paginated.length>0&&paginated.every(item=>selectedKeys.includes(keyOf(item)));
  const groupColor=(id:string)=>{let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return ["#7554D9","#3289CE","#279D81","#D58B3E","#C0658E"][h%5];};
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
   if(working)return false;
@@ -270,10 +275,10 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
     <div className="relative"><button type="button" aria-label="Mais opções do quadro" aria-expanded={moreOpen} onClick={()=>{setMoreOpen(v=>!v);setPeopleOpen(false);setColumnsOpen(false);setShowFilters(false);}} className="h-9 cursor-pointer rounded-md px-2 text-xs text-[#525B70] hover:bg-[#F3F4F8]">•••</button>{moreOpen&&<div className="absolute right-0 top-full z-40 mt-1 w-48 rounded-lg border border-[#DDE2EC] bg-white p-2 shadow-xl"><button type="button" className="block w-full cursor-pointer rounded-md px-2 py-2 text-left text-xs hover:bg-[#F3F4F8]" onClick={()=>{reset();setMoreOpen(false);}}>Limpar filtros</button><button type="button" className="block w-full cursor-pointer rounded-md px-2 py-2 text-left text-xs hover:bg-[#F3F4F8]" onClick={()=>{setVisibleColumns({project:true,owner:true,status:true,priority:true,due:true});setMoreOpen(false);}}>Mostrar todas as colunas</button></div>}</div>
     <div className="ml-auto flex overflow-hidden rounded-md border border-[#E1E5EE]"><button type="button" aria-label="Lista" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`inline-flex items-center gap-1 px-2.5 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="list" size={16}/> Lista</button><button type="button" aria-label="Kanban" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`inline-flex items-center gap-1 border-l px-2.5 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="layout-kanban" size={16}/> Kanban</button></div>
    </div>
-   <nav aria-label="Organização das tarefas" className="mt-4 flex flex-wrap gap-2">{([{id:"active",label:"Ativas"},{id:"completed",label:"Concluídas"},{id:"archived",label:"Arquivo"}] as const).map(tab=><button type="button" key={tab.id} aria-pressed={section===tab.id} onClick={()=>{setSection(tab.id);setPage(1);setStatus("all");setDeadline("all");setPeriodMonth("");setPeriodMode(tab.id==="completed"?"completed":"due");}} className={"cursor-pointer rounded-lg border px-4 py-2 text-xs font-semibold "+(section===tab.id?"border-[#6D35F5] bg-[#F0EBFF] text-[#6034B7]":"border-[#DCE2EC] text-[#525B70]")}>{tab.label}</button>)}</nav>
+   <nav aria-label="Organização das tarefas" className="mt-4 flex flex-wrap gap-2">{([{id:"active",label:"Ativas"},{id:"completed",label:"Concluídas"},{id:"archived",label:"Arquivo"},{id:"trash",label:"Lixeira"}] as const).map(tab=><button type="button" key={tab.id} aria-pressed={section===tab.id} onClick={()=>{setSection(tab.id);setSelectedKeys([]);setPage(1);setStatus("all");setDeadline("all");setPeriodMonth("");setPeriodMode(tab.id==="completed"?"completed":"due");}} className={"cursor-pointer rounded-lg border px-4 py-2 text-xs font-semibold "+(section===tab.id?"border-[#6D35F5] bg-[#F0EBFF] text-[#6034B7]":"border-[#DCE2EC] text-[#525B70]")}>{tab.label}</button>)}</nav>
     {section==="completed"&&<div className="mt-3 flex items-center gap-2"><label className="text-xs font-semibold text-[#697386]">Conclusão<select aria-label="Período das tarefas concluídas" value={completedWindow} onChange={e=>{setCompletedWindow(e.target.value as typeof completedWindow);setPage(1);}} className="ml-2 rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs"><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todos os períodos</option></select></label></div>}
     {section==="completed"&&<p className="mt-3 text-xs text-[#697386]">Tarefas concluídas antes do registro da data de conclusão só aparecem em “Todos os períodos”.</p>}
-    {section==="archived"&&<p className="mt-3 text-xs text-[#697386]">Tarefas arquivadas permanecem armazenadas e podem ser restauradas pelo painel de detalhes.</p>}
+    {section==="archived"&&<p className="mt-3 text-xs text-[#697386]">Tarefas arquivadas permanecem armazenadas e podem ser restauradas.</p>}{section==="trash"&&<p className="mt-3 text-xs text-[#697386]">Lixeira reversível: nenhuma tarefa é apagada definitivamente nesta versão.</p>}
     
    {showFilters&&<section aria-label="Filtros avançados das tarefas" className="absolute left-4 top-[118px] z-30 mt-2 w-[min(870px,calc(100%-32px))] rounded-xl border border-[#E3E7F0] bg-white p-4 shadow-xl"><div className="flex flex-wrap items-center gap-3">
     

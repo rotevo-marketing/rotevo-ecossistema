@@ -6,7 +6,7 @@ export type ResourceType = "task" | "content";
 type Item = Record<string, unknown>;
 type ProjectData = Record<string, unknown>;
 const item = (value:unknown):Item|null => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Item : null;
-export const isUuid=(value:unknown):value is string=>typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[0-9a-f]{12}$/i.test(value);
+export const isUuid=(value:unknown):value is string=>typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 export function parseResource(input:unknown):{projectId:string;resourceId:string;resourceType:ResourceType}|null{
  const data=item(input);if(!data)return null;

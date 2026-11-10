@@ -24,7 +24,9 @@ const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");
 await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"client association");
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"draft",data:{internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE"}}),"project");
-await must(db.from("client_workspaces").insert({client_id:clientId,data:{modules:["planning","content","meetings","contract","finance"],contracts:[],folders:[]}}),"workspace");
+const sharedContract={id:randomUUID(),title:"Contrato Sintético Visível",status:"active",service:"Planejamento Estratégico",summary:"Escopo aprovado para teste exclusivamente sintético.",scope:["Diagnóstico autorizado","Planejamento autorizado"],startDate:"2026-11-10",endDate:"2027-02-10",signedDate:"2026-11-10",documentUrl:"",visibleToClient:true,history:[{id:randomUUID(),title:"Contrato formalizado",date:"2026-11-10"}]};
+const privateContract={...sharedContract,id:randomUUID(),title:"PRIVATE_CONTRACT_CANARY",visibleToClient:false};
+await must(db.from("client_workspaces").insert({client_id:clientId,data:{modules:["planning","content","meetings","contract","finance"],contracts:[sharedContract,privateContract],folders:[]}}),"workspace");
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 async function session(role,account,path,destination){
@@ -59,6 +61,26 @@ async function checkWidths(role,page){
 try {
  const customer=await session("client",client,"/","/cliente");
  await checkWidths("client",customer);
+ // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
+ await customer.setViewportSize({width:1440,height:900});
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Contrato"}).click();
+ await customer.getByRole("heading",{name:"Contrato Sintético Visível"}).waitFor();
+ assert.equal(await customer.getByText("PRIVATE_CONTRACT_CANARY").count(),0,"unshared contract must not be projected");
+ const contractTabs=customer.getByRole("tablist",{name:"Detalhes do contrato"});
+ for(const label of ["Resumo","Escopo contratado","Documento","Histórico"]){
+  await contractTabs.getByRole("tab",{name:label}).click();
+  assert.equal(await contractTabs.getByRole("tab",{name:label}).getAttribute("aria-selected"),"true");
+  assert.equal(await customer.getByRole("tabpanel").count(),1);
+ }
+ await contractTabs.getByRole("tab",{name:"Escopo contratado"}).click();
+ await customer.getByText("Diagnóstico autorizado").waitFor();
+ await customer.getByText("Planejamento autorizado").waitFor();
+ await contractTabs.getByRole("tab",{name:"Resumo"}).click();
+ await customer.getByText("Escopo aprovado para teste exclusivamente sintético.").waitFor();
+ await customer.setViewportSize({width:390,height:900});
+ await customer.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-shared-contract-390.png",fullPage:true});
+ console.log("PASS synthetic shared contract visual, four tabs, authorized scope and hidden contract excluded");
+
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"private data stays hidden");
  await customer.close();
  const strategist=await session("strategist",admin,"/estrategista/login","/admin");

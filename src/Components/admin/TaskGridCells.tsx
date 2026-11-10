@@ -13,22 +13,23 @@ export function TaskAvatar({name,src,size=30}:{name:string;src?:string|null;size
  </span>;
 }
 type Option<T extends string>={value:T;label:string;color?:string;photo?:string|null};
-export function TaskDropdown<T extends string>({label,value,options,onChange,disabled=false,kind="status",avatar}:{
- label:string;value:T;options:Option<T>[];onChange:(value:T)=>void;disabled?:boolean;kind?:"status"|"priority"|"people";avatar?:{name:string;src?:string|null};
+export function TaskDropdown<T extends string>({label,value,options,onChange,disabled=false,kind="status",avatar,presentation="cell"}:{
+ label:string;value:T;options:Option<T>[];onChange:(value:T)=>void;disabled?:boolean;kind?:"status"|"priority"|"people";avatar?:{name:string;src?:string|null};presentation?:"cell"|"detail";
 }){
  const [open,setOpen]=useState(false),[position,setPosition]=useState({left:0,top:0,width:0});
  const anchor=useRef<HTMLButtonElement>(null);
  const isColorCell=kind!=="people";
+ const isDetail=presentation==="detail";
  const selected=options.find(o=>o.value===value)??options[0];
  useEffect(()=>{if(!open)return;const close=()=>setOpen(false);window.addEventListener("scroll",close,true);window.addEventListener("resize",close);return()=>{window.removeEventListener("scroll",close,true);window.removeEventListener("resize",close);};},[open]);
  function toggle(){if(disabled)return;const r=anchor.current?.getBoundingClientRect();if(r){setPosition({left:Math.max(8,Math.min(r.left,window.innerWidth-224)),top:Math.min(r.bottom+5,window.innerHeight-270),width:r.width});setOpen(v=>!v);}}
  return <div className="min-w-0">
   <button ref={anchor} type="button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} disabled={disabled} onClick={toggle}
    title={selected?.label??""}
-   className={"group flex w-full cursor-pointer items-center text-xs font-semibold transition focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#3B2C72] disabled:cursor-default disabled:opacity-60 "+(kind==="people"?"min-h-9 justify-center rounded-md bg-transparent px-1 py-1 text-[#344056] hover:bg-[#F8F7FF]":"min-h-9 justify-between gap-2 rounded-none px-3 py-2 text-white hover:brightness-95")}
-   style={kind==="people"?undefined:{backgroundColor:selected?.color??"#8994A7"}}>
-   <span className="flex min-w-0 items-center justify-center gap-2">{kind==="people"?<TaskAvatar name={avatar?.name??selected?.label??"Não atribuído"} src={avatar?.src} size={26}/>:<>{kind==="priority"&&<RotevoTablerIcon name="flag" size={13}/>}<span className="truncate">{selected?.label??"Selecionar"}</span></>}</span>
-   {isColorCell&&<span className="opacity-0 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90"><RotevoTablerIcon name="chevron-down" size={14}/></span>}
+   className={"group flex w-full cursor-pointer items-center text-xs font-semibold transition focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#3B2C72] disabled:cursor-default disabled:opacity-60 "+(isDetail?"min-h-10 justify-between gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-2 text-[#323647] hover:border-[#E1E5EE] hover:bg-[#F7F8FB]":kind==="people"?"min-h-9 justify-center rounded-md bg-transparent px-1 py-1 text-[#344056] hover:bg-[#F8F7FF]":"min-h-9 justify-between gap-2 rounded-none px-3 py-2 text-white hover:brightness-95")}
+   style={kind==="people"||isDetail?undefined:{backgroundColor:selected?.color??"#8994A7"}}>
+   <span className="flex min-w-0 items-center justify-center gap-2">{kind==="people"?<><TaskAvatar name={avatar?.name??selected?.label??"Não atribuído"} src={avatar?.src} size={26}/>{isDetail&&<span className="truncate font-medium">{selected?.label??"Não atribuído"}</span>}</>:<>{kind==="priority"&&<RotevoTablerIcon name="flag" size={13}/ >}{isDetail&&<span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{backgroundColor:selected?.color??"#8994A7"}}/>}<span className="truncate">{selected?.label??"Selecionar"}</span></>}</span>
+   {(isDetail||isColorCell)&&<span className={isDetail?"text-[#788398] opacity-70 transition-opacity group-hover:opacity-100":"opacity-0 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90"}><RotevoTablerIcon name="chevron-down" size={14}/></span>}
   </button>
   {open&&typeof document!=="undefined"&&createPortal(<>
    <button type="button" aria-label="Fechar opções" onClick={()=>setOpen(false)} className="fixed inset-0 z-[140] cursor-default"/>

@@ -55,6 +55,8 @@ jobs:
         run: node --test scripts/security/ui3-workspace-contract.test.mjs
       - name: UI3 client and onboarding visual changes
         run: node --test scripts/security/ui3-visual-round-20261110.test.mjs
+      - name: UI3 task details direct editing and layout regression
+        run: node --test scripts/security/ui3-task-detail-refinement.test.mjs
       - name: UI3 task detail two-column visual regression
         run: node --test scripts/security/ui3-task-detail-modal.test.mjs
       - name: UI3 people and due date visual regression

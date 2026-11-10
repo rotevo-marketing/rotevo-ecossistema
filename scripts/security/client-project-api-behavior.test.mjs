@@ -10,7 +10,7 @@ const fixtureProjects=[
  {id:"project-a",client_id:"tenant-a",title:"A",slug:"a",description:null,status:"in_progress",updated_at:"",data:{}},
  {id:"project-b",client_id:"tenant-b",title:"B",slug:"b",description:null,status:"in_progress",updated_at:"",data:{}}
 ];
-function harness({bearer="Bearer token",profileRole="client",clientId="tenant-a",reset=false,authenticated=true,workspaceModules=["planning"]}={}){
+function harness({bearer="Bearer token",profileRole="client",clientId="tenant-a",reset=false,authenticated=true,workspacePresent=true,workspaceModules=["planning"]}={}){
  const calls=[];
  const query=table=>{
   const filters=[];
@@ -21,7 +21,7 @@ function harness({bearer="Bearer token",profileRole="client",clientId="tenant-a"
    maybeSingle:async()=>{
     calls.push({table,filters:[...filters]});
     if(table==="profiles")return {data:{role:profileRole,client_id:clientId},error:null};
-    if(table==="client_workspaces")return {data:{data:{modules:workspaceModules,contracts:[],folders:[]}},error:null};
+    if(table==="client_workspaces")return {data:workspacePresent?{data:{modules:workspaceModules,contracts:[],folders:[]}}:null,error:null};
     if(table==="clients")return {data:{cover_image_url:""},error:null};
     return {data:null,error:null};
    },
@@ -43,7 +43,7 @@ function harness({bearer="Bearer token",profileRole="client",clientId="tenant-a"
  const response={json:(body,{status=200,headers={}}={})=>({status,body,headers})};
  const module={exports:{}};
  const mocks={
-  "@/lib/operations/model":{emptyWorkspace:()=>({modules:[]}),workspaceForClient:data=>data},
+  "@/lib/operations/model":{workspaceForClient:data=>data&&Array.isArray(data.modules)?data:{modules:[],contracts:[],folders:[]}},
   "next/server":{NextResponse:response,NextRequest:class{}},
   "@supabase/supabase-js":{createClient},
   "@/lib/security/projectForClient":{projectForClient:(p,modules)=>({id:p.id,title:p.title,data:{executionTimeline:[],modules}})}
@@ -94,4 +94,13 @@ test("missing client association is refused before querying projects",async()=>{
  const h=harness({clientId:null});
  assert.equal((await h.GET(h.request)).status,403);
  assert.equal(h.calls.some(c=>c.table==="planning_projects"),false);
+});
+
+
+test("missing client workspace never grants modules by fallback",async()=>{
+ const h=harness({workspacePresent:false});
+ const response=await h.GET(h.request);
+ assert.equal(response.status,200);
+ assert.deepEqual(Array.from(response.body.projects[0].data.modules),[]);
+ assert.equal(h.calls.some(c=>c.table==="client_workspaces"),true);
 });

@@ -140,3 +140,16 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Integração automática com Google Meet, Calendar ou Docs não implementada.
 - Falta homologação autenticada do editor de atas, permissões, modo mobile, navegação por teclado e proteção de dados em contas reais.
 - Nenhum deployment ou publicação de registros foi realizado nesta rodada.
+
+## Rodada inicial — Financeiro e Contratos (09/11/2026)
+
+### Alterações desta retomada
+- `ClientFinanceView.tsx`: histórico de pagamentos filtra lançamentos sem correspondência na coleção de faturas autorizadas recebida pelo cliente. Evita acessar objeto ausente e não constrói linha de histórico a partir de uma referência sem fatura visível. Os totais continuam baseados nas informações financeiras fornecidas pelo servidor; não foram recalculados ou alterados.
+- `ClientFinanceView.tsx`: faixa de resumo com três informações financeiras compactada para a densidade visual UI3, mantendo valores e lógica.
+- `ClientContracts.tsx`: compactação do resumo contratual e da navegação, preservando status, escopo, histórico e links por `AuthorizedFileLink`.
+- `ui3-workspace-contract.test.mjs`: regressão de código-fonte contra associação não validada de pagamentos e para preservação dos componentes de acesso financeiro e contratual.
+
+### Limites e pendências
+- Esta é uma **rodada parcial** do Financeiro/Contratos. O workspace administrativo, contratos financeiros e integrações de pagamentos ainda exigem auditoria funcional e revisão UI3.
+- Ainda é necessário confirmar o resultado dos testes automatizados do HEAD e executar homologação autenticada por perfil, viewport e permissão.
+- Não houve edição de tabelas, valores, cobranças, contratos de clientes ou migrações, nem publicação deliberada de produção nesta rodada.

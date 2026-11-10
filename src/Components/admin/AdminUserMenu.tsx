@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
 import {supabase} from "@/lib/supabase";
+import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 type Props={email:string;name:string;avatarUrl?:string|null;onLogout:()=>Promise<void>};
 export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
  const account=useAccountProfile();
@@ -38,11 +39,11 @@ export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
   }
  }
  return <div ref={rootRef} className="relative">
-  <button ref={triggerRef} type="button" aria-label="Abrir menu do usuário" aria-expanded={open} aria-haspopup="true" onClick={()=>setOpen(v=>!v)}
-    className="flex items-center gap-2 rounded-xl border border-white/20 px-2 py-1.5 text-white hover:bg-white/10">
-   <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#A7E000] text-xs font-bold text-[#0B142A]">{profileAvatar?<img src={profileAvatar} alt="" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover"/>:initials||"U"}</span>
-   <span className="hidden max-w-44 truncate text-sm font-medium sm:inline">{display}</span>
-   <span aria-hidden="true" className="text-xs">▾</span>
+  <button ref={triggerRef} type="button" aria-label={`Abrir menu de ${display}`} aria-expanded={open} aria-haspopup="true" onClick={()=>setOpen(v=>!v)}
+    className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-xl border border-[#E3E7F0] bg-white px-2.5 py-1 text-[#323647] transition-colors hover:border-[#CEC9EA] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7] sm:px-3">
+   <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E3E7F0] bg-[#EEE8FF] text-xs font-bold text-[#6034B7]">{profileAvatar?<img src={profileAvatar} alt="" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover"/>:initials||"U"}</span>
+   <span className="hidden max-w-44 min-w-0 truncate text-left text-sm font-semibold sm:inline">{display}</span>
+   <RotevoTablerIcon name="chevron-down" size={16} stroke={1.7} className="hidden text-[#697386] sm:block"/>
   </button>
   {open&&<div className="absolute right-0 z-[90] mt-2 w-[min(320px,calc(100vw-24px))] rounded-xl border border-[#E3E7F0] bg-white p-3 text-[#090D1C] shadow-xl">
    <div className="border-b border-[#E3E7F0] pb-3"><p className="truncate text-sm font-semibold">{display}</p><p className="truncate text-xs text-[#697386]">{email}</p></div>

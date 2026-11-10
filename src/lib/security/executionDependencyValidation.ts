@@ -56,6 +56,17 @@ export function validExecutionDependencies(data:unknown):boolean{
 
   }
  }
+ // Editorial metadata is optional for legacy content; new operational cells are bounded.
+ const editorial=root.editorialCalendar;
+ if(editorial!==undefined&&editorial!==null){
+  if(!Array.isArray(editorial)||editorial.length>2000)return false;
+  for(const entry of editorial){
+   const item=object(entry);
+   if(!item)return false;
+   if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
+   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
+  }
+ }
  const timeline=root.executionTimeline;
  if(timeline===undefined||timeline===null)return true;
  if(!Array.isArray(timeline)||timeline.length>2000)return false;

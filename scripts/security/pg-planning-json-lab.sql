@@ -80,7 +80,7 @@ RESET ROLE;
 -- Independently verify the second tenant after the grants change.
 SELECT set_config('request.jwt.claim.sub','b0000000-0000-4000-8000-000000000002',true);
 SET ROLE authenticated;
-DO $
+DO $$
  DECLARE n bigint; denied boolean:=false;
  BEGIN
  SELECT count(*) INTO n FROM public.planning_projects WHERE slug='b';
@@ -93,12 +93,12 @@ DO $
  END;
  IF NOT denied THEN RAISE EXCEPTION 'tenant B can read its private JSON'; END IF;
  END;
-$;
+$$;
 RESET ROLE;
 -- Anonymous sessions must not acquire metadata or JSON when RLS is enforced.
 SELECT set_config('request.jwt.claim.sub','',true);
 SET ROLE anon;
-DO $
+DO $$
  DECLARE n bigint; denied boolean:=false; no_metadata boolean:=false;
  BEGIN
  BEGIN
@@ -113,10 +113,10 @@ DO $
  END;
  IF NOT denied THEN RAISE EXCEPTION 'anonymous direct JSON read permitted'; END IF;
  END;
-$;
+$$;
 RESET ROLE;
 SET ROLE service_role;
-DO $
+DO $$
  DECLARE n bigint;
  BEGIN
  SELECT count(*) INTO n FROM public.planning_projects WHERE data ? 'internalNotes';

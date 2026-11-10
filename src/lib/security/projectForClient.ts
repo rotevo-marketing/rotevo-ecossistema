@@ -11,7 +11,7 @@ function publishedArray(v: unknown, names: readonly string[], allowLink=false) {
   if (!Array.isArray(v)) return [];
   return v.flatMap(value => {
     const item=object(value);
-    if (!item || item.visibleToClient !== true || typeof item.id !== "string" || typeof item.title !== "string") return [];
+    if (!item || item.visibleToClient !== true || item.archivedAt || item.deletedAt || typeof item.id !== "string" || typeof item.title !== "string") return [];
     const projected: RecordObject = {...fields(item,names), id:item.id, title:item.title, visibleToClient:true};
     for(const key of ["meetingUrl","materialUrl"]){if(names.includes(key)){const link=https(item[key]);if(link)projected[key]=link;else delete projected[key];}}
     if (names.includes("minutes") && item.minutesVisibleToClient === false) delete projected.minutes;

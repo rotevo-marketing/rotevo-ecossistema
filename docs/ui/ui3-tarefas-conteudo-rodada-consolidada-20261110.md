@@ -42,3 +42,13 @@
 ## Próximo aceite
 
 Conferir ao menos desktop 1440/1024 e mobile 430/390/320; menus de ação, Lixeira, barra de seleção e modais de Conteúdo; ausência de overflow inesperado; navegação por teclado e recuperação de foco. Usar apenas dados sintéticos para ensaios de escrita.
+
+## Complemento: arquivamento e Lixeira editorial (10/11/2026)
+
+- O Calendário e a Lista administrativos possuem alternância Ativos / Arquivo / Lixeira; o visual do mês ativo permanece inalterado.
+- Cada conteúdo ativo pode ser arquivado reversivelmente ou enviado à Lixeira mediante confirmação. Itens arquivados e excluídos logicamente podem ser restaurados na lista correspondente, independentemente do mês de publicação.
+- `archivedAt` e `deletedAt` são marcadores opcionais no `editorialCalendar`, sem migração de banco e sem exclusão física. A API protegida valida a exclusividade dos marcadores e impede a remoção de IDs existentes via atualização do projeto, preservando histórico editorial e de decisões.
+- O Portal do Cliente oculta conteúdos arquivados ou na Lixeira, mesmo que anteriormente compartilhados. Não há controles administrativos na área do cliente.
+- Não existe exclusão permanente nem política de expurgo automático nesta rodada. A recuperação e o backup deverão ser homologados antes de sequer considerar essa funcionalidade.
+- Arquivamento e restauração preservam a situação, versão, responsável, prioridade, conteúdo, material e histórico de aprovação, sem alterar decisões formais.
+- **Validação:** testes automatizados do GitHub Actions e homologação visual/manual permanecem critérios de aceite. Nenhum deploy de produção autorizado.

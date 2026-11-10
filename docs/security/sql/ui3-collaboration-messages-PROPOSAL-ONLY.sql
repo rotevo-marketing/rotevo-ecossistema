@@ -23,6 +23,27 @@ create table public.rotevo_collaboration_messages (
 );
 create index rotevo_collaboration_resource_order_idx
  on public.rotevo_collaboration_messages(project_id,resource_type,resource_id,created_at desc,id desc);
+-- Atomic per-author abuse guard (10 new messages per rolling 60 seconds).
+-- Serialize submissions from the same authenticated author across server instances.
+create index rotevo_collaboration_author_rate_idx
+ on public.rotevo_collaboration_messages(author_user_id,created_at desc);
+create function public.rotevo_collaboration_enforce_rate()
+ returns trigger language plpgsql security invoker set search_path='' as $rate$
+declare recent_count integer;
+begin
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(new.author_user_id::text, 2027));
+ select count(*) into recent_count from public.rotevo_collaboration_messages
+  where author_user_id=new.author_user_id and created_at>pg_catalog.now()-interval '60 seconds';
+ if recent_count>=10 then
+  raise exception 'rotevo_collaboration_rate_limited' using errcode='P0001';
+ end if;
+ return new;
+end;
+$rate$;
+revoke all on function public.rotevo_collaboration_enforce_rate() from PUBLIC,anon,authenticated;
+create trigger rotevo_collaboration_rate_before_insert
+ before insert on public.rotevo_collaboration_messages
+ for each row execute function public.rotevo_collaboration_enforce_rate();
 alter table public.rotevo_collaboration_messages enable row level security;
 -- Policies are exclusively for the trusted backend role; no user-facing access.
 create policy rotevo_collaboration_service_read on public.rotevo_collaboration_messages

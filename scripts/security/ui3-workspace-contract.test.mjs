@@ -227,3 +227,32 @@ test("client finance only displays payments linked to authorized invoices and pr
  assert.match(contracts,/AuthorizedFileLink/);
  assert.match(contracts,/contract\.history/);
 });
+
+
+test("UI3 finance administrator retains authorized operations and filtered contract workspace",()=>{
+ const hub=source("Components/finance/FinanceHub.tsx");
+ const lifecycle=source("Components/finance/FinanceLifecycleDialog.tsx");
+ const clientFinance=source("Components/cliente/ClientFinanceView.tsx");
+ const contracts=source("Components/cliente/ClientContracts.tsx");
+ const api=source("lib/finance/api.ts");
+ assert.match(hub,/rv-ui3-finance-workspace/);
+ assert.match(hub,/visibleContracts=state\.contracts\.filter/);
+ assert.match(hub,/contractStatus==="all"\|\|c\.status===contractStatus/);
+ assert.match(hub,/Buscar contrato por título ou cliente/);
+ assert.match(hub,/Filtrar contratos por situação/);
+ assert.match(hub,/state\.contracts\.length>0&&!visibleContracts\.length/);
+ assert.match(hub,/state\.canWrite&&/);
+ assert.match(hub,/invoice\.settle/);
+ assert.match(hub,/recurrence\.generate/);
+ assert.match(hub,/settlement\.reverse/);
+ assert.match(hub,/settings\.save/);
+ assert.match(hub,/accountBalance\(state/);
+ assert.match(hub,/!s\.reversed/);
+ assert.match(lifecycle,/version:invoice!\.version/);
+ assert.match(clientFinance,/rv-ui3-finance-summary/);
+ assert.match(clientFinance,/data\.settlements\.flatMap\(payment=>/);
+ assert.match(clientFinance,/if\(!invoice\)return \[\]/);
+ assert.match(contracts,/rv-ui3-client-contracts/);
+ assert.match(contracts,/AuthorizedFileLink/);
+ assert.match(api,/clientView\?"\/api\/client\/finance":"\/api\/admin\/finance"/);
+});

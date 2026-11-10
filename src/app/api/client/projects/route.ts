@@ -44,7 +44,7 @@ export async function GET(req:NextRequest) {
     if(task.visibleToClient===true&&!task.archivedAt&&!task.deletedAt&&typeof task.id==="string"&&typeof task.ownerUserId==="string")
      assignment.set(project.id+":"+task.id,task.ownerUserId);
    }
-   const sharedIds=new Set(visible.find(p=>p.id===project.id)?.data.editorialCalendar.map(x=>x.id)??[]);
+   const sharedIds=new Set(visible.find(p=>p.id===project.id)?.data.editorialCalendar?.map(x=>x.id)??[]);
    const editorial=Array.isArray(data.editorialCalendar)?data.editorialCalendar:[];
    for(const raw of editorial){
     if(!raw||typeof raw!=="object"||Array.isArray(raw))continue;
@@ -80,7 +80,7 @@ export async function GET(req:NextRequest) {
     const asset=id?memberAsset.get(id):undefined;
     if(asset&&signed.has(asset))task.ownerAvatarUrl=signed.get(asset);
    }
-   for(const content of visible[i].data.editorialCalendar){
+   for(const content of visible[i].data.editorialCalendar??[]){
     const id=editorialAssignment.get(source[i].id+":"+content.id);
     const asset=id?memberAsset.get(id):undefined;
     if(asset&&signed.has(asset))content.ownerAvatarUrl=signed.get(asset);

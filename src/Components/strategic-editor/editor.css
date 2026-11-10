@@ -8,5 +8,5 @@
 .se-document-reader{min-height:0;background:transparent}.se-document-reader .bn-editor{min-height:0}
 
 /* Published-only BlockNote auxiliary labels: readable against white paper (WCAG AA). */
-.se-document-reader .bn-editor .gap-x-4 > span:nth-child(1),
-.se-document-reader .bn-editor .normal-case { color:#525B70!important; }
+.se-document-reader .gap-x-4 > span:nth-child(1),
+.se-document-reader .normal-case { color:#525B70!important; }

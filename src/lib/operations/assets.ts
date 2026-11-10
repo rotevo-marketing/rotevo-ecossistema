@@ -25,10 +25,10 @@ export async function mayReadAsset(value:Identity,asset:Asset):Promise<boolean>{
  const allowed=workspace.data?workspaceForClient(workspace.data.data):null;
  if(asset.purpose==="contract")return !!allowed?.modules.includes("contract")&&assetReferences(allowed.contracts).includes(asset.id);
  if(asset.purpose==="invoice"||asset.purpose==="receipt"){
-  if(allowed&&!allowed.modules.includes("finance")||!asset.visible_to_client||!asset.invoice_id)return false;
+  if(!allowed?.modules.includes("finance")||!asset.visible_to_client||!asset.invoice_id)return false;
   const snapshot=await value.caller.rpc("rotevo_client_finance");return !snapshot.error&&Array.isArray(snapshot.data?.invoices)&&snapshot.data.invoices.some((i:{id:string})=>i.id===asset.invoice_id);
  }
- if(!asset.project_id||allowed&&!allowed.modules.includes("planning"))return false;
+ if(!asset.project_id||!allowed?.modules.includes("planning"))return false;
  const project=await value.db.from("planning_projects").select("id,client_id,title,slug,description,status,data").eq("id",asset.project_id).eq("client_id",asset.client_id).maybeSingle();
  if(project.error||!project.data)return false;
  if(Array.isArray(project.data.data?.portalModules)&&!project.data.data.portalModules.includes("planning"))return false;

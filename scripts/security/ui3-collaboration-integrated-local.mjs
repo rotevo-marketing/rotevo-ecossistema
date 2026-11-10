@@ -84,6 +84,31 @@ const contentMessage=await request("/api/collaboration/messages",a,"POST",msg(pA
 assert.equal(contentMessage.message.resource_type,"content");
 assert.equal((await request(path(pA,"task","task-shared"),a)).messages.length,2);
 assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,1);
+// Older items deliberately share a timestamp to verify keyset pagination has no gaps.
+const historical=Array.from({length:65},(_,i)=>({
+ project_id:pA,resource_type:"task",resource_id:"task-shared",
+ author_user_id:admin.id,author_role:"strategist",body:"Histórico sintético "+String(i).padStart(2,"0"),
+ created_at:"2020-01-01T00:00:00+00:00"
+}));
+await must(service.from("rotevo_collaboration_messages").insert(historical),"seed historical messages");
+let page=await request(path(pA,"task","task-shared"),a);
+assert.equal(page.messages.length,30);assert.ok(page.nextCursor);
+const all=[...page.messages];
+for(let n=0;n<2;n++){
+ page=await request(path(pA,"task","task-shared")+"&cursor="+encodeURIComponent(page.nextCursor),a);
+ assert.equal(page.messages.length,30);all.push(...page.messages);
+ assert.ok(page.nextCursor);
+}
+page=await request(path(pA,"task","task-shared")+"&cursor="+encodeURIComponent(page.nextCursor),a);
+assert.equal(page.messages.length,7);assert.equal(page.nextCursor,null);
+all.push(...page.messages);
+assert.equal(all.length,67);assert.equal(new Set(all.map(x=>x.id)).size,67,"pagination must not overlap");
+assert.ok(all.some(x=>x.body==="Olá equipe")&&all.some(x=>x.body==="Histórico sintético 00"));
+await request(path(pA,"task","task-shared")+"&cursor=not-a-valid-cursor",a,"GET",undefined,400);
+await request(path(pA,"task","task-shared")+"&cursor="+encodeURIComponent(Buffer.from(JSON.stringify({created_at:"2020-01-01T00:00:00Z",id:"bad"})).toString("base64url")),a,"GET",undefined,400);
+// Exactly 10 messages per author are accepted in any rolling 60-second window.
+for(let i=0;i<8;i++)await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Rate test "+i),201);
+await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Rate test overflow"),429);
 await must(service.from("client_workspaces").update({data:{modules:["content"],contracts:[],folders:[]}}).eq("client_id",cA),"disable execution");
 await request(path(pA,"task","task-shared"),a,"GET",undefined,403);
 assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,1);

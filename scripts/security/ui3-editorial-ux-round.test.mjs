@@ -8,7 +8,10 @@ const client=read("../../src/Components/cliente/ClientContent.tsx");
 const decision=read("../../src/Components/cliente/EditorialDecision.tsx");
 const validator=read("../../src/lib/security/executionDependencyValidation.ts");
 test("saved content reveals its channel and month without adding phantom channels",()=>{
- assert.match(calendar,/items\.filter\(i=>projectFilter==="all"\|\|i\.projectId===projectFilter\)/);
+ assert.match(calendar,/scopedItems\.filter\(i=>projectFilter==="all"\|\|i\.projectId===projectFilter\)/);
+ assert.match(calendar,/contentScope==="trash"/);
+ assert.match(calendar,/onLifecycleChange/);
+ assert.match(client,/!i\.archivedAt&&!i\.deletedAt/);
  assert.match(calendar,/setChannelFilter\(focusItem\.channel\)/);
  assert.match(manager,/setFocusItem\(\{projectId:target\.id/);
  assert.match(manager,/onChanged\(target\.id,result\.project\.data/);

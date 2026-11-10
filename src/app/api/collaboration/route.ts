@@ -53,7 +53,7 @@ export async function GET(req:NextRequest){
  const p=req.nextUrl.searchParams;
  const b={projectId:p.get("projectId")??"",itemType:p.get("itemType")??"",itemId:p.get("itemId")??"",contentVersion:p.get("contentVersion")??""} as Req;
  if(!["task","content"].includes(b.itemType))return fail(400);
- const v=await authorized(req,b);if("error" in v)return fail(v.error);
+ const v=await authorized(req,b);if("error" in v)return fail(v.error??503);
  const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:true}).limit(100);
  if(error)return fail(503);
  return NextResponse.json({messages:data??[],currentUserId:v.userId},{headers:{"Cache-Control":"no-store"}});
@@ -65,7 +65,7 @@ export async function POST(req:NextRequest){
  if(typeof b.body!=="string"||b.body.trim().length<1||b.body.trim().length>2000)return fail(400);
  const kind=b.kind??"comment";
  if(!["comment","task_approved","task_changes_requested"].includes(kind))return fail(400);
- const v=await authorized(req,b);if("error" in v)return fail(v.error);
+ const v=await authorized(req,b);if("error" in v)return fail(v.error??503);
  if(kind!=="comment"&&(v.role!=="client"||b.itemType!=="task"||(kind==="task_changes_requested"&&b.body.trim().length<3)))return fail(403);
  const after=new Date(Date.now()-60000).toISOString();
  const {count,error:rateError}=await v.admin.from("project_collaboration_messages").select("id",{count:"exact",head:true}).eq("author_id",v.userId).gte("created_at",after);

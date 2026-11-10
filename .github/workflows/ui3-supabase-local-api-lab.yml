@@ -4,6 +4,7 @@ on:
     branches:
       - feat/rotevo-ui2-pilot-20261109
       - release/rotevo-ui3-rc-20261110
+      - feat/ui3-ajustes-visuais-20261110
     paths:
       - 'scripts/security/ui3-integrated-local-prepare.mjs'
       - 'scripts/security/ui3-integrated-local-http.mjs'
@@ -11,6 +12,10 @@ on:
       - 'scripts/security/ui3-portal-browser-local.mjs'
       - 'src/Components/cliente/ClientContracts.tsx'
       - 'src/Components/cliente/ClientPlanning.tsx'
+      - 'src/Components/admin/ClientsDirectory.tsx'
+      - 'src/Components/admin/OperationalHubs.tsx'
+      - 'src/Components/admin/AdminUserMenu.tsx'
+      - 'src/Components/RotevoTablerIcon.tsx'
       - 'src/app/admin/equipe/page.tsx'
       - 'src/Components/strategic-editor/StrategicDocumentReader.tsx'
       - 'src/Components/strategic-editor/editor.css'

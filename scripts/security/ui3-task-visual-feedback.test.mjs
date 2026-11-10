@@ -20,7 +20,7 @@ test("archive is reversible and its controls are accessible",()=>{
 test("table separators, compact project avatar and orange overdue state",()=>{
  assert.match(task,/scope="col" key=\{name\} className="border-b border-r/);
  assert.match(task,/aria-label=\{`Abrir projeto/);
- assert.match(task,/const columnSpan=2\+columnKeys/);
+ assert.match(task,/const columnSpan=3\+columnKeys/);
  assert.match(task,/bg-\[#FFF2DC\]/);
 });
 test("Kanban offers smaller editable badges instead of duplicate priority labels",()=>{

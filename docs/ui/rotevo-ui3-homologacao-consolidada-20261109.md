@@ -293,3 +293,32 @@ A mesma inspeção de catálogo confirmou `authenticated` com leitura e escrita 
 Documento operacional para continuidade: [`rotevo-ui3-release-gates-and-team-identity-20261110.md`](./rotevo-ui3-release-gates-and-team-identity-20261110.md), com pré-requisitos do perfil de teste, matriz de visualização final, gate SQL e plano de recuperação que não restaure grants inseguros.
 
 **O estado geral permanece NO-GO.** Testes automatizados da alteração de copy devem ser confirmados no último CI; os testes funcionais de Equipe ainda dependem de conta `staff` autorizada. Nenhuma conta, flag, permissão, RLS ou registro real foi modificado.
+
+## 16. Homologação visual e funcional da Equipe em ambiente descartável — 10/11/2026
+
+**Resultado do laboratório integrado e da UI sintética: PASS**, [GitHub Actions 42754499874](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42754499874), commit `95ad5181`.
+
+O workflow `.github/workflows/ui3-supabase-local-api-lab.yml` foi ampliado para executar **Playwright Chromium em ambiente isolado**, após provisionar a instalação temporária **Supabase Auth/PostgREST/Storage e aplicação Next.js** com as configurações exclusivamente de localhost. O script `scripts/security/ui3-staff-browser-local.mjs` cria identidades, cliente, projeto, vínculo de colaborador e `projects.read` fictícios, e utiliza o **formulário real da Rotevo** em `/estrategista/login`.
+
+### Evidências e limites
+
+- **Login e navegação real:** formulário de login com `staff` redirecionou para `/equipe/meu-acesso`, com título da Área da Equipe e **um projeto atribuído**, sem conteúdo JSON interno.
+- **Controle de visibilidade:** ausência de `finance.read` manteve o atalho do Financeiro oculto; nenhuma informação de cliente não autorizada exibida.
+- **Responsividade da Área da Equipe:** **320, 375, 390, 430, 768, 1024, 1440 CSS px** testados em Chromium headless, viewport medido; **sem transbordamento horizontal** nos sete casos. Não extrapolar este resultado aos outros portais.
+- **Teclado e sessão:** botão Sair aceita foco, Tab alcança outro controle interativo e logout retorna ao login.
+- **Evidência de imagem sintética:** [artifact do GitHub Actions (390 px)](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42754499874/artifacts/13735585534), sem informações de clientes reais, retido por cinco dias.
+- **Integração existente:** seis grupos integrados de Auth, API, Storage, documentos e Financeiro permaneceram aprovados na mesma execução.
+- **Infraestrutura:** o runner descartou Supabase, Next local e credenciais sintéticas ao finalizar; Playwright foi instalado antes de iniciar o Next para evitar instabilidade de hidratação. Nenhuma conta, dado, flag ou permissão do Supabase hospedado foi tocada.
+
+### Histórico de correção da automação
+
+As primeiras execuções do navegador falharam pela ausência de suporte à Ubuntu 26.04 no Playwright antigo, depois por instalação de dependências durante a execução do Next; um teste subsequente utilizava uma checagem de foco sem referência inicial. Essas falhas foram corrigidas no **harness de teste**, e a execução `42754499874` terminou em **SUCCESS**. Não foram diagnosticadas falhas correspondentes de autenticação/permissão em produção por essas tentativas.
+
+### Gates ainda abertos
+
+1. **Conta Equipe no ambiente hospedado:** o Supabase tem **0 perfis staff**, conforme consulta agregada de leitura. A UI de equipe foi homologada em **instância isolada**, mas não na prévia hospedada com staff real. Disponibilizar conta de teste mediante processo administrativo autorizado, sem converter clientes nem ativar convites apenas para o teste.
+2. **Outras telas e leitores:** as sete larguras foram testadas na **Área da Equipe**; permanecem largura exata em Estrategista e Cliente, leitura com tecnologia assistiva e exemplos publicados de Planejamento/Contrato na UI isolada.
+3. **Remediação G2:** o banco hospedado continua permitindo leitura/escrita direta em `planning_projects.data` a `authenticated`. O script de proposta exige aprovação específica e espelho de esquema/RPC reconciliado antes de execução.
+4. **Implantação:** nenhum merge/deployment de produção realizado ou autorizado.
+
+**Próxima etapa:** concluir matriz visual dos painéis do Estrategista e do Cliente e a revisão do pacote de alteração G2/rollback; somente após aceite integral solicitar autorização específica para migração hospedada e release.

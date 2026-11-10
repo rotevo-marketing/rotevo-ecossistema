@@ -7,6 +7,7 @@ import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {TaskAvatar,TaskDropdown} from "@/Components/admin/TaskGridCells";
+import ProjectConversation from "@/Components/shared/ProjectConversation";
 import DialogFocus from "@/Components/ui/DialogFocus";
 import {request} from "@/lib/operations/api";
 type Client={id:string;name:string;slug:string;cover_image_url?:string|null};
@@ -347,6 +348,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
      {onOpenContent&&<button type="button" className="mt-3 cursor-pointer rounded-lg border border-[#DDD4FB] bg-white px-3 py-2 text-xs font-semibold text-[#6D35F5]" onClick={()=>{setDetailKey(null);setDetailDraft(null);onOpenContent();}}>Abrir Calendário de Conteúdo →</button>}
     </section>
     {error&&<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    {process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&selected.task.visibleToClient===true&&<div className="mt-5"><ProjectConversation key={selected.project.id+":"+selected.task.id} projectId={selected.project.id} resourceType="task" resourceId={selected.task.id}/></div>}
     <div className="mt-auto flex justify-end gap-2 border-t border-[#E1E5EE] pt-5"><button type="button" className={buttonClass} onClick={()=>{setDetailKey(null);setDetailDraft(null);}}>Cancelar</button><button type="button" disabled={!!working} onClick={()=>void saveDetails()} className="rounded-lg bg-[#6D35F5] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{working?"Salvando...":"Salvar alterações"}</button></div>
    </aside>
   </div>}

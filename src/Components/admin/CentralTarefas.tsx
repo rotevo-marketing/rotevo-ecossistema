@@ -87,7 +87,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [visibleColumns,setVisibleColumns]=useState({project:true,owner:true,status:true,priority:true,due:true});
  const columnLabels={project:"Projeto",owner:"Responsável",status:"Situação",priority:"Prioridade",due:"Prazo"} as const;
  const columnKeys=Object.keys(columnLabels) as (keyof typeof columnLabels)[];
- const columnSpan=2+columnKeys.filter(key=>visibleColumns[key]).length;
+ const columnSpan=1+columnKeys.filter(key=>visibleColumns[key]).length;
  const [view,setView]=useState<"list"|"board">("list"),[order,setOrder]=useState<"urgency"|"due"|"priority">("urgency");
  const [groupMode,setGroupMode]=useState<"client"|"project"|"flat">("client");
  const [collapsedGroups,setCollapsedGroups]=useState<Record<string,boolean>>({});

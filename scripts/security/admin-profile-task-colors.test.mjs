@@ -67,9 +67,9 @@ test("failed admin API loads show a retry rather than false zero project totals"
  assert.match(admin,/workspaceTab==="projects" && !errorMessage &&/);
 });
 
-test("central task table has six meaningful columns and compact controls",()=>{
+test("central task table preserves six meaningful columns and Monday-like working controls",()=>{
  for(const col of ["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"])assert.ok(tasks.includes('"'+col+'"'),col);
- for(const term of ["Nova tarefa","Filtrar projeto","Filtrar responsável","Filtrar prioridade","Buscar tarefas","Ordenar tarefas","Kanban"])assert.ok(tasks.includes(term),term);
+ for(const term of ["Criar tarefa","Filtrar projeto","Filtrar responsável","Filtrar prioridade","Pesquisar tarefas","Ordenar tarefas","Kanban","Ocultar colunas","Filtrar por pessoa","Agrupar tarefas por"])assert.ok(tasks.includes(term),term);
  assert.match(tasks,/role="option" aria-selected=\{value==="all"\}/);
  assert.match(tasks,/href=\{projectLink\(project\)\}/);
  assert.match(tasks,/visibleToClient:false/);

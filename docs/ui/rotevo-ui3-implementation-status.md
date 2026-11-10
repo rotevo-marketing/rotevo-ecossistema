@@ -216,3 +216,14 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Financeiro continua desativado. Portal e autorização real por cliente/staff ainda exigem perfis próprios; operações mutáveis, persistência documental e ciclo financeiro exigem fixtures locais isoladas.
 - O código da aplicação não foi alterado durante esta homologação. Dados, permissões, documentos, flags e produção preservados.
 - Relatório consolidado e matriz de dependências: `docs/homologation/rotevo-ui3-authenticated-20261109.md`.
+
+## Correção de navegação e histórico da UI3 (10/11/2026)
+
+A homologação do estrategista identificou que o módulo visualizado podia divergir de `/admin?section=...` após navegar dentro do painel e recarregar. Correção registrada na branch:
+
+- `src/app/admin/page.tsx`: mudança entre os dez módulos atualiza `section` por `window.history.pushState`, preservando os demais parâmetros e o fragmento; recarga lê o parâmetro existente e `popstate` restaura a seção ao usar Voltar/Avançar. Parâmetros desconhecidos recaem para Visão geral sem gravar registros.
+- Navegação pela sidebar desktop, menu mobile, cartões de Visão Geral e atalhos de Tarefas passou a usar o mesmo caminho de atualização de URL.
+- `scripts/security/ui3-workspace-contract.test.mjs`: regressão de código-fonte para URLs profundas, preservação do histórico, retorno e atalhos, mantendo a confirmação de descarte nas mudanças por menu.
+- Não há alterações de dados, schema, RLS, publicações documentais ou produção. Asserções automatizadas e homologação real na nova prévia precisam ser confirmadas antes do aceite.
+
+Pendências prioritárias após o teste deste ajuste: validar navegador Voltar/Avançar e recarga em sessão autenticada, perfis reais de cliente/staff em contas autorizadas, financeiro isolado com fixtures, persistência HTML e matriz de acessibilidade.

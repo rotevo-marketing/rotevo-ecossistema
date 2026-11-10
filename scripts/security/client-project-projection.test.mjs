@@ -187,3 +187,15 @@ test("client private asset resolver fails closed when workspace or module author
  assert.match(src,/value\.caller\.rpc\("rotevo_client_finance"\)/);
  assert.match(src,/assetReferences\(published\.data\)\.includes\(asset\.id\)/);
 });
+
+
+test("missing workspace denies project, finance and workspace portal modules instead of enabling every service",()=>{
+ for(const path of ["app/api/client/projects/route.ts","app/api/client/workspace/route.ts","app/api/client/finance/route.ts"]){
+  const src=readFileSync(new URL("../../src/"+path,import.meta.url),"utf8");
+  assert.doesNotMatch(src,/workspaceForClient\([^)]*emptyWorkspace\(\)/,path);
+  assert.doesNotMatch(src,/emptyWorkspace\(\)/,path);
+  assert.match(src,/workspaceForClient\((?:workspace|r)\.data\?\.data\)/,path);
+ }
+ const model=readFileSync(new URL("../../src/lib/operations/model.ts",import.meta.url),"utf8");
+ assert.match(model,/if\(!validWorkspace\(value\)\)return \{contracts:\[\],folders:\[\],modules:\[\]\}/);
+});

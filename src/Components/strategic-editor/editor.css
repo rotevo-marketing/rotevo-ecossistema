@@ -6,7 +6,3 @@
 .se-modal{position:fixed;inset:0;margin:auto;width:calc(100% - 32px);border:0}.se-modal::backdrop{background:#090d1c66}
 /* Embedded published documents fit their content instead of reserving a full editor viewport. */
 .se-document-reader{min-height:0;background:transparent}.se-document-reader .bn-editor{min-height:0}
-
-/* Published-only BlockNote auxiliary labels: readable against white paper (WCAG AA). */
-.se-document-reader .gap-x-4 > span:nth-child(1),
-.se-document-reader .normal-case { color:#525B70!important; }

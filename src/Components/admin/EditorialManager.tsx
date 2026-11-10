@@ -43,7 +43,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   const ideas=await supabase.from("editorial_idea_approvals").select("content_id,content_version,decision").eq("project_id",projectId);
   if(!mounted)return;
   setApprovalError(!!error||!!ideas.error);setDecisions(error?[]:(data??[]) as typeof decisions);setIdeaDecisions(ideas.error?[]:(ideas.data??[]) as typeof decisions);
- }void load();return()=>{mounted=false};},[projectId]);
+ }void load();const timer=window.setInterval(()=>{if(document.visibilityState==="visible")void load();},30000);return()=>{mounted=false;window.clearInterval(timer);};},[projectId]);
  function displayStatus(item:EditorialItem){
   const decision=decisions.find(x=>x.content_id===item.id&&x.content_version===(item.version??""));
   const idea=ideaDecisions.find(x=>x.content_id===item.id&&x.content_version===(item.version??""));

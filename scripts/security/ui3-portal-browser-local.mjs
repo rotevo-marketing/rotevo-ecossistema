@@ -93,6 +93,8 @@ try {
  for(const label of ["Resumo","Escopo contratado","Documento","Histórico"]){
   const tab=contractTabs.getByRole("tab",{name:label});
   await tab.click();
+  // Audit settled visual states, not intermediate CSS transition frames.
+  await customer.waitForTimeout(400);
   await customer.addScriptTag({content:axe.source});
   const scan=await customer.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
   const serious=scan.violations.filter(v=>v.impact==="serious"||v.impact==="critical");

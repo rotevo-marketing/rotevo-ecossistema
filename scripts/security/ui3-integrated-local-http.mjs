@@ -134,4 +134,23 @@ await request('/api/presentation/project?slug=integrated-b',b,{status:404});
 await request('/api/client/finance',b,{status:403});
 await request('/api/assets/resolve',reset,{method:'POST',body:{ids:[asset.id]},status:403});
 pass('missing workspace and initial-password boundaries remain closed across presentation/finance/assets');
+// Direct PostgREST RPCs must match the protected HTTP access rules, not only the React UI.
+const items=[
+ {id:'rpc-final',version:'v1',status:'awaiting_client',visibleToClient:true},
+ {id:'rpc-idea',version:'v1',status:'idea_pending',visibleToClient:true}
+];
+const projectA=await must(service.from('planning_projects').select('data').eq('id',pA).single(),'read synthetic project for RPC checks');
+const projectB=await must(service.from('planning_projects').select('data').eq('id',pB).single(),'read synthetic project B for RPC checks');
+await must(service.from('planning_projects').update({data:{...projectA.data,editorialCalendar:items}}).eq('id',pA),'synthetic editorial fixtures');
+await must(service.from('planning_projects').update({data:{...projectB.data,editorialCalendar:items}}).eq('id',pB),'synthetic editorial fixtures B');
+const rpcArgs=(id)=>({p_project_id:pA,p_content_id:id,p_content_version:'v1',p_decision:'approved',p_comment:null});
+const blockedReset=await reset.db.rpc('rotevo_editorial_decide',rpcArgs('rpc-final'));
+assert.equal(blockedReset.error?.code,'42501','pending initial-password direct RPC must be denied');
+const blockedMissing=await b.db.rpc('rotevo_editorial_idea_decide',{...rpcArgs('rpc-idea'),p_project_id:pB});
+assert.equal(blockedMissing.error?.code,'42501','direct RPC without workspace must be denied');
+const allowedFinal=await a.db.rpc('rotevo_editorial_decide',rpcArgs('rpc-final'));
+assert.equal(allowedFinal.error,null,'authorized client final approval must still work: '+allowedFinal.error?.message);
+const allowedIdea=await a.db.rpc('rotevo_editorial_idea_decide',rpcArgs('rpc-idea'));
+assert.equal(allowedIdea.error,null,'authorized client idea approval must still work: '+allowedIdea.error?.message);
+pass('real GoTrue/PostgREST direct editorial RPCs: missing workspace and initial-password denied, legitimate final and idea approvals preserved');
 console.log('PASS integrated:',groups,'groups. Synthetic disposable local stack only; not a hosted schema mirror or browser UI test.');

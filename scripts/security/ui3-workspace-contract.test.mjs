@@ -259,3 +259,20 @@ test("UI3 finance administrator retains authorized operations and filtered contr
  assert.match(contracts,/AuthorizedFileLink/);
  assert.match(api,/clientView\?"\/api\/client\/finance":"\/api\/admin\/finance"/);
 });
+
+
+test("client portal validates financial links and aligns meeting month with Brazil timezone",()=>{
+ const finance=source("Components/cliente/ClientFinanceView.tsx");
+ const meetings=source("Components/cliente/ClientMeetings.tsx");
+ const financeServer=source("app/api/client/finance/route.ts");
+ const projection=source("lib/security/projectForClient.ts");
+ assert.match(finance,/safeLink\(url,false\)/);
+ assert.match(finance,/\.filter\(l=>l\.invoice_id===x\.id\)/);
+ assert.match(finance,/rel="noopener noreferrer"/);
+ assert.match(meetings,/todayInBrazil\(\)\.slice\(0,7\)/);
+ assert.match(meetings,/visibleToClient===true/);
+ assert.match(financeServer,/rpc\("rotevo_client_finance"\)/);
+ assert.match(financeServer,/\.eq\("client_id",clientId\)/);
+ assert.match(financeServer,/\.eq\("visible_to_client",true\)/);
+ assert.match(projection,/internalNotes/);
+});

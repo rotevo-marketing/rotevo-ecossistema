@@ -9,6 +9,7 @@ on:
       - 'scripts/security/ui3-staff-browser-local.mjs'
       - 'scripts/security/ui3-portal-browser-local.mjs'
       - 'src/Components/cliente/ClientContracts.tsx'
+      - 'src/Components/cliente/ClientPlanning.tsx'
       - 'src/Components/strategic-editor/StrategicDocumentReader.tsx'
       - 'src/Components/strategic-editor/editor.css'
       - 'src/Components/admin/AdminWorkConsole.tsx'

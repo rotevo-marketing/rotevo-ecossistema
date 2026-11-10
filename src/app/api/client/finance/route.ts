@@ -1,5 +1,5 @@
 import {identity as operationIdentity} from "@/lib/operations/server";
-import {emptyWorkspace,workspaceForClient} from "@/lib/operations/model";
+import {workspaceForClient} from "@/lib/operations/model";
 import {financeIdentity,financeResponse,financeError} from "@/lib/finance/server";
 export const runtime="nodejs";
 export async function GET(request:Request) {
@@ -8,7 +8,7 @@ export async function GET(request:Request) {
  const clientId=auth.identity.profile.client_id;if(auth.identity.profile.role!=="client"||!clientId)return financeResponse({error:"Acesso não autorizado."},403);
  const workspace=await auth.identity.db.from("client_workspaces").select("data").eq("client_id",clientId).maybeSingle();
  if(workspace.error)return financeResponse({error:"Não foi possível consultar seus serviços."},503);
- if(!workspaceForClient(workspace.data?.data??emptyWorkspace()).modules.includes("finance"))return financeResponse({error:"O Financeiro não foi disponibilizado para sua conta."},403);
+ if(!workspaceForClient(workspace.data?.data).modules.includes("finance"))return financeResponse({error:"O Financeiro não foi disponibilizado para sua conta."},403);
  const {data,error}=await identity.db!.rpc("rotevo_client_finance");
  if(error)return financeError(error.code,error.message);
  const ids=Array.isArray(data?.invoices)?data.invoices.map((i:{id:string})=>i.id):[];

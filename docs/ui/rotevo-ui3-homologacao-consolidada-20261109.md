@@ -88,3 +88,17 @@ O risco está limitado ao potencial acesso do cliente ao JSON **do próprio tena
 Consultar o plano [`docs/security/ui3-planning-data-grant-remediation-20261109.md`](../security/ui3-planning-data-grant-remediation-20261109.md) para a remediação em laboratório, proteção de edição administrativa, testes RLS com dois tenants, migração reversível e aprovação específica. A publicação da UI 3.0 deve continuar **bloqueada** até o problema ser resolvido e comprovado.
 
 Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/database/postgres/testing-row-level-security).
+
+## 9. Ensaio executado do bloqueio G2 — sem produção (09/11/2026)
+
+**Aprovado no CI:**
+- [GitHub Actions — laboratório PostgreSQL descartável, execução 42741072308](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741072308), commit `3a85e1bd`, conclusão **SUCCESS**. O runner provisionou PostgreSQL 17 sintético (sem credenciais Rotevo), reproduziu grants amplos e isolamento de linhas por tenant, revogou `SELECT,UPDATE` de papéis comuns, confirmou negação do JSON, seleção dos metadados e leitura por `service_role`. Transação integralmente revertida.
+- [GitHub Actions — regressões UI3, execução 42741380148](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741380148), commit `e318c931`, conclusão **SUCCESS**. Testes de autorização e rotas, documentos HTML, Financeiro, TypeScript e build aprovados.
+- Proposta revisável, não executada, em `docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql`. Inclui preflight de schema, `REVOKE SELECT, UPDATE` para `anon/authenticated`, `GRANT SELECT` apenas nos metadados, pós-verificação de negação do JSON e preservação do `service_role`. Não se trata de migration aprovada.
+- Regressão em `scripts/security/ui3-raw-json-release-gate.test.mjs` obriga o uso de endpoints seguros pelos consumidores administrativos centrais e verifica a existência do bloqueio no SQL de proposta.
+
+**Importante:** o laboratório PostgreSQL não replica integralmente o Supabase hospedado, nem Auth/Storage/rotinas/RLS da Rotevo. O campo `planning_projects.data` no ambiente de produção ainda mantém permissão direta `SELECT` para `authenticated`; a homologação de banco real isolado, a correção de grants hospedados e a verificação autenticada de cliente e equipe **seguem pendentes**.
+
+**Validação adicional do esquema hospedado (consulta apenas de catálogo):** `authenticated` não pode alterar `profiles.role` nem `profiles.client_id`, mas pode alterar `profiles.full_name`; o antigo gate G1 está coberto pelo estado atual e não precisa ser reaberto sem nova evidência.
+
+**Ação final necessária:** preparar espelho Supabase isolado a partir de baseline verificado, testar o SQL proposto com identidades reais *sintéticas*, preservar o editor do estrategista e obter autorização explícita para a eventual mudança sensível no banco hospedado. Nenhuma alteração em produção nesta rodada.

@@ -1,5 +1,60 @@
 # Rotevo UI 3.0: homologação autenticada
 
+## Revalidação autenticada do commit 90d69cc
+
+Esta é a situação mais recente. A pendência de autenticação da rodada anterior foi superada por login administrativo seguro fornecido pelo responsável.
+
+- Commit examinado: `90d69cc82bf4b4ebb83174212d74694db376b808`, branch `feat/rotevo-ui2-pilot-20261109`.
+- Prévia: https://rotevo-ecossistema-fuxkpc4hh-rotevo-marketing.vercel.app/admin
+- Deployment `dpl_AK4R1D15mUdTq2nAsnNXckWySKuu`, READY, Preview, SHA confirmado pela Vercel.
+- Conta administrativa Rotevo autenticada; sessão persistiu após recarga. A falha inicial de consultas observada na primeira rodada não se reproduziu nesta entrada.
+- A diferença de `625bf45` para `90d69cc` é somente documental. Os 317 testes locais e o workflow bem-sucedido `42730899003` referem-se ao mesmo código da aplicação; não se declara novo workflow completo para um commit somente documental.
+
+### Resultados observados na prévia
+
+| Verificação | Resultado e evidência |
+|---|---|
+| Precedência UI3 no desktop | Aprovada: título `20px`, cabeçalho com `background-image: none`, `border-radius: 0px`, padding `4px 0px 16px` |
+| Precedência UI3 em reflow | Aprovada: título `18px`, fundo sem degradê nas larguras reduzidas |
+| Zoom 200% | Largura CSS `681px`; documento com `clientWidth = scrollWidth = 674px`, sem transbordamento |
+| Zoom 300% | Largura CSS `454px`; `clientWidth = scrollWidth = 449px`, sem transbordamento |
+| Zoom 400% | Largura CSS `340px`; `clientWidth = scrollWidth = 337px`, sem transbordamento |
+| Filtros da Central de trabalho | Em 340px, cada seletor coube em 309px, terminando em 323px; corrigido o excesso anterior de 465px de scrollWidth |
+| Menu móvel do painel | Abriu, fechou por Escape e manteve foco no gatilho; seleção de Tarefas fechou o menu e exibiu o módulo |
+| Seletor de projeto das tarefas | Nome acessível confirmado; ArrowDown levou às opções; End foi à última, ArrowUp à anterior e Home à primeira; Escape fechou e devolveu foco ao gatilho |
+| Lista e Kanban em mobile | Nomes acessíveis presentes mesmo com textos visuais ocultos; alternância funcionou; Kanban com largura externa preservada em 337px; nenhum cartão movido |
+| Modal Nova tarefa | Foco inicial no input; largura 313px em viewport 340px; Shift+Tab circulou até Criar tarefa, Tab voltou ao primeiro input; Escape fechou e retornou foco a Nova tarefa; sem envio |
+| Modal Novo cliente | Foco inicial no input, largura 313px; Escape fechou e devolveu foco ao gatilho; sem envio |
+| Menu móvel do editor | Correção aprovada: Escape alterou aria-expanded para false e devolveu foco ao botão de menu |
+| Abas do editor | ArrowRight selecionou Cronograma e moveu o foco; Home retornou à primeira aba; nenhuma previsão editada |
+| Retorno contextual | Link Projetos retornou à listagem administrativa |
+| Restrição documental | Visão do cliente continuou com zero documentos publicados e apresentação indisponível; nenhum rascunho liberado |
+| Navegação de módulos | Clientes, Projetos, Onboarding, Tarefas, Reuniões, Conteúdo, Campanhas, Equipe e Financeiro abriram; sem alertas de erro observados nos destinos examinados |
+| Financeiro | Estado explícito de integração desativada confirmado; nenhum lançamento executado |
+
+O teste com zoom valida reflow, não substitui a matriz exata de dispositivos em 320, 375, 390, 430, 768, 1024 e 1440px. Ainda faltam contraste sistemático, leitor de tela, movimento reduzido e teclado completo em todos os componentes. A correção de consulta indisponível do diretório continua coberta por teste DOM sintético; não foi provocado erro de API no ambiente com registros reais.
+
+### Pendência nova de navegação
+
+**URL e módulo exibido podem divergir.** Após voltar do editor para `/admin?section=projects` e clicar em Visão geral, a tela e o item ativo mudaram para Visão geral, mas a URL permaneceu com `section=projects`. Ao recarregar, a tela retornou a Projetos. Isso afeta restauração de contexto e links compartilhados. Não houve perda de dados, mas a navegação ainda não recebe aceite integral. Recomenda-se corrigir a sincronização entre seção/URL/histórico em etapa própria e testar Voltar/Avançar e rascunhos não salvos. Nenhum código da aplicação foi alterado durante a validação desta versão.
+
+### Testes que dependem de outros perfis ou ambiente
+
+| Requisito | Testes pendentes |
+|---|---|
+| Conta de cliente autorizada | Portal real, seleção de projetos, módulos habilitados/desabilitados, documentos publicados versus internos, tarefas e atas compartilhadas, conteúdo e campanhas autorizados, contratos e Drive; tentativas por links diretos de outro cliente/projeto |
+| Cliente e fixtures locais para gravação | Aprovação de ideia e peça final por versão, solicitação de ajustes, repetição/idempotência, decisão concorrente e revogação de visibilidade; sem testar essas gravações em registros reais |
+| Conta de equipe com permissões e projetos restritos | Consultas permitidas e negadas, atribuições, links diretos sem vínculo, documentos internos e separação das funções financeira/operacional/admin; menus ocultos não substituem autorização do servidor |
+| Equipe em fixtures locais | Convite, ativação, redefinição, concessão/revogação, inativação e operações de escrita por perfil; sem modificar acessos reais |
+| Ambiente financeiro sintético isolado | Administrador, operador somente leitura e cliente; contratos com vários projetos, parcelas, pagamentos parciais, estornos, cancelamentos, recorrência, caixa, totais e documentos/comprovantes autorizados |
+| Fixtures documentais locais | Persistência e reabertura de HTML pequeno/extenso, CSS intacto, concorrência, erros de gravação e publicação seletiva; não salvar testes sobre documentos reais |
+
+**Resultado:** correções anteriores de CSS, reflow, rótulos, seletor e Escape/foco foram confirmadas na prévia autenticada. Homologação geral permanece parcial pelas dependências de perfil/ambiente e pela inconsistência de URL identificada.
+
+**Próxima etapa recomendada:** corrigir a sincronização de navegação e, depois, concluir a matriz cliente/equipe com consultas não destrutivas e fixtures locais para gravações/financeiro. Não publicar em produção antes desses aceites.
+
+---
+
 ## Atualização: envio autorizado e investigação do acesso
 
 Esta atualização prevalece sobre o estado local descrito na primeira rodada abaixo.

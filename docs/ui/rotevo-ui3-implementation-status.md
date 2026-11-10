@@ -204,3 +204,15 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Há duas identidades distintas: conta Vercel autorizada para a proteção da prévia e conta Rotevo `strategist` para entrar no painel via Supabase. A solicitação emitida pelo agente estava ligada ao formulário da Rotevo.
 - Detalhes, limites e evidências: `docs/homologation/rotevo-ui3-authenticated-20261109.md`.
 - Próxima etapa: revalidar correções no navegador autenticado; depois perfis cliente/staff e financeiro sintético. Sem produção, main, migrações, dados reais ou mudanças de segurança nesta rodada.
+
+
+## Revalidação administrativa autenticada de 90d69cc
+
+- Prévia READY de `90d69cc82bf4b4ebb83174212d74694db376b808`: `https://rotevo-ecossistema-fuxkpc4hh-rotevo-marketing.vercel.app/admin`, deployment `dpl_AK4R1D15mUdTq2nAsnNXckWySKuu`.
+- Login administrativo seguro concluído e sessão persistida. Cabeçalho UI3 confirmado no navegador: título 20px desktop/18px mobile, sem degradê nem arredondamento legado.
+- Reflow aprovado em larguras CSS de 681, 454 e 340px via zoom 200/300/400%. Na menor, clientWidth e scrollWidth = 337px; os filtros deixaram de alargar a página. Não equivale à matriz exata de sete viewports.
+- Nomes acessíveis de Lista/Kanban, setas/Home/End/Escape do seletor e retorno de foco aprovados. Modais de tarefa/cliente abriram e fecharam sem envio; contenção Tab/Shift+Tab validada no modal de tarefa. Escape/foco do menu móvel do editor confirmado, assim como abas por teclado e retorno à lista.
+- **Pendência encontrada:** navegação interna do painel não sincroniza o parâmetro `section`. De `/admin?section=projects`, Visão geral muda a tela mas mantém a URL; recarregar restaura Projetos. Corrigir URL/histórico e testar retorno/contexto antes de aceite integral de navegação.
+- Financeiro continua desativado. Portal e autorização real por cliente/staff ainda exigem perfis próprios; operações mutáveis, persistência documental e ciclo financeiro exigem fixtures locais isoladas.
+- O código da aplicação não foi alterado durante esta homologação. Dados, permissões, documentos, flags e produção preservados.
+- Relatório consolidado e matriz de dependências: `docs/homologation/rotevo-ui3-authenticated-20261109.md`.

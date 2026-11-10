@@ -199,3 +199,23 @@ test("missing workspace denies project, finance and workspace portal modules ins
  const model=readFileSync(new URL("../../src/lib/operations/model.ts",import.meta.url),"utf8");
  assert.match(model,/if\(!validWorkspace\(value\)\)return \{contracts:\[\],folders:\[\],modules:\[\]\}/);
 });
+
+
+test("strategist project endpoints enforce first-password change before privileged access",()=>{
+ const routes=[
+  "app/api/admin/project/route.ts",
+  "app/api/admin/project/update/route.ts",
+  "app/api/admin/project/status/route.ts",
+  "app/api/admin/project/delete/route.ts",
+  "app/api/admin/projects/route.ts"
+ ];
+ for(const path of routes){
+  const src=readFileSync(new URL("../../src/"+path,import.meta.url),"utf8");
+  const jwt=src.indexOf("auth.getUser(");
+  const reset=src.indexOf("identity.user.app_metadata?.rotevo_password_reset_required===true");
+  const service=src.indexOf("createClient(url,secret");
+  const profile=src.indexOf('.from("profiles")');
+  assert.ok(jwt>=0&&reset>jwt&&service>reset&&profile>service,path+" must deny reset-required sessions before service access");
+  assert.match(src.slice(reset,service),/return fail\(403\)/);
+ }
+});

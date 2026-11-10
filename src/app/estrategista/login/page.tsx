@@ -62,7 +62,7 @@ export default function EstrategistaLoginPage() {
 
       if (profileError || profile?.role !== "strategist") {
         await supabase.auth.signOut();
-        setErrorMessage("Este usuário não tem permissão de estrategista.");
+        setErrorMessage("Esta conta não tem acesso ao painel do estrategista nem à área da equipe. Confira se o perfil foi autorizado.");
         setIsLoading(false);
         return;
       }
@@ -89,7 +89,7 @@ export default function EstrategistaLoginPage() {
         <PasswordRecoveryLink strategist />
         {errorMessage && <p role="alert" className={s.message + " " + s.error}>{errorMessage}</p>}
         <button type="submit" className={s.button} disabled={isLoading}>{isLoading ? "Entrando..." : "Acessar Ecossistema"}</button>
-        <p className={s.note}>Acesso exclusivo para estrategistas autorizados.</p>
+        <p className={s.note}>Acesso para estrategistas e colaboradores com perfil e permissões habilitados.</p>
       </form>
     </AuthShell>
   );

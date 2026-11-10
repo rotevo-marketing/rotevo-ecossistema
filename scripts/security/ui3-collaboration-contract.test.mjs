@@ -1,0 +1,50 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const read=path=>readFileSync(new URL(path,import.meta.url),"utf8");
+const api=read("../../src/app/api/collaboration/route.ts");
+const sql=read("../../docs/security/sql/ui3-project-collaboration-PROPOSAL-ONLY.sql");
+const client=read("../../src/Components/collaboration/ProjectConversation.tsx");
+const portal=read("../../src/lib/security/projectForClient.ts");
+const projectApi=read("../../src/app/api/client/projects/route.ts");
+test("collaboration SQL stays append-only and private until signed-off migration",()=>{
+ assert.match(sql,/PROPOSAL ONLY/);
+ assert.match(sql,/alter table public\.project_collaboration_messages enable row level security/);
+ assert.match(sql,/revoke all on public\.project_collaboration_messages from public,anon,authenticated/);
+ assert.match(sql,/grant select,insert on public\.project_collaboration_messages to service_role/);
+ assert.doesNotMatch(sql,/grant (?:all|insert|update|delete).* to authenticated/);
+ assert.match(sql,/author_id uuid not null references auth\.users\(id\)/);
+ assert.match(sql,/constraint task_review_type_check/);
+});
+test("collaboration endpoint authenticates every request and checks tenant and module",()=>{
+ assert.match(api,/auth\.auth\.getUser\(header\.slice\(7\)\)/);
+ assert.match(api,/identity\.user\.app_metadata\?\.rotevo_password_reset_required/);
+ assert.match(api,/profile\.client_id!==project\.client_id/);
+ assert.match(api,/item\.visibleToClient!==true/);
+ assert.match(api,/item\.archivedAt\|\|item\.deletedAt/);
+ assert.match(api,/ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED/);
+ assert.match(api,/team_project_assignments/);
+ assert.match(api,/team_member_permissions/);
+ assert.match(api,/client_workspaces/);
+ assert.match(api,/const version=b\.itemType==="content"/);
+ assert.match(api,/b\.contentVersion!==version/);
+ assert.match(api,/v\.role!=="client"/);
+ assert.match(api,/count\?\?0\)>=15/);
+});
+test("comments are server-authoritative and don't disclose user identities in responses",()=>{
+ assert.match(api,/author_id:v\.userId/);
+ assert.match(api,/author_kind:v\.role/);
+ assert.match(api,/mine:m\.author_id===v\.userId/);
+ assert.doesNotMatch(api,/currentUserId:v\.userId/);
+ assert.match(api,/limit\(100\)/);
+ assert.match(client,/ProjectConversation/);
+ assert.match(client,/message_type/);
+ assert.match(client,/disabled=\{!available\|\|loading\|\|sending/);
+});
+test("client projection excludes trashed resources and uses signed responsible photos only on shared records",()=>{
+ assert.match(portal,/item\.archivedAt \|\| item\.deletedAt/);
+ assert.match(portal,/\["channel","format","publishDate","caption","version","status","owner","priority"/);
+ assert.match(projectApi,/const sharedIds=new Set/);
+ assert.match(projectApi,/signed\.get\(asset\)/);
+ assert.match(projectApi,/editorialAssignment/);
+});

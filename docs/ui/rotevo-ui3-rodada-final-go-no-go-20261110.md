@@ -51,3 +51,13 @@ Um job antigo de `security-checks.yml` falhou por ausência de `npm ci` no grupo
 **Backup:** a pesquisa no Drive conectado não encontrou arquivo atual identificável como backup restaurável de novembro. Isso não prova inexistência em outros locais. O conector do Supabase disponível não fornece uma exportação segura de bytes do banco e do Storage para destino privado. Nenhum dump de dados de clientes foi feito, transmitido ao chat ou colocado em artifact público. O requisito de backup/restauração de produção continua aberto.
 
 **Estado:** merge conflict resolvido no PR de rascunho; segurança de CI aprovada; produção `app.rotevo.com.br` e banco hospedado sem alterações; NO-GO devido a backup/restauração, SQL hospedado G2/RPC e acessibilidade humana pendentes.
+
+
+### Fechamento das execuções do candidato (10/11/2026)
+
+- [GitHub Actions 42815189969](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42815189969): **SUCCESS**, seis jobs de Segurança, incluindo build, TypeScript, dependências, autorização e isolamento sintético. O workflow foi corrigido para instalar dependências travadas antes do teste operacional que importa `isomorphic-dompurify`; a falha antiga não persiste.
+- [GitHub Actions 42814518276](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42814518276): **SUCCESS**, sete grupos integrados reais locais e homologação visual em Chromium. Logs confirmam `PASS shared contract keyboard ArrowRight/Home/End, focus and ARIA tabpanel mapping`, quatro abas, planejamento publicado `ACCESSIBILITY published planning []` e os três portais sintéticos.
+- Pull request [#5](https://github.com/rotevo-marketing/rotevo-ecossistema/pull/5): mergeable=true, draft mantido, integração com a `main` **não executada**. A condição `unstable` ainda exige revisão das verificações de branch antes do merge.
+- A Vercel reportou prévia **READY** para o candidato; produção continua `bec8ee26` com aliases preservados.
+
+**Bloqueio real restante:** falta backup **atual, privado e restaurável**, incluindo bytes do Storage, e avaliação assistiva humana; sem essas provas não se deve aplicar grants/RPCs hospedadas nem promover a UI3. O conector Supabase não fornece a saída segura de um `pg_dump` para um destino privado e não é aceitável transportar dados reais via logs públicos. A pesquisa de nomes de arquivo no Drive conectado não identificou backup atual de novembro, sem excluir possíveis cópias em outros locais.

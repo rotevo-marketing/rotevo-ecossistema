@@ -67,7 +67,7 @@ export function projectForClient(project:PrivateProjectRow,allowedModules?:reado
       executionTimeline:publishedArray(modules.includes("execution")?data.executionTimeline:[],
         ["phase","status","kind","startDate","dueDate","description","priority","owner"],true),
       editorialCalendar:publishedArray(modules.includes("content")?data.editorialCalendar:[],
-        ["channel","format","publishDate","caption","version","status","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl","references"],true),
+        ["channel","format","publishDate","caption","version","status","owner","priority","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl","references"],true),
       operationalAgenda:publishedArray(modules.includes("meetings")?data.operationalAgenda:[],["kind","date","time","status","notes","modality","location","duration","minutes","meetingUrl","materialUrl"]),
       marketingCampaigns:Array.isArray(data.marketingCampaigns)&&modules.includes("campaigns")?data.marketingCampaigns.flatMap(value=>{
         const c=object(value);if(!c||c.visibleToClient!==true||typeof c.id!=="string"||typeof c.title!=="string")return [];

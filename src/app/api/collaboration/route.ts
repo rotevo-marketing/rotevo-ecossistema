@@ -54,9 +54,9 @@ export async function GET(req:NextRequest){
  const b={projectId:p.get("projectId")??"",itemType:p.get("itemType")??"",itemId:p.get("itemId")??"",contentVersion:p.get("contentVersion")??""} as Req;
  if(!["task","content"].includes(b.itemType))return fail(400);
  const v=await authorized(req,b);if("error" in v)return fail(v.error??503);
- const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:true}).limit(100);
+ const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:false}).limit(100);
  if(error)return fail(503);
- return NextResponse.json({messages:data??[],currentUserId:v.userId},{headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({messages:(data??[]).reverse(),currentUserId:v.userId},{headers:{"Cache-Control":"no-store"}});
 }
 export async function POST(req:NextRequest){
  let b:Req;

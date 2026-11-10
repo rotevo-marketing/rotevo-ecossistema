@@ -17,6 +17,7 @@ on:
       - 'scripts/security/ui3-task-detail-refinement.test.mjs'
       - 'scripts/security/ui3-task-detail-usability.test.mjs'
       - 'scripts/security/ui3-task-visual-feedback.test.mjs'
+      - 'scripts/security/ui3-editorial-ux-round.test.mjs'
       - 'src/Components/cliente/ClientOverview.tsx'
       - 'src/lib/security/executionDependencyValidation.ts'
       - 'scripts/security/execution-dependencies.test.mjs'
@@ -63,6 +64,8 @@ jobs:
         run: node --test scripts/security/ui3-workspace-contract.test.mjs
       - name: UI3 client and onboarding visual changes
         run: node --test scripts/security/ui3-visual-round-20261110.test.mjs
+      - name: UI3 editorial content visual and approval regression
+        run: node --test scripts/security/ui3-editorial-ux-round.test.mjs
       - name: UI3 tasks visual feedback regression
         run: node --test scripts/security/ui3-task-visual-feedback.test.mjs
       - name: UI3 task detail final usability checks

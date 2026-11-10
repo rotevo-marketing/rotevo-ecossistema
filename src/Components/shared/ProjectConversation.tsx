@@ -4,7 +4,7 @@ import {useCallback,useEffect,useId,useState} from "react";
 import {request} from "@/lib/operations/api";
 
 type Message={id:string;author_role:"client"|"staff"|"strategist";body:string;created_at:string};
-type Response={messages:Message[]};
+type Response={messages:Message[];nextCursor:string|null};
 const label=(role:Message["author_role"])=>role==="client"?"Cliente":"Equipe Rotevo";
 
 export default function ProjectConversation({projectId,resourceType,resourceId}:{
@@ -15,14 +15,29 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
  const [body,setBody]=useState("");
  const [loading,setLoading]=useState(true);
  const [saving,setSaving]=useState(false);
+ const [olderLoading,setOlderLoading]=useState(false);
+ const [nextCursor,setNextCursor]=useState<string|null>(null);
  const [error,setError]=useState("");
  const path="/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});
  const reload=useCallback(async()=>{
-  try{const response=await request<Response>(path);setMessages(response.messages);setError("");}
+  try{const response=await request<Response>(path);setMessages(response.messages);setNextCursor(response.nextCursor);setError("");}
   catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar a conversa.");}
   finally{setLoading(false);}
  },[path]);
  useEffect(()=>{setMessages([]);setLoading(true);setError("");void reload();},[reload]);
+ async function loadOlder(){
+  if(!nextCursor||olderLoading)return;
+  setOlderLoading(true);setError("");
+  try{
+   const response=await request<Response>(path+"&cursor="+encodeURIComponent(nextCursor));
+   setMessages(current=>{
+    const known=new Set(current.map(message=>message.id));
+    return [...response.messages.filter(message=>!known.has(message.id)),...current];
+   });
+   setNextCursor(response.nextCursor);
+  }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar mensagens anteriores.");}
+  finally{setOlderLoading(false);}
+ }
  async function send(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();if(!body.trim()||saving)return;
   setSaving(true);setError("");
@@ -36,7 +51,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
   <h3 className="text-sm font-bold">Conversa sobre este item</h3>
   <p className="mt-1 text-xs text-[#697386]">Mensagens separadas das decisões de aprovação.</p>
   {loading?<p role="status" className="mt-3 text-sm">Carregando mensagens...</p>:
-   <ol aria-live="polite" className="mt-3 max-h-64 space-y-3 overflow-y-auto">
+   <div className="mt-3">{nextCursor&&<button type="button" disabled={olderLoading} onClick={()=>void loadOlder()} className="mb-3 rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold disabled:opacity-50">{olderLoading?"Carregando...":"Carregar mensagens anteriores"}</button>}<ol aria-live="polite" className="max-h-64 space-y-3 overflow-y-auto">
     {messages.map(message=><li key={message.id} className="rounded-lg bg-[#F6F7FB] p-3">
      <div className="flex flex-wrap justify-between gap-2 text-xs font-semibold text-[#555E70]">
       <span>{label(message.author_role)}</span>
@@ -45,7 +60,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
      <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#344056]">{message.body}</p>
     </li>)}
     {!messages.length&&<li className="text-xs text-[#697386]">Nenhuma mensagem registrada.</li>}
-   </ol>}
+   </ol></div>}
   {error&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p role="alert" className="text-xs text-red-700">{error}</p><button type="button" onClick={()=>{setLoading(true);void reload();}} className="rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold">Tentar novamente</button></div>}
   <form className="mt-4 space-y-2" onSubmit={send}>
    <label htmlFor={messageId} className="block text-xs font-semibold">Nova mensagem</label>

@@ -26,6 +26,32 @@ try{
 
  for(const path of migrations){try{await pg.exec(read(path));}catch(e){throw new Error('Baseline failed at '+path+': '+e.message);}}
  check(true,'fourteen selected baseline SQL files load together in isolated PostgreSQL');
+ // Read-only hosted catalog fingerprint (10 Nov 2026), no customer rows or secrets.
+ // Differences are recorded but this selected baseline is not automatically a full hosted mirror.
+ const expectedTableColumns={
+  'public.client_users':4,'public.client_workspaces':3,'public.clients':10,
+  'public.editorial_approvals':8,'public.editorial_idea_approvals':8,
+  'public.finance_invoice_links':3,'public.planning_projects':10,
+  'public.profiles':7,'public.project_assets':12,'public.team_audit_events':6,
+  'public.team_member_permissions':3,'public.team_members':8,
+  'public.team_project_assignments':3,'public.user_preferences':4,
+  'rotevo_finance.accounts':4,'rotevo_finance.audit':6,
+  'rotevo_finance.contract_projects':2,'rotevo_finance.contracts':9,
+  'rotevo_finance.invoices':17,'rotevo_finance.settings':2,
+  'rotevo_finance.settlements':10,'rotevo_finance.subscriptions':10,
+  'rotevo_finance.suppliers':8,'rotevo_finance.transfers':5
+ };
+ const tables=(await pg.query("select table_schema||'.'||table_name as name,count(*)::integer as count from information_schema.columns where table_schema in ('public','rotevo_finance') group by table_schema,table_name order by 1")).rows;
+ const found=Object.fromEntries(tables.map(t=>[t.name,t.count]));
+ const missing=Object.keys(expectedTableColumns).filter(t=>!(t in found));
+ const mismatched=Object.entries(expectedTableColumns).filter(([name,count])=>name in found&&found[name]!==count).map(([name,count])=>({name,hosted:count,lab:found[name]}));
+ const extra=Object.keys(found).filter(t=>!(t in expectedTableColumns));
+ console.log('HOSTED_SCHEMA_RECONCILIATION',JSON.stringify({hostedTables:Object.keys(expectedTableColumns).length,labTables:tables.length,missing,mismatched,extra}));
+ // A selected historical baseline can be used for integration tests even if incomplete;
+ // it MUST NOT be certified as a production schema mirror when there is any drift.
+ const schemaMirrorReady=missing.length===0&&mismatched.length===0&&extra.length===0;
+ console.log(schemaMirrorReady?'PASS full table/column-count parity':'NO-GO full hosted schema mirror: synthetic lab remains selective');
+
  await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);
  await pg.exec(read('docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'));
  await pg.exec(read('docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'));

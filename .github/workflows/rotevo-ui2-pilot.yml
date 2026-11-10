@@ -15,6 +15,7 @@ on:
       - 'scripts/security/ui3-task-people-date.test.mjs'
       - 'scripts/security/ui3-task-detail-modal.test.mjs'
       - 'scripts/security/ui3-task-detail-refinement.test.mjs'
+      - 'scripts/security/ui3-task-detail-usability.test.mjs'
       - 'src/app/admin/equipe/page.tsx'
       - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
@@ -58,6 +59,8 @@ jobs:
         run: node --test scripts/security/ui3-workspace-contract.test.mjs
       - name: UI3 client and onboarding visual changes
         run: node --test scripts/security/ui3-visual-round-20261110.test.mjs
+      - name: UI3 task detail final usability checks
+        run: node --test scripts/security/ui3-task-detail-usability.test.mjs
       - name: UI3 task details direct editing and layout regression
         run: node --test scripts/security/ui3-task-detail-refinement.test.mjs
       - name: UI3 task detail two-column visual regression

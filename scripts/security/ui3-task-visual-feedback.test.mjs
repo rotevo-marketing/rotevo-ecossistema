@@ -10,7 +10,7 @@ test("successful task creation locates item across clients and pages",()=>{
  assert.match(task,/onChanged\(project\.id,result\.project\.data/);
 });
 test("archive is reversible and its controls are accessible",()=>{
- assert.match(task,/aria-label=\{task\.archivedAt\?/);
+ assert.match(task,/aria-label=\{\`Ações da tarefa/);
  assert.match(task,/window\.confirm\("Arquivar a tarefa/);
  assert.match(task,/void updateTask\(project,task,\{archivedAt:undefined\}\)/);
  assert.match(task,/void updateTask\(project,task,\{archivedAt:new Date\(\)\.toISOString\(\)\}\)/);

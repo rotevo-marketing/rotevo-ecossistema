@@ -347,3 +347,25 @@ Ampliação do laboratório temporário com Playwright Chromium, Next.js e Supab
 4. **Equipe hospedada:** não há identidade `staff` na base principal; a UI já passou em Supabase descartável, mas a prévia protegida não foi testada com colaborador real.
 
 **Nenhuma mudança em produção ou nas contas reais. A publicação permanece NO-GO até o aceite desses requisitos.**
+
+## 18. Contraste automatizado no navegador e matriz visual — 10/11/2026
+
+**Resultado aprovado:** [GitHub Actions 42794112989](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42794112989), commit `14f1c78d`, conclusão **SUCCESS**; [validação de TypeScript, build e testes de código 42794047358](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42794047358), conclusão **SUCCESS**.
+
+### Defeito encontrado e corrigido
+O navegador de homologação com `axe-core`, na página inicial administrativa a 390 px, detectou seis nós com contraste abaixo de WCAG AA: mensagem de estado vazio do console (`#69778E` sobre `#F7F8FB`), legenda informativa (`#7A8799` sobre branco) e quatro textos de resumo financeiro (`#697386` sobre `#F6F7FB`). Correção restrita aos componentes:
+- `src/Components/admin/AdminWorkConsole.tsx` (`7ad193a3`)
+- `src/Components/admin/AdminOperationsOverview.tsx` (`e32cebb1`)
+
+Os textos envolvidos passaram a usar `#606D82`, contraste calculado de aproximadamente **4,90:1** sobre `#F6F7FB`, **4,93:1** sobre `#F7F8FB` e **5,24:1** sobre branco. Foi ampliado `scripts/security/ui3-contrast.test.mjs` (`8d24c5e4`) para guardar as três superfícies e a verificação automatizada voltou a ser acionada para mudanças nesses componentes.
+
+### Evidência de aprovação no navegador
+- `PASS integrated: 6 groups`: Auth, API, Storage, documentos e Financeiro em stack temporária com dados fictícios.
+- `PASS staff actual UI`: login e permissão da Equipe com projeto atribuído sem dados internos.
+- Cliente, Estrategista e Equipe: testes de overflow aprovados em **320, 375, 390, 430, 768, 1024 e 1440 CSS px** nas telas iniciais.
+- `ACCESSIBILITY client []` e `ACCESSIBILITY strategist []`: nenhuma violação nas regras `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` inspecionadas pelo axe nas telas iniciais a 390 px.
+- Capturas com identidades sintéticas: [artifact do GitHub Actions 13752998334](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42794112989/artifacts/13752998334). Retenção por cinco dias.
+
+**Limite da evidência:** análise axe não equivale a leitor de tela humano; a matriz mede as telas de entrada e não todas as seções internas em sete larguras. Conteúdos publicados de Planejamento/Contratos também aguardam inspeção visual de exemplares sintéticos. **O bloqueio G2 no banco hospedado permanece sem remediação**, e nenhum grant, RLS, conta ou registro de produção foi alterado.
+
+**Próximo gate:** inspeção assistiva e telas internas, equivalência final do banco/RPC com produção em laboratório, aprovação específica do SQL de grants e só então autorização de publicação/rollback. Estado geral **NO-GO para implantação**.

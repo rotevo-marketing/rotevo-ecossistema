@@ -277,3 +277,11 @@ A pedido do responsável, a validação automatizada foi ampliada, sem paradas i
 - A prévia do commit de código `95550beb` ficou READY na Vercel; a produção permaneceu no deployment `bec8ee26` na última verificação.
 - A aceitação completa ainda depende de sessão real autorizada como cliente e colaborador, políticas RLS/financeiro em Supabase isolado, persistência com aplicação completa, acessibilidade nas larguras exatas e plano de release/rollback. Não equiparar CI e build com homologação de navegador.
 - O comportamento legado de `emptyWorkspace()` com todos os módulos habilitados na ausência de registro merece decisão explícita de compatibilidade; não foi alterado unilateralmente.
+
+## Encerramento da rodada de ensaio G2 (09/11/2026)
+
+- Prova de conceito isolada **APROVADA** em PostgreSQL 17: workflow [42741072308](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741072308). A revogação de leitura/escrita do JSON para `anon/authenticated` preservou metadados e acesso privilegiado com dados fictícios; **não houve conexão ao Supabase Rotevo**.
+- Matriz de regressões da UI 3.0 **APROVADA**: workflow [42741380148](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741380148), incluindo segurança, documentos, Financeiro, TypeScript e build.
+- Proposta SQL sem execução: [`docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql`](../security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql); plano e gate: [`docs/security/ui3-planning-data-grant-remediation-20261109.md`](../security/ui3-planning-data-grant-remediation-20261109.md).
+- **NO-GO permanece:** o Supabase hospedado ainda concede SELECT em `planning_projects.data` ao papel autenticado. Exige réplica Supabase realmente isolada e autorização específica para alteração sensível no banco.
+- Sem dados reais alterados, sem migrations aplicadas, sem promoção da branch para produção. Continuam pendentes homologação real dos perfis de Cliente e Equipe, RLS em ambiente espelho isolado e acessibilidade nas larguras exatas.

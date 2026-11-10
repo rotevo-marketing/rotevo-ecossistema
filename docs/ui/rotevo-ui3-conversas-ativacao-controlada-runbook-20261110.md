@@ -14,7 +14,8 @@
 
 - Workflow geral de desenvolvimento no commit `fba62c0a`: [42921303198](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42921303198) SUCCESS, seis verificações, antes do último ajuste de expectativa dos testes.
 - Ensaio integrado anterior de chat básico (pré-paginação/limite): [42918918558](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42918918558) SUCCESS.
-- Ensaio de paginação e limite: [42921295765](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42921295765) verificou paginação completa e bloqueio excedente, mas **terminou FAIL** porque o script esperava 1 mensagem após criar mais 8. A expectativa foi corrigida no commit `fb495394`; **aguardar a execução correspondente antes de chamar o fluxo aprovado**.
+- Ensaio de paginação e limite: [42921811431](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42921811431) **SUCCESS** após corrigir duas expectativas matemáticas do teste. Confirma 67 mensagens recuperadas em três páginas sem duplicação, cursor inválido rejeitado, 10 mensagens por janela de 60 s e a 11ª rejeitada por HTTP 429, além de isolamento A/B, papéis, módulos e descompartilhamento. A execução anterior [42921295765](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42921295765) falhara apenas pela expectativa antiga após semear mensagens adicionais.
+- CI do último código e documentação do PR: [42921964639](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42921964639) **SUCCESS**, seis verificações, incluindo build, TypeScript e testes de segurança. Não equivale à homologação de navegador com usuários reais.
 - Testes usam stack descartável com dados fictícios e URLs loopback. Não existe evidência de migração nem envio de mensagens em produção.
 
 ## Gates bloqueantes

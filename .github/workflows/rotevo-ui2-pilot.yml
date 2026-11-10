@@ -8,6 +8,8 @@ on:
       - 'scripts/security/ui2-visual-contract.test.mjs'
       - 'scripts/security/ui3-workspace-contract.test.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
+      - 'scripts/security/ui3-raw-json-release-gate.test.mjs'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
       - 'scripts/security/client-project-projection.test.mjs'
       - '.github/workflows/rotevo-ui2-pilot.yml'
   workflow_dispatch:

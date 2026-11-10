@@ -78,6 +78,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+      - name: Install locked dependencies for ESM-importing security tests
+        run: npm ci --no-audit --no-fund
       - name: Check authorization schema readiness without a database
         run: node --test scripts/security/auth-schema-preflight.test.mjs
       - name: Simulate Auth rollback outcomes without database

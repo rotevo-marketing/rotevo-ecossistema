@@ -63,3 +63,28 @@ Critérios de GO obrigatórios:
 - **Prioridade de execução:** concluir experiência de Conteúdo e aprovação de cliente antes dos refinamentos restantes, preservando todos os avanços já aprovados. Não promover a produção sem GO do release.
 
 **Atenção à governança:** o fluxo de aprovar tarefa é **novo** e não equivale a alterar `ExecutionItem.status`. A conversa bidirecional precisa ser implementada com persistência, autenticação e controle de acesso por cliente. Enquanto não existir, não declarar pronta.
+
+## Rodada de integração funcional e segurança (10/11/2026, após solicitação de não gerar prévias intermediárias)
+
+**Regra operacional mantida:** não publicar automaticamente, não criar novas prévias enquanto implementar. O usuário autorizou **uma publicação final** após validações técnicas, sem dispensar os gates de recuperação documentados no runbook da UI3.
+
+### Código implementado na branch de trabalho
+
+- Portal do Cliente: menu **Tarefas**, mesmo ícone `list-check` do Estrategista, Lista e Kanban apenas com tarefas compartilhadas. Detalhes em modal apenas de leitura; cliente não edita situação/prioridade/responsável/prazo.
+- Aprovação de tarefa: eventos independentes `task_approved` e `task_changes_requested` integrados à conversa. **Não** mudam `ExecutionItem.status`.
+- Conteúdo do cliente: Calendário e Lista; filtro secundário de situação, atalho de itens que aguardam aprovação. Preservados os formulários formais de `editorial_approvals` e `editorial_idea_approvals`.
+- Admin Conteúdo: Lista com seleção de responsável vinculada a `team_members`, fotos do cliente e da equipe, prioridade e ações contextuais. Modal com Situação, Responsável, Prioridade e Prazo no padrão de Tarefas. Alteração de data segue o editor validado, para evitar contornar bloqueios de versão aprovada.
+- Compartilhamento: `projectForClient` exclui itens arquivados ou na Lixeira da projeção de dados; projeta somente `owner` e `priority`, sem expor `ownerUserId`. A API de projetos do cliente associa fotos assinadas somente aos IDs de conteúdos efetivamente compartilhados.
+- Colaboração: `ProjectConversation` com mensagens, versão do conteúdo, autor relativo (“Você”, “Cliente”, “Equipe Rotevo”), envio em texto, atualização periódica a cada 30s quando a janela está aberta e recusa explícita em caso de indisponibilidade do banco.
+- API `/api/collaboration`: autenticação por token em toda solicitação, verificação servidor de vínculo entre cliente/projeto, módulo habilitado, item compartilhado/não arquivado/não excluído, versão atual para Conteúdo, equipe autorizada quando enforcement ativado, limite de tamanho, limite de frequência e autoria vinda do servidor. Identificadores de contas não aparecem nas respostas.
+- Proposta de armazenamento em `docs/security/sql/ui3-project-collaboration-PROPOSAL-ONLY.sql`: tabela append-only, RLS, sem permissões diretas a `anon`/`authenticated`; acesso à tabela somente via server role. **Não aplicada em produção.**
+- Lixeira: **Excluir definitivamente** é exibido como bloqueado e explicado até que exista backup restaurável; Restaurar e Desmarcar permanecem funcionais. Não ocorreu exclusão permanente.
+
+### Evidências e pendências antes da publicação
+
+- GitHub Actions `42890343563`: SUCCESS para pacote visual e de colaboração estática, TypeScript e build da branch à época do run.
+- Teste SQL em PostgreSQL 17 descartável adicionado a `.github/workflows/ui3-disposable-postgres-lab.yml` para validar DDL, privilégios e rejeição de registros inválidos. Resultado final do CI precisa ser conferido após sua última revisão.
+- Consulta read-only ao Supabase hospedado em 10/11: `public.project_collaboration_messages` ausente; `authenticated` ainda tem privilégios `SELECT` e `UPDATE` efetivos em `planning_projects.data`. São bloqueios concretos para o novo release.
+- Backup completo, privado e testado do PostgreSQL continua **não comprovado**, embora já exista cópia privada íntegra dos bytes de Storage; não confundir uma cópia de arquivos com restauração de Auth, roles e banco.
+- **NO-GO de produção:** não aplicar proposta SQL, não mesclar o PR #5 nem promover Vercel até que o backup e a restauração isolada estejam verificados, G2/RPC corrigidos no ambiente hospedado, testes autenticados e acessibilidade manual concluídos.
+- Após GO, implantar o esquema e a API no mesmo ciclo aprovado, testar comentários e decisões com duas contas de teste isoladas e projetos distintos, validar logs/portais, e somente então publicar **uma única vez** no domínio `app.rotevo.com.br`.

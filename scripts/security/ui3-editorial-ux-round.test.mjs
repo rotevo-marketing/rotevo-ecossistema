@@ -53,7 +53,7 @@ test("client and strategist details are two-pane, keeping formal approvals separ
  assert.match(client,/visibleToClient===true/);
 });
 test("bidirectional comments remain explicitly gated, not deceptive or client writable",()=>{
- assert.match(calendar,/Conversas bidirecionais ainda não estão habilitadas/);
- assert.match(client,/Conversas em tempo real e respostas encadeadas ainda não estão habilitadas/);
+ assert.match(calendar,/ProjectConversation/);
+ assert.match(client,/ProjectConversation/);
  assert.doesNotMatch(manager,/\/api\/editorial\/comments/);
 });

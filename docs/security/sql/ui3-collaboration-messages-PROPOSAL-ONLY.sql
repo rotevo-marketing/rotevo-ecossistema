@@ -24,6 +24,12 @@ create table public.rotevo_collaboration_messages (
 create index rotevo_collaboration_resource_order_idx
  on public.rotevo_collaboration_messages(project_id,resource_type,resource_id,created_at desc,id desc);
 alter table public.rotevo_collaboration_messages enable row level security;
+-- Policies are exclusively for the trusted backend role; no user-facing access.
+create policy rotevo_collaboration_service_read on public.rotevo_collaboration_messages
+ for select to service_role using (true);
+create policy rotevo_collaboration_service_write on public.rotevo_collaboration_messages
+ for insert to service_role with check (true);
+
 -- No SELECT/INSERT/UPDATE/DELETE policies for browser roles. Server endpoint verifies JWT,
 -- profile, tenant, workspace module, project assignment, resource sharing and author.
 revoke all on public.rotevo_collaboration_messages from PUBLIC,anon,authenticated;

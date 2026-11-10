@@ -28,6 +28,7 @@ try{
  check(true,'fourteen selected baseline SQL files load together in isolated PostgreSQL');
  await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);
  await pg.exec(read('docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'));
+ await pg.exec(read('docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'));
  const acl=(await pg.query(`select has_column_privilege('authenticated','public.planning_projects','data','SELECT') exposed,has_column_privilege('authenticated','public.planning_projects','title','SELECT') metadata,has_column_privilege('service_role','public.planning_projects','data','SELECT') server`)).rows[0];
  check(!acl.exposed&&acl.metadata&&acl.server,'grant proposal denies private JSON and preserves metadata/server');
  // Executes the actual financial SQL functions with only synthetic fixtures; script rolls back.
@@ -68,6 +69,27 @@ try{
   assert.deepEqual(reopened,value);
  }
  check(true,'small/extensive HTML and CSS survive real JSONB and optimistic service-role update/returning after grant restriction');
+ // Direct RPC hardening: absent workspace and mandatory initial-password change must both fail closed.
+ await pg.exec(`delete from public.client_workspaces where client_id='20000000-0000-4000-8000-000000000001';reset role;set local role authenticated;
+ select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+ savepoint missing_workspace;`);
+ try {
+  await pg.query('select public.rotevo_editorial_decide($1,$2,$3,$4,null)', ['30000000-0000-4000-8000-000000000001','final','v1','approved']);
+  throw Error('RPC accepted client without workspace');
+ } catch(e) { assert.equal(e.code,'42501'); }
+ finally {await pg.exec('rollback to savepoint missing_workspace');}
+ check(true,'direct editorial RPC rejects missing client workspace');
+ await pg.exec(`reset role;set local role service_role;
+ insert into public.client_workspaces(client_id,data) values ('20000000-0000-4000-8000-000000000001','{"modules":["content","finance","planning"]}');
+ reset role;set local role authenticated;
+ select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"rotevo_password_reset_required":true}}',true);
+ savepoint initial_password;`);
+ try {
+  await pg.query('select public.rotevo_editorial_idea_decide($1,$2,$3,$4,null)', ['30000000-0000-4000-8000-000000000001','idea','v1','approved']);
+  throw Error('RPC accepted identity requiring first-password change');
+ } catch(e) {assert.equal(e.code,'42501');}
+ finally {await pg.exec('rollback to savepoint initial_password');}
+ check(true,'direct editorial idea RPC rejects pending initial-password change');
  await pg.exec(`reset role;set local role authenticated;
  select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
  select public.rotevo_editorial_decide('30000000-0000-4000-8000-000000000001','final','v1','approved',null);

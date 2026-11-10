@@ -10,7 +10,9 @@ on:
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
       - 'scripts/security/ui3-raw-json-release-gate.test.mjs'
       - 'scripts/security/ui3-contrast.test.mjs'
+      - 'scripts/security/presentation-access-behavior.test.mjs'
       - 'scripts/security/ui3-full-sql-compat-local.mjs'
+      - 'scripts/security/ui3-sql-baseline.mjs'
       - 'scripts/finance/database-isolated.sql'
       - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
       - 'scripts/security/client-project-projection.test.mjs'
@@ -89,6 +91,7 @@ jobs:
             scripts/security/admin-project-api-behavior.test.mjs \
             scripts/security/ui3-raw-json-release-gate.test.mjs \
             scripts/security/ui3-contrast.test.mjs \
+            scripts/security/presentation-access-behavior.test.mjs \
             scripts/security/finance-publication.test.mjs \
             scripts/security/operational-integration.test.mjs \
             scripts/security/auth-schema-preflight.test.mjs \

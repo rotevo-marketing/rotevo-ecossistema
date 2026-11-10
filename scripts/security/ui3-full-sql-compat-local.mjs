@@ -1,6 +1,7 @@
 // Disposable in-memory PostgreSQL compatibility lab. No URL, hosted client or credentials.
 // Install @electric-sql/pglite@0.5.16 in a temporary prefix; pass its absolute dist/index.js path.
 import assert from 'node:assert/strict';
+import {baselineFiles as migrations} from './ui3-sql-baseline.mjs';
 import {readFileSync} from 'node:fs';
 import {isAbsolute} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -22,22 +23,7 @@ try{
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid default gen_random_uuid(),bucket_id text);
  alter table storage.objects enable row level security;`);
- const migrations=[
-  'docs/security/lab-legacy-baseline-local-only.sql',
-  'supabase/migrations/20261015_harden_profile_authorization.sql',
-  'supabase/migrations/20261015_team_roles.sql',
-  'supabase/migrations/20261016_staff_role_legacy_boundary.sql',
-  'supabase/migrations/20261016_team_access_audit.sql',
-  'supabase/migrations/20261016210140_activation_privilege_boundary.sql',
-  'supabase/migrations/20261018122353_finance_v2_private_domain.sql',
-  'supabase/migrations/20261019125535_finance_payables_lifecycle.sql',
-  'supabase/migrations/20261020204843_operation_workspace_and_editorial.sql',
-  'supabase/migrations/20261020210903_private_operational_assets.sql',
-  'supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql',
-  'supabase/migrations/20261020234445_finance_receivable_installments.sql',
-  'supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql',
-  'supabase/migrations/20261108_editorial_idea_approvals.sql'
- ];
+
  for(const path of migrations){try{await pg.exec(read(path));}catch(e){throw new Error('Baseline failed at '+path+': '+e.message);}}
  check(true,'fourteen selected baseline SQL files load together in isolated PostgreSQL');
  await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);

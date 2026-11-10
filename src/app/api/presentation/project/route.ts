@@ -1,4 +1,4 @@
-import {emptyWorkspace,workspaceForClient} from "@/lib/operations/model";
+import {workspaceForClient} from "@/lib/operations/model";
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {projectForPresentation,type PresentationProjectRow} from "@/lib/security/projectForPresentation";
@@ -14,6 +14,7 @@ export async function GET(req:NextRequest){
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:identity,error:identityError}=await auth.auth.getUser(header.slice(7));
  if(identityError||!identity.user)return fail(401);
+ if(identity.user.app_metadata?.rotevo_password_reset_required===true)return fail(403);
  const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:profile,error:profileError}=await admin.from("profiles")
  .select("role,client_id").eq("id",identity.user.id).maybeSingle();
@@ -41,7 +42,7 @@ export async function GET(req:NextRequest){
  if(profile.role==="client"){
   const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
   if(workspace.error)return fail(503);
-  if(!workspaceForClient(workspace.data?.data??emptyWorkspace()).modules.includes("planning"))return fail(404);
+  if(!workspaceForClient(workspace.data?.data).modules.includes("planning"))return fail(404);
  }
  const projected=projectForPresentation(project as PresentationProjectRow,profile.role==="strategist");
  if(!projected)return fail(404);

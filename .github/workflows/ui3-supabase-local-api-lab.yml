@@ -1,11 +1,14 @@
-name: UI3 isolated Supabase Auth and PostgREST lab
+name: UI3 isolated integrated Auth API Storage and Finance lab
 on:
   push:
     branches:
       - feat/rotevo-ui2-pilot-20261109
     paths:
-      - 'scripts/security/ui3-supabase-local-fixture.sql'
-      - 'scripts/security/ui3-supabase-local-api-check.mjs'
+      - 'scripts/security/ui3-integrated-local-prepare.mjs'
+      - 'scripts/security/ui3-integrated-local-http.mjs'
+      - 'scripts/security/ui3-sql-baseline.mjs'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - 'src/app/api/presentation/project/route.ts'
       - '.github/workflows/ui3-supabase-local-api-lab.yml'
   workflow_dispatch:
 
@@ -14,7 +17,7 @@ permissions:
 
 jobs:
   local-auth-rest:
-    name: Isolated real Auth + RLS + PostgREST
+    name: Isolated real Auth + HTTP + Storage + financial SQL
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -26,7 +29,7 @@ jobs:
           node-version: '24'
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       - name: Install app dependencies without running application
         run: npm ci --no-audit --no-fund
       - name: Prepare temporary unlinked Supabase project
@@ -36,16 +39,16 @@ jobs:
           mkdir -p "$RUNNER_TEMP/rotevo-ui3-local"
           cd "$RUNNER_TEMP/rotevo-ui3-local"
           supabase init --yes
-          mkdir -p supabase/migrations
-          cp "$GITHUB_WORKSPACE/scripts/security/ui3-supabase-local-fixture.sql" supabase/migrations/20261109000000_ui3_synthetic_auth_rls.sql
+          cd "$GITHUB_WORKSPACE"
+          node scripts/security/ui3-integrated-local-prepare.mjs "$RUNNER_TEMP/rotevo-ui3-local"
       - name: Start ephemeral Supabase Auth and REST services
         shell: bash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/rotevo-ui3-local"
-          supabase start --exclude studio,mailpit,imgproxy,realtime,storage-api,postgres-meta,edge-runtime,logflare,vector,supavisor
+          supabase start --exclude studio,mailpit,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor
           supabase status -o env > "$RUNNER_TEMP/ui3-local-supabase.env"
-      - name: Verify synthetic tenant isolation through real user sign-in and REST API
+      - name: Verify remaining integrated flows with real local services and original HTTP routes
         shell: bash
         run: |
           set -euo pipefail
@@ -58,7 +61,28 @@ jobs:
             *) echo "::error::Not an isolated local Supabase URL"; exit 1;;
           esac
           cd "$GITHUB_WORKSPACE"
-          node scripts/security/ui3-supabase-local-api-check.mjs
+          test "$API_URL" = "http://127.0.0.1:54321"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
+          export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
+          export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
+          export ROTEVO_FINANCE_ENABLED="true"
+          unset VERCEL_ENV
+          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          next_pid=$!
+          trap 'kill "$next_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 40 "$RUNNER_TEMP/ui3-integrated-next.log"
+            exit 1
+          fi
+          node scripts/security/ui3-integrated-local-http.mjs
       - name: Stop isolated local stack
         if: always()
         shell: bash

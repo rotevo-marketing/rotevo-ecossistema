@@ -22,3 +22,6 @@ REVOKE ALL ON public.planning_projects FROM anon,authenticated,PUBLIC;
 GRANT SELECT (id,client_id,title,slug,status) ON public.planning_projects TO authenticated;
 REVOKE ALL ON public.profiles FROM anon,authenticated,PUBLIC;
 GRANT SELECT (id,role,client_id) ON public.profiles TO authenticated;
+
+-- Explicit privileges for fixture management by the local service role.
+GRANT ALL ON public.clients, public.profiles, public.planning_projects TO service_role;

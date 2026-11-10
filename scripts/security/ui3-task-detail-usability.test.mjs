@@ -26,7 +26,8 @@ test("dependencies are project scoped, wrapping and bounded; history is chronolo
  assert.match(source,/<ol className="mt-3 space-y-3">/);
  assert.match(source,/<time dateTime=\{event\.at\}/);
 });
-test("no message submission was added",()=>{
- assert.match(source,/O envio de mensagens ainda não está habilitado/);
+test("task conversation is integrated without loosening the activity log",()=>{
+ assert.match(source,/ProjectConversation/);
+ assert.match(source,/itemType="task"/);
  assert.doesNotMatch(source,/\/api\/task\/comments/);
 });

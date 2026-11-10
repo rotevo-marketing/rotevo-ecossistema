@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/rotevo-ui2-pilot-20261109
+      - release/rotevo-ui3-rc-20261110
     paths:
       - 'src/**'
       - 'scripts/security/ui2-visual-contract.test.mjs'

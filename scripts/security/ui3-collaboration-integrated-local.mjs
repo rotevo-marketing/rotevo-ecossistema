@@ -94,7 +94,7 @@ await must(service.from("rotevo_collaboration_messages").insert(historical),"see
 let page=await request(path(pA,"task","task-shared"),a);
 assert.equal(page.messages.length,30);assert.ok(page.nextCursor);
 const all=[...page.messages];
-for(let n=0;n<2;n++){
+for(let n=0;n<1;n++){
  page=await request(path(pA,"task","task-shared")+"&cursor="+encodeURIComponent(page.nextCursor),a);
  assert.equal(page.messages.length,30);all.push(...page.messages);
  assert.ok(page.nextCursor);

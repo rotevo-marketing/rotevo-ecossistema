@@ -25,6 +25,7 @@ export default function ProjectConversation({projectId,itemType,itemId,contentVe
   finally{setLoading(false);}
  },[projectId,itemType,itemId,contentVersion]);
  useEffect(()=>{void load();},[load]);
+ useEffect(()=>{if(!available)return;const handle=window.setInterval(()=>{if(document.visibilityState==="visible")void load();},30000);return()=>window.clearInterval(handle);},[load,available]);
  async function send(kind:"comment"|"task_approved"|"task_changes_requested"="comment"){
   if(sending||!available)return;
   const text=kind==="task_approved"?(body.trim()||"Aprovo esta tarefa."):body.trim();

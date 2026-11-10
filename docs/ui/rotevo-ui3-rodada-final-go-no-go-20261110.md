@@ -36,3 +36,18 @@
 **Próxima sequência segura**: resolver conflitos do PR sem merge automático; obter backup privado e validar restauração (fora dos artifacts públicos); fechar os testes manuais e auditados; aplicar grants/RPCs com transação, pós-testes e plano de retorno; promover somente o SHA aprovado na Vercel; monitorar domínio e portais.
 
 **Referências**: `docs/ui/rotevo-ui3-homologacao-consolidada-20261109.md`, `docs/ui/rotevo-ui3-main-reconciliation-20261110.md`, `docs/ui/rotevo-ui3-release-preproduction-runbook-20261110.md`.
+
+
+## Atualização de release — PR sem conflitos, validação de segurança (10/11/2026)
+
+Este adendo substitui o estado `mergeable=false / dirty` indicado acima. Após inspeção 3-way do ancestral comum e dos arquivos concorrentes, a branch de RC incorporou o histórico exclusivo da main, manteve os componentes aprovados de UI3 para os 23 arquivos com mudanças concorrentes e preservou o link legado `/admin/equipe` como redirecionamento para `/admin?section=team`. As escolhas e riscos estão em `docs/ui/rotevo-ui3-git-conflict-resolution-20261110.md`.
+
+O commit de reconciliação Git `ddc93dc5935b78a24214ccde9e7f016632836284` tem dois pais e foi aplicado apenas a `release/rotevo-ui3-rc-20261110`. O PR [#5](https://github.com/rotevo-marketing/rotevo-ecossistema/pull/5) agora retorna `mergeable=true`, mas continua draft e não deve ser mesclado à main sem aceite técnico.
+
+O teste `scripts/security/ui3-main-parity.test.mjs` foi corrigido para verificar o parser real `new URLSearchParams(...).get("section")` em vez de variável não existente. O laboratório visual passou a testar também as teclas ArrowRight, Home, End, foco e relação ARIA das abas de Contratos. Não constitui teste manual com leitor de tela.
+
+Um job antigo de `security-checks.yml` falhou por ausência de `npm ci` no grupo que importa `isomorphic-dompurify`; a causa foi corrigida adicionando instalação de dependências travadas. A execução [42815189969](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42815189969) encerrou com **SUCCESS em seis jobs** (incluindo TypeScript, build e segurança). A última execução integrada de teclado ainda precisa ser concluída e conferida no seu próprio SHA antes de ser declarada aprovada.
+
+**Backup:** a pesquisa no Drive conectado não encontrou arquivo atual identificável como backup restaurável de novembro. Isso não prova inexistência em outros locais. O conector do Supabase disponível não fornece uma exportação segura de bytes do banco e do Storage para destino privado. Nenhum dump de dados de clientes foi feito, transmitido ao chat ou colocado em artifact público. O requisito de backup/restauração de produção continua aberto.
+
+**Estado:** merge conflict resolvido no PR de rascunho; segurança de CI aprovada; produção `app.rotevo.com.br` e banco hospedado sem alterações; NO-GO devido a backup/restauração, SQL hospedado G2/RPC e acessibilidade humana pendentes.

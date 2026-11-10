@@ -131,3 +131,25 @@ Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/dat
 **Estado de bloqueio:** nenhuma instância Supabase autenticada isolada ou sessão Work de Cliente/Equipe foi acessada nesta rodada. As verificações são comportamento real dos handlers **com fronteiras Supabase simuladas**, não homologação da rede, login real nem RLS da estrutura hospedada. A publicação continua **NO-GO** até teste do esquema/RPC completo em laboratório, sessões autenticadas e correção específica da permissão de `planning_projects.data` no ambiente hospedado após autorização.
 
 **Próxima execução recomendada:** utilizar ChatGPT Work para testar a prévia protegida com identidades de Cliente e Colaborador autorizadas. Em paralelo, preparar um ambiente Supabase local com baseline completo validado, executar `supabase test db` local e testes de API contra PostgREST/GoTrue reais, sem `--remote` ou vínculos de produção. A criação de Supabase Preview branch hospedada pode gerar custo e exige concordância explícita.
+
+## 12. Homologação local com Supabase Auth + API REST reais
+
+**Resultado: PASS / GitHub Actions:** [workflow 42744174264](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42744174264), commit `c1cb6794`.
+
+No GitHub Actions, foi criada uma instalação **temporária e não vinculada** do Supabase CLI, com componentes reais de Auth, PostgREST e PostgreSQL. A migração `scripts/security/ui3-supabase-local-fixture.sql` cria uma estrutura sintética mínima, separada das migrations reais, com RLS por tenant e GRANT apenas de metadados, sem SELECT em `planning_projects.data`.
+
+A execução `scripts/security/ui3-supabase-local-api-check.mjs` validou:
+- criação de três identidades **fictícias**, exclusivamente no serviço Auth local;
+- login via `signInWithPassword` de Cliente A, Cliente B e colaborador;
+- Cliente A lê somente metadados do projeto A; Cliente B, somente do B;
+- colaborador sem vínculo e anônimo não recebem dados de projetos;
+- leitura da coluna `data` negada aos papéis comuns, inclusive quando vinculados ao tenant legítimo;
+- escrita direta do JSON negada aos clientes;
+- `service_role` continua lendo ambos os registros privados sintéticos;
+- instalação local e contêineres descartados após os testes, com verificação de endereço loopback; **nenhum acesso ao Supabase hospedado**.
+
+O primeiro ensaio da instalação local ([42743990907](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42743990907)) falhou por tratar uma resposta `42501` de acesso anônimo negado como erro, quando essa é uma resposta mais restritiva e segura que retornar zero linhas. Corrigida a asserção, o workflow passou integralmente.
+
+**Limite essencial:** o teste usa Auth e Data API reais, mas um **subconjunto sintético** do banco. Ele ainda não reproduz todas as funções `rotevo_operations`, Financeiro, Storage, contratos, auditoria ou as migrations do schema hospedado. A permissão ampla da coluna `data` no Supabase de produção **não foi corrigida**; permanece um gate de publicação.
+
+**Acessos externos pendentes:** revalidar a prévia UI3 com sessões autorizadas de Cliente e Equipe no navegador Work, cobrindo telas e permissões reais sem escrita. Para aplicar a correção de grants no banco hospedado, é necessária autorização específica após ensaio em schema equivalente e revisão do plano de rollback.

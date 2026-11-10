@@ -148,3 +148,42 @@ test("privileged team mutations deny reset-required sessions before access or ch
   assert.match(src.slice(guard,readProfile),/return fail\(403/);
  }
 });
+
+
+test("client shared modules do not expose resources excluded from the authorized workspace",()=>{
+ const project={
+  id:"isolated-p",client_id:"client-a",title:"Project",slug:"isolated",description:null,status:"in_progress",updated_at:"",
+  data:{portalModules:["planning","execution","content","meetings","campaigns"],
+   deliverySchedule:{research:"2026-11-19"},
+   executionTimeline:[{id:"task",title:"Shared task",visibleToClient:true}],
+   editorialCalendar:[{id:"article",title:"Shared draft",visibleToClient:true}],
+   operationalAgenda:[{id:"meeting",title:"Shared meeting",visibleToClient:true,minutes:"SHARED_MINUTES"}],
+   marketingCampaigns:[{id:"campaign",title:"Shared campaign",visibleToClient:true}],
+   onboardingChecklist:[{id:"onboarding",title:"Shared onboarding",visibleToClient:true}]
+  }
+ };
+ const visible=projectForClient(project,["content"]);
+ assert.deepEqual(visible.data.portalModules,["content"]);
+ assert.equal(visible.data.editorialCalendar.length,1);
+ assert.equal(visible.data.executionTimeline.length,0);
+ assert.equal(visible.data.operationalAgenda.length,0);
+ assert.equal(visible.data.marketingCampaigns.length,0);
+ assert.deepEqual(visible.data.deliverySchedule,{});
+ assert.equal(JSON.stringify(visible).includes("SHARED_MINUTES"),false);
+ const none=projectForClient(project,[]);
+ assert.deepEqual(none.data.portalModules,[]);
+ assert.equal(none.data.editorialCalendar.length,0);
+ assert.equal(none.data.executionTimeline.length,0);
+ assert.equal(none.data.operationalAgenda.length,0);
+ assert.equal(none.data.marketingCampaigns.length,0);
+});
+
+test("client private asset resolver fails closed when workspace or module authorization is absent",()=>{
+ const src=readFileSync(new URL("../../src/lib/operations/assets.ts",import.meta.url),"utf8");
+ assert.match(src,/if\(asset\.purpose==="contract"\)return !!allowed\?\.modules\.includes\("contract"\)/);
+ assert.match(src,/if\(!allowed\?\.modules\.includes\("finance"\)\|\|!asset\.visible_to_client\|\|!asset\.invoice_id\)return false/);
+ assert.match(src,/if\(!asset\.project_id\|\|!allowed\?\.modules\.includes\("planning"\)\)return false/);
+ assert.match(src,/value\.profile\.client_id!==asset\.client_id/);
+ assert.match(src,/value\.caller\.rpc\("rotevo_client_finance"\)/);
+ assert.match(src,/assetReferences\(published\.data\)\.includes\(asset\.id\)/);
+});

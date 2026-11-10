@@ -416,3 +416,17 @@ O CI foi ligado a alterações no componente Contrato. **Nenhuma conta, contrato
 4. Comparar a branch à `main`, validar o candidato exato e promover para produção somente após gates verdes e plano de implantação/monitoramento. `READY` de prévia não equivale a `GO`.
 
 **Produção preservada.** A aprovação desta rodada vale para o laboratório sintético e os testes citados, não para a correção de grants ou a publicação em `app.rotevo.com.br`.
+
+
+## 22. Ensaio gratuito de aborto seguro da proposta de grants (10/11/2026)
+
+**GitHub Actions:** [execução 42806456431](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42806456431), conclusão **SUCCESS**, branch de homologação, sem infraestrutura hospedada adicional.
+
+- Novo fixture `scripts/security/pg-planning-proposal-negative-schema.sql`: simula drift de schema (coluna de metadados esperada ausente) num banco PostgreSQL 17 temporário, com grants antigos intencionalmente permissivos.
+- Workflow `.github/workflows/ui3-disposable-postgres-lab.yml` agora executa **o arquivo SQL exato de proposta** contra esse banco, exige falha pela mensagem de preflight `Project metadata schema drift` e verifica que a transação abortada **não mudou parcialmente os grants**. A condição esperada e o privilégio anterior preservado foram confirmados no log.
+- O mesmo workflow manteve os testes positivos: isolamento sintético de dois tenants, bloqueio de JSON direto, metadados e `service_role` preservados, e execução íntegra da proposta em esquema compatível.
+- **Distinção essencial:** o ensaio demonstra aborto de uma transação **antes da aplicação**, não é um procedimento de rollback operacional depois que a restrição já entrou em produção. Restaurar grants permissivos não é recuperação aceitável.
+
+**Catálogo hospedado consultado apenas por contagens, sem linhas de clientes:** 14 tabelas no schema `public`, 10 no schema `rotevo_finance`, 8 funções em `public`, 22 policies em `public` e 8 versões registradas em `supabase_migrations`. Estes números orientam a reconciliação do laboratório, mas não demonstram equivalência de colunas, triggers, funções, owners, RLS ou grants. O banco hospedado segue com privilégios diretos `SELECT/UPDATE` de `planning_projects.data` para `anon` e `authenticated`, segundo consulta de catálogo anterior.
+
+**Custo adicional:** nenhum. Branch Supabase hospedada não foi criada. O estado geral permanece **NO-GO** até a reconciliação completa do schema/RPC e do plano de retorno, avaliação assistiva residual e implementação autorizada da correção G2.

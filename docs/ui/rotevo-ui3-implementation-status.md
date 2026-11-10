@@ -153,3 +153,23 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Esta é uma **rodada parcial** do Financeiro/Contratos. O workspace administrativo, contratos financeiros e integrações de pagamentos ainda exigem auditoria funcional e revisão UI3.
 - Ainda é necessário confirmar o resultado dos testes automatizados do HEAD e executar homologação autenticada por perfil, viewport e permissão.
 - Não houve edição de tabelas, valores, cobranças, contratos de clientes ou migrações, nem publicação deliberada de produção nesta rodada.
+
+## Rodada — Financeiro e Contratos UI3 (09/11/2026)
+
+### Escopo implementado na branch
+- **Estrategista / Financeiro:** cabeçalho reduzido, navegação compacta entre as 11 seções existentes, componentes de indicadores e alertas mais discretos e superfícies de trabalho consistentes. Nenhum cálculo de caixa, receita ou despesa foi alterado.
+- **Contratos financeiros:** busca por título ou cliente e filtro por situação (rascunho, ativo, pausado, encerrado), com contagem de resultados e estado vazio distinto de ausência de contratos. Criar, editar, pausar, reativar e encerrar mantêm as rotas e autorizações existentes.
+- **Lançamentos:** tabela mais densa, com rolagem horizontal controlada em telas estreitas, preservando valores, saldos, vencimentos, operações de pagamento, cancelamento, edição e documentos.
+- **Fornecedores e assinaturas:** cartões e botões padronizados visualmente, preservando histórico, edição e emissão recorrente.
+- **Portal do Cliente:** resumo financeiro e apresentação contratual compactos; histórico de pagamentos limitado a faturas efetivamente presentes na coleção autorizada e total pago reconciliado com esse mesmo histórico. Documentos continuam via `AuthorizedFileLink` e os pagamentos continuam de confirmação manual.
+- **Regressões:** `scripts/security/ui3-workspace-contract.test.mjs` cobre filtros, preservação dos comandos financeiros, visualização autorizada e integridade de totais. Nenhuma operação financeira de gravação foi executada nesta rodada.
+
+### Verificações necessárias antes de liberar UI3
+- Consultar o resultado dos checks do HEAD (TypeScript, build e contratos de segurança), corrigir qualquer falha.
+- Homologar em navegador autenticado os papéis de financeiro administrador, operador somente leitura e cliente, inclusive vencimentos, pagamentos parciais/estornados e contratos vinculados a mais de um projeto.
+- Testar visualmente desktop/mobile (320, 375, 390, 430, 768, 1024, 1440 px) e foco/teclado para diálogos.
+- Confirmar no servidor que arquivos e cobranças são filtrados por tenant/projeto, sem confiar somente na interface.
+- Não migrar schema nem publicar documentos/financeiro ou alterar valores reais para homologação; manter testes com fixtures.
+
+### Publicação
+- Commit apenas na branch isolada. A integração Git/Vercel pode gerar prévias automáticas; não foi solicitado deployment de produção nem promoção de prévias. Nenhuma implantação deve ser declarada validada sem verificação.

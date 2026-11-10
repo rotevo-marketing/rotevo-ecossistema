@@ -236,6 +236,8 @@ test("UI3 finance administrator retains authorized operations and filtered contr
  const contracts=source("Components/cliente/ClientContracts.tsx");
  const api=source("lib/finance/api.ts");
  assert.match(hub,/rv-ui3-finance-workspace/);
+ assert.match(hub,/rv-ui3-finance-contract-list/);
+ assert.match(hub,/rv-ui3-finance-summary/);
  assert.match(hub,/visibleContracts=state\.contracts\.filter/);
  assert.match(hub,/contractStatus==="all"\|\|c\.status===contractStatus/);
  assert.match(hub,/Buscar contrato por título ou cliente/);
@@ -251,6 +253,7 @@ test("UI3 finance administrator retains authorized operations and filtered contr
  assert.match(lifecycle,/version:invoice!\.version/);
  assert.match(clientFinance,/rv-ui3-finance-summary/);
  assert.match(clientFinance,/data\.settlements\.flatMap\(payment=>/);
+ assert.match(clientFinance,/totalPaid=paidEntries\.reduce/);
  assert.match(clientFinance,/if\(!invoice\)return \[\]/);
  assert.match(contracts,/rv-ui3-client-contracts/);
  assert.match(contracts,/AuthorizedFileLink/);

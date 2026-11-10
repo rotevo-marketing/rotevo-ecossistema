@@ -105,3 +105,15 @@ test("meeting projection hides private notes and explicitly restricted minutes",
  const exposed=JSON.stringify(projection);
  for(const needle of ["SEGREDO_INTERNO","SEGREDO_INTERNO_2","ATA_RESTRITA","ATA_PRIVADA","PRIVATE_ACTION","NAO_PUBLICAR_ACAO","restricted-action","Reunião interna"])assert.equal(exposed.includes(needle),false,needle);
 });
+
+
+test("client project endpoint rejects sessions requiring password reset before privileged reads",()=>{
+ const route=readFileSync(new URL("../../src/app/api/client/projects/route.ts",import.meta.url),"utf8");
+ const guard=route.indexOf("rotevo_password_reset_required");
+ const projectRead=route.indexOf('.from("planning_projects")');
+ assert.ok(guard>=0&&guard<projectRead,"password-reset guard precedes tenant project query");
+ assert.match(route,/identity\.user\.app_metadata\?\.rotevo_password_reset_required===true/);
+ assert.match(route,/if \(!profile \|\| profile\.role!=="client" \|\| !profile\.client_id\) return fail\(403\)/);
+ assert.match(route,/\.eq\("client_id",profile\.client_id\)/);
+ assert.match(route,/projectForClient\(p,modules\)/);
+});

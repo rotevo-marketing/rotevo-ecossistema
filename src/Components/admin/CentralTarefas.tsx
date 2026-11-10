@@ -197,6 +197,26 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   const log=[...(task.activityLog??[]),{at:new Date().toISOString(),summary:"Alteração: "+changed.map(k=>({status:"situação",priority:"prioridade",owner:"responsável",dueDate:"prazo",checklist:"checklist"} as Record<string,string>)[k]??k).join(", ")}].slice(-100);
   await persist(project,timeline.map(t=>t.id===task.id?{...t,...patch,...completionPatch,activityLog:log}:t),project.id+":"+task.id,"Tarefa atualizada.");
  }
+ async function bulkUpdate(action:"archive"|"trash"|"restoreArchive"|"restoreTrash"){
+  const wanted=selectedItems.filter(x=>action==="archive"?!x.task.archivedAt&&!x.task.deletedAt:action==="trash"?!x.task.deletedAt:action==="restoreTrash"?!!x.task.deletedAt:!!x.task.archivedAt&&!x.task.deletedAt);
+  if(!wanted.length)return;
+  const labels={archive:"Arquivar",trash:"Enviar para a Lixeira",restoreArchive:"Restaurar do Arquivo",restoreTrash:"Restaurar da Lixeira"};
+  if(!window.confirm(labels[action]+" "+wanted.length+" tarefa(s)?"))return;
+  const group=[...new Set(wanted.map(x=>x.project.id))];
+  let okCount=0;
+  for(const id of group){
+   const target=projects.find(p=>p.id===id);
+   if(!target)continue;
+   const ids=new Set(wanted.filter(x=>x.project.id===id).map(x=>x.task.id));
+   const stamp=new Date().toISOString();
+   const next=(target.data?.executionTimeline??[]).map(task=>!ids.has(task.id)?task:action==="archive"?{...task,archivedAt:stamp}:action==="trash"?{...task,deletedAt:stamp}:action==="restoreArchive"?{...task,archivedAt:undefined}:{...task,deletedAt:undefined});
+   const ok=await persist(target,next,id+":bulk-"+action,labels[action]+": "+ids.size+" tarefa(s).");
+   if(!ok)break;
+   okCount+=ids.size;
+   setSelectedKeys(prev=>prev.filter(key=>!key.startsWith(id+":")));
+  }
+  if(okCount)setNotice(labels[action]+": "+okCount+" tarefa(s) atualizada(s)."+(okCount<wanted.length?" Algumas permaneceram sem alteração; confira o erro e tente novamente.":""));
+ }
  async function createQuickTask(){
   const title=quickTitle.trim();
   const targetId=projectId!=="all"?projectId:quickProjectId;

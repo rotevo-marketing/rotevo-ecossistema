@@ -16,6 +16,7 @@ function safe(u:string){if(!u)return true;try{return new URL(u).protocol==="http
 export default function EditorialManager({projects,onChanged}:{projects:Project[];onChanged:(id:string,data:Project["data"],updatedAt:string)=>void}){
  const [projectId,setProjectId]=useState(""),[editing,setEditing]=useState<EditorialItem|null>(null);
  const [saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+ const [focusItem,setFocusItem]=useState<{projectId:string;contentId:string;channel:string;publishDate:string;nonce:number}|undefined>();
  const project=projects.find(p=>p.id===projectId);
  const items=useMemo(()=>Array.isArray(project?.data?.editorialCalendar)?project.data.editorialCalendar:[],[project]);
  const baseline=editing?.id?items.find(item=>item.id===editing.id):blank;
@@ -56,7 +57,8 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
    const result=await response.json();
    if(!result?.project||typeof result.project.updated_at!=="string"){setError("Não foi possível confirmar a atualização do conteúdo.");return;}
    onChanged(project.id,result.project.data as Project["data"],result.project.updated_at);
-   setEditing(null);setNotice("Conteúdo atualizado com sucesso.");
+   const saved=next.find(x=>x.id===editing?.id)??next[next.length-1];if(saved)setFocusItem({projectId:project.id,contentId:saved.id,channel:saved.channel,publishDate:saved.publishDate,nonce:Date.now()});
+   setEditing(null);setNotice("Conteúdo atualizado. Canal e mês selecionados no calendário.");
   }catch{setError("Falha de conexão ao salvar o conteúdo.");}
   finally{setSaving(false);}
  }
@@ -64,7 +66,8 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
   if(!editing||!project)return;
   if(editing.title.trim().length<3){setError("Informe o título do conteúdo.");return;}
   if(!validOperationalDate(editing.publishDate)){setError("Informe uma data de publicação válida.");return;}
-  if(!safe(editing.driveUrl??"")||!safe(editing.briefUrl??"")){setError("Os links de roteiro e material precisam usar HTTPS.");return;}
+  if((editing.owner??"").length>120||!["low","normal","high","urgent"].includes(editing.priority??"normal")){setError("Responsável ou prioridade inválidos.");return;}
+   if(!safe(editing.driveUrl??"")||!safe(editing.briefUrl??"")){setError("Os links de roteiro e material precisam usar HTTPS.");return;}
    const refs=(editing.references??[]).filter(ref=>ref.url.trim()||ref.note.trim());
    if(refs.length>10||refs.some(ref=>!ref.url.trim()||ref.url.length>2048||!safe(ref.url.trim())||ref.note.length>400)){setError("Informe até 10 referências com links HTTPS válidos e observações de até 400 caracteres.");return;}
   if(!editorialChannels.some(channel=>channel.value===editing.channel)&&!(editing.id&&items.some(item=>item.id===editing.id&&item.channel===editing.channel))){setError("Selecione um canal da lista.");return;}
@@ -85,12 +88,12 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  }
  return <div className="rv-ui2-module rv-ui2-editorial rv-ui3-editorial mt-3 space-y-3">
   {notice&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-  <EditorialCalendar projects={projects} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
+  <EditorialCalendar projects={projects} focusItem={focusItem} onNew={id=>{if(!discard())return;setProjectId(id||projects[0]?.id||"");setEditing({...blank});setError("");setNotice("");}} onEdit={(id,item)=>{if(!discard())return;setProjectId(id);setEditing({...item});setError("");setNotice("");}}/>
   {project&&<details className="rv-ui3-editorial-approval-history border-t border-[#E3E6ED] py-3">
    <summary className="min-h-9 cursor-pointer rounded-lg px-2 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#EDEAFF]">Consultar histórico de aprovações do projeto</summary>
    <EditorialApprovalsPanel key={project.id} projectId={project.id} contentTitles={Object.fromEntries(items.map(item=>[item.id,item.title]))}/>
   </details>}
-  {project&&editing&&<div className="fixed inset-0 z-[120] flex justify-end"><button type="button" aria-label="Fechar editor de conteúdo" onClick={close} className="absolute inset-0 bg-[#090D1C]/50"/><aside role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 h-full w-full max-w-[690px] overflow-y-auto border-l border-[#E3E6ED] bg-white p-5 shadow-2xl sm:p-7">
+  {project&&editing&&<div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-5"><button type="button" aria-label="Fechar editor de conteúdo" onClick={close} className="absolute inset-0 bg-[#090D1C]/55"/><section role="dialog" aria-modal="true" aria-label="Editor de conteúdo" className="relative z-10 flex h-[min(94dvh,940px)] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#E3E6ED] bg-white shadow-2xl"><div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7">
     <DialogFocus onClose={close}/>{dirty&&<p role="status" className="rv-unsaved">Alterações não salvas no conteúdo</p>}<h3 className="border-b border-[#E3E6ED] pb-3 text-base font-semibold text-[#323647]">{editing.id?"Editar conteúdo":"Novo conteúdo"}</h3>
     {!editing.id&&<label className="mt-4 block text-xs font-medium">Projeto<select value={projectId} onChange={e=>{setProjectId(e.target.value);setError("");}} className="mt-1 block w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm">{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>}
     {error&&<p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -102,7 +105,9 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium">Data prevista *<input type="date" value={editing.publishDate} onChange={e=>setEditing({...editing,publishDate:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Versão<input value={editing.version??""} maxLength={30} onChange={e=>setEditing({...editing,version:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium">Situação<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value as EditorialItem["status"]})} className="mt-1 block w-full cursor-pointer rounded-lg border px-3 py-2.5 text-sm">{Object.entries(editorialStatuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
-     <label className="text-xs font-medium">Tarefa relacionada<select value={editing.relatedTaskId??""} onChange={e=>setEditing({...editing,relatedTaskId:e.target.value||undefined})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Nenhuma tarefa vinculada</option>{(project.data?.executionTimeline??[]).map(task=><option key={task.id} value={task.id}>{task.title}</option>)}</select><span className="mt-1 block text-[11px] text-[#697386]">Permite consultar a decisão do cliente na Central de Tarefas. Não conclui a tarefa automaticamente.</span></label>
+     <label className="text-xs font-medium">Responsável<input value={editing.owner??""} maxLength={120} placeholder="Nome do responsável" onChange={e=>setEditing({...editing,owner:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
+      <label className="text-xs font-medium">Prioridade<select value={editing.priority??"normal"} onChange={e=>setEditing({...editing,priority:e.target.value as EditorialItem["priority"]})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="low">Baixa</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label>
+      <label className="text-xs font-medium">Tarefa relacionada<select value={editing.relatedTaskId??""} onChange={e=>setEditing({...editing,relatedTaskId:e.target.value||undefined})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"><option value="">Nenhuma tarefa vinculada</option>{(project.data?.executionTimeline??[]).map(task=><option key={task.id} value={task.id}>{task.title}</option>)}</select><span className="mt-1 block text-[11px] text-[#697386]">Permite consultar a decisão do cliente na Central de Tarefas. Não conclui a tarefa automaticamente.</span></label>
      <div className="rv-ui3-editorial-form-group sm:col-span-2 mt-3 border-t border-[#E3E6ED] pt-4"><h4 className="text-sm font-semibold">Direcionamento estratégico</h4><p className="text-xs text-[#697386]">Explique o conteúdo de forma simples para facilitar a aprovação.</p></div>
      <label className="text-xs font-medium sm:col-span-2">Resumo da ideia *<textarea value={editing.ideaSummary??""} onChange={e=>setEditing({...editing,ideaSummary:e.target.value})} rows={2} maxLength={1200} placeholder="Em poucas frases, qual é a proposta?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Objetivo do conteúdo *<input value={editing.objective??""} onChange={e=>setEditing({...editing,objective:e.target.value})} maxLength={300} placeholder="O que este conteúdo pretende alcançar?" className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
@@ -124,7 +129,6 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
-    <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={close} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
-   </aside></div>}
+    </div><footer className="flex shrink-0 justify-end gap-2 border-t border-[#E3E6ED] bg-white px-4 py-3 sm:px-7"><button type="button" onClick={close} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></footer></section></div>}
  </div>;
 }

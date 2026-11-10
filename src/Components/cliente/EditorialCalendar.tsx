@@ -7,13 +7,13 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
 import EditorialDecision from "@/Components/cliente/EditorialDecision";
-export type EditorialItem={id:string;title:string;channel:string;format:string;publishDate:string;caption?:string;driveUrl?:string;version?:string;status:"idea"|"idea_pending"|"idea_approved"|"production"|"recording"|"review"|"awaiting_client"|"changes_requested"|"approved"|"scheduled"|"published";visibleToClient?:boolean;reviewNotes?:string;relatedTaskId?:string;ideaSummary?:string;objective?:string;audience?:string;funnelStage?:string;keyMessage?:string;cta?:string;briefUrl?:string;references?:{url:string;note:string}[]};
+export type EditorialItem={id:string;title:string;channel:string;format:string;publishDate:string;caption?:string;driveUrl?:string;version?:string;status:"idea"|"idea_pending"|"idea_approved"|"production"|"recording"|"review"|"awaiting_client"|"changes_requested"|"approved"|"scheduled"|"published";visibleToClient?:boolean;reviewNotes?:string;owner?:string;priority?:"low"|"normal"|"high"|"urgent";relatedTaskId?:string;ideaSummary?:string;objective?:string;audience?:string;funnelStage?:string;keyMessage?:string;cta?:string;briefUrl?:string;references?:{url:string;note:string}[]};
 export type EditorialProject={id:string;title:string;clients?:{name:string}|{name:string}[]|null;data:{editorialCalendar?:EditorialItem[]}|null};
 export const editorialStatuses:Record<EditorialItem["status"],string>={idea:"Ideia",idea_pending:"Ideia aguardando aprovação",idea_approved:"Ideia aprovada",production:"Em produção",recording:"Em gravação",review:"Revisão interna",awaiting_client:"Aguardando aprovação",changes_requested:"Ajustes solicitados",approved:"Aprovado",scheduled:"Agendado",published:"Publicado"};
 const projectLabel=(p:EditorialProject)=>{const c=Array.isArray(p.clients)?p.clients[0]:p.clients;return c?.name?`${c.name} · ${p.title}`:p.title;};
 const fmt=(d:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem data"};
 const safe=(s?:string)=>{try{const x=new URL(s??"");return x.protocol==="https:"?x.href:null;}catch{return null;}};
-export default function EditorialCalendar({projects,clientView=false,onNew,onEdit}:{projects:EditorialProject[];clientView?:boolean;onNew?:(projectId:string)=>void;onEdit?:(projectId:string,item:EditorialItem)=>void}){
+export default function EditorialCalendar({projects,clientView=false,onNew,onEdit,focusItem}:{projects:EditorialProject[];clientView?:boolean;onNew?:(projectId:string)=>void;onEdit?:(projectId:string,item:EditorialItem)=>void;focusItem?:{projectId:string;contentId:string;channel:string;publishDate:string;nonce:number}}){
  const [month,setMonth]=useState(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;});
  const [preferredView,setView]=useState<"month"|"list">("month");
  const compact=useCompactLayout();
@@ -23,6 +23,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const [statusFilter,setStatusFilter]=useState("all");
  const [channelFilter,setChannelFilter]=useState("all");
  const [dayFilter,setDayFilter]=useState("");
+ useEffect(()=>{if(!focusItem)return;setProjectFilter(focusItem.projectId);setChannelFilter(focusItem.channel);if(focusItem.publishDate)setMonth(focusItem.publishDate.slice(0,7));setDayFilter("");setView("month");setSelected(null);},[focusItem]);
  const [clientDecisions,setClientDecisions]=useState<{project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";comment?:string|null;decided_at?:string}[]>([]);
  const [ideaDecisions,setIdeaDecisions]=useState<typeof clientDecisions>([]);
  const items=useMemo(()=>projects.flatMap(p=>(Array.isArray(p.data?.editorialCalendar)?p.data.editorialCalendar:[])

@@ -30,8 +30,12 @@ test("editorial list is grouped by customer and offers six requested columns",()
  assert.match(calendar,/onClick=\{\(\)=>setSelected\(item\.projectId\+":"\+item\.id\)\}/);
 });
 test("task-like editorial metadata is optional and bounded on server",()=>{
- assert.match(calendar,/owner\?:string;priority\?:"low"/);
- assert.match(manager,/value=\{editing\.owner\?\?""\}/);
+ assert.match(calendar,/owner\?:string;ownerUserId\?:string;priority\?:"low"/);
+ assert.match(calendar,/kind="people"/);
+ assert.match(calendar,/clientPhotos/);
+ assert.match(manager,/team_members/);
+ assert.match(manager,/ownerUserId,owner/);
+ assert.match(manager,/value=\{editing\.ownerUserId\?\?""\}/);
  assert.match(manager,/value=\{editing\.priority\?\?"normal"\}/);
  assert.match(validator,/const editorial=root\.editorialCalendar/);
  assert.match(validator,/item\.owner\.length>120/);

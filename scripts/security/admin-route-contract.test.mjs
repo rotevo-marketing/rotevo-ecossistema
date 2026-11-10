@@ -159,7 +159,8 @@ test("administrative team controls are gated by authenticated server rollout cap
  assert.match(directoryRoute,/ROTEVO_TEAM_ASSIGNMENTS_ENABLED==="true"/);
  assert.match(directoryRoute,/ROTEVO_TEAM_MEMBER_STATUS_ENABLED==="true"/);
  assert.match(directoryRoute,/ROTEVO_TEAM_INVITES_ENABLED==="true"/);
- assert.match(teamDirectory,/capabilities\.invites&&showCreate&&<TeamInviteForm/);
+ assert.match(teamDirectory,/capabilities\.invites&&showCreate&&<div/);
+ assert.match(teamDirectory,/<TeamInviteForm/);
  assert.match(teamMemberControls,/if\(!editable\|\|!capabilities\.permissions/);
  assert.match(teamMemberControls,/capabilities\.memberStatus/);
  assert.match(teamMemberControls,/capabilities\.assignments/);

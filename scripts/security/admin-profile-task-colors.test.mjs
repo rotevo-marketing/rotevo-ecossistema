@@ -70,7 +70,7 @@ test("failed admin API loads show a retry rather than false zero project totals"
 test("central task table has six meaningful columns and compact controls",()=>{
  for(const col of ["Tarefa","Projeto","Responsável","Situação","Prioridade","Prazo"])assert.ok(tasks.includes('"'+col+'"'),col);
  for(const term of ["Nova tarefa","Filtrar projeto","Filtrar responsável","Filtrar prioridade","Buscar tarefas","Ordenar tarefas","Kanban"])assert.ok(tasks.includes(term),term);
- assert.match(tasks,/value="all">Todos os projetos/);
+ assert.match(tasks,/role="option" aria-selected=\{value==="all"\}/);
  assert.match(tasks,/href=\{projectLink\(project\)\}/);
  assert.match(tasks,/visibleToClient:false/);
  assert.match(tasks,/expectedUpdatedAt:project.updated_at/);
@@ -84,7 +84,8 @@ test("task details open from list and kanban and save through protected project 
  assert.match(tasks,/onClick=\{\(\)=>void saveDetails\(\)\}/);
  assert.match(tasks,/visibleToClient:detailDraft.visibleToClient/);
  assert.match(tasks,/expectedUpdatedAt:project.updated_at/);
- assert.match(tasks,/new URL\(driveUrl\).protocol!=="https:"/);
+ assert.match(tasks,/validHttps\(driveUrl\)/);
+ assert.match(tasks,/u.protocol==="https:"&&!u.username&&!u.password/);
  assert.match(tasks,/Material no Google Drive/);
 });
 test("task operations use the selected official Tabler icons",()=>{

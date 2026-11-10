@@ -26,7 +26,7 @@ test("editor explains that revised content needs a new version after client deci
  const source=readFileSync(new URL("Components/admin/EditorialManager.tsx",root),"utf8");
  assert.match(source,/const decided=decisions\.some\(row=>row\.content_id===editing\.id/);
  assert.match(source,/row\.content_version===\(editing\.version\?\?""\)/);
- assert.match(source,/original\.version===editing\.version&&materialFields\.some/);
+ assert.match(source,/original\.version===editing\.version&&\(referencesChanged\|\|materialFields\.some/);
  assert.match(source,/Informe um novo número de versão antes de alterar o material/);
 });
 

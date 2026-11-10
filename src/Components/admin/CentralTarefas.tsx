@@ -33,25 +33,29 @@ const getClient=(p:TaskProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients
 const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const formatted=(s?:string)=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s)?`${s.slice(8,10)}/${s.slice(5,7)}`:"Sem prazo";
 const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
-const selectClass="max-w-full rounded-lg border border-[#E1E5EE] bg-white px-3 py-2 text-xs font-medium text-[#31394B] focus:outline-none focus:ring-2 focus:ring-[#6D35F5]";
 const buttonClass="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E3E6ED] bg-white px-3 py-2 text-xs font-semibold text-[#485368] transition-colors hover:border-[#D8D2FF] hover:bg-[#F1EEFF]";
 type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
 function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean;photos?:Record<string,string>}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState("");
  const pickerRef=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(!open)return;const close=(event:PointerEvent)=>{if(!pickerRef.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==="Escape")setOpen(false);};document.addEventListener("pointerdown",close);document.addEventListener("keydown",escape);return()=>{document.removeEventListener("pointerdown",close);document.removeEventListener("keydown",escape);};},[open]);
+ useEffect(()=>{if(!open)return;const close=(event:PointerEvent)=>{if(!pickerRef.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpen(false);pickerRef.current?.querySelector<HTMLButtonElement>("button")?.focus();}};document.addEventListener("pointerdown",close);document.addEventListener("keydown",escape);return()=>{document.removeEventListener("pointerdown",close);document.removeEventListener("keydown",escape);};},[open]);
  const current=projects.find(p=>p.id===value);
- const selectedName=current?(getClient(current)?.name??"Cliente"):"Todos os projetos";
+ const selectedName=current?(getClient(current)?.name??"Cliente"):(allowAll?"Todos os projetos":"Selecione o projeto");
 
  const options=projects.filter(p=>((getClient(p)?.name??"Cliente")+" "+p.title).toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
  return <div ref={pickerRef} className="relative min-w-0">
-  <button type="button" aria-expanded={open} aria-haspopup="listbox" className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-lg border border-[#DDE2ED] bg-white px-2.5 py-2 text-left hover:border-[#A58ADB]" onClick={()=>{setOpen(v=>!v);setQuery("");}}>
+  <button type="button" aria-label={allowAll?"Filtrar projeto":"Projeto da tarefa"} aria-expanded={open} aria-haspopup="listbox" className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-lg border border-[#DDE2ED] bg-white px-2.5 py-2 text-left hover:border-[#A58ADB]" onClick={()=>{setOpen(v=>!v);setQuery("");}}>
    <TaskAvatar name={selectedName} src={current?photos[getClient(current)?.id??""]:null} size={32}/>
    <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{selectedName}</span>{current&&<span className="block truncate text-[11px] text-[#718096]">{current.title}</span>}</span><RotevoTablerIcon name={open?"chevron-up":"chevron-down"} size={17}/>
   </button>
   {open&&<div className="absolute left-0 top-full z-50 mt-1 w-full min-w-[245px] max-w-[440px] rounded-xl border border-[#DCE2EB] bg-white p-2 shadow-xl">
-   <input autoFocus type="search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setOpen(false);}} aria-label="Buscar cliente ou projeto" placeholder="Buscar cliente ou projeto..." className="mb-2 w-full rounded-lg border border-[#E0E4EC] p-2 text-sm"/>
-   <div role="listbox" aria-label="Selecionar projeto" className="max-h-56 overflow-y-auto">
+   <input autoFocus type="search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();setOpen(false);pickerRef.current?.querySelector<HTMLButtonElement>("button")?.focus();}else if(e.key==="ArrowDown"){e.preventDefault();pickerRef.current?.querySelector<HTMLElement>('[role="option"]')?.focus();}}} aria-label="Buscar cliente ou projeto" placeholder="Buscar cliente ou projeto..." className="mb-2 w-full rounded-lg border border-[#E0E4EC] p-2 text-sm"/>
+   <div role="listbox" aria-label="Selecionar projeto" onKeyDown={event=>{
+    const options=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="option"]'));
+    const index=options.indexOf(document.activeElement as HTMLElement);
+    const next=event.key==="ArrowDown"?(index+1)%options.length:event.key==="ArrowUp"?(index-1+options.length)%options.length:event.key==="Home"?0:event.key==="End"?options.length-1:null;
+    if(next!==null&&options.length){event.preventDefault();options[next]?.focus();}
+   }} className="max-h-56 overflow-y-auto">
     {allowAll&&<button type="button" role="option" aria-selected={value==="all"} onClick={()=>{onChange("all");setOpen(false);}} className="w-full cursor-pointer rounded-lg p-2 text-left text-xs hover:bg-[#F3EFFF]">Todos os projetos</button>}
     {options.map(p=>{const name=getClient(p)?.name??"Cliente";return <button type="button" role="option" aria-selected={value===p.id} key={p.id} onClick={()=>{onChange(p.id);setOpen(false);}} className={"flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 text-left hover:bg-[#F3EFFF] "+(value===p.id?"bg-[#F3EFFF]":"")}><TaskAvatar name={name} src={photos[getClient(p)?.id??""]} size={32}/><span className="min-w-0"><span className="block truncate text-xs font-semibold">{name}</span><span className="block truncate text-[11px] text-[#718096]">{p.title}</span></span></button>;})}
     {!options.length&&<p className="p-2 text-xs text-[#718096]">Nenhum projeto encontrado.</p>}
@@ -63,6 +67,13 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
  const [section,setSection]=useState<"active"|"completed"|"archived">("active");
  const [completedWindow,setCompletedWindow]=useState<"7"|"30"|"90"|"all">("30");
+ const [completionNow,setCompletionNow]=useState(()=>Date.now());
+ useEffect(()=>{
+  const refresh=()=>setCompletionNow(Date.now());
+  window.addEventListener("focus",refresh);
+  const timer=window.setInterval(refresh,60000);
+  return()=>{window.removeEventListener("focus",refresh);window.clearInterval(timer);};
+ },[]);
  const [page,setPage]=useState(1);
  const pageSize=20;
  const [mineOnly,setMineOnly]=useState(false),[currentUserId,setCurrentUserId]=useState<string|null>(null);
@@ -118,7 +129,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
  const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
  const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
   (section==="archived"?!!task.archivedAt:!task.archivedAt&&(section==="active"?isOpen(task):task.status==="completed"))&&
-  (section!=="completed"||completedWindow==="all"||!!task.completedAt&&new Date(task.completedAt).getTime()>=Date.now()-Number(completedWindow)*86400000)&&
+  (section!=="completed"||completedWindow==="all"||!!task.completedAt&&new Date(task.completedAt).getTime()>=completionNow-Number(completedWindow)*86400000)&&
   (projectId==="all"||project.id===projectId)&&
   (!mineOnly||(!!currentUserId&&task.ownerUserId===currentUserId))&&
   (owner==="all"||(owner==="unassigned"?!task.owner?.trim():task.owner?.trim()===owner))&&
@@ -138,7 +149,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
    order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
    urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
- }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId,section,completedWindow]);
+ }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId,section,completedWindow,completionNow]);
  const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
  const paginated=filtered.slice((Math.min(page,pages)-1)*pageSize,Math.min(page,pages)*pageSize);
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
@@ -245,7 +256,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
      <button type="button" aria-label="Buscar tarefas" aria-expanded={showSearch} onClick={()=>setShowSearch(v=>!v)} className={buttonClass}><RotevoTablerIcon name="search" size={17} stroke={1.9}/> <span className="hidden sm:inline">Buscar</span></button>
      <button type="button" aria-label="Mostrar filtros" aria-expanded={showFilters} onClick={()=>setShowFilters(v=>!v)} className={buttonClass}><RotevoTablerIcon name="filter" size={17} stroke={1.9}/> <span className="hidden sm:inline">Filtros</span></button>
      <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#E3E7F0] bg-white px-2"><RotevoTablerIcon name="arrows-sort" size={17}/><select aria-label="Ordenar tarefas" className="max-w-[150px] cursor-pointer border-0 bg-transparent text-xs font-medium text-[#090D1C] outline-none" value={order} onChange={e=>setOrder(e.target.value as typeof order)}><option value="urgency">Prioridades primeiro</option><option value="due">Prazo</option><option value="priority">Prioridade</option></select></label>
-     <div className="flex overflow-hidden rounded-lg border border-[#E1E5EE]"><button type="button" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`inline-flex items-center gap-2 px-3 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="list" size={16} stroke={1.9}/> <span className="hidden sm:inline">Lista</span></button><button type="button" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`inline-flex items-center gap-2 border-l px-3 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="layout-kanban" size={16} stroke={1.9}/> <span className="hidden sm:inline">Kanban</span></button></div>
+     <div className="flex overflow-hidden rounded-lg border border-[#E1E5EE]"><button type="button" aria-label="Lista" aria-pressed={view==="list"} onClick={()=>setView("list")} className={`inline-flex items-center gap-2 px-3 py-2 text-xs ${view==="list"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="list" size={16} stroke={1.9}/> <span className="hidden sm:inline">Lista</span></button><button type="button" aria-label="Kanban" aria-pressed={view==="board"} onClick={()=>setView("board")} className={`inline-flex items-center gap-2 border-l px-3 py-2 text-xs ${view==="board"?"bg-[#EDE8FF] font-semibold text-[#6034B7]":""}`}><RotevoTablerIcon name="layout-kanban" size={16} stroke={1.9}/> <span className="hidden sm:inline">Kanban</span></button></div>
     </div>
    </div>
    <nav aria-label="Organização das tarefas" className="mt-4 flex flex-wrap gap-2">{([{id:"active",label:"Ativas"},{id:"completed",label:"Concluídas"},{id:"archived",label:"Arquivo"}] as const).map(tab=><button type="button" key={tab.id} aria-pressed={section===tab.id} onClick={()=>{setSection(tab.id);setPage(1);setStatus("all");setDeadline("all");setPeriodMonth("");setPeriodMode(tab.id==="completed"?"completed":"due");}} className={"cursor-pointer rounded-lg border px-4 py-2 text-xs font-semibold "+(section===tab.id?"border-[#6D35F5] bg-[#F0EBFF] text-[#6034B7]":"border-[#DCE2EC] text-[#525B70]")}>{tab.label}</button>)}</nav>

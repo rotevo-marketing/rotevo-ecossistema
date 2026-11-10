@@ -108,6 +108,27 @@ const clientFinance=await request('/api/client/finance',a);
 assert.ok(clientFinance.invoices.some(i=>i.id===invoice.id));
 assert.ok(!/TENANT_B_PRIVATE|INTERNAL_EXPENSE_PRIVATE|INTERNAL_SUPPLIER_PRIVATE/.test(JSON.stringify(clientFinance)));
 pass('original financial HTTP routes and SQL: partial settlement/idempotency, read-only staff, client write denial and expense/other-tenant privacy');
+// Contract and invoice documents exercise their separate authorization branches.
+const pdf=Buffer.from('%PDF-1.4\n% SYNTHETIC DISPOSABLE STORAGE FIXTURE ONLY\n%%EOF\n');
+async function uploadPdf(purpose){
+ const form=new FormData();form.set('file',new File([pdf],'synthetic-'+purpose+'.pdf',{type:'application/pdf'}));
+ form.set('purpose',purpose);form.set('clientId',cA);form.set('visibleToClient','true');
+ if(purpose==='invoice')form.set('invoiceId',invoice.id);
+ return request('/api/assets',admin,{method:'POST',body:form,status:201});
+}
+const contractAsset=await uploadPdf('contract'),invoiceAsset=await uploadPdf('invoice');
+const contracts=[{id:'synthetic-contract',title:'Synthetic contract',status:'active',service:'Synthetic service',summary:'Synthetic only',scope:[],startDate:'2026-11-01',endDate:'',signedDate:'',documentUrl:'asset://'+contractAsset.id,visibleToClient:true,history:[]}];
+const contractWorkspace={...workspaceA,contracts};assert.ok(validWorkspace(contractWorkspace));
+await must(service.from('client_workspaces').update({data:contractWorkspace}).eq('client_id',cA),'share synthetic contract');
+const ownWorkspace=await request('/api/client/workspace',a);assert.equal(ownWorkspace.workspace.contracts[0].documentUrl,'asset://'+contractAsset.id);
+const ownFinance=await request('/api/client/finance',a);assert.ok(ownFinance.documents.some(x=>x.id===invoiceAsset.id));
+for(const id of [contractAsset.id,invoiceAsset.id]){
+ const permitted=await request('/api/assets/resolve',a,{method:'POST',body:{ids:[id]}});
+ local(permitted.links[id]);const file=await fetch(permitted.links[id]);assert.equal(file.status,200);assert.deepEqual(Buffer.from(await file.arrayBuffer()),pdf);
+ await request('/api/assets/resolve',b,{method:'POST',body:{ids:[id]},status:403});
+ if(id===contractAsset.id)await request('/api/assets/resolve',reader,{method:'POST',body:{ids:[id]},status:403});
+}
+pass('contract/invoice synthetic document links and private byte retrieval, separate authorization branches and tenant/staff denials (not PDF rendering or signing)');
 await must(service.from('client_workspaces').delete().eq('client_id',cB),'remove synthetic workspace for fail-closed check');
 await request('/api/presentation/project?slug=integrated-b',b,{status:404});
 await request('/api/client/finance',b,{status:403});

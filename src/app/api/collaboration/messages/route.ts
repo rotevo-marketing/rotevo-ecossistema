@@ -4,7 +4,7 @@ import {canAccessConversation,parseMessageBody,parseResource,requiredModule} fro
 import {workspaceForClient} from "@/lib/operations/model";
 
 export const runtime="nodejs";
-const fail=(status:number)=>NextResponse.json({error:"Conversa indisponível ou acesso não autorizado."},{status,headers:{"Cache-Control":"no-store"}});
+const fail=(status:number)=>NextResponse.json({error:status===429?"Limite de mensagens atingido. Tente novamente em um minuto.":"Conversa indisponível ou acesso não autorizado."},{status,headers:{"Cache-Control":"no-store"}});
 const safe=(payload:unknown,status=200)=>NextResponse.json(payload,{status,headers:{"Cache-Control":"no-store"}});
 type Params={projectId:string;resourceId:string;resourceType:"task"|"content"};
 type Message={id:string;project_id:string;resource_type:string;resource_id:string;author_user_id:string;author_role:string;body:string;created_at:string};

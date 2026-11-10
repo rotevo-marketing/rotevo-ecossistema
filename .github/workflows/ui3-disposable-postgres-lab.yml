@@ -5,6 +5,8 @@ on:
       - feat/rotevo-ui2-pilot-20261109
     paths:
       - 'scripts/security/pg-planning-json-lab.sql'
+      - 'scripts/security/pg-planning-proposal-validation.sql'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
       - '.github/workflows/ui3-disposable-postgres-lab.yml'
   workflow_dispatch:
 
@@ -49,3 +51,5 @@ jobs:
           psql -Atqc "select current_database(), inet_server_addr(), version()"
       - name: Simulate tenant RLS and JSON column privilege restriction
         run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-json-lab.sql
+      - name: Verify exact release proposal SQL on disposable PostgreSQL
+        run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-proposal-validation.sql

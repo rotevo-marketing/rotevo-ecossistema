@@ -227,3 +227,14 @@ A homologação do estrategista identificou que o módulo visualizado podia dive
 - Não há alterações de dados, schema, RLS, publicações documentais ou produção. Asserções automatizadas e homologação real na nova prévia precisam ser confirmadas antes do aceite.
 
 Pendências prioritárias após o teste deste ajuste: validar navegador Voltar/Avançar e recarga em sessão autenticada, perfis reais de cliente/staff em contas autorizadas, financeiro isolado com fixtures, persistência HTML e matriz de acessibilidade.
+
+## Homologação de perfis e permissões — revisão de código (10/11/2026)
+
+- **Baseline:** a correção de histórico e URL do estrategista passou no workflow do GitHub Actions `42733765798`. A homologação de navegação por navegador autenticado permanece distinta dos testes automatizados.
+- **Cliente:** a rota `/api/client/projects` valida JWT, perfil `client`, `client_id` derivado da identidade, consulta de projetos filtrada pelo tenant, módulos habilitados e projeção `projectForClient` de campos explicitamente compartilháveis.
+- **Equipe:** `/api/team/my-access` exige perfil staff ativo; apresenta projetos apenas se houver `projects.read` e atribuição explícita. `/api/team/directory` exige estrategista administrador ativo. `/api/admin/projects` aplica a política de acesso por equipe quando a flag de enforcement está habilitada.
+- **Correção de consistência de autorização:** as rotas de consulta `/api/client/projects`, `/api/team/directory` e `/api/admin/projects` passaram a negar uma sessão autenticada com marca de troca inicial obrigatória de senha, antes das consultas de recursos. A rota `/api/team/my-access` já utilizava esse bloqueio. Não houve alteração de credenciais ou estado de usuários.
+- **Regressão:** `scripts/security/client-project-projection.test.mjs` foi ampliado para conferir a precedência do bloqueio nas três rotas. Os testes existentes de projeção, permissões por projeto, reuniões e conteúdo seguem preservados.
+- **Limite de aceite:** esta rodada não autenticou novas identidades reais de cliente ou equipe. Não foi executada escrita em banco nem testes de isolamento por duas contas reais; estes permanecem pendentes. A homologação deve seguir as recomendações de *deny by default* e autorização por solicitação/recurso.
+- **Próximos testes:** navegador autenticado com perfil cliente e staff autorizados, isolamento entre tenants/projetos, módulos permitidos/proibidos, arquivos autorizados e acesso negado; persistência HTML e financeiro em ambiente sintético.
+- **Publicação:** commits apenas na branch isolada, sem merge na main, mudanças em produção, flags ou dados reais. Prévia Git/Vercel pode ser gerada automaticamente. Validar o CI do HEAD antes de aceitar.

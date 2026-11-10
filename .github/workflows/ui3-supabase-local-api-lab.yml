@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/security/ui3-integrated-local-prepare.mjs'
       - 'scripts/security/ui3-integrated-local-http.mjs'
+      - 'scripts/security/ui3-staff-browser-local.mjs'
       - 'scripts/security/ui3-sql-baseline.mjs'
       - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
       - 'src/app/api/presentation/project/route.ts'
@@ -83,6 +84,18 @@ jobs:
             exit 1
           fi
           node scripts/security/ui3-integrated-local-http.mjs
+          # Only the local synthetic stack is reachable from the browser test.
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node scripts/security/ui3-staff-browser-local.mjs
+      - name: Upload synthetic-only staff viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui3-synthetic-staff-viewport
+          path: ${{ runner.temp }}/ui3-synthetic-staff-390.png
+          if-no-files-found: ignore
+          retention-days: 5
       - name: Stop isolated local stack
         if: always()
         shell: bash

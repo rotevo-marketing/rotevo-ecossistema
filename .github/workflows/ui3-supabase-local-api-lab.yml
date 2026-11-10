@@ -14,6 +14,7 @@ on:
       - 'scripts/security/execution-dependencies.test.mjs'
       - 'src/Components/cliente/ClientContracts.tsx'
       - 'src/Components/cliente/ClientPlanning.tsx'
+      - 'src/Components/cliente/ClientOverview.tsx'
       - 'src/Components/admin/ClientsDirectory.tsx'
       - 'src/Components/admin/OperationalHubs.tsx'
       - 'src/Components/admin/AdminUserMenu.tsx'

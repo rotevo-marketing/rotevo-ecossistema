@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "feature/admin-v2-redesign": false
+      "feature/admin-v2-redesign": false,
+      "feat/ui3-ajustes-visuais-20261110": false
     }
   }
 }

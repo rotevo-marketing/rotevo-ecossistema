@@ -11,6 +11,7 @@ on:
       - 'scripts/security/ui3-workspace-contract.test.mjs'
       - 'scripts/security/ui3-main-parity.test.mjs'
       - 'scripts/security/ui3-visual-round-20261110.test.mjs'
+      - 'scripts/security/ui3-task-grouping.test.mjs'
       - 'src/app/admin/equipe/page.tsx'
       - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
@@ -54,6 +55,8 @@ jobs:
         run: node --test scripts/security/ui3-workspace-contract.test.mjs
       - name: UI3 client and onboarding visual changes
         run: node --test scripts/security/ui3-visual-round-20261110.test.mjs
+      - name: UI3 task grouping without database
+        run: node --test scripts/security/ui3-task-grouping.test.mjs
       - name: Main-only release feature equivalence guards
         run: node --test scripts/security/ui3-main-parity.test.mjs
       - name: Authenticated audit regressions (synthetic DOM only)

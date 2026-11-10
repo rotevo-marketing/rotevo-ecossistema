@@ -9,6 +9,7 @@ on:
       - 'scripts/security/ui2-visual-contract.test.mjs'
       - 'scripts/security/ui3-workspace-contract.test.mjs'
       - 'scripts/security/ui3-main-parity.test.mjs'
+      - 'src/app/admin/equipe/page.tsx'
       - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'
       - 'scripts/security/ui3-raw-json-release-gate.test.mjs'

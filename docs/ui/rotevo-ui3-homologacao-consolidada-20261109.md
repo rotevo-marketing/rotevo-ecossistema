@@ -369,3 +369,15 @@ Os textos envolvidos passaram a usar `#606D82`, contraste calculado de aproximad
 **Limite da evidência:** análise axe não equivale a leitor de tela humano; a matriz mede as telas de entrada e não todas as seções internas em sete larguras. Conteúdos publicados de Planejamento/Contratos também aguardam inspeção visual de exemplares sintéticos. **O bloqueio G2 no banco hospedado permanece sem remediação**, e nenhum grant, RLS, conta ou registro de produção foi alterado.
 
 **Próximo gate:** inspeção assistiva e telas internas, equivalência final do banco/RPC com produção em laboratório, aprovação específica do SQL de grants e só então autorização de publicação/rollback. Estado geral **NO-GO para implantação**.
+
+## 19. Preparação do release e prova do SQL exato — 10/11/2026
+
+A proposta `docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql` foi reforçada com **preflight explícito de RLS ativo e das nove colunas de metadados** e pós-verificação da ausência de acesso efetivo à coluna `data`, preservando `service_role` (commits `43b8b573` e `fdd6d949`).
+
+**GitHub Actions [42795642775](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42795642775), commit `3e977723`, conclusão SUCCESS**: o laboratório descartável de PostgreSQL 17 executou tanto a simulação de dois tenants quanto, em nova fixture, **a própria proposta SQL exata**, incluindo BEGIN/COMMIT, com RLS ligado, roles e o schema esperado. Resultado: `PASS: exact release proposal SQL guarded by RLS, schema and effective privilege assertions`. O novo arquivo `scripts/security/pg-planning-proposal-validation.sql` e o workflow de banco repetem essa prova a cada alteração da proposta.
+
+A revisão da versão atualmente publicada `bec8ee26` mostrou que a página principal de edição de planejamento consulta diretamente apenas metadados do projeto; outros acessos privilegiados ainda exigem inventário completo antes de alterar os grants reais. **Não foi feito clone completo de produção, nem migração hospedada.**
+
+Foi criado o [checklist operacional de release](./rotevo-ui3-release-candidate-operational-checklist-20261110.md), com preflight de banco sem dados pessoais, condições de GO/NO-GO, ordem de publicação e recuperação de aplicação que **não reabre SELECT(data)**.
+
+**Estado segue NO-GO** enquanto a correção no Supabase hospedado, equivalência completa de schema/RPC, leitura assistiva, exemplares publicados e autorização específica não estiverem concluídos. Os testes aprovados demonstram viabilidade da proposta, mas não dão autorização de produção.

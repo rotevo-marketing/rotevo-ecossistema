@@ -274,5 +274,5 @@ test("client portal validates financial links and aligns meeting month with Braz
  assert.match(financeServer,/rpc\("rotevo_client_finance"\)/);
  assert.match(financeServer,/\.eq\("client_id",clientId\)/);
  assert.match(financeServer,/\.eq\("visible_to_client",true\)/);
- assert.match(projection,/internalNotes/);
+ assert.match(projection,/projected\.actionItems/);
 });

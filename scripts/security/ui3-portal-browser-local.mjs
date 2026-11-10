@@ -27,6 +27,9 @@ const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visu
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
 const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
+const secondClientId=randomUUID(),secondProjectId=randomUUID();
+await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
+await must(db.from("planning_projects").insert({id:secondProjectId,client_id:secondClientId,title:"Synthetic Other Project",slug:"browser-other-"+suffix,status:"published",data:{executionTimeline:[]}}),"second synthetic project");
 const sharedContract={id:randomUUID(),title:"Contrato Sintético Visível",status:"active",service:"Planejamento Estratégico",summary:"Escopo aprovado para teste exclusivamente sintético.",scope:["Diagnóstico autorizado","Planejamento autorizado"],startDate:"2026-11-10",endDate:"2027-02-10",signedDate:"2026-11-10",documentUrl:"",visibleToClient:true,history:[{id:randomUUID(),title:"Contrato formalizado",date:"2026-11-10"}]};
 const privateContract={...sharedContract,id:randomUUID(),title:"PRIVATE_CONTRACT_CANARY",visibleToClient:false};
 await must(db.from("client_workspaces").insert({client_id:clientId,data:{modules:["planning","content","meetings","contract","finance"],contracts:[sharedContract,privateContract],folders:[]}}),"workspace");
@@ -175,6 +178,29 @@ try {
  await onboardingModal.getByRole("button",{name:"Fechar"}).click();
  assert.equal(await strategist.getByRole("dialog",{name:"Gerenciar onboarding"}).count(),0);
  console.log("PASS admin onboarding avatar/action and central modal with close; no checklist mutations");
+ // The second client's new task must appear immediately even when urgency sorting would place it on another page.
+ await strategist.getByRole("button",{name:"Tarefas",exact:true}).click();
+ await strategist.getByRole("heading",{name:"Central de tarefas"}).waitFor();
+ await strategist.getByRole("button",{name:"Criar tarefa",exact:true}).click();
+ const newTaskDialog=strategist.getByRole("dialog",{name:"Nova tarefa"});
+ await newTaskDialog.waitFor();
+ await newTaskDialog.getByLabel("Nome da tarefa *").fill("Synthetic Other Client Task");
+ await newTaskDialog.getByRole("button",{name:"Projeto da tarefa"}).click();
+ await newTaskDialog.getByRole("option",{name:/Synthetic Other Client.*Synthetic Other Project/}).click();
+ await newTaskDialog.getByRole("button",{name:"Criar tarefa",exact:true}).click();
+ await newTaskDialog.waitFor({state:"hidden"});
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task"}).waitFor({timeout:15000});
+ const otherProject=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic other project");
+ assert.equal(otherProject.data.executionTimeline.filter(x=>x.title==="Synthetic Other Client Task").length,1,"second client task persisted exactly once");
+ console.log("PASS synthetic cross-client task creation, persisted task visible on first filtered page");
+ strategist.once("dialog",dialog=>void dialog.accept());
+ await strategist.getByRole("button",{name:"Arquivar tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("button",{name:"Arquivo",exact:true}).click();
+ await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).waitFor();
+ await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task"}).waitFor();
+ console.log("PASS synthetic archive and restore using real local API, no customer data touched");
  await strategist.close();
  console.log("PASS synthetic client and strategist portal logins, private projection and all seven widths");
 } finally {await browser.close();}

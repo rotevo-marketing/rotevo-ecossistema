@@ -173,3 +173,22 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 
 ### Publicação
 - Commit apenas na branch isolada. A integração Git/Vercel pode gerar prévias automáticas; não foi solicitado deployment de produção nem promoção de prévias. Nenhuma implantação deve ser declarada validada sem verificação.
+
+## Revisão integrada UI3 — primeira rodada de auditoria transversal (09/11/2026)
+
+### Escopo auditado em código
+- Painel do estrategista: Visão Geral, Tarefas, Conteúdo e Campanhas; verificados componentes principais e contratos automatizados existentes.
+- Portal do cliente: Visão Geral, Reuniões, Conteúdo, Campanhas, Contratos e Financeiro.
+- Segurança e integração: projeção allowlist `projectForClient`, rota `/api/client/finance`, uso dos documentos autorizados, vínculos de projetos, status de campanhas, pagamentos e escopo editorial.
+- A revisão confirmou que os testes de código existentes cobrem partes relevantes de permissão e persistência; **não representa teste visual autenticado em todos os perfis**.
+
+### Correções efetivas
+1. `ClientFinanceView.tsx`: links externos de pagamento agora só são apresentados quando passam por `safeLink(url,false)` (HTTPS válido, sem credenciais no endereço); mantém `rel="noopener noreferrer"` e `referrerPolicy="no-referrer"`.
+2. `ClientMeetings.tsx`: mês inicial da agenda definido por `todayInBrazil()`, coerente com o fuso empresarial usado pelo financeiro e evitando divergência de mês em clientes fora do horário de São Paulo.
+3. `ui3-workspace-contract.test.mjs`: regressões novas para URL financeira, projeção do cliente, calendário e autorização da rota financeira.
+
+### Testes e limites
+- A primeira execução após adicionar o teste teve falha em uma asserção de inspeção textual equivocada (esperava a string `internalNotes` num módulo que a exclui por allowlist). A asserção foi corrigida para exigir a projeção positiva `projected.actionItems`, sem alteração de produção.
+- Conferir o workflow do HEAD `76ceef00` e o último commit documental antes de declarar os testes aprovados.
+- Pendências de homologação autenticada: navegação, modais, foco/teclado, telas 320, 375, 390, 430, 768, 1024 e 1440 px, papéis, persistência de documentos HTML extensos, aprovação e visibilidade seletiva, contratos e pagamentos parciais/estornados.
+- Os testes automatizados e inspeção de código não substituem uma auditoria visual com sessões reais. Sem modificação de registros, banco de dados ou produção e sem promoção manual de deployment.

@@ -157,7 +157,7 @@ try {
  await accountButton.click();
  await strategist.getByRole("button",{name:"Clientes",exact:true}).click();
  await strategist.getByRole("heading",{name:"Cadastro de clientes"}).waitFor();
- await strategist.getByRole("button",{name:"Detalhes",exact:true}).first().click();
+ await strategist.getByText("Synthetic Portal Client",{exact:true}).locator("xpath=../..").getByRole("button",{name:"Detalhes",exact:true}).click();
  const details=strategist.getByRole("dialog",{name:"Synthetic Portal Client"});
  await details.waitFor();
  assert.equal(await details.locator('button[aria-label="Fechar detalhes do cliente"]').count(),1,"client modal needs accessible close button");

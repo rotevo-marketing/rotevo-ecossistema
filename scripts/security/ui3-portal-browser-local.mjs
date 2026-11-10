@@ -189,7 +189,7 @@ try {
  await newTaskDialog.getByRole("option",{name:/Synthetic Other Client.*Synthetic Other Project/}).click();
  await newTaskDialog.getByRole("button",{name:"Criar tarefa",exact:true}).click();
  await newTaskDialog.waitFor({state:"hidden"});
- await strategist.getByRole("button",{name:"Synthetic Other Client Task"}).waitFor({timeout:15000});
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor({timeout:15000});
  const otherProject=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic other project");
  assert.equal(otherProject.data.executionTimeline.filter(x=>x.title==="Synthetic Other Client Task").length,1,"second client task persisted exactly once");
  console.log("PASS synthetic cross-client task creation, persisted task visible on first filtered page");
@@ -199,7 +199,7 @@ try {
  await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).waitFor();
  await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).click();
  await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
- await strategist.getByRole("button",{name:"Synthetic Other Client Task"}).waitFor();
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor();
  console.log("PASS synthetic archive and restore using real local API, no customer data touched");
  await strategist.close();
  console.log("PASS synthetic client and strategist portal logins, private projection and all seven widths");

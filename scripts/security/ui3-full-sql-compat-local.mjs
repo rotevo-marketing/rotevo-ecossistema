@@ -2,6 +2,7 @@
 // Install @electric-sql/pglite@0.5.16 in a temporary prefix; pass its absolute dist/index.js path.
 import assert from 'node:assert/strict';
 import {baselineFiles as migrations} from './ui3-sql-baseline.mjs';
+import {hostedUi3Catalog} from './ui3-hosted-catalog-snapshot.mjs';
 import {readFileSync} from 'node:fs';
 import {isAbsolute} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -83,6 +84,23 @@ try{
  console.log('HOSTED_SECURITY_CATALOG_RECONCILIATION',JSON.stringify({policies:policyDiff,rpcMissing,rpcExtra}));
  const securityCatalogParity=policyDiff.length===0&&rpcMissing.length===0&&rpcExtra.length===0;
  console.log(securityCatalogParity?'PASS hosted function-name and RLS-policy-count parity':'NO-GO hosted function/policy metadata parity: inspect discrepancies');
+ // Compare the exact read-only hosted catalog snapshot, not only aggregate counts.
+ const localColumns=(await pg.query(`select table_schema,table_name,column_name,data_type,is_nullable from information_schema.columns
+ where table_schema in ('public','rotevo_finance') order by table_schema,table_name,ordinal_position`)).rows.map(r=>[r.table_schema,r.table_name,r.column_name,r.data_type,r.is_nullable]);
+ const localPolicies=(await pg.query(`select n.nspname as schema_name,c.relname as table_name,c.relrowsecurity as rls,p.polname as policy_name,p.polcmd as command
+ from pg_class c join pg_namespace n on n.oid=c.relnamespace left join pg_policy p on p.polrelid=c.oid
+ where n.nspname in ('public','rotevo_finance') and c.relkind='r' order by 1,2,4`)).rows.map(r=>[r.schema_name,r.table_name,r.rls,r.policy_name,r.command]);
+ const localFunctions=(await pg.query(`select n.nspname as schema_name,p.proname as function_name,pg_get_function_identity_arguments(p.oid) as arglist,p.prosecdef as definer
+ from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in ('public','rotevo_finance','rotevo_operations') order by 1,2,3`)).rows.map(r=>[r.schema_name,r.function_name,r.arglist,r.definer]);
+ function diff(a,b){const observed=new Set(b.map(r=>JSON.stringify(r)));const expected=new Set(a.map(r=>JSON.stringify(r)));return {missing:a.filter(r=>!observed.has(JSON.stringify(r))).slice(0,30),extra:b.filter(r=>!expected.has(JSON.stringify(r))).slice(0,30)};}
+ const columnDrift=diff(hostedUi3Catalog.columns,localColumns);
+ const policyDrift=diff(hostedUi3Catalog.rls,localPolicies);
+ const functionDrift=diff(hostedUi3Catalog.functions,localFunctions);
+ const exactParity=!Object.values({columnDrift,policyDrift,functionDrift}).some(group=>group.missing.length||group.extra.length);
+ console.log('HOSTED_EXACT_CATALOG_RECONCILIATION',JSON.stringify({hostedColumns:hostedUi3Catalog.columns.length,labColumns:localColumns.length,hostedPolicies:hostedUi3Catalog.rls.length,labPolicies:localPolicies.length,hostedFunctions:hostedUi3Catalog.functions.length,labFunctions:localFunctions.length,columnDrift,policyDrift,functionDrift}));
+ console.log(exactParity?'PASS exact hosted schema and policy metadata parity':'NO-GO exact hosted schema/permission metadata mismatch; inspect report before release');
+
 
 
  await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);

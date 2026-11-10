@@ -12,6 +12,11 @@ test('main team management functionality remains in UI3 tabbed admin',()=>{
  const directory=source('src/Components/admin/TeamDirectory.tsx');
  for(const name of ['TeamInviteForm','TeamAdminTransferForm','TeamMemberControls','TeamMemberProfileEditor'])assert.ok(directory.includes(name),name);
 });
+test('legacy team management route resolves to UI3 protected tab',()=>{
+ const route=source('src/app/admin/equipe/page.tsx');
+ assert.match(route,/redirect\("\/admin\?section=team"\)/);
+ assert.match(source('src/app/admin/page.tsx'),/searchParams\.get\("section"\)/);
+});
 test('team access and lifecycle routes from main remain available',()=>{
  for(const path of [
  'src/app/api/team/admin/transfer/route.ts','src/app/api/team/assignments/route.ts',

@@ -193,14 +193,23 @@ try {
  const otherProject=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic other project");
  assert.equal(otherProject.data.executionTimeline.filter(x=>x.title==="Synthetic Other Client Task").length,1,"second client task persisted exactly once");
  console.log("PASS synthetic cross-client task creation, persisted task visible on first filtered page");
- strategist.once("dialog",dialog=>void dialog.accept());
- await strategist.getByRole("button",{name:"Arquivar tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("menuitem",{name:"Arquivar",exact:true}).click();
  await strategist.getByRole("button",{name:"Arquivo",exact:true}).click();
- await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).waitFor();
- await strategist.getByRole("button",{name:"Restaurar tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("menuitem",{name:"Restaurar do Arquivo"}).click();
  await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
  await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor();
- console.log("PASS synthetic archive and restore using real local API, no customer data touched");
+ console.log("PASS synthetic archive and restore using real local API");
+ await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
+ strategist.once("dialog",dialog=>void dialog.accept());
+ await strategist.getByRole("menuitem",{name:"Excluir (Lixeira)"}).click();
+ await strategist.getByRole("button",{name:"Lixeira",exact:true}).click();
+ await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
+ await strategist.getByRole("menuitem",{name:"Restaurar da Lixeira"}).click();
+ await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor();
+ console.log("PASS synthetic reversible trash and restore without permanent deletion");
  await strategist.close();
  console.log("PASS synthetic client and strategist portal logins, private projection and all seven widths");
 } finally {await browser.close();}

@@ -143,7 +143,24 @@ export default function AdminPage() {
     return()=>{document.removeEventListener("keydown",handleKey);document.removeEventListener("pointerdown",handlePointer);};
   },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
-  useEffect(()=>{const id=window.requestAnimationFrame(()=>{const section=new URLSearchParams(window.location.search).get("section");if(NAV_ITEMS.some(item=>item.id===section))setWorkspaceTab(section!);});return()=>window.cancelAnimationFrame(id);},[]);
+  // Keep the active module, deep links, reloads and browser Back/Forward in sync.
+  useEffect(()=>{
+    const readSection=()=>{
+      const section=new URLSearchParams(window.location.search).get("section");
+      setWorkspaceTab(NAV_ITEMS.some(item=>item.id===section)?section!:"overview");
+    };
+    readSection();
+    window.addEventListener("popstate",readSection);
+    return()=>window.removeEventListener("popstate",readSection);
+  },[]);
+  function navigateWorkspace(section:string){
+    if(!NAV_ITEMS.some(item=>item.id===section))return;
+    if(section===workspaceTab)return;
+    const url=new URL(window.location.href);
+    url.searchParams.set("section",section);
+    window.history.pushState(null,"",url.pathname+url.search+url.hash);
+    setWorkspaceTab(section);
+  }
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const [mobileMenu,setMobileMenu]=useState(false);
   useEffect(()=>{
@@ -365,11 +382,11 @@ export default function AdminPage() {
       <div className="flex min-h-0 flex-1">
       <aside className={`rv-ui2-sidebar relative hidden shrink-0 border-r border-[#E3E7F0] bg-white px-2.5 py-5 lg:block ${sidebarCollapsed?"w-[68px]":"w-[232px]"}`}>
         <nav aria-label="Menu do estrategista" className="space-y-0.5">
-          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`rv-ui2-nav-item flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}><RotevoTablerIcon name={item.icon} size={19} stroke={1.7}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
+          {NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;navigateWorkspace(item.id)}} title={item.label} aria-current={workspaceTab===item.id?"page":undefined} className={`rv-ui2-nav-item flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium ${sidebarCollapsed?"justify-center":""} ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}><RotevoTablerIcon name={item.icon} size={19} stroke={1.7}/>{!sidebarCollapsed&&<span>{item.label}</span>}</button>)}
         </nav>
         <button type="button" onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed?"Expandir menu":"Recolher menu"} className="absolute -right-3 top-[45%] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#DDE1E9] bg-white text-[#6251CA] shadow-sm"><RotevoTablerIcon name={sidebarCollapsed?"chevron-right":"chevron-left"} size={17} stroke={1.7}/></button>
       </aside>
-      {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;setWorkspaceTab(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>{item.label}</button>)}</div></aside>}
+      {mobileMenu&&<aside className="w-full border-b border-[#E3E7F0] bg-white p-4 lg:hidden"><div className="space-y-2">{NAV_ITEMS.map(item=><button key={item.id} type="button" onClick={()=>{if(item.id!==workspaceTab&&!confirmDiscardChanges())return;navigateWorkspace(item.id);setMobileMenu(false)}} className={`block w-full cursor-pointer rounded-lg p-3 text-left text-sm ${workspaceTab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>{item.label}</button>)}</div></aside>}
       <div className={`min-w-0 flex-1 ${mobileMenu?"hidden lg:block":""}`}>
       <section className="rv-ui2-workspace mx-auto w-full max-w-[1580px] px-4 pb-14 pt-7 sm:px-6 lg:px-8">
         <header className="rv-page-heading rv-ui2-workspace-heading">
@@ -378,11 +395,11 @@ export default function AdminPage() {
           </div>
           <div className="rv-ui2-heading-actions">
             {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="rv-ui2-heading-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.7}/>Novo planejamento</Link>}
-            {workspaceTab==="overview"&&<button type="button" onClick={()=>setWorkspaceTab("tasks")} className="rv-ui2-heading-secondary inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#D8D2FF] bg-white px-4 py-2.5 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F6FF]"><RotevoTablerIcon name="list-check" size={17} stroke={1.7}/>Minhas tarefas</button>}
+            {workspaceTab==="overview"&&<button type="button" onClick={()=>navigateWorkspace("tasks")} className="rv-ui2-heading-secondary inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#D8D2FF] bg-white px-4 py-2.5 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F6FF]"><RotevoTablerIcon name="list-check" size={17} stroke={1.7}/>Minhas tarefas</button>}
           </div>
         </header>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
-        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>setWorkspaceTab("projects")} onOpenTasks={()=>setWorkspaceTab("tasks")} onOpenMeetings={()=>setWorkspaceTab("meetings")} onOpenContent={()=>setWorkspaceTab("content")} onOpenFinance={()=>setWorkspaceTab("finance")}/></div>}
+        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>navigateWorkspace("projects")} onOpenTasks={()=>navigateWorkspace("tasks")} onOpenMeetings={()=>navigateWorkspace("meetings")} onOpenContent={()=>navigateWorkspace("content")} onOpenFinance={()=>navigateWorkspace("finance")}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
         <section aria-labelledby="projects-heading" className="rv-ui2-section rv-ui3-projects-surface mt-3 bg-white">
           <div className="flex items-start justify-between gap-3">
@@ -458,13 +475,13 @@ export default function AdminPage() {
         {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="clients" && !isLoading && <ClientsDirectory projects={projects}/>}
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
-        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>setWorkspaceTab("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 
         {workspaceTab==="campaigns" && !isLoading && <CampaignsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="finance" && !isLoading && userEmail && <FinanceHub/>}
-        {workspaceTab!=="finance" && workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>setWorkspaceTab("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
+        {workspaceTab!=="finance" && workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>navigateWorkspace("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
 
       </section>
       </div>

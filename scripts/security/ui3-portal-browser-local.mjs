@@ -102,6 +102,21 @@ try {
   assert.equal(serious.length,0,"Shared contract "+label+" WCAG issues: "+JSON.stringify(serious.map(v=>({id:v.id,nodes:v.nodes.length}))));
  }
  await contractTabs.getByRole("tab",{name:"Resumo"}).click();
+ // Keyboard navigation test is automated and does not replace a human screen reader.
+ const firstTab=contractTabs.getByRole("tab",{name:"Resumo"});
+ await firstTab.focus();
+ assert.equal(await firstTab.getAttribute("aria-selected"),"true");
+ await customer.keyboard.press("ArrowRight");
+ const scopeTab=contractTabs.getByRole("tab",{name:"Escopo contratado"});
+ assert.equal(await scopeTab.getAttribute("aria-selected"),"true","ArrowRight must activate next tab");
+ assert.equal(await scopeTab.evaluate(node=>node===document.activeElement),true,"focus must follow active tab");
+ await customer.keyboard.press("End");
+ const lastTab=contractTabs.getByRole("tab",{name:"Histórico"});
+ assert.equal(await lastTab.getAttribute("aria-selected"),"true","End must activate last tab");
+ await customer.keyboard.press("Home");
+ assert.equal(await firstTab.getAttribute("aria-selected"),"true","Home must activate first tab");
+ assert.equal(await customer.getByRole("tabpanel").getAttribute("aria-labelledby"),await firstTab.getAttribute("id"),"tabpanel maps active tab");
+ console.log("PASS shared contract keyboard ArrowRight/Home/End, focus and ARIA tabpanel mapping");
  console.log("PASS synthetic shared contract visual, four tabs, authorized scope and hidden contract excluded");
 
  // Published strategic document: browser-rendered released HTML/CSS, not the private draft.

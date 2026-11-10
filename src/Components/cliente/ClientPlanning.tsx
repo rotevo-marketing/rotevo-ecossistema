@@ -96,7 +96,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
      {areaRows.length>0&&!filteredAreas.length&&<p className="p-3 text-xs text-[#697386]">Nenhum documento corresponde à pesquisa.</p>}
     </div>
    </aside>
-   <main className={(mobileReader?"block ":"hidden ")+"min-w-0 bg-[#F7F8FC] p-3 sm:p-5 lg:block lg:p-7"}>
+   <section aria-label="Leitura do planejamento" className={(mobileReader?"block ":"hidden ")+"min-w-0 bg-[#F7F8FC] p-3 sm:p-5 lg:block lg:p-7"}>
     <button type="button" onClick={()=>setMobileReader(false)} className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#E2E5EC] bg-white px-3 py-2 text-xs font-semibold lg:hidden">{activeIcon("arrow-left",16)} Voltar aos documentos</button>
     {selectedCode==="executive"?<div className="mx-auto max-w-[900px] rounded-2xl border border-[#E4E7EE] bg-white p-5 shadow-sm sm:p-8"><p className="text-xs font-bold uppercase tracking-widest text-[#697386]">Visão Executiva</p><h3 className="mt-3 text-2xl font-bold">Síntese estratégica</h3>{executive.length?<div className="mt-5 space-y-5">{executive.map(doc=><section key={doc.code}><details className="rounded-xl border border-[#E3E7F0] p-4"><summary className="cursor-pointer text-sm font-semibold">{doc.code} · {doc.title}</summary><div className="mt-5">{visible?.executiveDocuments?.[doc.code]?.richContent?<DynamicDocumentReader content={visible.executiveDocuments[doc.code].richContent!}/>:<div className="whitespace-pre-wrap break-words text-sm leading-7">{visible?.executiveDocuments?.[doc.code]?.content}</div>}</div></details></section>)}</div>:<p className="mt-5 rounded-xl bg-[#F7F8FB] p-5 text-sm text-[#697386]">A Visão Executiva será apresentada quando a Rotevo disponibilizar os documentos desta seção.</p>}</div>
     :active?<article className="mx-auto w-full max-w-[960px] overflow-hidden rounded-2xl border border-[#E4E7EE] bg-white px-5 py-8 shadow-sm sm:px-8 sm:py-10 lg:px-12">
@@ -116,7 +116,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
       :<div className="mt-4 rounded-xl border border-[#E9E2D7] bg-[#FFF9F0] p-5"><div className="flex items-center gap-2 text-sm font-semibold text-[#7E5A1B]">{activeIcon("calendar",18)} Seu planejamento está sendo construído</div><p className="mt-3 text-sm leading-7 text-[#525B70]">Este documento ainda não foi disponibilizado para leitura. {delivery?.dueDate?"A previsão da etapa é "+date(delivery.dueDate)+".":"A data de disponibilização será informada pela Rotevo."} Assim que a versão for publicada, você poderá consultá-la neste espaço.</p><p className="mt-3 text-xs font-semibold text-[#907C61]">Etapa: {areaStatus(delivery?.status)}</p></div>}
     </article>
     :<div className="mx-auto max-w-[800px] rounded-2xl border border-[#E4E7EE] bg-white p-7"><div className="text-[#6D35F5]">{activeIcon("folder-open",28)}</div><h3 className="mt-4 text-xl font-bold">Explore seu planejamento</h3><p className="mt-2 max-w-xl text-sm leading-7 text-[#697386]">Selecione uma área e um documento na coluna à esquerda. As seções em elaboração apresentam a previsão de disponibilização; as versões publicadas podem ser lidas integralmente aqui.</p>{published.length>0&&<button type="button" onClick={()=>choose(published[0].code,published[0].area)} className="mt-5 cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1]">Ler primeiro documento disponível</button>}</div>}
-   </main>
+   </section>
   </section>}
  </div>;
 }

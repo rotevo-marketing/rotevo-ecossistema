@@ -7,7 +7,7 @@ test("two-column responsive details dialog renders history and clearly deferred 
  assert.match(source,/lg:grid-cols-\[minmax\(0,1\.45fr\)_minmax\(320px,1fr\)\]/);
  assert.match(source,/aria-label="Atualizações e histórico da tarefa"/);
  assert.match(source,/\(selected\.task\.activityLog\?\?\[\]\)\.slice\(-30\)\.reverse\(\)/);
- assert.match(source,/O envio de mensagens ainda não está habilitado/);
+ assert.match(source,/ProjectConversation/);
 });
 test("existing protected updates are used for status, priority and people",()=>{
  assert.match(source,/onChange=\{value=>void updateTask\(selected\.project,selected\.task,\{status:value\}\)\}/);

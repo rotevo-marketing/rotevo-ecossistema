@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
+import {validWorkspace} from '../../src/lib/operations/model.ts';
 const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
 function local(value){const u=new URL(value);assert.ok(u.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(u.hostname),'refuse non-loopback URL');return u;}
 assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,'YES_LOCAL_ONLY');
@@ -38,7 +39,10 @@ const admin=await user('admin','strategist'),a=await user('client-a','client',cA
 const reader=await user('reader','staff'),denied=await user('denied','staff'),reset=await user('reset','client',cA,true);
 await must(service.from('team_members').insert([{user_id:admin.id,display_name:'Synthetic admin',role:'admin',active:true},{user_id:reader.id,display_name:'Synthetic reader',role:'finance',active:true},{user_id:denied.id,display_name:'Synthetic no permissions',role:'producer',active:true}]),'synthetic team');
 await must(service.from('team_member_permissions').insert([{user_id:reader.id,permission:'projects.read'},{user_id:reader.id,permission:'finance.read'}]),'synthetic permissions');
-await must(service.from('client_workspaces').insert([{client_id:cA,data:{modules:['planning','finance','content','contract']}},{client_id:cB,data:{modules:['planning','finance']}}]),'synthetic workspaces');
+const workspaceA={modules:['planning','finance','content','contract'],contracts:[],folders:[]};
+const workspaceB={modules:['planning','finance'],contracts:[],folders:[]};
+assert.ok(validWorkspace(workspaceA)&&validWorkspace(workspaceB),'synthetic workspaces must satisfy the original validator');
+await must(service.from('client_workspaces').insert([{client_id:cA,data:workspaceA},{client_id:cB,data:workspaceB}]),'synthetic workspaces');
 const oldRich={format:'blocknote-v1',blocks:[{id:'old',type:'paragraph',content:'Previously published synthetic release'}]};
 const base={internalNotes:'PRIVATE_SYNTHETIC_ONLY',planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:['01.06'],presentedDocumentCodes:['01.06'],documents:{'01.06':{content:'Previously published synthetic release',richContent:oldRich,reviewStatus:'approved',updatedAt:'2026-11-01T00:00:00Z',publishedAt:'2026-11-01T00:00:00Z',publishedContent:'Previously published synthetic release',publishedRichContent:oldRich}}}};
 await must(service.from('planning_projects').insert([{id:pA,client_id:cA,title:'Synthetic A',slug:'integrated-a',status:'published',data:base},{id:pB,client_id:cB,title:'Synthetic B',slug:'integrated-b',status:'published',data:base}]),'synthetic projects');

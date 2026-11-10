@@ -31,7 +31,7 @@ test('failed client directory query reports unavailable totals and retries witho
    if(calls===1)throw new Error('Consulta indisponível');
    return {clients:[]};
   }},'@/hooks/useUnsavedChanges':{confirmDiscardChanges:()=>true,useUnsavedChanges:()=>{}},
-  './ClientWorkspaceManager':{default:noop},'@/Components/operations/AssetUpload':{default:noop},'@/Components/ui/DialogFocus':{default:noop}
+  './ClientWorkspaceManager':{default:noop},'@/Components/operations/AssetUpload':{default:noop},'@/Components/ui/DialogFocus':{default:noop},'@/Components/RotevoTablerIcon':{RotevoTablerIcon:noop}
  }).default,{projects:[]},async win=>{
   assert.equal(document.querySelectorAll('.rv-ui2-stat').length,3);
   for(const stat of document.querySelectorAll('.rv-ui2-stat'))assert.match(stat.textContent,/Indisponível/);

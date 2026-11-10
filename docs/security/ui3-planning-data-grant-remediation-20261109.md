@@ -59,3 +59,21 @@ A proposta SQL passou a remover também privilégios de tabela herdados de `PUBL
 Reprodução local sem conexão externa: instalar `@electric-sql/pglite@0.5.16` com `npm install --prefix /tmp/rotevo-sql-validation --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.16`; executar `ROTEVO_SQL_LAB_MODULE=/tmp/rotevo-sql-validation/node_modules/@electric-sql/pglite/dist/index.js node scripts/security/ui3-full-sql-compat-local.mjs`. A base é somente em memória. O mesmo ensaio foi acrescentado ao job existente de regressão.
 
 **Pendências mantidas:** conciliar todas as migrations com o schema hospedado; teste integral Auth/PostgREST/Storage/editor com identidades sintéticas; harmonizar fallbacks de workspace nas RPCs editoriais e financeiras; revisar senha inicial nas RPCs financeiras acessíveis diretamente; ensaiar rollback seguro e obter autorização específica para grants hospedados. Não alterar `SECURITY DEFINER` ou revogar EXECUTE indiscriminadamente: as aprovações legítimas dependem dessas funções e devem conservar suas verificações internas. O gate G2 continua **NO-GO**.
+
+
+## 7. Revisão da apresentação e plano de implantação/retorno, 10/11/2026
+
+A revisão adicional comprovou duas lacunas no handler `/api/presentation/project`: permitia a identidade com troca inicial de senha pendente e, sem workspace, usava `emptyWorkspace()` como configuração de serviços. O teste comportamental do handler original falhou nesses dois cenários antes da correção e passou nos quatro cenários depois. A branch passou a recusar a troca pendente antes de criar o cliente privilegiado e a negar planejamento sem módulo explicitamente configurado. Nenhuma conta/workspace hospedado foi modificado.
+
+O laboratório integrado seleciona os mesmos 14 arquivos do manifesto `scripts/security/ui3-sql-baseline.mjs`, adiciona a proposta de grants somente ao projeto temporário não vinculado e usa GoTrue, PostgREST, Storage e rotas Next.js originais. A criação de identidades, uploads, revisões, publicações e lançamentos desse laboratório é exclusivamente fictícia. Não é espelho reconciliado de todas as migrations do ambiente hospedado; evidência de execução e limites constam na homologação consolidada.
+
+Plano revisável, sem autorização de execução hospedada:
+
+1. Congelar uma referência de código validada; conferir consumidores externos, funções, owners, grants efetivos e schema equivalente, sem exportar dados reais para fixtures públicas.
+2. Homologar os perfis e dimensões restantes e os contratos HTTP/Storage; concluir a harmonização de senha inicial e workspace nas RPCs diretamente expostas. Não transformar funções SECURITY DEFINER ou revogar EXECUTE indiscriminadamente.
+3. Obter aprovação específica para a alteração hospedada, com janela, responsáveis e backup privado verificável. Aplicar a restrição transacional com preflight/postflight; nenhum papel comum pode terminar com SELECT/UPDATE em data, inclusive via PUBLIC/herança.
+4. Validar negações com identidades sintéticas autorizadas e editor via servidor, incluindo concorrência, publicação e assets; monitorar 401/403/409/503 e falhas de edição. Não editar documentos reais como teste.
+5. Em incidente, suspender o avanço e retornar somente a build comprovadamente compatível com grants restritos e com as guardas de autenticação preservadas. Se não houver build compatível, exigir decisão de segurança e contenção revisada. **Não restaurar grants amplos de JSON como rollback automático.**
+6. Distinguir abortar uma transação incompleta de reverter uma restrição já confirmada. Um abort retorna ao estado prévio e não resolve uma exposição que já existia; manter o bloqueio da implantação até nova validação.
+
+O teste legado `planning-data-revocation-rollback-local.test.sql` caracteriza a restauração de permissões inseguras em transação fictícia; **não é um runbook de retorno para produção**. O ensaio operacional completo de retorno seguro ainda precisa ser concluído em schema equivalente. G2 continua NO-GO enquanto os grants hospedados permanecerem amplos.

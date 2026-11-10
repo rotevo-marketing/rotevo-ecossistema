@@ -63,7 +63,7 @@ let current=(await request('/api/admin/project?id='+pA,admin)).project;
 const initialStamp=current.updated_at;
 let rich;
 for(const repeats of [2,1600]){
- rich={format:'blocknote-v1',blocks:[{id:'html',type:'visualHtml',props:{title:'Synthetic visual',description:'Local test only',height:400,markup:'<section>'+('<p>Ação 🧠 &amp; revisão</p>'.repeat(repeats))+'</section>',stylesheet:'.card{color:#687487}\n'.repeat(200)},children:[]},{id:'asset',type:'image',props:{url:'asset://'+asset.id}}]};
+ rich={format:'blocknote-v1',blocks:[{id:'html',type:'visualHtml',props:{label:'Synthetic visual',description:'Local test only',height:400,markup:'<section>'+('<p>Ação 🧠 &amp; revisão</p>'.repeat(repeats))+'</section>',stylesheet:'.card{color:#687487}\n'.repeat(200)},children:[]},{id:'asset',type:'image',props:{url:'asset://'+asset.id}}]};
  const payload={projectId:pA,code:'01.06',action:'save',expectedUpdatedAt:current.updated_at,richContent:rich};
  current=(await request('/api/admin/planning/document',admin,{method:'PATCH',body:payload})).project;
  const reopened=(await request('/api/admin/project?id='+pA,admin)).project;

@@ -276,3 +276,19 @@ test("client portal validates financial links and aligns meeting month with Braz
  assert.match(financeServer,/\.eq\("visible_to_client",true\)/);
  assert.match(projection,/projected\.actionItems/);
 });
+
+
+test("admin workspace syncs module state with URL, reload and browser Back/Forward",()=>{
+ const admin=source("app/admin/page.tsx");
+ assert.match(admin,/new URLSearchParams\(window\.location\.search\)\.get\("section"\)/);
+ assert.match(admin,/window\.addEventListener\("popstate",readSection\)/);
+ assert.match(admin,/window\.removeEventListener\("popstate",readSection\)/);
+ assert.match(admin,/url\.searchParams\.set\("section",section\)/);
+ assert.match(admin,/window\.history\.pushState\(null,"",url\.pathname\+url\.search\+url\.hash\)/);
+ assert.match(admin,/function navigateWorkspace\(section:string\)/);
+ assert.match(admin,/onOpenProjects=\{\(\)=>navigateWorkspace\("projects"\)\}/);
+ assert.match(admin,/onOpenTasks=\{\(\)=>navigateWorkspace\("tasks"\)\}/);
+ assert.match(admin,/onOpenMeetings=\{\(\)=>navigateWorkspace\("meetings"\)\}/);
+ assert.match(admin,/onOpenFinance=\{\(\)=>navigateWorkspace\("finance"\)\}/);
+ assert.match(admin,/confirmDiscardChanges\(\)/);
+});

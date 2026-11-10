@@ -1,4 +1,4 @@
-import {emptyWorkspace,workspaceForClient} from "@/lib/operations/model";
+import {workspaceForClient} from "@/lib/operations/model";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { projectForClient, type PrivateProjectRow } from "@/lib/security/projectForClient";
@@ -29,7 +29,7 @@ export async function GET(req:NextRequest) {
   if (projectError) return fail(503);
   const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
   if(workspace.error)return fail(503);
-  const modules=workspaceForClient(workspace.data?.data??emptyWorkspace()).modules;
+  const modules=workspaceForClient(workspace.data?.data).modules;
   const source=(projects??[]) as PrivateProjectRow[];
   const visible=source.map(p=>projectForClient(p,modules));
   // Restrict avatar enrichment to team members already assigned to explicitly shared tasks.

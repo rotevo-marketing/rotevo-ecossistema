@@ -47,3 +47,15 @@ test("database direct project JSON access remains an explicit BLOCKING release g
  assert.match(sqlTest,/has_column_privilege\('authenticated','public\.planning_projects','data','SELECT'\)/);
  assert.ok(existsSync(new URL("../../supabase/tests/database/planning_data_exposure_characterization_test.sql",import.meta.url)));
 });
+
+
+test("staged JSON grant proposal blocks raw reads without changing trusted server grants",()=>{
+ const sql=load("docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql");
+ assert.match(sql,/PROPOSAL ONLY/);
+ assert.match(sql,/REVOKE SELECT, UPDATE ON TABLE public\.planning_projects FROM anon,authenticated/);
+ assert.match(sql,/GRANT SELECT \(id,client_id,title,slug,description,status,published_at,created_at,updated_at\)/);
+ assert.doesNotMatch(sql,/GRANT\s+(?:SELECT|UPDATE)\s+ON\s+(?:TABLE\s+)?public\.planning_projects\s+TO\s+authenticated/i);
+ assert.match(sql,/has_column_privilege\('service_role','public\.planning_projects','data','SELECT'\)/);
+ assert.match(sql,/has_column_privilege\('authenticated','public\.planning_projects','data','UPDATE'\)/);
+ assert.match(sql,/COMMIT;/);
+});

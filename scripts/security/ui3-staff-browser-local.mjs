@@ -27,6 +27,11 @@ await must(client.from("team_member_permissions").insert({user_id:account.user.i
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 try {
  const page=await browser.newPage({viewport:{width:1440,height:900},locale:"pt-BR"});
+ const diagnosticEvents=[];
+ page.on("framenavigated",frame=>{if(frame===page.mainFrame())diagnosticEvents.push({kind:"navigation",path:new URL(frame.url()).pathname});});
+ page.on("pageerror",error=>diagnosticEvents.push({kind:"browser-error",name:error.name,message:error.message.slice(0,180)}));
+ page.on("response",response=>{const u=new URL(response.url());if(u.pathname.includes("/auth/v1/token")||u.pathname.includes("/rest/v1/profiles"))diagnosticEvents.push({kind:"api",path:u.pathname,status:response.status()});});
+
  await page.goto(new URL("/estrategista/login",app).href,{waitUntil:"domcontentloaded"});
  await page.getByLabel("E-mail").fill(email);
  await page.getByLabel("Senha",{exact:true}).fill(password);
@@ -36,7 +41,7 @@ try {
  } catch (error) {
   const view=await page.locator("body").innerText().catch(()=>"(body unavailable)");
   const alert=await page.locator('[role="alert"]').allTextContents().catch(()=>[]);
-  console.error("Synthetic staff redirect diagnostic:",JSON.stringify({url:page.url(),alerts:alert,visible:view.slice(0,850)}));
+  console.error("Synthetic staff redirect diagnostic:",JSON.stringify({url:page.url(),alerts:alert,visible:view.slice(0,850),events:diagnosticEvents.slice(-25)}));
   await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-staff-login-error.png",fullPage:true}).catch(()=>{});
   throw error;
  }

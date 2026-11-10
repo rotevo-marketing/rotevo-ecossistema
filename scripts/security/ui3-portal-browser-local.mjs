@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import {createClient} from "@supabase/supabase-js";
 import {chromium} from "playwright";
+import axe from "axe-core";
 const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
 assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,"YES_LOCAL_ONLY");
 assert.equal(api,"http://127.0.0.1:54321");
@@ -48,6 +49,12 @@ async function checkWidths(role,page){
  }
  await page.setViewportSize({width:390,height:900});
  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-"+role+"-390.png",fullPage:true});
+ await page.addScriptTag({content:axe.source});
+ const scan=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
+ const serious=scan.violations.filter(v=>v.impact==="serious"||v.impact==="critical");
+ console.log("ACCESSIBILITY",role,JSON.stringify(scan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}))));
+ assert.equal(serious.length,0,role+" critical/serious automated WCAG violations: "+JSON.stringify(serious.map(v=>({id:v.id,nodes:v.nodes.length}))));
+
 }
 try {
  const customer=await session("client",client,"/","/cliente");

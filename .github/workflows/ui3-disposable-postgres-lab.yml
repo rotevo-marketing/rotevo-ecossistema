@@ -3,8 +3,11 @@ on:
   push:
     branches:
       - feat/rotevo-ui2-pilot-20261109
+      - feat/ui3-ajustes-visuais-20261110
     paths:
       - 'scripts/security/pg-planning-json-lab.sql'
+      - 'scripts/security/ui3-collaboration-isolated.sql'
+      - 'docs/security/sql/ui3-project-collaboration-PROPOSAL-ONLY.sql'
       - 'scripts/security/pg-planning-proposal-validation.sql'
       - 'scripts/security/pg-planning-proposal-negative-schema.sql'
       - 'scripts/security/pg-planning-postrelease-safe-rollback.sql'
@@ -57,6 +60,13 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-proposal-validation.sql
       - name: Assert postrelease application rollback never restores direct JSON privileges
         run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-postrelease-safe-rollback.sql
+      - name: Validate append-only collaboration SQL in a separate disposable database
+        shell: bash
+        run: |
+          set -euo pipefail
+          createdb ui3_collaboration_isolated
+          psql -d ui3_collaboration_isolated -v ON_ERROR_STOP=1 -f scripts/security/ui3-collaboration-isolated.sql
+          dropdb ui3_collaboration_isolated
       - name: Reject schema drift transactionally with no partial privilege changes
         shell: bash
         run: |

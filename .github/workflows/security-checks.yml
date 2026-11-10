@@ -167,6 +167,8 @@ jobs:
           exit 1
       - name: Reject unauthenticated HTTP operations
         run: node --test scripts/security/local-admin-api-negative.test.mjs
+      - name: Verify collaboration endpoints are closed by default
+        run: node --test scripts/security/ui3-collaboration-http-negative.test.mjs
       - name: Stop isolated server
         if: always()
         run: |

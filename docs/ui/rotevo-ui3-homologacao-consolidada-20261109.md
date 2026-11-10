@@ -115,3 +115,19 @@ Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/dat
 - **Abrangência limitada**: o laboratório reproduz um recorte de grants e RLS em PostgreSQL, não uma cópia da instância completa de Auth/Storage/RPC do Supabase Rotevo. Não é homologação conectada das contas reais ou prova de migração segura no ambiente hospedado.
 - A base conectada ainda mostra apenas a branch Supabase principal; a criação de ambiente hospedado isolado pode implicar custos e não foi executada. O fluxo ponta a ponta autenticado de Cliente/Equipe depende do navegador Work, indisponível nesta sessão.
 - **Gate continua NO-GO**: somente após espelho Supabase isolado com migrações reconciliadas, testes reais de roles/RLS e editor, acessibilidade/navegação em Work, aprovação específica para alterar grants hospedados e validação pós-release.
+
+## 11. Homologação de rotas administrativas e de equipe (09/11/2026)
+
+**Trabalho novo apenas na branch de desenvolvimento:**
+- `scripts/security/team-my-access-api-behavior.test.mjs` usa o handler original de `/api/team/my-access` em ambiente isolado, com respostas Supabase sintéticas: sessão ausente, troca de senha obrigatória, papel incorreto, colaborador inativo, falta de `projects.read`, projeto não atribuído, resposta reduzida a `id,title` e ausência de conteúdo interno.
+- `scripts/security/admin-project-api-behavior.test.mjs` testa o handler real de leitura `/api/admin/project` com fixtures: autenticação, UUID, senha inicial pendente, perfis proibidos, inatividade, atribuição e permissão `projects.read`, administrador e seleção de projeto específico.
+- Ambos adicionados à execução `Comprehensive offline regression matrix` no workflow `.github/workflows/rotevo-ui2-pilot.yml`. Sem HTTP externo, sem contas reais nem mutations.
+
+**Evidências:**
+- [Workflow `42743281212`](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42743281212): **SUCCESS**, commit `088eebfe`, incluindo equipe e build.
+- [Workflow `42743457902`](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42743457902): **SUCCESS**, commit `0d576c71`, incluindo equipe, estrategista, regressões financeiras/documentais, TypeScript e build.
+- [Laboratório PostgreSQL `42742451497`](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42742451497): **SUCCESS**, dois tenants, anonimato, permissões por coluna e `service_role`.
+
+**Estado de bloqueio:** nenhuma instância Supabase autenticada isolada ou sessão Work de Cliente/Equipe foi acessada nesta rodada. As verificações são comportamento real dos handlers **com fronteiras Supabase simuladas**, não homologação da rede, login real nem RLS da estrutura hospedada. A publicação continua **NO-GO** até teste do esquema/RPC completo em laboratório, sessões autenticadas e correção específica da permissão de `planning_projects.data` no ambiente hospedado após autorização.
+
+**Próxima execução recomendada:** utilizar ChatGPT Work para testar a prévia protegida com identidades de Cliente e Colaborador autorizadas. Em paralelo, preparar um ambiente Supabase local com baseline completo validado, executar `supabase test db` local e testes de API contra PostgREST/GoTrue reais, sem `--remote` ou vínculos de produção. A criação de Supabase Preview branch hospedada pode gerar custo e exige concordância explícita.

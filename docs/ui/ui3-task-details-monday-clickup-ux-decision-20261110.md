@@ -12,6 +12,8 @@ A gaveta da Rotevo de 540px mostra título, descrição, prazo, checklist, depen
 - No mobile: empilhar conteúdos ou alternar abas, mantendo foco e navegação acessível.
 - Papéis: estrategista/equipe autorizados editam campos de tarefa; clientes visualizam exclusivamente tarefas explicitamente compartilhadas, podendo comentar quando existir autorização específica. Não expor informações internas.
 - Sem pseudo-chat: não implantar componente que pareça salvar mensagens antes de possuir persistência, RLS, acesso por cliente e política de notificação definidos.
+- **Decisão de produto de 10/11/2026:** a conversa será bidirecional. Cliente autorizado poderá publicar solicitações e responder; estrategista e colaboradores autorizados poderão comentar e responder no mesmo histórico, não apenas reagir às mensagens do cliente. Comentários ficam vinculados à tarefa e sujeitos à visibilidade explícita por cliente. Até a implantação segura, nenhum perfil pode enviar mensagens nessa área.
+- Arquivamento de tarefa é reversível e deve ser acessível na linha e nos detalhes. Exclusão definitiva fica suspensa até existir recuperação segura, auditoria e confirmação apropriada.
 - Em caso de edição concorrente: apresentar conflito e permitir revisar antes de substituir a versão de outro usuário.
 
 ## Sequenciamento

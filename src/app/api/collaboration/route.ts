@@ -26,10 +26,12 @@ async function authorized(req:NextRequest,b:Req){
  const records=Array.isArray(data[field])?data[field] as Record<string,unknown>[]:[];
  const item=records.find(x=>x&&typeof x==="object"&&x.id===b.itemId);
  if(!item||item.archivedAt||item.deletedAt)return {error:404 as const};
+ // This is a client-facing thread, not a private internal team note area.
+ if(item.visibleToClient!==true)return {error:403 as const};
  const version=b.itemType==="content"?typeof item.version==="string"?item.version:"":"";
  if(b.itemType==="content"&&b.contentVersion!==version)return {error:409 as const};
  if(profile.role==="client"){
-  if(profile.client_id!==project.client_id||item.visibleToClient!==true)return {error:403 as const};
+  if(profile.client_id!==project.client_id)return {error:403 as const};
   const module=b.itemType==="task"?"execution":"content";
   if(Array.isArray(data.portalModules)&&!data.portalModules.includes(module))return {error:403 as const};
   const {data:workspace,error:workspaceError}=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
@@ -54,7 +56,7 @@ export async function GET(req:NextRequest){
  const b={projectId:p.get("projectId")??"",itemType:p.get("itemType")??"",itemId:p.get("itemId")??"",contentVersion:p.get("contentVersion")??""} as Req;
  if(!["task","content"].includes(b.itemType))return fail(400);
  const v=await authorized(req,b);if("error" in v)return fail(v.error??503);
- const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:false}).limit(100);
+ const {data,error}=await v.admin.from("project_collaboration_messages").select("id,author_id,author_kind,message_type,content_version,body,created_at").eq("project_id",b.projectId).eq("item_type",b.itemType).eq("item_id",b.itemId).order("created_at",{ascending:false}).limit(100);
  if(error)return fail(503);
  return NextResponse.json({messages:(data??[]).reverse(),currentUserId:v.userId},{headers:{"Cache-Control":"no-store"}});
 }
@@ -71,7 +73,7 @@ export async function POST(req:NextRequest){
  const {count,error:rateError}=await v.admin.from("project_collaboration_messages").select("id",{count:"exact",head:true}).eq("author_id",v.userId).gte("created_at",after);
  if(rateError)return fail(503);
  if((count??0)>=15)return fail(429);
- const {data,error}=await v.admin.from("project_collaboration_messages").insert({project_id:b.projectId,item_type:b.itemType,item_id:b.itemId,content_version:v.version,message_type:kind,body:b.body.trim(),author_id:v.userId,author_kind:v.role}).select("id,author_id,author_kind,message_type,body,created_at").single();
+ const {data,error}=await v.admin.from("project_collaboration_messages").insert({project_id:b.projectId,item_type:b.itemType,item_id:b.itemId,content_version:v.version,message_type:kind,body:b.body.trim(),author_id:v.userId,author_kind:v.role}).select("id,author_id,author_kind,message_type,content_version,body,created_at").single();
  if(error||!data)return fail(503);
  return NextResponse.json({message:data},{status:201,headers:{"Cache-Control":"no-store"}});
 }

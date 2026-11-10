@@ -430,3 +430,20 @@ O CI foi ligado a alterações no componente Contrato. **Nenhuma conta, contrato
 **Catálogo hospedado consultado apenas por contagens, sem linhas de clientes:** 14 tabelas no schema `public`, 10 no schema `rotevo_finance`, 8 funções em `public`, 22 policies em `public` e 8 versões registradas em `supabase_migrations`. Estes números orientam a reconciliação do laboratório, mas não demonstram equivalência de colunas, triggers, funções, owners, RLS ou grants. O banco hospedado segue com privilégios diretos `SELECT/UPDATE` de `planning_projects.data` para `anon` e `authenticated`, segundo consulta de catálogo anterior.
 
 **Custo adicional:** nenhum. Branch Supabase hospedada não foi criada. O estado geral permanece **NO-GO** até a reconciliação completa do schema/RPC e do plano de retorno, avaliação assistiva residual e implementação autorizada da correção G2.
+
+
+## 23. Hardening das RPCs editoriais em laboratório gratuito — 10/11/2026
+
+**Execuções confirmadas:** [regressão UI3, SQL WASM, TypeScript e build 42807061569](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42807061569), **SUCCESS**; [integração real local 42807510496](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42807510496), **SUCCESS**. Ambas em ambiente temporário, com identidades e dados fictícios, sem uso do Supabase hospedado da Rotevo.
+
+A auditoria somente leitura da versão hospedada identificou que `rotevo_editorial_decide` e `rotevo_editorial_idea_decide` verificavam tenant, identidade e conteúdo compartilhado, mas não recusavam explicitamente o workspace ausente ou a exigência de troca inicial de senha em chamada RPC direta. Para reconciliar com os endpoints HTTP fail-closed, foi criada **apenas como proposta** `docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql`, fora de `supabase/migrations`.
+
+**Resultados do laboratório SQL WASM:** nove grupos aprovados, incluindo recusa de RPC sem workspace, recusa de aprovação de ideia com senha inicial pendente, manutenção de aprovação normal de conteúdo/ideia, RLS, JSON privado, Financeiro, CAS de documento HTML extenso e negações por tenant.
+
+**Resultados do Supabase/Next real local:** sete grupos aprovados, com GoTrue/Auth, PostgREST, Storage e rotas originais. Chamadas **diretas** das RPCs ao PostgREST confirmaram bloqueio de cliente sem workspace e identidade exigindo troca inicial de senha; aprovação de conteúdo final e de ideia permitidas para cliente fictício com acesso válido. Os seis grupos previamente aprovados de documentos, acesso, arquivos privados e Financeiro permaneceram íntegros.
+
+**Também preservados:** login sintético de colaborador e suas permissões; contratos compartilhados e quatro abas sem violações axe detectadas; planejamento publicado HTML/CSS em sete larguras, com `ACCESSIBILITY published planning []`; telas iniciais do Cliente e Estrategista em sete larguras.
+
+**Limites:** o SQL de hardening foi aplicado somente nos bancos temporários criados para os testes. O ambiente hospedado ainda executa as definições antigas das duas RPCs. A proposta de grants G2 também segue **não aplicada** na produção. O CI local utiliza seleção de migrações, não espelho completo do schema e das configurações gerenciadas do Supabase hospedado. Nenhuma avaliação humana por leitor de tela foi executada nesta rodada. Não publicar a UI 3.0 nem aplicar as duas propostas SQL hospedadas sem reconciliação de versões, backup/recuperação verificáveis, revisão e liberação de produção.
+
+**Custo adicional:** zero; nenhum banco de desenvolvimento pago foi criado.

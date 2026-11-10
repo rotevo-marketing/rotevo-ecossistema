@@ -43,7 +43,9 @@ test("client and strategist details are two-pane, keeping formal approvals separ
  assert.match(client,/EditorialDecision/);
  assert.match(decision,/rpc\("rotevo_editorial_decide"/);
  assert.match(manager,/A aprovação formal exige uma decisão registrada no fluxo do cliente/);
- assert.match(calendar,/disabled=\{\["approved","changes_requested","idea_approved"\]\.includes\(status\)\}/);
+ assert.match(calendar,/editorialStatusOptions/);
+ assert.match(calendar,/disabled=\{\["approved","changes_requested","idea_approved"\]\.includes\(active\.status\)\}/);
+ assert.match(calendar,/Rotevo · Detalhes do conteúdo/);
  assert.match(client,/visibleToClient===true/);
 });
 test("bidirectional comments remain explicitly gated, not deceptive or client writable",()=>{

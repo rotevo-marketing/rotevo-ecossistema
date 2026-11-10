@@ -192,3 +192,15 @@ Após cada commit, consultar o run da branch em GitHub Actions. Execuções inte
 - Conferir o workflow do HEAD `76ceef00` e o último commit documental antes de declarar os testes aprovados.
 - Pendências de homologação autenticada: navegação, modais, foco/teclado, telas 320, 375, 390, 430, 768, 1024 e 1440 px, papéis, persistência de documentos HTML extensos, aprovação e visibilidade seletiva, contratos e pagamentos parciais/estornados.
 - Os testes automatizados e inspeção de código não substituem uma auditoria visual com sessões reais. Sem modificação de registros, banco de dados ou produção e sem promoção manual de deployment.
+
+
+## Homologação autenticada: envio autorizado e identificação do acesso
+
+- O conteúdo aprovado em `4d1822e` foi publicado na mesma branch como `625bf45b8af13bfe629cc8d9cdfb67ebbe6e35a8`. O Git do terminal não tinha autenticação; a conexão GitHub foi usada. A árvore `86fd3919148e1a7c89aeaba97a8a754fd4c5dd77` é idêntica nos dois commits; o original foi preservado localmente. Sem alterações concorrentes, force-push ou sobrescrita de trabalho existente.
+- Prévia automática READY: `https://rotevo-ecossistema-f8ai7gtdm-rotevo-marketing.vercel.app/estrategista/login`, deployment `dpl_7twXvVGGKFE5UTF6x5ZYJw8VBCSU`, Preview de `625bf45`.
+- Run GitHub Actions `42730899003`: concluído com sucesso, incluindo regressões DOM da homologação, contratos, TypeScript e build. Reexecução local: 317 testes aprovados.
+- Revalidação interna na nova prévia **pendente de sessão autenticada**: a solicitação segura foi recusada e não repetida. A página pública de login da Rotevo foi confirmada; não declarar responsividade/foco internos homologados apenas por build/DOM sintético.
+- Proteção identificada: Vercel Authentication ativa (`all_except_custom_domains`), com redirecionamento externo 302 para SSO da Vercel. Password Protection desativada; não há `WWW-Authenticate` nem implementação HTTP Basic encontrada no código/configuração examinados.
+- Há duas identidades distintas: conta Vercel autorizada para a proteção da prévia e conta Rotevo `strategist` para entrar no painel via Supabase. A solicitação emitida pelo agente estava ligada ao formulário da Rotevo.
+- Detalhes, limites e evidências: `docs/homologation/rotevo-ui3-authenticated-20261109.md`.
+- Próxima etapa: revalidar correções no navegador autenticado; depois perfis cliente/staff e financeiro sintético. Sem produção, main, migrações, dados reais ou mudanças de segurança nesta rodada.

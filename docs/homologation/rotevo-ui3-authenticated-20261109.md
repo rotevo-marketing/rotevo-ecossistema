@@ -1,5 +1,36 @@
 # Rotevo UI 3.0: homologação autenticada
 
+## Atualização: envio autorizado e investigação do acesso
+
+Esta atualização prevalece sobre o estado local descrito na primeira rodada abaixo.
+
+- Branch remota conferida antes do envio: `9b5fcb9fac23036564c3ed0953b614d2b39c86f8`, sem alterações concorrentes. Atualização feita sem force e com verificação do SHA esperado.
+- O push Git convencional falhou por ausência de autenticação do terminal. O conteúdo foi publicado pela conexão GitHub em `625bf45b8af13bfe629cc8d9cdfb67ebbe6e35a8`, mantendo o pai original e os mesmos onze arquivos.
+- **Identidade do conteúdo confirmada:** árvore `86fd3919148e1a7c89aeaba97a8a754fd4c5dd77`, idêntica à do commit local autorizado `4d1822ed70d147479f3873a993d6476d2a5e6cc5`. Não se afirma que o SHA original foi enviado. Ele foi preservado em `archive/ui3-local-4d1822e` e identificado no commit publicado.
+- Confirmação GitHub: https://github.com/rotevo-marketing/rotevo-ecossistema/commit/625bf45b8af13bfe629cc8d9cdfb67ebbe6e35a8
+- Prévia automática: https://rotevo-ecossistema-f8ai7gtdm-rotevo-marketing.vercel.app/estrategista/login
+- Deployment `dpl_7twXvVGGKFE5UTF6x5ZYJw8VBCSU`, READY, ambiente Preview, associado a `625bf45`. Sem promoção para produção.
+- GitHub Actions: run `42730899003`, **completed / success**. Contratos UI2/UI3, três regressões DOM, contratos de projetos/documentos, regressões operacionais/autorização, TypeScript e build aprovados.
+- Reexecução local antes do envio: **317 testes aprovados**, sem falhas.
+- A nova prévia exibe a página Rotevo “Acesso do estrategista”. A solicitação segura de login foi recusada e não foi repetida. Por isso, **as correções internas ainda não foram revalidadas em sessão autenticada nesta nova prévia**. Não confundir o build aprovado com aceite visual.
+
+### Origem da autenticação
+
+| Camada | Evidência | Conta necessária |
+|---|---|---|
+| Proteção da Vercel | `ssoProtection.enabled: true`, modo `all_except_custom_domains`; requisição externa sem autenticação retorna 302 para `vercel.com/sso-api` | Conta Vercel autorizada a acessar o projeto/equipe ou acesso temporário oficialmente concedido |
+| Senha compartilhada da Vercel | `passwordProtection.enabled: false` | Não se aplica |
+| HTTP Basic | Nenhum `WWW-Authenticate` na resposta; nenhuma implementação Basic, middleware/proxy ou regra equivalente encontrada no repositório/configurações examinadas | Não foi identificada conta Basic |
+| Login da aplicação | Formulário “Acesso do estrategista”; `supabase.auth.signInWithPassword`; validação de `profiles.role` | Conta da Rotevo com perfil `strategist`; conta Vercel não substitui essa identidade |
+
+A solicitação segura emitida pelo agente estava ligada aos campos `email` e `password` do formulário da aplicação. O domínio da prévia identifica o destino dessa solicitação, não comprova que seja HTTP Basic. No navegador gerenciado, a página da aplicação já pôde ser exibida; isso não elimina a proteção Vercel confirmada para acessos externos.
+
+Nenhuma senha foi solicitada na conversa, inspecionada ou registrada. Não foram desativadas proteções, modificadas configurações, alterados registros reais ou executadas migrações.
+
+**Próxima etapa:** retomar a revalidação autenticada da prévia após definição do acesso seguro apropriado. Priorizar reflow da Visão geral, cabeçalho UI3, rótulos móveis, seletor de projetos e Escape/foco no editor. Depois, concluir a matriz cliente/staff e financeiro sintético. Produção permanece fora do escopo.
+
+---
+
 Data de referência: 09/11/2026, horário de São Paulo. A execução atravessou a meia-noite UTC.
 
 ## Resultado executivo

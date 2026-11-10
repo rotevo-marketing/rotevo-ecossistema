@@ -210,6 +210,29 @@ try {
  await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
  await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor();
  console.log("PASS synthetic reversible trash and restore without permanent deletion");
+ // Create a YouTube editorial entry for the second synthetic client and verify the dynamic channel tab.
+ await strategist.getByRole("button",{name:"Conteúdo",exact:true}).click();
+ await strategist.getByRole("button",{name:/Novo conteúdo/}).click();
+ const newEditorial=strategist.getByRole("dialog",{name:"Editor de conteúdo"});
+ await newEditorial.waitFor();
+ await newEditorial.getByLabel("Projeto",{exact:true}).selectOption(secondProjectId);
+ await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
+ await newEditorial.getByLabel("Canal *").selectOption("YouTube");
+ const editorialDate=new Date().toISOString().slice(0,7)+"-15";
+ await newEditorial.getByLabel("Data prevista *").fill(editorialDate);
+ await newEditorial.getByLabel("Resumo da ideia *").fill("Canal novo e visualização contextual do calendário.");
+ await newEditorial.getByLabel("Objetivo do conteúdo *").fill("Testar a persistência isolada de conteúdo editorial.");
+ await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();
+ await newEditorial.waitFor({state:"hidden"});
+ await strategist.getByRole("button",{name:"YouTube",exact:true}).waitFor({timeout:15000});
+ await strategist.getByRole("button",{name:"Synthetic Other YouTube Editorial",exact:true}).click();
+ const editorialDetails=strategist.getByRole("dialog",{name:"Detalhes do conteúdo"});
+ await editorialDetails.waitFor();
+ await editorialDetails.getByRole("heading",{name:"Atualizações e aprovações"}).waitFor();
+ const otherEditorial=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic editorial");
+ assert.equal(otherEditorial.data.editorialCalendar.filter(x=>x.title==="Synthetic Other YouTube Editorial"&&x.channel==="YouTube").length,1,"YouTube entry persisted for second client only");
+ await editorialDetails.getByRole("button",{name:"Fechar"}).click();
+ console.log("PASS synthetic editorial creation, new channel tab, centered detail and cross-client isolation");
  await strategist.close();
  console.log("PASS synthetic client and strategist portal logins, private projection and all seven widths");
 } finally {await browser.close();}

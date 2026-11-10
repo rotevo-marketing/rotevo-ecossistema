@@ -14,6 +14,7 @@ export async function PATCH(req:NextRequest){
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:identity,error:identityError}=await auth.auth.getUser(bearer.slice(7));
  if(identityError||!identity.user)return fail(401,"Sessão inválida.");
+ if(identity.user.app_metadata?.rotevo_password_reset_required===true)return fail(403,"Conclua a troca inicial de senha.");
  const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:profile,error:profileError}=await admin.from("profiles").select("role").eq("id",identity.user.id).maybeSingle();
  if(profileError)return fail(503,"Perfil indisponível.");

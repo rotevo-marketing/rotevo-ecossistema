@@ -1,0 +1,50 @@
+name: UI3 Private Backup Procedure Static Validation
+on:
+  push:
+    branches:
+      - feat/ui3-ajustes-visuais-20261110
+    paths:
+      - 'scripts/security/export-private-supabase-backup.sh'
+      - 'scripts/security/export-private-supabase-backup.ps1'
+      - 'scripts/security/verify-private-supabase-restore.ps1'
+      - 'docs/security/supabase-free-backup-and-restore-runbook.md'
+      - '.github/workflows/ui3-backup-script-syntax.yml'
+permissions:
+  contents: read
+jobs:
+  syntax-only:
+    name: Verify private backup and restore scripts without database access
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Bash parser and credential safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/security/export-private-supabase-backup.sh
+          if grep -E -- 'pg_dump.*DATABASE_URL|PGPASSWORD=' scripts/security/export-private-supabase-backup.sh; then
+            echo "::error::Unsafe password handling detected"
+            exit 1
+          fi
+          grep -F 'PGSERVICEFILE' scripts/security/export-private-supabase-backup.sh >/dev/null
+          echo 'PASS shell syntax and libpq service credential guard'
+      - name: PowerShell parse backup scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          foreach($path in @(
+            'scripts/security/export-private-supabase-backup.ps1',
+            'scripts/security/verify-private-supabase-restore.ps1'
+          )){
+            $tokens=$null
+            $errors=$null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path),[ref]$tokens,[ref]$errors) | Out-Null
+            if($errors.Count -gt 0){
+              foreach($issue in $errors){ Write-Error $issue.Message }
+              exit 1
+            }
+          }
+          Write-Output 'PASS PowerShell syntax. No database connection was attempted.'

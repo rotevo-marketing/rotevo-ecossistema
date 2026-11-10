@@ -31,7 +31,15 @@ try {
  await page.getByLabel("E-mail").fill(email);
  await page.getByLabel("Senha",{exact:true}).fill(password);
  await page.getByRole("button",{name:"Acessar Ecossistema"}).click();
- await page.waitForURL("**/equipe/meu-acesso",{timeout:30000});
+ try {
+  await page.waitForURL("**/equipe/meu-acesso",{timeout:20000});
+ } catch (error) {
+  const view=await page.locator("body").innerText().catch(()=>"(body unavailable)");
+  const alert=await page.locator('[role="alert"]').allTextContents().catch(()=>[]);
+  console.error("Synthetic staff redirect diagnostic:",JSON.stringify({url:page.url(),alerts:alert,visible:view.slice(0,850)}));
+  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-staff-login-error.png",fullPage:true}).catch(()=>{});
+  throw error;
+ }
  await page.getByRole("heading",{name:"Área da equipe ROTEVO"}).waitFor({timeout:15000});
  await page.getByText("Synthetic Assigned Project").waitFor({timeout:15000});
  assert.equal(await page.getByText("Projetos atribuídos: 1").count(),1);

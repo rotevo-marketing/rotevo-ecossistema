@@ -206,6 +206,20 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    }
   }
  }
+ // New editorial assignees must be active team identities, not arbitrary client-supplied names.
+ if(JSON.stringify(oldRoot.editorialCalendar)!==JSON.stringify(nextRoot.editorialCalendar)){
+  const prior=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
+  const oldById=new Map(prior.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v.ownerUserId]));
+  const newOwners=[...new Set((nextRoot.editorialCalendar as Record<string,unknown>[]).filter(v=>typeof v.ownerUserId==="string"&&v.ownerUserId!==""&&v.ownerUserId!==oldById.get(v.id)).map(v=>v.ownerUserId as string))];
+  if(newOwners.length){
+   if(newOwners.some(id=>!uuid.test(id)))return fail(400);
+   const {data:allowed,error:allowedError}=await admin.from("team_members").select("user_id,display_name").eq("active",true).in("user_id",newOwners);
+   if(allowedError)return fail(503);
+   if(new Set((allowed??[]).map(row=>row.user_id)).size!==newOwners.length)return fail(400);
+   const names=new Map((allowed??[]).map(row=>[row.user_id,row.display_name]));
+   if((nextRoot.editorialCalendar as Record<string,unknown>[]).some(v=>newOwners.includes(v.ownerUserId as string)&&v.owner!==names.get(v.ownerUserId as string)))return fail(400);
+  }
+ }
  // Validate onboarding links on the server as well as in the editor.
  const checklist=nextRoot.onboardingChecklist;
  if(checklist!==undefined){

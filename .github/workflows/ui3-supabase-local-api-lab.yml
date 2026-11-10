@@ -11,6 +11,7 @@ on:
       - 'scripts/security/ui3-portal-browser-local.mjs'
       - 'src/Components/cliente/ClientContracts.tsx'
       - 'src/Components/cliente/ClientPlanning.tsx'
+      - 'src/app/admin/equipe/page.tsx'
       - 'src/Components/strategic-editor/StrategicDocumentReader.tsx'
       - 'src/Components/strategic-editor/editor.css'
       - 'src/Components/admin/AdminWorkConsole.tsx'

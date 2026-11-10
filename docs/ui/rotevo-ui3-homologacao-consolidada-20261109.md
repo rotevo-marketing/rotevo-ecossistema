@@ -283,3 +283,13 @@ Bloqueios restantes efetivos:
 **Próxima etapa recomendada:** concluir essas validações em ambiente que permita viewport exato e com identidade própria de Equipe; reconciliar schema/RPCs e ensaiar o retorno seguro. Depois apresentar a migration e o plano de implantação para **autorização específica**, antes de qualquer alteração hospedada ou publicação. Não há autorização implícita de produção neste relatório.
 
 Nenhum dado real, conta, permissão de produção ou política RLS hospedada foi modificado. Não houve merge na main, criação de recursos pagos hospedados ou publicação em produção.
+
+## 15. Diagnóstico final da Equipe e gates de release — 10/11/2026
+
+A conferência de produção **somente por contagem**, sem leitura de dados pessoais, encontrou **0 perfis `staff`**, **1 registro ativo em `team_members`** e **0 vínculos ativos para perfis `staff`**. O login comum de `/estrategista/login` já redireciona perfis `staff` ao Portal da Equipe, mas nenhuma conta presente satisfaz o contrato de autorização. Portanto, a tentativa no Work que retornou falta de permissão de estrategista é compatível com a ausência de identidade de Equipe; não justifica alterar contas reais. A mensagem de perfil não provisionado foi esclarecida na branch, com regressão de fluxo de login.
+
+A mesma inspeção de catálogo confirmou `authenticated` com leitura e escrita direta em `planning_projects.data`. A correção de grants permanece proposta, sem execução hospedada. Não criar staff ou habilitar convites em produção sem autorização e processo próprios.
+
+Documento operacional para continuidade: [`rotevo-ui3-release-gates-and-team-identity-20261110.md`](./rotevo-ui3-release-gates-and-team-identity-20261110.md), com pré-requisitos do perfil de teste, matriz de visualização final, gate SQL e plano de recuperação que não restaure grants inseguros.
+
+**O estado geral permanece NO-GO.** Testes automatizados da alteração de copy devem ser confirmados no último CI; os testes funcionais de Equipe ainda dependem de conta `staff` autorizada. Nenhuma conta, flag, permissão, RLS ou registro real foi modificado.

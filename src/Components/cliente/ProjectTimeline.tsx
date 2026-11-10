@@ -50,7 +50,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
  const [completedMonth,setCompletedMonth]=useState("");
  const [page,setPage]=useState(1);
  const pageSize=15;
- const [view,setView]=useState<"timeline"|"list">("timeline");
+ const [view,setView]=useState<"timeline"|"list"|"board">("list");
  const items=useMemo(()=>{
    const items:ExecutionItem[]=[];
    for(const project of projects){
@@ -78,11 +78,11 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
    </section>
    <section className="rv-ui2-client-section rounded-xl border border-[#E3E6ED] bg-white p-4 sm:p-5">
      <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><h2 className="text-lg font-semibold">Tarefas e entregas</h2>
+      <div><h2 className="text-lg font-semibold">Tarefas</h2>
        <p className="mt-1 text-sm text-[#697386]">Acompanhe as atividades e entregas compartilhadas pela Rotevo. O calendário de conteúdo é independente.</p></div>
       <div className="flex rounded-lg border border-[#E3E6ED] bg-[#F8F9FC] p-1" aria-label="Modo de visualização">
-       {(["timeline","list"] as const).map(mode=><button type="button" key={mode} onClick={()=>setView(mode)}
-        aria-pressed={view===mode} className={`cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold ${view===mode?"bg-white text-[#0B142A] shadow-sm":"text-[#697386]"}`}>{mode==="timeline"?"Linha do tempo":"Lista"}</button>)}
+       {(["list","board"] as const).map(mode=><button type="button" key={mode} onClick={()=>setView(mode)}
+        aria-pressed={view===mode} className={`cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold ${view===mode?"bg-white text-[#0B142A] shadow-sm":"text-[#697386]"}`}>{mode==="list"?"Lista":"Kanban"}</button>)}
       </div>
      </div>
      {items.length>0?<div className="mt-5 flex flex-wrap gap-2" aria-label="Filtrar entregas">
@@ -102,7 +102,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
        <td className="px-3 py-3"><span className="block rounded-md px-3 py-2 text-center text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span></td>
        <td className="px-3 py-3"><span className="flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold text-white" style={{backgroundColor:pri.color}}><RotevoTablerIcon name="flag" size={14}/>{pri.name}</span></td>
        <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-[#525B70]">{formatted(item.dueDate)}</td>
-      </tr>;})}</tbody></table></div>:<div className="mt-6 border-l-2 border-[#E4E8F0] pl-5">
+      </tr>;})}</tbody></table></div>:view==="board"?<div className="mt-5 flex gap-3 overflow-x-auto pb-3">{(["planned","in_progress","blocked","completed","cancelled"] as const).map(state=><section key={state} className="w-[252px] shrink-0 rounded-xl border border-[#EDF0F5] bg-[#F7F8FA] p-2.5"><h3 className="mb-2 flex items-center justify-between gap-2 px-1 text-xs font-semibold text-[#475467]"><span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{backgroundColor:mondayStatus[state]}}/>{labels[state]}</span><span>{shown.filter(t=>(t.status??"planned")===state).length}</span></h3><div className="space-y-2">{shown.filter(t=>(t.status??"planned")===state).map(item=><article key={item.projectKey+":"+item.id} className="rounded-xl border border-[#E2E6ED] bg-white p-3 shadow-[0_1px_2px_rgba(9,13,28,0.035)]"><p className="text-[13px] font-medium leading-5 text-[#283247]">{item.title}</p><p className="mt-2 truncate text-[11px] text-[#697386]">{item.projectTitle}</p><div className="mt-2 flex items-center justify-between border-t border-[#F0F1F5] pt-2"><span className="inline-flex items-center gap-1 text-[11px] text-[#697386]"><RotevoTablerIcon name="calendar-week" size={13}/>{formatted(item.dueDate)}</span><span className="inline-flex items-center gap-1 text-[11px]" style={{color:mondayPriority[item.priority??"normal"].color}}><RotevoTablerIcon name="flag" size={14} stroke={1.7}/>{mondayPriority[item.priority??"normal"].name}</span></div></article>)}</div></section>)}</div>:<div className="mt-6 border-l-2 border-[#E4E8F0] pl-5">
        {shown.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className="relative mb-6 rounded-xl border border-[#E3E7F0] p-4">
          <span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#6D35F5]"/>
          <div className="flex flex-wrap items-start justify-between gap-2">

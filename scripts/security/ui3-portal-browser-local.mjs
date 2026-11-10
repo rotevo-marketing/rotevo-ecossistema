@@ -215,7 +215,7 @@ try {
  await strategist.getByRole("button",{name:/Novo conteúdo/}).click();
  const newEditorial=strategist.getByRole("dialog",{name:"Editor de conteúdo"});
  await newEditorial.waitFor();
- await newEditorial.getByLabel("Projeto",{exact:true}).selectOption(secondProjectId);
+ await newEditorial.locator("select").first().selectOption(secondProjectId);
  await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
  await newEditorial.getByLabel("Canal *").selectOption("YouTube");
  const editorialDate=new Date().toISOString().slice(0,7)+"-15";

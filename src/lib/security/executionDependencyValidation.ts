@@ -62,7 +62,7 @@ export function validExecutionDependencies(data:unknown):boolean{
   if(!Array.isArray(editorial)||editorial.length>2000)return false;
   for(const entry of editorial){
    const item=object(entry);
-   if(!item)return false;
+   if(!item)continue;
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   }

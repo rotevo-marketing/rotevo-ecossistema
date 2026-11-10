@@ -47,7 +47,9 @@ async function visible(client,expected){
 await visible(ca,["a"]);
 await visible(cb,["b"]);
 await visible(cs,[]);
-await visible(anonymous,[]);
+const anonymousList=await anonymous.from("planning_projects").select("title,slug");
+assert.ok(anonymousList.error?.code==="42501" || (anonymousList.data?.length===0&&!anonymousList.error),
+ "anonymous project metadata must be denied or restricted to zero rows");
 for(const client of [ca,cb,cs,anonymous]){
  const {error}=await client.from("planning_projects").select("id,title,data");
  assert.ok(error,"private JSON query must be rejected even if the tenant is authorized");

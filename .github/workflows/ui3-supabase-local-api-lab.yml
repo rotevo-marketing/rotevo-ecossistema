@@ -108,6 +108,7 @@ jobs:
             ${{ runner.temp }}/ui3-synthetic-staff-login-error.png
             ${{ runner.temp }}/ui3-synthetic-client-390.png
             ${{ runner.temp }}/ui3-synthetic-shared-contract-390.png
+            ${{ runner.temp }}/ui3-synthetic-published-planning-390.png
             ${{ runner.temp }}/ui3-synthetic-strategist-390.png
           if-no-files-found: ignore
           retention-days: 5

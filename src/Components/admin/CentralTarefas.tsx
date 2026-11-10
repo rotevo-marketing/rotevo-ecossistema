@@ -10,6 +10,7 @@ import {TaskAvatar,TaskDropdown,TaskDueDateCell} from "@/Components/admin/TaskGr
 import {groupTaskRows} from "@/lib/operations/taskGrouping";
 import DialogFocus from "@/Components/ui/DialogFocus";
 import {request} from "@/lib/operations/api";
+import ProjectConversation from "@/Components/collaboration/ProjectConversation";
 type Client={id:string;name:string;slug:string;cover_image_url?:string|null};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[];editorialCalendar?:EditorialItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
@@ -416,7 +417,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
      </div>
      <aside aria-label="Atualizações e histórico da tarefa" className="flex min-h-[280px] min-w-0 flex-col border-t border-[#E5E9F1] bg-[#FBFCFE] p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-t-0">
       <div className="flex items-center gap-2 border-b border-[#E3E7F0] pb-3"><RotevoTablerIcon name="message-circle" size={18} stroke={1.6}/><h3 className="text-sm font-semibold text-[#323647]">Atualizações</h3></div>
-      <section aria-label="Comentários ainda indisponíveis" className="mt-4 rounded-xl border border-dashed border-[#D5DCE9] bg-white p-4"><p className="text-sm font-semibold text-[#323647]">Conversa sobre a tarefa</p><p className="mt-2 text-xs leading-5 text-[#697386]">As solicitações de ajustes e as respostas do cliente ficarão nesta área quando estiverem disponíveis com permissões e armazenamento próprios. O envio de mensagens ainda não está habilitado.</p></section>
+      <ProjectConversation projectId={selected.project.id} itemType="task" itemId={selected.task.id}/>
       <section aria-label="Histórico da atividade" className="mt-6"><h4 className="text-xs font-semibold uppercase tracking-wide text-[#697386]">Histórico da atividade</h4><ol className="mt-3 space-y-3">{(selected.task.activityLog??[]).slice(-30).reverse().map((event,i)=><li key={i} className="border-l-2 border-[#D8D2FF] pl-3 text-xs text-[#525B70]"><time dateTime={event.at} className="block text-[11px] text-[#697386]">{new Date(event.at).toLocaleString("pt-BR")}</time><span className="mt-1 block break-words leading-5">{event.summary}</span></li>)}{!(selected.task.activityLog?.length)&&<li className="text-xs text-[#697386]">Ainda não há eventos registrados nesta tarefa.</li>}</ol></section>
      </aside>
     </div>

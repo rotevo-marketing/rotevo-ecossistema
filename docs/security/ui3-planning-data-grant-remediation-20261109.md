@@ -84,3 +84,17 @@ O teste legado `planning-data-revocation-rollback-local.test.sql` caracteriza a 
 [GitHub Actions 42750794070](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750794070), commit `3912c2e`: **SUCCESS**, seis grupos com Auth/PostgREST/Storage reais e rotas HTTP originais. O cliente autenticado sintético recebeu negação para `data`, conservou metadados do seu tenant e leu somente o documento publicado pela API. Edição documental, CAS, revisão/aprovação/publicação, assets privados de planejamento/contrato/fatura e Financeiro conservaram os fluxos autorizados após o SQL proposto. Seis identidades fictícias, dois tenants, stack descartada ao término.
 
 Isso reduz a pendência anterior de integração HTTP/Storage para o recorte ensaiado. Não certifica todas as migrations hospedadas, renderização/assinatura de PDF, UI completa, RPCs ainda com fallback de workspace/senha inicial nem o retorno operacional. Esses pontos e G2 permanecem bloqueantes; execução hospedada continua dependendo de autorização específica.
+
+
+## 9. Revisão adicional somente leitura de RPCs hospedadas — 10/11/2026
+
+O catálogo do Supabase hospedado foi novamente consultado **sem ler dados nem alterar registros**. As duas funções `public.rotevo_editorial_decide` e `public.rotevo_editorial_idea_decide` são `SECURITY DEFINER`, executáveis por `authenticated`, verificam `auth.uid()`, perfil de cliente, projeto do tenant, visibilidade/estado da peça e versão antes de inserir aprovação. O `search_path` está fixado em string vazia, com objetos públicos qualificados.
+
+**Duas diferenças comprovadas em relação aos endpoints HTTP fail-closed da UI3:**
+
+1. As duas funções permitem prosseguir quando **não existe linha correspondente em `client_workspaces`**, pois a restrição consulta apenas `exists(workspace with content disabled)`. A ausência de workspace não gera o bloqueio que o Portal HTTP exige. O uso direto de RPC também precisa ser ensaiado com contas fictícias nesse cenário.
+2. Nenhuma das duas definições contém verificação da flag de troca inicial de senha `app_metadata.rotevo_password_reset_required`; a proteção nos handlers HTTP não é, por si só, suficiente para chamadas diretas à RPC exposta.
+
+**Recomendação de engenharia:** preparar patch SQL **separado, não executado**, que exija workspace presente com `content` habilitado e recuse token com troca inicial pendente, mantendo todos os testes positivos e negativos de aprovação real. Ensaiar ambos os procedimentos no laboratório Supabase gratuito e reconciliar as definições integrais contra o banco hospedado antes de aplicar alterações em produção. Não revogar `EXECUTE` das RPCs sem reavaliar o fluxo legítimo de aprovações.
+
+**Release gate:** a confirmação de compatibilidade da proposta de grants G2 não resolve automaticamente os controles dessas RPCs; não declarar o sistema integralmente homologado enquanto a rota direta continuar com regras divergentes.

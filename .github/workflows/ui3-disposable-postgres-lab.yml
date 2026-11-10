@@ -1,0 +1,51 @@
+name: UI3 disposable Postgres JSON grant lab
+on:
+  push:
+    branches:
+      - feat/rotevo-ui2-pilot-20261109
+    paths:
+      - 'scripts/security/pg-planning-json-lab.sql'
+      - '.github/workflows/ui3-disposable-postgres-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grant-lab:
+    name: Synthetic RLS and column grants (isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-lab-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: disposable-lab-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client >/dev/null
+      - name: Verify isolated test target
+        run: |
+          test "$PGHOST" = "127.0.0.1"
+          test "$PGDATABASE" = "postgres"
+          psql -Atqc "select current_database(), inet_server_addr(), version()"
+      - name: Simulate tenant RLS and JSON column privilege restriction
+        run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-json-lab.sql

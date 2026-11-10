@@ -77,6 +77,7 @@ jobs:
             scripts/security/visual-html-component.test.cjs \
             scripts/security/team-project-access-behavior.test.mjs \
             scripts/security/client-assets-behavior.test.mjs \
+            scripts/security/client-project-api-behavior.test.mjs \
             scripts/security/finance-publication.test.mjs \
             scripts/security/operational-integration.test.mjs \
             scripts/security/auth-schema-preflight.test.mjs \

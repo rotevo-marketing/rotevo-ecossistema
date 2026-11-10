@@ -177,9 +177,15 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  }
  if(JSON.stringify(oldRoot.editorialCalendar)!==JSON.stringify(nextRoot.editorialCalendar)){
   if(!Array.isArray(nextRoot.editorialCalendar)||nextRoot.editorialCalendar.length>300)return fail(400);
+  // Preserve original entries and formal approval history: only reversible lifecycle markers are allowed.
+  const ids=new Set(nextRoot.editorialCalendar.map(v=>v&&typeof v==="object"&&!Array.isArray(v)?(v as Record<string,unknown>).id:null));
+  if([...oldEditorialById.keys()].some(id=>!ids.has(id))||ids.size!==nextRoot.editorialCalendar.length)return fail(400);
   for(const raw of nextRoot.editorialCalendar){
    if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
    const item=raw as Record<string,unknown>;
+   if(typeof item.id!=="string"||!uuid.test(item.id))return fail(400);
+   for(const key of ["archivedAt","deletedAt"]){const value=item[key];if(value!==undefined&&(typeof value!=="string"||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))return fail(400);}
+   if(item.archivedAt&&item.deletedAt)return fail(400);
    for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
     if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    }

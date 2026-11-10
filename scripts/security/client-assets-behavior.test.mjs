@@ -19,7 +19,7 @@ vm.runInNewContext(script,{module:m,exports:m.exports,require:id=>{
  return modules[id];
 }});
 const {mayReadAsset,resolveAssets}=m.exports;
-function setup({role="client",clientId="tenant-a",modules=["planning","finance","contract"],workspacePresent=true,
+function setup({role="client",memberRole=role,clientId="tenant-a",modules=["planning","finance","contract"],workspacePresent=true,
   invoiceIds=["invoice-a"],publishedAssetIds=["asset-a"],released=true,assignedProjects=[]}={}){
  const calls=[];
  const db={from(table){
@@ -38,7 +38,7 @@ function setup({role="client",clientId="tenant-a",modules=["planning","finance",
   return {data:{invoices:invoiceIds.map(id=>({id}))},error:null};
  }};
  return {calls,identity:{userId:"user-a",profile:{role,client_id:role==="client"?clientId:null},
-  member:role==="client"?null:{active:true,role},assignedProjects,db,caller}};
+  member:role==="client"?null:{active:true,role:memberRole},assignedProjects,db,caller}};
 }
 const asset=(purpose,overrides={})=>({
  id:"asset-a",client_id:"tenant-a",project_id:"project-a",invoice_id:"invoice-a",
@@ -90,13 +90,13 @@ test("contracts are shared only if referenced by an explicitly enabled client co
  assert.equal(await mayReadAsset(bad.identity,asset("contract")),false);
 });
 test("staff assets require proper finance role or project assignment; non-client roles do not inherit client access",async()=>{
- const producer=setup({role:"producer",assignedProjects:[]});
+ const producer=setup({role:"staff",memberRole:"producer",assignedProjects:[]});
  assert.equal(await mayReadAsset(producer.identity,asset("planning")),false);
  assert.equal(await mayReadAsset(producer.identity,asset("invoice")),false);
  const assigned=setup({role:"staff",assignedProjects:["project-a"]});
  assert.equal(await mayReadAsset(assigned.identity,asset("planning")),true);
  assert.equal(await mayReadAsset(assigned.identity,asset("invoice")),false);
- const finance=setup({role:"finance"});
+ const finance=setup({role:"staff",memberRole:"finance"});
  assert.equal(await mayReadAsset(finance.identity,asset("invoice")),true);
  assert.equal(await mayReadAsset(finance.identity,asset("planning")),false);
 });

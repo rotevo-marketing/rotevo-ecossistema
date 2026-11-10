@@ -267,3 +267,13 @@ Pendências prioritárias após o teste deste ajuste: validar navegador Voltar/A
 - Nenhum usuário, projeto, documento, fatura ou dado real foi lido ou modificado como parte desses novos testes; somente branch Git.
 - Ainda é necessário obter sessões apropriadas de **cliente** e **colaborador** no navegador do Work e testar em ambiente autenticado, especialmente isolamento multi-tenant e módulos desabilitados. A prévia Vercel exige autenticação de deployment; **não desativar a proteção**.
 - Após verificar o CI deste commit, prosseguir à persistência HTML e operações financeiras com fixtures isoladas, sem ativar Financeiro nos dados reais.
+
+## Bateria integrada de homologação offline (09/11/2026)
+
+A pedido do responsável, a validação automatizada foi ampliada, sem paradas intermediárias, e consolidada em [`docs/ui/rotevo-ui3-homologacao-consolidada-20261109.md`](./rotevo-ui3-homologacao-consolidada-20261109.md).
+
+- CI ampliado `42737283479`: **SUCCESS**, commit `95550beb`, incluindo 16 especificações adicionais: financeiro (parcialidade, reversões, recorrência, contas), documento HTML (rota real com armazenamento sintético em disco, limites, conflito, reabertura), HTML/CSS e CSP, permissões de equipe, perfis, API do cliente, resolução de arquivos e tenant, publicação e compilação.
+- Novos testes comportamentais `client-assets-behavior.test.mjs` e `client-project-api-behavior.test.mjs` testam isolamento sintético por tenant, módulo, perfil, projeto, arquivo e fatura, inclusive tentativas de alterar `client_id` via URL. Sem conta ou banco real.
+- A prévia do commit de código `95550beb` ficou READY na Vercel; a produção permaneceu no deployment `bec8ee26` na última verificação.
+- A aceitação completa ainda depende de sessão real autorizada como cliente e colaborador, políticas RLS/financeiro em Supabase isolado, persistência com aplicação completa, acessibilidade nas larguras exatas e plano de release/rollback. Não equiparar CI e build com homologação de navegador.
+- O comportamento legado de `emptyWorkspace()` com todos os módulos habilitados na ausência de registro merece decisão explícita de compatibilidade; não foi alterado unilateralmente.

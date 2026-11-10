@@ -108,7 +108,7 @@ try {
  await customer.setViewportSize({width:1440,height:900});
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Planejamento",exact:true}).click();
  await customer.getByRole("button",{name:"Ler primeiro documento disponível"}).click();
- await customer.getByText("PLANNING_PUBLIC_CANARY").waitFor({timeout:15000});
+ await customer.frameLocator('iframe[title="Documento publicado sintético"]').getByText("PLANNING_PUBLIC_CANARY").waitFor({timeout:15000});
  assert.equal(await customer.getByText("PLANNING_DRAFT_SECRET").count(),0,"private draft must not be displayed");
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"internal notes must remain absent");
  for(const width of [320,375,390,430,768,1024,1440]){
@@ -116,7 +116,7 @@ try {
   await customer.waitForTimeout(100);
   const measure=await customer.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
   assert.ok(measure.scroll<=measure.viewport+1,"Published planning overflow at "+width+"px: "+JSON.stringify(measure));
-  await customer.getByText("PLANNING_PUBLIC_CANARY").waitFor();
+  await customer.frameLocator('iframe[title="Documento publicado sintético"]').getByText("PLANNING_PUBLIC_CANARY").waitFor();
   console.log("PASS published planning responsive viewport",width,"px");
  }
  await customer.setViewportSize({width:390,height:900});

@@ -394,3 +394,25 @@ Foi criado o [checklist operacional de release](./rotevo-ui3-release-candidate-o
 **Limites:** o contrato testa metadados, escopo, histórico e estado de documento sem PDF real assinado. Não houve validação da assinatura ou renderização de PDF em leitor assistivo. A inspeção visual de um **documento de Planejamento publicado** ainda é pendente e a Rotevo ainda não passou por avaliação manual com leitor de tela. O teste ocorre em laboratório sintético e **não certifica grants do banco hospedado**, que permanecem inseguros para a coluna `planning_projects.data`.
 
 O CI foi ligado a alterações no componente Contrato. **Nenhuma conta, contrato ou registro real foi modificado, nenhuma migração ou publicação de produção realizada.**
+
+
+## 21. Retomada contínua — planejamento publicado, navegador e auditoria G2 (10/11/2026)
+
+**Homologação nova concluída na branch, sem implantação hospedada:** [GitHub Actions 42805026902](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42805026902), commit de teste e workflow `65ddd61f`, resultado **SUCCESS**.
+
+- O navegador Chromium com Supabase Auth/PostgREST/Storage e Next.js **descartáveis** entrou como cliente sintético, abriu um planejamento efetivamente publicado no fixture e confirmou a leitura de HTML/CSS personalizado dentro do iframe isolado de `VisualHtmlFrame`. A camada principal não apresentou rascunhos nem `internalNotes` do projeto. O teste não usou documentos de clientes reais.
+- A tela interna do planejamento publicado passou em **320, 375, 390, 430, 768, 1024 e 1440 CSS px**, sem overflow horizontal; `axe-core` reportou `ACCESSIBILITY published planning []` nas regras WCAG A/AA selecionadas a 390 px. Isso não equivale a validação humana por leitor de tela nem a garantia de conformidade de todo o portal.
+- As quatro abas de Contratos reportaram `ACCESSIBILITY shared contract ... []`, a Área da Equipe manteve login e permissões sintéticas, Cliente e Estrategista passaram nas sete larguras das telas iniciais; seis grupos integrados de Auth/API/Storage/documentos/Financeiro foram aprovados na mesma execução.
+- A rodada detectou e corrigiu problemas reais: nome acessível faltante no leitor BlockNote (`src/Components/strategic-editor/StrategicDocumentReader.tsx`), contraste inadequado do cabeçalho publicado (`src/Components/cliente/ClientPlanning.tsx`). O ensaio ainda passou a esperar o término das transições das abas de Contratos antes do `axe-core`, e a buscar o HTML publicado dentro do iframe, sem enfraquecer as asserções. O workflow agora é disparado também por alterações do leitor, CSS e planejamento.
+
+**Auditoria somente leitura do Supabase hospedado:** `public.planning_projects` conserva suas dez colunas esperadas e RLS ativo, mas `anon` e `authenticated` possuem privilégios efetivos `SELECT` e `UPDATE` sobre `data`. RLS pode restringir linhas, mas não é substituto de privilégios por coluna. Nenhum documento privado foi lido e nenhum grant foi alterado. O banco registra oito migrations aplicadas (de 16/10 a 21/10/2026); o repositório possui outros arquivos históricos e propostos, portanto a equivalência completa **não está provada**. As RPCs editoriais `rotevo_editorial_decide` e `rotevo_editorial_idea_decide` usam `SECURITY DEFINER`, consultam workspaces, mas não contêm verificação literal da flag `rotevo_password_reset_required` em suas definições consultadas: exige revisão funcional antes da migração.
+
+**Auditoria adicional:** Supabase Advisors manteve 14 INFO (RLS sem policy), três WARN (SECURITY DEFINER executáveis) e um WARN (proteção de senhas vazadas desativada). Os alertas não autorizam alteração indiscriminada de RPCs ou policies existentes. A comparação GitHub mostra a branch UI3 divergente da `main`, com seis commits exclusivos na `main`: reconciliar antes de qualquer merge ou promoção.
+
+**Bloqueadores residuais / NO-GO:**
+1. Reconciliação integral das migrations/RPCs e dos consumidores da versão publicada; laboratório Supabase equivalente ao schema hospedado, ensaio do SQL de grants, editor, fluxos e restauração segura. A solicitação de branch Supabase isolada encontrou custo informado de **US$ 0,01344/h**, pendente de concordância expressa antes da criação, portanto nenhum recurso adicional foi criado.
+2. Exigir backup privado verificado e plano de retorno que **não** reabilite leitura do JSON privado por papéis comuns; aplicar remediação G2 hospedada somente depois do aceite técnico e do procedimento de implantação aprovado.
+3. Avaliação manual de tecnologia assistiva e conferência residual dos perfis hospedados; não converter perfis reais para fazer testes.
+4. Comparar a branch à `main`, validar o candidato exato e promover para produção somente após gates verdes e plano de implantação/monitoramento. `READY` de prévia não equivale a `GO`.
+
+**Produção preservada.** A aprovação desta rodada vale para o laboratório sintético e os testes citados, não para a correção de grants ou a publicação em `app.rotevo.com.br`.

@@ -15,6 +15,9 @@ END;
 $preflight$;
 -- PostgreSQL table grants override per-column REVOKE. Remove whole-table privileges first.
 REVOKE SELECT, UPDATE ON TABLE public.planning_projects FROM anon,authenticated;
+-- PUBLIC and explicit column grants are independent sources of effective privilege.
+REVOKE SELECT, UPDATE ON TABLE public.planning_projects FROM PUBLIC;
+REVOKE SELECT (data), UPDATE (data) ON TABLE public.planning_projects FROM PUBLIC,anon,authenticated;
 -- Only non-sensitive metadata remains selectable via authenticated clients, still subject to RLS.
 GRANT SELECT (id,client_id,title,slug,description,status,published_at,created_at,updated_at)
  ON TABLE public.planning_projects TO authenticated;
@@ -25,8 +28,10 @@ BEGIN
  IF has_column_privilege('anon','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','UPDATE')
+ OR has_column_privilege('anon','public.planning_projects','data','UPDATE')
  THEN RAISE EXCEPTION 'Private project JSON still accessible to browser roles'; END IF;
- IF NOT has_column_privilege('authenticated','public.planning_projects','title','SELECT')
+ IF NOT has_column_privilege('service_role','public.planning_projects','data','UPDATE')
+ OR NOT has_column_privilege('authenticated','public.planning_projects','title','SELECT')
  OR NOT has_column_privilege('service_role','public.planning_projects','data','SELECT')
  THEN RAISE EXCEPTION 'Critical legitimate access lost'; END IF;
 END;

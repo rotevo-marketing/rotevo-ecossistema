@@ -46,3 +46,16 @@ Essa constatação não prova acesso a dados de **outros tenants**, que permanec
 - [Supabase: ambiente local isolado](https://supabase.com/docs/guides/local-development)
 
 Nenhum dado real foi alterado, nenhum segredo foi registrado neste documento e não houve publicação em produção.
+
+
+## 6. Revisão final de compatibilidade, 10/11/2026
+
+O inventário `node scripts/security/planning-project-consumer-inventory.mjs` encontrou **19 chamadas diretas** à tabela e **zero `UNSAFE_BROWSER_PROJECT_JSON_ACCESS`**. É um inventário estático, não prova de ausência de qualquer consumidor SQL externo. A matriz histórica recebeu uma atualização para a branch UI3.
+
+O ensaio `scripts/security/ui3-full-sql-compat-local.mjs` executa 14 arquivos SQL selecionados, incluindo o baseline legado e funções financeiras/editoriais originais, em PostgreSQL WASM descartável. Foram aprovados sete grupos: carga conjunta, grants, ciclo financeiro, persistência JSONB curta/extensa com CAS e RETURNING, aprovações editoriais, recusa de conteúdo oculto/versão antiga e isolamento de outro tenant. Auth é representado por funções locais de claims e Storage por tabelas mínimas; não equivale ao Supabase completo, PostgREST, login real ou homologação HTTP do editor.
+
+A proposta SQL passou a remover também privilégios de tabela herdados de `PUBLIC` e grants explícitos da coluna `data`. Revogar somente o grant de tabela de `authenticated` não elimina essas outras origens de acesso. O laboratório semeia essas permissões amplas antes de aplicar a proposta e confirma que o servidor mantém SELECT/UPDATE. **O arquivo continua PROPOSAL ONLY, fora de migrations e nunca executado no ambiente hospedado.**
+
+Reprodução local sem conexão externa: instalar `@electric-sql/pglite@0.5.16` com `npm install --prefix /tmp/rotevo-sql-validation --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.16`; executar `ROTEVO_SQL_LAB_MODULE=/tmp/rotevo-sql-validation/node_modules/@electric-sql/pglite/dist/index.js node scripts/security/ui3-full-sql-compat-local.mjs`. A base é somente em memória. O mesmo ensaio foi acrescentado ao job existente de regressão.
+
+**Pendências mantidas:** conciliar todas as migrations com o schema hospedado; teste integral Auth/PostgREST/Storage/editor com identidades sintéticas; harmonizar fallbacks de workspace nas RPCs editoriais e financeiras; revisar senha inicial nas RPCs financeiras acessíveis diretamente; ensaiar rollback seguro e obter autorização específica para grants hospedados. Não alterar `SECURITY DEFINER` ou revogar EXECUTE indiscriminadamente: as aprovações legítimas dependem dessas funções e devem conservar suas verificações internas. O gate G2 continua **NO-GO**.

@@ -19,8 +19,8 @@ insert into public.team_members(user_id,display_name,role,active) values
  ('10000000-0000-4000-8000-000000000004','Synthetic finance reader','finance',true);
 insert into public.team_member_permissions(user_id,permission) values ('10000000-0000-4000-8000-000000000004','finance.read');
 insert into public.planning_projects(id,client_id,title,slug,data) values
- ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Synthetic A','synthetic-a','{"marketingCampaigns":[{"id":"campaign-a","title":"Campaign A","budget":1000,"spent":99999,"notes":"PRIVATE_NOTE","snapshots":[{"month":"2027-02","spent":600}]}]}'),
- ('30000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','Synthetic B','synthetic-b','{"marketingCampaigns":[{"id":"campaign-b","title":"Campaign B","snapshots":[{"month":"2027-02","spent":400}]}]}');
+ ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Synthetic A','synthetic-a','{"marketingCampaigns":[{"id":"campaign-a","title":"Campaign A","visibleToClient":true,"budget":1000,"spent":99999,"notes":"PRIVATE_NOTE","snapshots":[{"month":"2027-02","spent":600}]}]}'),
+ ('30000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','Synthetic B','synthetic-b','{"marketingCampaigns":[{"id":"campaign-b","title":"Campaign B","visibleToClient":true,"snapshots":[{"month":"2027-02","spent":400}]}]}');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{}}',true);
 select pg_temp.assert_true(rotevo_finance.allowed(true),'active admin can write');
@@ -123,9 +123,8 @@ do $$ declare payload jsonb := '{"title":"Synthetic subscription","counterparty"
  begin
   perform public.rotevo_finance_mutate('invoice.create',payload||'{"repeat_months":61}',gen_random_uuid());raise exception 'FAILED: excessive repeats accepted';
  exception when invalid_parameter_value then raise notice 'PASS: expense repeat limit enforced'; end;
- begin
-  perform public.rotevo_finance_mutate('invoice.create',payload||'{"direction":"in","client_id":"20000000-0000-4000-8000-000000000001"}',gen_random_uuid());raise exception 'FAILED: revenue repeats accepted';
- exception when invalid_parameter_value then raise notice 'PASS: expense repetition rejects revenue'; end;
+ perform public.rotevo_finance_mutate('invoice.create',payload||'{"direction":"in","client_id":"20000000-0000-4000-8000-000000000001","title":"Synthetic receivable installments","counterparty":"Synthetic A"}',gen_random_uuid());
+ perform pg_temp.assert_true((select count(*)=3 and bool_and((x->>'paid_cents')::integer=0) from jsonb_array_elements(public.rotevo_finance_snapshot()->'invoices')x where x->>'title' like 'Synthetic receivable installments — parcela %/3'),'receivable installments create three unpaid obligations');
 end $$;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select pg_temp.assert_true(public.rotevo_client_finance()::text !~ 'Synthetic subscription|SUBSCRIPTION_SUPPLIER','expense series never appears in client portal');

@@ -1,5 +1,5 @@
 # ROTEVO — Matriz de compatibilidade da proteção de planning_projects.data
-**Status:** revisão de código, sem migração autorizada; branch `feature/admin-v2-redesign`.
+**Status:** histórico de outubro preservado abaixo; atualização UI3 em 10/11/2026, branch `feat/rotevo-ui2-pilot-20261109`. Sem migração hospedada autorizada.
 
 ## Evidência
 Teste em execução para restrição experimental de SELECT em `planning_projects.data`: GitHub Actions `38838962185`, verificar conclusão. O teste de caracterização de exposição do JSON já passou em `38837752526`. Esses testes são de laboratório.
@@ -33,3 +33,18 @@ A lista resulta dos arquivos inspecionados e não afirma esgotar todos os consum
 - **P4:** somente após aprovação específica para produção, aplicar grants/restrições planejados, observabilidade e rollback.
 
 **Decisão:** sem go-live neste estado. Nenhuma execução em produção é autorizada por este documento.
+
+
+## Atualização UI3, 10/11/2026
+
+Esta seção substitui a avaliação atual dos consumidores; a tabela anterior permanece como histórico do risco que motivou a migração para endpoints. Inventário estático atual: 19 chamadas diretas, zero acessos inseguros de JSON no navegador.
+
+| Consumidor atual | Fronteira e compatibilidade | Evidência e limite |
+| --- | --- | --- |
+| Portal e editores administrativos | Metadados diretos sujeitos a RLS; JSON por endpoints autenticados com service role no servidor | Contratos e testes comportamentais existentes aprovados; não enviar service role ao navegador |
+| Escrita documental administrativa | JWT/perfil/permissões antes do cliente privilegiado; CAS em updated_at | JSONB curto/extenso, HTML/CSS, RETURNING e concorrência aprovados no PostgreSQL isolado; HTTP/editor completo permanece pendente |
+| rotevo_editorial_decide e rotevo_editorial_idea_decide | SECURITY DEFINER com auth.uid, client_id, visibilidade e versão | Funções originais aprovam fixtures legítimas após restrição; negam conteúdo oculto, versão antiga e outro tenant; fallback sem workspace exige revisão própria |
+| Financeiro público/privado | Wrappers SECURITY INVOKER chamam funções privadas SECURITY DEFINER com autorização própria | SQL financeiro original passou após restrição; revisar fallback de workspace e troca inicial de senha de snapshot/RPC; não equivale à UI financeira conectada |
+| Grants propostos | Revogar tabela e coluna, inclusive PUBLIC; permitir metadados e preservar servidor | Sete grupos SQL sintéticos aprovados; nenhum grant hospedado alterado |
+
+Não transformar funções em SECURITY INVOKER nem revogar EXECUTE em bloco. O ensaio usa 14 arquivos selecionados, claims de Auth simuladas e Storage mínimo: não certifica o schema completo do Supabase hospedado. A homologação mínima de Auth/PostgREST real já aprovada no workflow 42744174264 é preservada, sem repetição. G2 continua bloqueando implantação.

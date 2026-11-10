@@ -69,48 +69,7 @@ Sem merge na `main` e **sem publicação deliberada de produção** nesta rodada
 - A conexão Supabase disponibiliza apenas o projeto principal `Rotevo`. A listagem de branches mostra apenas `main`, sem ambiente isolado de banco para homologação de alterações e transações. Não foi criado projeto/branch sujeito a cobrança; testes mutáveis continuam pendentes de infraestrutura realmente isolada.
 - Consulta de **contagens agregadas**, sem leitura de nomes, senhas ou documentos: **5 clientes, 5 workspaces configurados, 5 projetos e 0 clientes sem workspace** na data da verificação.
 - A auditoria revelou um fallback desnecessariamente permissivo nas rotas `/api/client/projects`, `/api/client/workspace` e `/api/client/finance`: ausência de workspace invocava `emptyWorkspace()`, que inicializa todos os módulos, podendo permitir visualização de serviços não configurados. A branch foi ajustada para passar `data` ausente diretamente a `workspaceForClient`, que retorna `modules:[]` em configuração inválida/ausente. Os cinco workspaces cadastrados permanecem intactos; não houve alteração no Supabase.
-- Testes `client-project-api-behavior.test.mjs` e `client-project-projection.test.mjs` passaram a proteger esse comportamento (tenant, perfil, módulos ausentes e configuração inexistente).
-- `Supabase Security Advisors` (somente leitura) reportou **14 avisos INFO** de RLS ativo sem policies (incluindo tabelas deliberadamente acessíveis via servidor), **3 WARN** de funções SECURITY DEFINER executáveis por `authenticated` (`is_strategist`, `rotevo_editorial_decide`, `rotevo_editorial_idea_decide`) e **1 WARN** de proteção contra senhas vazadas desativada. Esses alertas **não provam exploração**: funções de aprovação editorial usam JWT/identidade do cliente e exigem revisão completa antes de qualquer revogação; tabelas com RLS sem policy podem estar bloqueadas intencionalmente. Links de referência: [Supabase Database Linter / RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [Password Security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
-- A condição de aceitar a UI 3.0 continua a exigir instância Postgres/Auth/RLS isolada, testes autenticados com Cliente e Equipe, matriz responsiva exata e uma decisão específica de segurança sobre os alerts. Não alterar políticas, autenticação, migrations, flags ou permissões da produção sem um plano avaliado.
-
-### Revisão adicional das funções de aprovação editorial (somente leitura)
-
-A consulta de metadados SQL confirmou que `public.rotevo_editorial_decide` e `public.rotevo_editorial_idea_decide` verificam `auth.uid()`, perfil de cliente, vínculo `planning_projects.client_id`, estado editorial, visibilidade explícita, versão e validade da decisão, antes da gravação. A presença de `SECURITY DEFINER` é compatível com essa arquitetura, mas exige auditoria especializada: os avisos do Supabase não devem ser eliminados por revogação indiscriminada, pois as aprovações legítimas precisam dessas rotas.
-
-**Lacuna a discutir antes do release:** os dois procedimentos utilizam a ausência de um registro de `client_workspaces` como compatibilidade para o módulo Conteúdo (a expressão `exists(... not has content)` somente bloqueia quando há um workspace que desabilita o módulo). Os endpoints HTTP foram reforçados para negar módulos sem workspace; harmonizar a regra SQL das aprovações, mantendo compatibilidade controlada, requer uma migração planejada e testes de banco isolado. **Nenhum procedimento SQL foi alterado nesta auditoria.**
-
-## 8. Gate crítico de confidencialidade do JSON de planejamento
-
-**NO-GO confirmado em consulta somente leitura ao Supabase hospedado:** `authenticated` possui SELECT na coluna `public.planning_projects.data`; políticas RLS vinculam linhas ao cliente, mas não removem propriedades internas do JSON. A API `/api/client/projects` e `projectForClient` impedem esses campos na resposta do Portal, **porém não eliminam a via de leitura direta pelo Data API**. O teste de caracterização `supabase/tests/database/planning_data_exposure_characterization_test.sql` já documentava esse risco.
-
-O risco está limitado ao potencial acesso do cliente ao JSON **do próprio tenant**; não houve exploração de credenciais nem leitura de conteúdo privado. O teste de integração `scripts/security/ui3-raw-json-release-gate.test.mjs` agora acompanha o uso dos endpoints autorizados no frontend, mas **não transforma a base em segura**.
-
-Consultar o plano [`docs/security/ui3-planning-data-grant-remediation-20261109.md`](../security/ui3-planning-data-grant-remediation-20261109.md) para a remediação em laboratório, proteção de edição administrativa, testes RLS com dois tenants, migração reversível e aprovação específica. A publicação da UI 3.0 deve continuar **bloqueada** até o problema ser resolvido e comprovado.
-
-Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/database/postgres/testing-row-level-security).
-
-## 9. Ensaio executado do bloqueio G2 — sem produção (09/11/2026)
-
-**Aprovado no CI:**
-- [GitHub Actions — laboratório PostgreSQL descartável, execução 42741072308](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741072308), commit `3a85e1bd`, conclusão **SUCCESS**. O runner provisionou PostgreSQL 17 sintético (sem credenciais Rotevo), reproduziu grants amplos e isolamento de linhas por tenant, revogou `SELECT,UPDATE` de papéis comuns, confirmou negação do JSON, seleção dos metadados e leitura por `service_role`. Transação integralmente revertida.
-- [GitHub Actions — regressões UI3, execução 42741380148](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42741380148), commit `e318c931`, conclusão **SUCCESS**. Testes de autorização e rotas, documentos HTML, Financeiro, TypeScript e build aprovados.
-- Proposta revisável, não executada, em `docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql`. Inclui preflight de schema, `REVOKE SELECT, UPDATE` para `anon/authenticated`, `GRANT SELECT` apenas nos metadados, pós-verificação de negação do JSON e preservação do `service_role`. Não se trata de migration aprovada.
-- Regressão em `scripts/security/ui3-raw-json-release-gate.test.mjs` obriga o uso de endpoints seguros pelos consumidores administrativos centrais e verifica a existência do bloqueio no SQL de proposta.
-
-**Importante:** o laboratório PostgreSQL não replica integralmente o Supabase hospedado, nem Auth/Storage/rotinas/RLS da Rotevo. O campo `planning_projects.data` no ambiente de produção ainda mantém permissão direta `SELECT` para `authenticated`; a homologação de banco real isolado, a correção de grants hospedados e a verificação autenticada de cliente e equipe **seguem pendentes**.
-
-**Validação adicional do esquema hospedado (consulta apenas de catálogo):** `authenticated` não pode alterar `profiles.role` nem `profiles.client_id`, mas pode alterar `profiles.full_name`; o antigo gate G1 está coberto pelo estado atual e não precisa ser reaberto sem nova evidência.
-
-**Ação final necessária:** preparar espelho Supabase isolado a partir de baseline verificado, testar o SQL proposto com identidades reais *sintéticas*, preservar o editor do estrategista e obter autorização explícita para a eventual mudança sensível no banco hospedado. Nenhuma alteração em produção nesta rodada.
-
-## 10. Rodada adicional — autenticação administrativa e RLS sintética ampliada
-
-- **GitHub Actions**: [execução 42742142119](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42742142119), resultado **SUCCESS**. A UI3, TypeScript, build e testes existentes permaneceram íntegros depois de incluir o guard de troca inicial de senha em quatro rotas de projeto:
-  - `/api/admin/project` (consulta de JSON pelo servidor);
-  - `/api/admin/project/update`;
-  - `/api/admin/project/status`;
-  - `/api/admin/project/delete`.
-- `scripts/security/client-project-projection.test.mjs` agora verifica que JWT é validado e a marca `app_metadata.rotevo_password_reset_required` é analisada **antes** da criação do cliente privilegiado e da consulta ao perfil. Sem alterações em contas/senhas/roles reais.
+- Testes `client-project-api-behavior.test.mjs` e `client-project-projection.test.mjs` passaram a proteger esse c…2007 tokens truncated…u00e7ões em contas/senhas/roles reais.
 - **PostgreSQL 17 inteiramente descartável**: [execução 42742451497](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42742451497), resultado **SUCCESS**. O laboratório `scripts/security/pg-planning-json-lab.sql` comprova com fixtures: cliente A só vê metadados do projeto A; cliente B só vê os de B; ambas as identidades recebem negação ao selecionar o JSON privado; papel anônimo não recebe JSON nem metadados; `service_role` preserva leitura autorizada para endpoints.
 - **Abrangência limitada**: o laboratório reproduz um recorte de grants e RLS em PostgreSQL, não uma cópia da instância completa de Auth/Storage/RPC do Supabase Rotevo. Não é homologação conectada das contas reais ou prova de migração segura no ambiente hospedado.
 - A base conectada ainda mostra apenas a branch Supabase principal; a criação de ambiente hospedado isolado pode implicar custos e não foi executada. O fluxo ponta a ponta autenticado de Cliente/Equipe depende do navegador Work, indisponível nesta sessão.
@@ -153,3 +112,40 @@ O primeiro ensaio da instalação local ([42743990907](https://github.com/rotevo
 **Limite essencial:** o teste usa Auth e Data API reais, mas um **subconjunto sintético** do banco. Ele ainda não reproduz todas as funções `rotevo_operations`, Financeiro, Storage, contratos, auditoria ou as migrations do schema hospedado. A permissão ampla da coluna `data` no Supabase de produção **não foi corrigida**; permanece um gate de publicação.
 
 **Acessos externos pendentes:** revalidar a prévia UI3 com sessões autorizadas de Cliente e Equipe no navegador Work, cobrindo telas e permissões reais sem escrita. Para aplicar a correção de grants no banco hospedado, é necessária autorização específica após ensaio em schema equivalente e revisão do plano de rollback.
+
+
+## 13. Homologação final possível, 10/11/2026
+
+### Versão e escopo
+
+Branch `feat/rotevo-ui2-pilot-20261109`, prévia READY do commit `097795e5c4b387f2e8a4af0c33aa8a83a71b4203`: https://rotevo-ecossistema-7wvtuzpcm-rotevo-marketing.vercel.app (deployment `dpl_GCeVwaHqLinMzNiZhrjv5nTwcJ8N`). A sincronização inicial não apresentou divergência. Os ensaios anteriormente aprovados foram mantidos como evidência, sem repetir a homologação manual de zoom/menu/foco nem o laboratório mínimo Supabase da seção 12. A regressão automática após correção integra o workflow existente.
+
+### Resultado por frente
+
+| Frente | Resultado desta rodada | Limite ou bloqueio |
+| --- | --- | --- |
+| Navegador autenticado | A solicitação segura resultou em sessão administrativa válida na última prévia; consultas sem escrita | A conta fornecida abriu `/admin`, não uma sessão de cliente ou colaborador |
+| Navegação administrativa pendente | Projetos e Visão Geral alteram seção e URL; Voltar/Avançar restauram a seção correta | Correção antes coberta por DOM sintético agora validada na prévia real |
+| Portal do Cliente | Evidências anteriores de projeção/API/RLS sintéticas preservadas | Sem identidade de cliente autorizada disponível: projetos, documentos, conteúdo, reuniões, Financeiro, contratos e restrições na UI não homologados nesta rodada |
+| Colaborador | Evidências anteriores de atribuição/permissões/negações nos handlers preservadas | Sem identidade autorizada de equipe disponível: navegação e negações reais na UI pendentes; sem criar, redefinir ou personificar contas |
+| Matriz responsiva/acessibilidade | Detectado contraste insuficiente em metadados pequenos do console: `#6A7890` sobre branco, aproximadamente 4,47:1; corrigido para `#687487`, inclusive fallback de vínculo, com regressão de mínimo 4,5:1 | API de navegador não oferece viewport exato; tentativa de redimensionamento nativo não produziu as dimensões requeridas. 320/375/390/430/768/1024/1440 px e leitor de tela continuam pendentes; testes de zoom aprovados não foram repetidos |
+| Persistência sintética | HTML curto/extenso, CSS, JSONB reaberto, publicação existente preservada, UPDATE RETURNING e CAS concorrente aprovados após restrição de grants | Camada SQL real isolada; não é ciclo HTTP/UI completo de edição/publicação/Storage |
+| Financeiro sintético | Funções financeiras SQL originais e asserções de ciclo de vida passaram no laboratório com grants restritos | Fixtures corrigidas para visibilidade explícita e parcelamento de receitas já suportado; Financeiro da prévia permaneceu desabilitado, sem alterar configuração ou registros |
+| planning_projects.data | Proposta endurecida contra grants de PUBLIC e grants explícitos por coluna; RPCs editoriais originais continuam operacionais no ensaio | Nenhum SQL hospedado foi executado; exposição já documentada G2 permanece bloqueante |
+
+O carregamento inicial mostrou uma falha transitória ao carregar planejamentos; uma atualização restaurou a tela. Não houve evidência suficiente para atribuir causa ou alterar o código de carregamento. Manter observabilidade e reprodução controlada como pendência.
+
+### Correções e testes novos
+
+- `AdminWorkConsole.tsx`: cor dos metadados e do fallback ajustada para a paleta com contraste AA no fundo branco observado. O teste `ui3-contrast.test.mjs` protege os metadados de texto pequeno; não representa auditoria de contraste de todas as telas.
+- Proposta `ui3-private-planning-json-grants-PROPOSAL-ONLY.sql`: remoção de grants independentes de tabela/coluna e pós-verificação de escrita do servidor, além das verificações anteriores. Arquivo de revisão, fora de migrations.
+- `scripts/finance/database-isolated.sql`: fixtures alinhadas às migrations existentes de visibilidade de campanhas e parcelas a receber; nenhum comportamento financeiro de produção foi modificado.
+- Novo laboratório `ui3-full-sql-compat-local.mjs`: PostgreSQL WASM em memória com 14 arquivos SQL selecionados, funções reais e dois tenants sintéticos; **7 grupos aprovados**. Auth usa funções locais de claims e Storage mínimo, não GoTrue/Storage reais. Não certifica todas as migrations hospedadas.
+- Regressões locais afetadas: **22 testes aprovados**, zero falhas; ESLint do componente e TypeScript aprovados. Inventário estático: **19 chamadas diretas, zero acessos inseguros de JSON no navegador**. Workflow existente ampliado com contraste e laboratório SQL descartável, usando dependência temporária fixada em `@electric-sql/pglite@0.5.16`.
+- Compatibilidade SQL/editor detalhada na matriz e no plano de remediação: manter as RPCs SECURITY DEFINER e suas verificações, sem revogação indiscriminada de EXECUTE; revisar separadamente fallback sem workspace e guarda de troca inicial de senha nas RPCs financeiras.
+
+### Decisão consolidada
+
+**NO-GO para implantação em produção.** Faltam identidades autorizadas de Cliente/Equipe, dimensões exatas/leitor de tela e ensaio integral do schema equivalente com Auth/PostgREST/Storage e ciclo HTTP do editor. A validação numérica da cor corrigida deve ser complementada pela prévia gerada deste ajuste. O gate G2 do banco hospedado continua aberto.
+
+**Próxima etapa:** disponibilizar as duas sessões autorizadas e um laboratório local completo com dados fictícios, concluir as matrizes pendentes, ensaiar a remediação e rollback seguro. Somente depois solicitar autorização específica para grants hospedados e implantação. Nenhum dado real, permissão de produção ou política RLS hospedada foi alterado; sem merge na main, recursos pagos novos ou publicação em produção.

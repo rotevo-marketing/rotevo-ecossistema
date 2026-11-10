@@ -1,0 +1,102 @@
+// Disposable in-memory PostgreSQL compatibility lab. No URL, hosted client or credentials.
+// Install @electric-sql/pglite@0.5.16 in a temporary prefix; pass its absolute dist/index.js path.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {isAbsolute} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const modulePath=process.env.ROTEVO_SQL_LAB_MODULE;
+assert.ok(modulePath&&isAbsolute(modulePath)&&!modulePath.includes('://'),'local PGlite module path required');
+const {PGlite}=await import(pathToFileURL(modulePath).href);
+const pg=new PGlite();
+const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
+let checks=0;
+const check=(ok,label)=>{assert.ok(ok,label);checks++;console.log('PASS:',label);};
+try{
+ await pg.exec(`create role anon;create role authenticated;create role service_role bypassrls;
+ create schema auth;create schema storage;
+ create table auth.users(id uuid primary key,email text);
+ create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
+ create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;
+ grant usage on schema public,auth,storage to anon,authenticated,service_role;
+ grant execute on function auth.jwt(),auth.uid() to anon,authenticated,service_role;
+ create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ create table storage.objects(id uuid default gen_random_uuid(),bucket_id text);
+ alter table storage.objects enable row level security;`);
+ const migrations=[
+  'docs/security/lab-legacy-baseline-local-only.sql',
+  'supabase/migrations/20261015_harden_profile_authorization.sql',
+  'supabase/migrations/20261015_team_roles.sql',
+  'supabase/migrations/20261016_staff_role_legacy_boundary.sql',
+  'supabase/migrations/20261016_team_access_audit.sql',
+  'supabase/migrations/20261016210140_activation_privilege_boundary.sql',
+  'supabase/migrations/20261018122353_finance_v2_private_domain.sql',
+  'supabase/migrations/20261019125535_finance_payables_lifecycle.sql',
+  'supabase/migrations/20261020204843_operation_workspace_and_editorial.sql',
+  'supabase/migrations/20261020210903_private_operational_assets.sql',
+  'supabase/migrations/20261020233347_operation_profile_and_finance_portal.sql',
+  'supabase/migrations/20261020234445_finance_receivable_installments.sql',
+  'supabase/migrations/20261021001607_operation_editorial_visibility_hardening.sql',
+  'supabase/migrations/20261108_editorial_idea_approvals.sql'
+ ];
+ for(const path of migrations){try{await pg.exec(read(path));}catch(e){throw new Error('Baseline failed at '+path+': '+e.message);}}
+ check(true,'fourteen selected baseline SQL files load together in isolated PostgreSQL');
+ await pg.exec(`grant select,update on public.planning_projects to public;grant select(data),update(data) on public.planning_projects to authenticated;`);
+ await pg.exec(read('docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'));
+ const acl=(await pg.query(`select has_column_privilege('authenticated','public.planning_projects','data','SELECT') exposed,has_column_privilege('authenticated','public.planning_projects','title','SELECT') metadata,has_column_privilege('service_role','public.planning_projects','data','SELECT') server`)).rows[0];
+ check(!acl.exposed&&acl.metadata&&acl.server,'grant proposal denies private JSON and preserves metadata/server');
+ // Executes the actual financial SQL functions with only synthetic fixtures; script rolls back.
+ await pg.exec(read('scripts/finance/database-isolated.sql').replace(/^\\set[^\n]*\n/gm,''));
+ check(true,'financial SQL lifecycle assertions execute after the JSON grant restriction');
+
+ // Real SQL compatibility under the service role used by the strategic editor endpoint.
+ await pg.exec(`begin;
+ insert into auth.users(id,email) values
+ ('10000000-0000-4000-8000-000000000001','admin@synthetic.invalid'),
+ ('10000000-0000-4000-8000-000000000002','client-a@synthetic.invalid'),
+ ('10000000-0000-4000-8000-000000000003','client-b@synthetic.invalid');
+ insert into public.clients(id,name,slug) values
+ ('20000000-0000-4000-8000-000000000001','Synthetic A','sql-lab-a'),
+ ('20000000-0000-4000-8000-000000000002','Synthetic B','sql-lab-b');
+ insert into public.profiles(id,role,client_id) values
+ ('10000000-0000-4000-8000-000000000001','strategist',null),
+ ('10000000-0000-4000-8000-000000000002','client','20000000-0000-4000-8000-000000000001'),
+ ('10000000-0000-4000-8000-000000000003','client','20000000-0000-4000-8000-000000000002');
+ insert into public.team_members(user_id,display_name,role,active) values
+ ('10000000-0000-4000-8000-000000000001','Synthetic admin','admin',true);
+ insert into public.client_workspaces(client_id,data) values
+ ('20000000-0000-4000-8000-000000000001','{"modules":["content","finance","campaigns","planning"]}');
+ insert into public.planning_projects(id,client_id,title,slug,data,updated_at) values
+ ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Synthetic editor','sql-editor','{}','2026-11-09T00:00:00Z');
+ set local role service_role;`);
+ const original={internalNotes:'SYNTHETIC ONLY',ecosystem2027:{selectedDocumentCodes:['01.06'],documents:{'01.06':{publishedContent:'Published synthetic release',publishedAt:'2026-11-01T00:00:00Z'}}},editorialCalendar:[{id:'final',version:'v1',status:'awaiting_client',visibleToClient:true},{id:'idea',version:'v1',status:'idea_pending',visibleToClient:true},{id:'other',version:'v1',status:'awaiting_client',visibleToClient:false}]};
+ for(const n of [2,1600]){
+  const html='<section>'+('<p>Ação 🧠 &amp; revisão</p>'.repeat(n))+'</section>',css='.card{color:#687487}\n'.repeat(200);
+  const document={...original.ecosystem2027.documents['01.06'],richContent:{format:'blocknote-v1',blocks:[{id:'synthetic',type:'visualHtml',props:{markup:html,stylesheet:css},children:[]}]}};
+  const value={...original,ecosystem2027:{...original.ecosystem2027,documents:{'01.06':document}}};
+  const before=(await pg.query('select updated_at::text as stamp from public.planning_projects where id=$1',['30000000-0000-4000-8000-000000000001'])).rows[0].stamp;
+  const saved=await pg.query('update public.planning_projects set data=$1::jsonb,updated_at=clock_timestamp() where id=$2 and updated_at=$3::timestamptz returning data',[JSON.stringify(value),'30000000-0000-4000-8000-000000000001',before]);
+  assert.deepEqual(saved.rows[0].data,value);
+  const stale=await pg.query('update public.planning_projects set data=$1::jsonb where id=$2 and updated_at=$3::timestamptz returning data',['{}','30000000-0000-4000-8000-000000000001',before]);
+  assert.equal(stale.rows.length,0);
+  const reopened=(await pg.query('select data from public.planning_projects where id=$1',['30000000-0000-4000-8000-000000000001'])).rows[0].data;
+  assert.deepEqual(reopened,value);
+ }
+ check(true,'small/extensive HTML and CSS survive real JSONB and optimistic service-role update/returning after grant restriction');
+ await pg.exec(`reset role;set local role authenticated;
+ select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+ select public.rotevo_editorial_decide('30000000-0000-4000-8000-000000000001','final','v1','approved',null);
+ select public.rotevo_editorial_idea_decide('30000000-0000-4000-8000-000000000001','idea','v1','approved',null);`);
+ check(true,'actual SECURITY DEFINER idea/final approvals remain callable under restricted JSON grants');
+ for(const [id,version,expected] of [['other','v1','40001'],['final','obsolete','40001']]){
+  await pg.exec('savepoint denied_case');
+  try{await pg.query('select public.rotevo_editorial_decide($1,$2,$3,$4,null)',['30000000-0000-4000-8000-000000000001',id,version,'approved']);throw Error('Forbidden approval unexpectedly accepted');}
+  catch(e){assert.equal(e.code,expected);}finally{await pg.exec('rollback to savepoint denied_case');}
+ }
+ check(true,'editorial RPC rejects hidden content and stale versions after grant restriction');
+ await pg.exec(`select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}',true);savepoint tenant_denial;`);
+ try{await pg.query('select public.rotevo_editorial_decide($1,$2,$3,$4,null)',['30000000-0000-4000-8000-000000000001','final','v1','approved']);throw Error('Other tenant accepted');}
+ catch(e){assert.equal(e.code,'42501');}finally{await pg.exec('rollback to savepoint tenant_denial');}
+ check(true,'editorial RPC rejects another tenant using the original function');
+ await pg.exec('rollback');
+ console.log('PASS:',checks,'SQL compatibility groups; in-memory database destroyed on close');
+}catch(e){console.error('SQL LAB FAILED:',e.message,'code:',e.code??'none');process.exitCode=1;}finally{await pg.close();}

@@ -67,9 +67,12 @@ try {
  }
  await page.setViewportSize({width:390,height:900});
  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-staff-390.png",fullPage:true});
+ const exitButton=page.getByRole("button",{name:"Sair"});
+ await exitButton.focus();
+ assert.equal(await exitButton.evaluate(node=>node===document.activeElement),true,"logout control must receive programmatic keyboard focus");
  await page.keyboard.press("Tab");
- const active=await page.evaluate(()=>document.activeElement?.tagName?.toLowerCase());
- assert.ok(["a","button","input"].includes(active),"keyboard focus must reach an interactive element");
+ const active=await page.evaluate(()=>({tag:document.activeElement?.tagName?.toLowerCase(),label:document.activeElement?.textContent?.trim().slice(0,40)}));
+ assert.ok(["a","button","input"].includes(active.tag),"Tab from logout must reach an interactive control: "+JSON.stringify(active));
  await page.getByRole("button",{name:"Sair"}).click();
  await page.waitForURL("**/estrategista/login",{timeout:30000});
  console.log("PASS staff UI logout and focusable keyboard navigation");

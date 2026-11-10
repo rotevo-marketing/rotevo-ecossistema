@@ -3,11 +3,11 @@
 create schema auth;
 create table auth.users(id uuid primary key);
 create table public.planning_projects(id uuid primary key);
-do $begin
+do $collaboration$begin
  if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin;end if;
  if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin;end if;
  if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin;end if;
-end$;
+end$collaboration$;
 \i docs/security/sql/ui3-project-collaboration-PROPOSAL-ONLY.sql
 insert into auth.users(id) values('00000000-0000-0000-0000-000000000001');
 insert into public.planning_projects(id) values('00000000-0000-0000-0000-000000000002');

@@ -2,7 +2,8 @@
 import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 import {useCompactLayout} from "@/hooks/useCompactLayout";
 import DialogFocus from "@/Components/ui/DialogFocus";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
+import {request} from "@/lib/operations/api";
 import Link from "next/link";
 import ProjectOnboarding, {type OnboardingData} from "@/Components/admin/ProjectOnboarding";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
@@ -26,6 +27,23 @@ export function AdminOnboardingHub({projects,onChanged}:{projects:HubProject[];o
  const [starterId,setStarterId]=useState("");
  const [query,setQuery]=useState("");
  const [filter,setFilter]=useState<"all"|"pending"|"done"|"not_started">("all");
+ const [clientPhotos,setClientPhotos]=useState<Record<string,string>>({});
+ useEffect(()=>{
+  let mounted=true;
+  async function loadPhotos(){
+   try{
+    const result=await request<{clients:{slug:string;cover_image_url:string|null}[]}>("/api/admin/clients");
+    const list=result.clients??[];
+    const ids=[...new Set(list.map(c=>c.cover_image_url??"").filter(url=>url.startsWith("asset://")).map(url=>url.slice(8)))];
+    let resolved:Record<string,string>={};
+    if(ids.length)resolved=(await request<{links:Record<string,string>}>("/api/assets/resolve","POST",{ids})).links??{};
+    if(mounted)setClientPhotos(Object.fromEntries(list.map(c=>[c.slug,c.cover_image_url?.startsWith("asset://")?resolved[c.cover_image_url.slice(8)]??"":c.cover_image_url??""])));
+   }catch{/* The project remains usable with initial-letter avatars when a photo cannot be resolved. */}
+  }
+  void loadPhotos();
+  return()=>{mounted=false;};
+ },[]);
+
  const project=projects.find(p=>p.id===selected)??projects[0];
  const overview=useMemo(()=>projects.map(p=>{
   const steps=Array.isArray(p.data?.onboardingChecklist)?p.data.onboardingChecklist:[];
@@ -43,7 +61,7 @@ export function AdminOnboardingHub({projects,onChanged}:{projects:HubProject[];o
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="sr-only">Acompanhamento de entrada</h2><p className="text-xs text-[#687487]">{overview.length} projetos · {totals.started-totals.completed} em andamento · {totals.completed} concluídos · {totals.notStarted} não iniciados</p></div><button type="button" disabled={projects.length===0} onClick={()=>{setStarterId(unstarted[0]?.project.id??projects[0]?.id??"");setStarterOpen(true);}} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-50"><RotevoTablerIcon name="square-rounded-plus" size={18}/> + Iniciar onboarding</button></div>
    <div className="mt-4 flex flex-wrap gap-2"><label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-[#E3E7F0] bg-white px-3"><RotevoTablerIcon name="search" size={17} className="text-[#697386]"/><input aria-label="Buscar onboarding por cliente ou projeto" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar cliente ou projeto" className="w-full bg-transparent py-2.5 text-sm outline-none"/></label><select aria-label="Filtrar situação do onboarding" value={filter} onChange={e=>setFilter(e.target.value as typeof filter)} className="cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-xs"><option value="all">Todas as situações</option><option value="not_started">Não iniciados</option><option value="pending">Em preparação</option><option value="done">Concluídos</option></select></div>
    {visible.length===0?<p className="mt-4 rounded-xl bg-[#F6F7FB] p-4 text-sm text-[#697386]">{projects.length===0?"Cadastre um projeto para iniciar o onboarding.":"Nenhum onboarding corresponde aos filtros."}</p>:
-   <div className="mt-4 overflow-x-auto border-y border-[#E3E6ED]"><table className="w-full min-w-[680px] border-collapse text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{<><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="user-check" size={17}/>Cliente / projeto</span></th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="clock" size={17}/>Situação</span></th><th scope="col" className="border-b px-3 py-3">Progresso</th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="alert-circle" size={17}/>Pendentes</span></th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Próxima ação</span></th></>}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{visible.map(p=><tr key={p.project.id} className="hover:bg-[#FAFBFE]"><td className="px-3 py-3"><p className="font-semibold text-[#090D1C]">{client(p.project)?.name??"Cliente"}</p><p className="mt-1 max-w-[200px] truncate text-[#697386]">{p.project.title}</p></td><td className="px-3 py-3"><span className={p.status==="done"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":"rounded-lg bg-[#ECE8FF] px-2 py-1 text-[#6034B7]"}>{labels[p.status]}</span></td><td className="px-3 py-3"><div className="flex min-w-[110px] items-center gap-2"><div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#6C5CE7]" style={{width:`${p.percent}%`}}/></div><strong>{p.percent}%</strong></div><span className="mt-1 block text-[#697386]">{p.done}/{p.steps.length} etapas</span></td><td className="px-3 py-3">{p.pending}</td><td className="px-3 py-3"><button type="button" onClick={()=>{setSelected(p.project.id);setDrawerOpen(true);}} className="cursor-pointer rounded-lg px-3 py-2 font-medium text-[#5949D1] hover:bg-[#EDEAFF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]">{p.steps.length?"Gerenciar":"Iniciar"} →</button></td></tr>)}</tbody></table></div>}
+   <div className="mt-4 overflow-x-auto border-y border-[#E3E6ED]"><table className="w-full min-w-[680px] border-collapse text-left text-xs"><thead className="bg-[#F6F7FB] text-[#525B70]"><tr>{<><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="user-check" size={17}/>Cliente / projeto</span></th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="clock" size={17}/>Situação</span></th><th scope="col" className="border-b px-3 py-3">Progresso</th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="alert-circle" size={17}/>Pendentes</span></th><th scope="col" className="border-b px-3 py-3"><span className="inline-flex items-center gap-2 whitespace-nowrap"><RotevoTablerIcon name="square-rounded-plus" size={17}/>Próxima ação</span></th></>}</tr></thead><tbody className="divide-y divide-[#E3E7F0]">{visible.map(p=><tr key={p.project.id} className="hover:bg-[#FAFBFE]"><td className="px-3 py-3"><div className="flex min-w-[210px] items-center gap-3"><span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E3E6ED] bg-[#F2EFFD] text-xs font-semibold text-[#6034B7]">{clientPhotos[client(p.project)?.slug??""]?<img src={clientPhotos[client(p.project)?.slug??""]} alt="" className="h-full w-full object-cover"/>:(client(p.project)?.name??"C").trim().charAt(0).toUpperCase()}</span><span className="min-w-0"><span className="block font-semibold text-[#323647]">{client(p.project)?.name??"Cliente"}</span><span className="mt-1 block max-w-[200px] truncate text-[#697386]">{p.project.title}</span></span></div></td><td className="px-3 py-3"><span className={p.status==="done"?"rounded-lg bg-[#E0F5E8] px-2 py-1 text-[#176F40]":"rounded-lg bg-[#ECE8FF] px-2 py-1 text-[#6034B7]"}>{labels[p.status]}</span></td><td className="px-3 py-3"><div className="flex min-w-[110px] items-center gap-2"><div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E9ECF4]"><div className="h-full rounded-full bg-[#6C5CE7]" style={{width:`${p.percent}%`}}/></div><strong>{p.percent}%</strong></div><span className="mt-1 block text-[#697386]">{p.done}/{p.steps.length} etapas</span></td><td className="px-3 py-3">{p.pending}</td><td className="px-3 py-3"><button type="button" onClick={()=>{setSelected(p.project.id);setDrawerOpen(true);}} className="cursor-pointer rounded-lg px-3 py-2 font-medium text-[#5949D1] hover:bg-[#EDEAFF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]">{p.steps.length?"Gerenciar":"Iniciar"} <RotevoTablerIcon name="external-link" size={15} className="ml-1 inline-block align-text-bottom"/></button></td></tr>)}</tbody></table></div>}
   </section>
   {starterOpen&&<div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#090D1C]/55 p-4" role="dialog" aria-modal="true" aria-label="Selecionar projeto para iniciar onboarding">
    <section className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
@@ -52,15 +70,15 @@ export function AdminOnboardingHub({projects,onChanged}:{projects:HubProject[];o
     <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setStarterOpen(false)} className="rounded-lg border px-4 py-2 text-sm">Cancelar</button><button type="button" disabled={!starterId} onClick={()=>{setSelected(starterId);setStarterOpen(false);setDrawerOpen(true);}} className="rounded-lg bg-[#6C5CE7] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-50">Continuar</button></div>
    </section>
   </div>}
-  {drawerOpen&&project&&<div className="fixed inset-0 z-[100] flex justify-end">
+  {drawerOpen&&project&&<div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
    <button type="button" aria-label="Fechar painel de onboarding" className="absolute inset-0 bg-[#090D1C]/55" onClick={()=>{if(confirmDiscardChanges())setDrawerOpen(false);}}/>
-   <aside role="dialog" aria-modal="true" aria-label="Gerenciar onboarding" className="relative z-10 h-full w-full max-w-[680px] overflow-y-auto bg-white p-4 shadow-2xl sm:p-6">
+   <section role="dialog" aria-modal="true" aria-labelledby="ui3-onboarding-dialog-title" className="relative z-10 max-h-[92dvh] w-full max-w-[860px] overflow-y-auto rounded-2xl border border-[#E3E7F0] bg-white p-5 shadow-2xl sm:p-7">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E7F0] pb-4">
-     <div><h2 className="text-lg font-bold text-[#090D1C]">Gerenciar onboarding</h2><p className="mt-1 text-sm text-[#525B70]">{client(project)?.name??"Cliente"} · {project.title}</p></div>
+     <div><h2 id="ui3-onboarding-dialog-title" className="text-lg font-semibold text-[#323647]">Gerenciar onboarding</h2><p className="mt-1 text-sm text-[#525B70]">{client(project)?.name??"Cliente"} · {project.title}</p></div>
      <div className="flex items-center gap-2">{client(project)?.slug&&<Link href={`/admin/planejamentos/${client(project)?.slug}?projectId=${encodeURIComponent(project.id)}`} className="inline-flex items-center gap-1 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="folder" size={16}/> Projeto</Link>}<button type="button" aria-label="Fechar" onClick={()=>{if(confirmDiscardChanges())setDrawerOpen(false);}} className="cursor-pointer rounded-lg border border-[#E3E7F0] p-2 text-[#525B70]"><RotevoTablerIcon name="x" size={19}/></button></div>
     </div>
     <DialogFocus onClose={()=>{if(confirmDiscardChanges())setDrawerOpen(false);}}/><ProjectOnboarding key={project.id} projectId={project.id} data={project.data} updatedAt={project.updated_at} onSaved={(data,updatedAt)=>onChanged(project.id,data,updatedAt)}/>
-   </aside>
+   </section>
   </div>}
  </div>;
 }

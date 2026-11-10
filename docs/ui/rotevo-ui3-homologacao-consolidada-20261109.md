@@ -381,3 +381,16 @@ A revisão da versão atualmente publicada `bec8ee26` mostrou que a página prin
 Foi criado o [checklist operacional de release](./rotevo-ui3-release-candidate-operational-checklist-20261110.md), com preflight de banco sem dados pessoais, condições de GO/NO-GO, ordem de publicação e recuperação de aplicação que **não reabre SELECT(data)**.
 
 **Estado segue NO-GO** enquanto a correção no Supabase hospedado, equivalência completa de schema/RPC, leitura assistiva, exemplares publicados e autorização específica não estiverem concluídos. Os testes aprovados demonstram viabilidade da proposta, mas não dão autorização de produção.
+
+## 20. Homologação de Contrato compartilhado e acessibilidade interna — 10/11/2026
+
+**CI integralmente aprovado:** [GitHub Actions 42798924284](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42798924284), commit `1f158c5c`, resultado **SUCCESS**. O teste com navegador Chromium e Supabase local descartável verificou:
+- Contrato **explicitamente compartilhado** no Portal do Cliente; documento privado fictício não aparece, quatro abas `Resumo`, `Escopo contratado`, `Documento`, `Histórico` são navegáveis com `aria-selected` e painel associado.
+- **Responsividade da tela interna de Contrato**: 320, 375, 390, 430, 768, 1024, 1440 CSS px sem transbordamento horizontal.
+- **WCAG automatizado** `axe-core` A/AA, WCAG 2.0/2.1 nas quatro abas a 390 CSS px: `ACCESSIBILITY shared contract Resumo []`, `Escopo contratado []`, `Documento []`, `Histórico []`, após correções.
+- Correções pontuais em `src/Components/cliente/ClientContracts.tsx`: metadados de vigência e serviço ganharam contraste suficiente sobre `#F6F7FB` (`b4bb33f1`); textos ativo/inativo da navegação de abas foram escurecidos para preservar AA em estados de interação (`1f158c5c`).
+- Seis grupos de Auth, API, Storage, gravação e publicação de HTML/CSS, documentos de contrato/fatura e Financeiro continuaram **PASS**; login sintético de Equipe e telas iniciais de Cliente/Estrategista também passaram.
+
+**Limites:** o contrato testa metadados, escopo, histórico e estado de documento sem PDF real assinado. Não houve validação da assinatura ou renderização de PDF em leitor assistivo. A inspeção visual de um **documento de Planejamento publicado** ainda é pendente e a Rotevo ainda não passou por avaliação manual com leitor de tela. O teste ocorre em laboratório sintético e **não certifica grants do banco hospedado**, que permanecem inseguros para a coluna `planning_projects.data`.
+
+O CI foi ligado a alterações no componente Contrato. **Nenhuma conta, contrato ou registro real foi modificado, nenhuma migração ou publicação de produção realizada.**

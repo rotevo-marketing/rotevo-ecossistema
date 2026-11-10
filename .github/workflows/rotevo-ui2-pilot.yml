@@ -17,6 +17,8 @@ on:
       - 'scripts/security/ui3-task-detail-refinement.test.mjs'
       - 'scripts/security/ui3-task-detail-usability.test.mjs'
       - 'scripts/security/ui3-task-visual-feedback.test.mjs'
+      - 'src/lib/security/executionDependencyValidation.ts'
+      - 'scripts/security/execution-dependencies.test.mjs'
       - 'src/app/admin/equipe/page.tsx'
       - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
       - 'scripts/security/ui3-authenticated-findings.test.mjs'

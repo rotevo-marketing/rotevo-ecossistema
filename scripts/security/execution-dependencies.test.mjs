@@ -101,3 +101,15 @@ test("independent projects may reuse local task ids without affecting each other
  assert.equal(valid(project(task("one"))),true);
  assert.equal(valid(project(task("two",["one"]))),false);
 });
+
+test("archive hides task without changing operational status and can be reversed",()=>{
+ const stamp="2026-11-10T15:00:00.000Z";
+ for(const status of ["planned","in_progress","blocked","completed","cancelled"]){
+  assert.equal(valid(project({...task("a"),status,archivedAt:stamp})),true,status);
+  assert.equal(valid(project({...task("a"),status})),true,"restored "+status);
+ }
+ assert.equal(valid(project({...task("a"),status:"planned",archivedAt:"invalid"})),false);
+ assert.equal(valid(project({...task("a"),status:"planned",archivedAt:123})),false);
+ assert.equal(valid(project({...task("a"),status:"planned",archivedAt:"x".repeat(60)})),false);
+ assert.equal(valid(project({...task("a"),status:"planned"},{...task("b",["a"]),status:"completed"})),false,"archiving cannot bypass prerequisite completion");
+});

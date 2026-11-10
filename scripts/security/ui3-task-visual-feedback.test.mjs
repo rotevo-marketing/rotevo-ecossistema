@@ -12,8 +12,8 @@ test("successful task creation locates item across clients and pages",()=>{
 test("archive is reversible and its controls are accessible",()=>{
  assert.match(task,/aria-label=\{\`Ações da tarefa/);
  assert.match(task,/window\.confirm\("Arquivar a tarefa/);
- assert.match(task,/void updateTask\(project,task,\{archivedAt:undefined\}\)/);
- assert.match(task,/void updateTask\(project,task,\{archivedAt:new Date\(\)\.toISOString\(\)\}\)/);
+ assert.match(task,/action==="restoreArchive"\?\{\.\.\.task,archivedAt:undefined\}/);
+ assert.match(task,/archivedAt:task\.archivedAt\?undefined:new Date\(\)\.toISOString\(\)/);
  assert.match(icons,/"archive":/);
  assert.match(icons,/"restore":/);
 });

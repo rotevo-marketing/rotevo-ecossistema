@@ -9,6 +9,15 @@ BEGIN
    WHERE table_schema='public' AND table_name='planning_projects'
    AND column_name='data' AND data_type='jsonb')
  THEN RAISE EXCEPTION 'Unexpected schema: abort JSON privilege restriction'; END IF;
+ IF NOT EXISTS (
+   SELECT 1 FROM pg_class
+   WHERE oid='public.planning_projects'::regclass AND relrowsecurity
+ ) THEN RAISE EXCEPTION 'RLS must remain enabled for exposed project metadata'; END IF;
+ IF (
+   SELECT count(*) FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='planning_projects'
+     AND column_name IN ('id','client_id','title','slug','description','status','published_at','created_at','updated_at')
+ ) <> 9 THEN RAISE EXCEPTION 'Project metadata schema drift: do not change grants'; END IF;
  IF NOT has_column_privilege('service_role','public.planning_projects','data','SELECT')
  THEN RAISE EXCEPTION 'Privileged server cannot read private JSON'; END IF;
 END;
@@ -29,7 +38,9 @@ BEGIN
  OR has_column_privilege('authenticated','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','UPDATE')
  OR has_column_privilege('anon','public.planning_projects','data','UPDATE')
- THEN RAISE EXCEPTION 'Private project JSON still accessible to browser roles'; END IF;
+ OR has_table_privilege('authenticated','public.planning_projects','UPDATE')
+ OR has_table_privilege('authenticated','public.planning_projects','SELECT')
+ THEN RAISE EXCEPTION 'Private project JSON or broad browser table grant still accessible'; END IF;
  IF NOT has_column_privilege('service_role','public.planning_projects','data','UPDATE')
  OR NOT has_column_privilege('authenticated','public.planning_projects','title','SELECT')
  OR NOT has_column_privilege('service_role','public.planning_projects','data','SELECT')

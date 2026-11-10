@@ -77,8 +77,42 @@ DO $$
  END;
 $$;
 RESET ROLE;
+-- Independently verify the second tenant after the grants change.
+SELECT set_config('request.jwt.claim.sub','b0000000-0000-4000-8000-000000000002',true);
+SET ROLE authenticated;
+DO $
+ DECLARE n bigint; denied boolean:=false;
+ BEGIN
+ SELECT count(*) INTO n FROM public.planning_projects WHERE slug='b';
+ IF n<>1 THEN RAISE EXCEPTION 'tenant B cannot read its permitted metadata'; END IF;
+ SELECT count(*) INTO n FROM public.planning_projects WHERE slug='a';
+ IF n<>0 THEN RAISE EXCEPTION 'tenant B can read tenant A project'; END IF;
+ BEGIN
+ PERFORM data FROM public.planning_projects WHERE slug='b';
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true;
+ END;
+ IF NOT denied THEN RAISE EXCEPTION 'tenant B can read its private JSON'; END IF;
+ END;
+$;
+RESET ROLE;
+-- Anonymous sessions must not acquire metadata or JSON when RLS is enforced.
+SELECT set_config('request.jwt.claim.sub','',true);
+SET ROLE anon;
+DO $
+ DECLARE n bigint; denied boolean:=false;
+ BEGIN
+ SELECT count(*) INTO n FROM public.planning_projects;
+ IF n<>0 THEN RAISE EXCEPTION 'anonymous project metadata exposed'; END IF;
+ BEGIN
+ PERFORM data FROM public.planning_projects;
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true;
+ END;
+ IF NOT denied THEN RAISE EXCEPTION 'anonymous direct JSON read permitted'; END IF;
+ END;
+$;
+RESET ROLE;
 SET ROLE service_role;
-DO $$
+DO $
  DECLARE n bigint;
  BEGIN
  SELECT count(*) INTO n FROM public.planning_projects WHERE data ? 'internalNotes';

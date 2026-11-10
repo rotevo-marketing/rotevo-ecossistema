@@ -15,7 +15,7 @@ export default function ClientFinanceView({data}:{data:ClientFinanceState}){
  const [month,setMonth]=useState(todayInBrazil().slice(0,7));
  const paidEntries:Entry[]=data.settlements.flatMap(payment=>{const invoice=entries.find(i=>i.id===payment.invoice_id);if(!invoice)return [];return [{...invoice,id:payment.id,invoiceId:payment.invoice_id,amount:payment.amount_cents/100,paidAt:payment.paid_on}];});
  const [tab,setTab]=useState<Tab>("upcoming");
- const totalPaid=data.settlements.reduce((n,x)=>n+x.amount_cents/100,0);
+ const totalPaid=paidEntries.reduce((n,x)=>n+x.amount,0);
  const upcoming=entries.filter(x=>x.status!=="paid").sort((a,b)=>a.due.localeCompare(b.due));
  const next=upcoming[0];
  const totalUpcoming=upcoming.reduce((n,x)=>n+x.remaining,0);

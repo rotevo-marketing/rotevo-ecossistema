@@ -52,7 +52,7 @@ async function checkWidths(role,page){
  await page.addScriptTag({content:axe.source});
  const scan=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
  const serious=scan.violations.filter(v=>v.impact==="serious"||v.impact==="critical");
- console.log("ACCESSIBILITY",role,JSON.stringify(scan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}))));
+ console.log("ACCESSIBILITY",role,JSON.stringify(scan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,450),html:n.html?.slice(0,180)}))}))));
  assert.equal(serious.length,0,role+" critical/serious automated WCAG violations: "+JSON.stringify(serious.map(v=>({id:v.id,nodes:v.nodes.length}))));
 
 }

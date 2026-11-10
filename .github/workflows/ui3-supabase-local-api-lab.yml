@@ -10,6 +10,8 @@ on:
       - 'scripts/security/ui3-integrated-local-http.mjs'
       - 'scripts/security/ui3-staff-browser-local.mjs'
       - 'scripts/security/ui3-portal-browser-local.mjs'
+      - 'src/lib/security/executionDependencyValidation.ts'
+      - 'scripts/security/execution-dependencies.test.mjs'
       - 'src/Components/cliente/ClientContracts.tsx'
       - 'src/Components/cliente/ClientPlanning.tsx'
       - 'src/Components/admin/ClientsDirectory.tsx'

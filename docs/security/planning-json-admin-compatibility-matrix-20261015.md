@@ -48,3 +48,10 @@ Esta seção substitui a avaliação atual dos consumidores; a tabela anterior p
 | Grants propostos | Revogar tabela e coluna, inclusive PUBLIC; permitir metadados e preservar servidor | Sete grupos SQL sintéticos aprovados; nenhum grant hospedado alterado |
 
 Não transformar funções em SECURITY INVOKER nem revogar EXECUTE em bloco. O ensaio usa 14 arquivos selecionados, claims de Auth simuladas e Storage mínimo: não certifica o schema completo do Supabase hospedado. A homologação mínima de Auth/PostgREST real já aprovada no workflow 42744174264 é preservada, sem repetição. G2 continua bloqueando implantação.
+
+
+## Evidência integrada adicional, 10/11/2026
+
+O workflow [42750794070](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750794070), commit `3912c2e`, passou em seis grupos com GoTrue, PostgREST, Storage e handlers Next.js originais, em runner temporário não vinculado e com identidades fictícias. O mesmo manifesto de 14 arquivos selecionados e a proposta de grants preservaram o fluxo documental HTTP de salvar/reabrir/CAS/revisar/aprovar/publicar e a projeção publicada; o cliente não conseguiu ler JSON bruto via Data API. O ensaio financeiro e os links de assets de planejamento, contrato e fatura também passaram.
+
+A revisão fechou duas lacunas da apresentação HTTP (senha inicial e workspace ausente), sem modificar funções SQL hospedadas. Continuam pendentes a equivalência integral ao schema hospedado, a UI autenticada de Equipe, a matriz visual e a harmonização das RPCs diretamente expostas. A compatibilidade HTTP agora tem evidência integrada real; a homologação visual completa do editor e o retorno operacional seguro permanecem pendentes. Nenhum grant hospedado foi aplicado.

@@ -198,3 +198,88 @@ O carregamento inicial mostrou uma falha transitória ao carregar planejamentos;
 - [GitHub Actions 42746444329](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42746444329): **SUCCESS**. Contratos visuais/UI3, autorização e jornadas sintéticas, matriz offline, contraste, laboratório SQL de sete grupos, TypeScript e build concluídos com sucesso.
 - [Prévia Vercel da correção](https://rotevo-ecossistema-8ssltzom4-rotevo-marketing.vercel.app): deployment `dpl_HEZkru9pQG5w7SZniLjG9xhDQ1gQ`, **READY**, `target:null` (Preview), código do commit `4074be6`. A inspeção administrativa no navegador foi no commit `097795e5`; a nova cor foi comprovada pelo cálculo/regressão e build, sem alegar nova autenticação visual neste deployment.
 - O relatório mantém as evidências anteriores integralmente e distingue aprovação de laboratório, aprovação no navegador e pendências de implantação. O resultado global permanece **NO-GO**.
+
+
+## 14. Continuidade com identidade própria de cliente, 10/11/2026
+
+### Homologação real por consultas
+
+A prévia protegida READY do commit `6511c48` (`https://rotevo-ecossistema-d83a8n8c3-rotevo-marketing.vercel.app`) foi acessada pelo procedimento seguro do Work com uma **identidade própria de cliente**. A página autenticada confirmou `/cliente` e o Portal do Cliente. Nenhum identificador, credencial, link privado ou texto de cliente é reproduzido neste registro público.
+
+| Frente | Evidência observada | Resultado e limite |
+| --- | --- | --- |
+| Navegação | Visão geral, Planejamento, Tarefas e entregas, Conteúdo, Campanhas, Reuniões, Contrato, Drive e Financeiro acessíveis pelo menu | PASS para navegação entre as nove seções disponíveis na identidade fornecida, no viewport desktop disponível |
+| Projetos e documentos | Planejamento autorizado carregou; havia zero documentos disponíveis para leitura; documento em elaboração mostrou aviso e previsão, sem revelar o rascunho | PASS do estado sem publicação; leitura de documento publicado nessa conta não pode ser homologada por falta de exemplar disponibilizado |
+| Conteúdo | Calendário mensal e detalhe de material compartilhado abriram; dialog iniciou foco em Fechar, Escape fechou e devolveu foco ao cartão | PASS de consulta e ciclo de foco observado; nenhuma aprovação, solicitação de ajuste ou edição executada |
+| Tarefas, campanhas e reuniões | Estados vazios consistentes; histórico de reuniões navegável sem registros compartilhados | PASS dos estados observados; fluxos com registros devem continuar no laboratório sintético |
+| Contratos | Mensagem de ausência de contrato disponibilizado | PASS do estado vazio; nenhuma assinatura ou aceite; documento contratual presente não verificado nessa conta |
+| Drive | Nove categorias compartilhadas e links HTTPS renderizados | PASS da listagem; permissões de destinos externos não foram auditadas nem alteradas |
+| Financeiro | Aguardando integração, sem confirmação de saldos, vencimentos ou pagamentos; lançamentos desativados | PASS do estado seguro desativado; Financeiro conectado continua restrito ao laboratório |
+| Acesso administrativo | Tentativa de navegação a `/admin` com a sessão de cliente terminou em `/estrategista/login`; o shell inicial não carregou registros administrativos | PASS da negação observada; não houve tentativa de consultar JSON privado real ou outros tenants pela Data API |
+| Equipe | A solicitação segura própria terminou na mensagem “Este usuário não tem permissão de estrategista.”, sem entrar em `/equipe/meu-acesso` | BLOQUEADO: a tentativa não comprovou identidade ativa de colaborador. Não alterar contas/roles para contornar a restrição |
+
+As sessões de login/logout inerentes ao procedimento de autenticação foram usadas normalmente. Nenhuma conta, senha, documento, aprovação, registro operacional ou financeiro real foi alterado. As evidências de homologações anteriormente aprovadas foram mantidas, sem repetir seus ensaios manuais.
+
+### Acessibilidade e matriz responsiva
+
+A inspeção real encontrou um landmark `main` do leitor de planejamento aninhado no `main` do portal. A branch substituiu apenas o elemento interno por uma região `section` nomeada “Leitura do planejamento”, preservando classes, lógica e conteúdo. ESLint e TypeScript locais passaram; a validação visual e com leitor de tela da nova região permanece pendente.
+
+| Largura CSS solicitada | Situação |
+| --- | --- |
+| 320 px | Pendente de controle de viewport exato |
+| 375 px | Pendente de controle de viewport exato |
+| 390 px | Pendente de controle de viewport exato |
+| 430 px | Pendente de controle de viewport exato |
+| 768 px | Pendente de controle de viewport exato |
+| 1024 px | Pendente de controle de viewport exato |
+| 1440 px | Pendente de controle de viewport exato |
+
+A capacidade de viewport exato continua indisponível na interface documentada desta sessão. As tentativas e aprovações anteriores de redimensionamento/zoom não foram repetidas. O desktop disponível de 1363 px permitiu consultar as seções sem sobreposição visível na listagem de arquivos. Isso **não substitui** os sete tamanhos requeridos. Não há resultado de leitor de tela nesta sessão, nem aprovação global de contraste/teclado por todos os módulos.
+
+### Correções comprovadas e regressões
+
+- `72a84d0`: `/api/presentation/project` agora recusa troca inicial de senha pendente antes de criar cliente privilegiado e nega planejamento sem workspace/módulo explícito. O handler original retornava indevidamente 200 nos dois cenários sintéticos antes da correção; depois, **4/4 testes comportamentais passaram**. A correção não mudou grants ou políticas hospedadas.
+- `f72b4ee`: correção do landmark interno do leitor de planejamento para região nomeada, a partir do DOM real observado.
+- `412bdc8` e `cfadc37`: ajustes exclusivamente em fixtures do novo laboratório, respeitando `label` do HTML visual e o schema completo de workspace (`modules`, `contracts`, `folders`). A primeira e a segunda execução integrada falharam nesses contratos de fixture; as asserções de autorização não foram relaxadas.
+- Manifesto único `ui3-sql-baseline.mjs`: os 14 arquivos selecionados são compartilhados entre PostgreSQL WASM e o laboratório Supabase real. Não representa reconciliação completa do schema hospedado.
+- Workflow existente de laboratório ampliado, sem novo projeto hospedado: Supabase CLI fixado em `2.121.0`, GoTrue/PostgREST/Storage reais e Next.js local com rotas originais. As variáveis de teste e ativação financeira só existem no runner descartável, com endpoints loopback e dados fictícios.
+- Tentativa de executar stack nativa local sem Docker não conseguiu baixar os binários por restrição de DNS/rede. O registro temporário dessa tentativa foi destruído. A execução integrada foi encaminhada ao runner descartável já existente, sem criar recursos pagos hospedados.
+
+O plano de remediação foi revisto para distinguir aborto transacional de rollback de uma restrição confirmada. O teste legado que demonstra restaurar permissões amplas não é um runbook de produção. Nenhum retorno automático pode reabrir o JSON; manter guardas, servidor compatível e contenção revisada. RPCs diretamente expostas ainda exigem harmonização de workspace/senha inicial e ensaio de retorno seguro em schema equivalente.
+
+
+### Evidência final do laboratório integrado e da branch
+
+| Execução | Código | Resultado |
+| --- | --- | --- |
+| [Regressão 42749544904](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42749544904) | `72a84d0` | SUCCESS: contratos UI3/autorização, quatro novos casos da apresentação, matriz offline, sete grupos SQL WASM, TypeScript e build |
+| [Regressão 42750071736](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750071736) | `f72b4ee` | SUCCESS após a correção semântica do leitor de planejamento, incluindo TypeScript e build |
+| [Integração 42750264760](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750264760) | `cfadc37` | SUCCESS: primeiros cinco grupos com serviços reais locais e seis identidades fictícias |
+| [Integração final 42750794070](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750794070) | `3912c2e` | SUCCESS: seis grupos, incluindo documentos de contrato/fatura e suas negações; stack descartada ao terminar |
+
+O ensaio integrado final comprovou, exclusivamente no runner temporário:
+
+1. Login GoTrue real de administrador, clientes A/B, colaborador com leitura, colaborador sem permissão e identidade com senha inicial pendente; rotas HTTP originais respeitando tenant, atribuições e negações; RLS/grants negando JSON bruto ao cliente e preservando metadados do seu projeto.
+2. Salvar/reabrir HTML curto e extenso com CSS pelo handler documental original; preservar versão publicada anterior e notas internas; rejeitar CAS obsoleto; completar revisão, aprovação e publicação fictícias; retornar somente a versão publicada pela apresentação autorizada.
+3. Upload de imagem ao Storage privado pela API; resolução assinada somente quando referenciada em documento publicado; integridade dos bytes; negação de acesso direto ao objeto e de outro tenant.
+4. Financeiro com rotas HTTP e funções SQL originais: lançamento, liquidação parcial, idempotência, colaborador de leitura sem escrita, cliente sem escrita e ausência de despesas internas/lançamentos de outro cliente na projeção.
+5. Links e bytes privados de arquivos sintéticos de contrato/fatura, publicação do vínculo no workspace/Financeiro e negações por tenant e perfil aplicáveis. **Não é teste de renderização de PDF, assinatura ou aceite contratual.**
+6. Ausência de workspace e troca inicial de senha mantendo as fronteiras fechadas nas rotas de apresentação, Financeiro e assets.
+
+`3912c2e` acrescenta o sexto grupo ao laboratório aprovado, sem mudança de comportamento da aplicação. O manifesto de 14 arquivos mais a proposta de grants foi aplicado **somente ao projeto local não vinculado** do runner. GoTrue/PostgREST/Storage são reais nesse ensaio, sem mocks; isso não transforma a seleção em espelho completo do schema hospedado nem em teste visual do editor. O laboratório mínimo antigo da seção 12 permaneceu como evidência anterior e não foi reexecutado como tarefa separada.
+
+Prévia do código final `3912c2e`: https://rotevo-ecossistema-716npt11h-rotevo-marketing.vercel.app, deployment `dpl_DnXZ5Tuimdmjhe9hcd2Lhb5kBe4k`, **READY**, `target:null` (Preview). A sessão de cliente no navegador foi homologada em `6511c48`; não se atribui uma nova validação visual autenticada às correções posteriores apenas pela conclusão do build.
+
+### Situação final e próxima etapa
+
+**Aprovação parcial ampliada, ainda NO-GO para publicação da UI 3.0.** O Portal possui agora validação com identidade própria para as seções/estados efetivamente disponíveis; o backend integrado de documentos, Auth, API, Storage e Financeiro passou com dados fictícios. As correções foram enviadas apenas à branch de desenvolvimento, preservando a história remota.
+
+Bloqueios restantes efetivos:
+- identidade ativa de colaborador que alcance a UI da Equipe, para verificar módulos, atribuições e acessos negados no navegador;
+- matriz visual nas sete larguras exatas, leitor de tela e conferência visual das correções semânticas; exemplar publicado de planejamento/contrato ou fixtures de UI isolada para os estados ausentes na conta real;
+- reconciliação do baseline com o schema hospedado completo, revisão das RPCs diretamente expostas e ensaio operacional de retorno seguro;
+- remediação G2 do banco hospedado ainda sem aplicação/validação autorizada nesta rodada. Nenhum teste de exposição foi executado sobre JSON real.
+
+**Próxima etapa recomendada:** concluir essas validações em ambiente que permita viewport exato e com identidade própria de Equipe; reconciliar schema/RPCs e ensaiar o retorno seguro. Depois apresentar a migration e o plano de implantação para **autorização específica**, antes de qualquer alteração hospedada ou publicação. Não há autorização implícita de produção neste relatório.
+
+Nenhum dado real, conta, permissão de produção ou política RLS hospedada foi modificado. Não houve merge na main, criação de recursos pagos hospedados ou publicação em produção.

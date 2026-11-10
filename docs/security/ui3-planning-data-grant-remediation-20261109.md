@@ -77,3 +77,10 @@ Plano revisável, sem autorização de execução hospedada:
 6. Distinguir abortar uma transação incompleta de reverter uma restrição já confirmada. Um abort retorna ao estado prévio e não resolve uma exposição que já existia; manter o bloqueio da implantação até nova validação.
 
 O teste legado `planning-data-revocation-rollback-local.test.sql` caracteriza a restauração de permissões inseguras em transação fictícia; **não é um runbook de retorno para produção**. O ensaio operacional completo de retorno seguro ainda precisa ser concluído em schema equivalente. G2 continua NO-GO enquanto os grants hospedados permanecerem amplos.
+
+
+## 8. Resultado do ensaio integrado ampliado
+
+[GitHub Actions 42750794070](https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/42750794070), commit `3912c2e`: **SUCCESS**, seis grupos com Auth/PostgREST/Storage reais e rotas HTTP originais. O cliente autenticado sintético recebeu negação para `data`, conservou metadados do seu tenant e leu somente o documento publicado pela API. Edição documental, CAS, revisão/aprovação/publicação, assets privados de planejamento/contrato/fatura e Financeiro conservaram os fluxos autorizados após o SQL proposto. Seis identidades fictícias, dois tenants, stack descartada ao término.
+
+Isso reduz a pendência anterior de integração HTTP/Storage para o recorte ensaiado. Não certifica todas as migrations hospedadas, renderização/assinatura de PDF, UI completa, RPCs ainda com fallback de workspace/senha inicial nem o retorno operacional. Esses pontos e G2 permanecem bloqueantes; execução hospedada continua dependendo de autorização específica.

@@ -20,6 +20,7 @@ export type ExecutionItem = {
   dueDate?:string;
   completedAt?:string;
   archivedAt?:string;
+  deletedAt?:string;
   status?:"planned"|"in_progress"|"blocked"|"completed"|"cancelled";
   kind?:"deliverable"|"milestone"|"task";
   dependencies?:string[];
@@ -54,7 +55,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
    const items:ExecutionItem[]=[];
    for(const project of projects){
      for(const item of project.data?.executionTimeline??[]){
-       if(!isExecutionItem(item)||item.visibleToClient!==true||item.archivedAt)continue;
+       if(!isExecutionItem(item)||item.visibleToClient!==true||item.archivedAt||item.deletedAt)continue;
        items.push({...item,projectTitle:project.title,projectKey:project.id,projectAvatarUrl:project.clientAvatarUrl??undefined});
      }
    }

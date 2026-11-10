@@ -78,3 +78,13 @@ Sem merge na `main` e **sem publicação deliberada de produção** nesta rodada
 A consulta de metadados SQL confirmou que `public.rotevo_editorial_decide` e `public.rotevo_editorial_idea_decide` verificam `auth.uid()`, perfil de cliente, vínculo `planning_projects.client_id`, estado editorial, visibilidade explícita, versão e validade da decisão, antes da gravação. A presença de `SECURITY DEFINER` é compatível com essa arquitetura, mas exige auditoria especializada: os avisos do Supabase não devem ser eliminados por revogação indiscriminada, pois as aprovações legítimas precisam dessas rotas.
 
 **Lacuna a discutir antes do release:** os dois procedimentos utilizam a ausência de um registro de `client_workspaces` como compatibilidade para o módulo Conteúdo (a expressão `exists(... not has content)` somente bloqueia quando há um workspace que desabilita o módulo). Os endpoints HTTP foram reforçados para negar módulos sem workspace; harmonizar a regra SQL das aprovações, mantendo compatibilidade controlada, requer uma migração planejada e testes de banco isolado. **Nenhum procedimento SQL foi alterado nesta auditoria.**
+
+## 8. Gate crítico de confidencialidade do JSON de planejamento
+
+**NO-GO confirmado em consulta somente leitura ao Supabase hospedado:** `authenticated` possui SELECT na coluna `public.planning_projects.data`; políticas RLS vinculam linhas ao cliente, mas não removem propriedades internas do JSON. A API `/api/client/projects` e `projectForClient` impedem esses campos na resposta do Portal, **porém não eliminam a via de leitura direta pelo Data API**. O teste de caracterização `supabase/tests/database/planning_data_exposure_characterization_test.sql` já documentava esse risco.
+
+O risco está limitado ao potencial acesso do cliente ao JSON **do próprio tenant**; não houve exploração de credenciais nem leitura de conteúdo privado. O teste de integração `scripts/security/ui3-raw-json-release-gate.test.mjs` agora acompanha o uso dos endpoints autorizados no frontend, mas **não transforma a base em segura**.
+
+Consultar o plano [`docs/security/ui3-planning-data-grant-remediation-20261109.md`](../security/ui3-planning-data-grant-remediation-20261109.md) para a remediação em laboratório, proteção de edição administrativa, testes RLS com dois tenants, migração reversível e aprovação específica. A publicação da UI 3.0 deve continuar **bloqueada** até o problema ser resolvido e comprovado.
+
+Fonte de engenharia: [Supabase RLS / pgTAP](https://supabase.com/docs/guides/database/postgres/testing-row-level-security).

@@ -29,3 +29,14 @@ test("only explicitly assigned projects with read permission expose titles",()=>
  assert.match(api,/\.select\("id,title"\)\.in\("id",ids\)/);
  assert.doesNotMatch(api,/\.select\("\*"\)/);
 });
+
+
+test("login routes authenticated staff correctly and does not mislabel missing staff permission",()=>{
+ assert.match(login,/profile\?\.role === "staff"/);
+ assert.match(login,/router\.replace\("\/equipe\/meu-acesso"\)/);
+ assert.match(login,/Esta conta não tem acesso ao painel do estrategista nem à área da equipe/);
+ assert.match(login,/estrategistas e colaboradores com perfil e permissões habilitados/);
+ assert.match(invite,/ROTEVO_TEAM_INVITES_ENABLED !== "true"/);
+ assert.match(invite,/role: "staff"/);
+ assert.match(invite,/active: false/);
+});

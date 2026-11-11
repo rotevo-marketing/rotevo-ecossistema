@@ -99,7 +99,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const prev=()=>{setDayFilter("");const d=new Date(y,m-2,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  const next=()=>{setDayFilter("");const d=new Date(y,m,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  return <div className="rv-ui3-editorial-calendar space-y-3">
-  <div className={view==="list"?"rv-ui3-editorial-surface relative rounded-xl border border-[#E3E7F0] bg-white p-4":"rv-ui3-editorial-surface bg-white py-3"}>
+  <div className={view==="list"?"rv-ui3-editorial-surface rv-ui3-task-surface relative rounded-xl border border-[#E3E7F0] bg-white p-4":"rv-ui3-editorial-surface bg-white py-3"}>
   {!clientView&&onLifecycleChange&&<nav aria-label="Estado dos conteúdos" className="mb-3 flex flex-wrap gap-2">{([["active","Ativos"],["archive","Arquivo"],["trash","Lixeira"]] as const).map(([scope,label])=><button key={scope} type="button" aria-pressed={contentScope===scope} onClick={()=>{setContentScope(scope);setSelected(null);setDayFilter("");setChannelFilter("all");setStatusFilter("all");setListSearch("");if(scope!=="active")setView("list");}} className={`min-h-9 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold ${contentScope===scope?"border-[#6D35F5] bg-[#F0ECFF] text-[#5123C5]":"border-[#E3E7F0] text-[#525B70]"}`}>{label}</button>)}</nav>}
   <div className="flex flex-wrap items-center justify-between gap-3">
    <div><h2 className={view==="list"?"text-lg font-semibold text-[#323647]":"sr-only"}>{view==="list"?"Central de conteúdo":"Calendário editorial"}</h2><p className="mt-1 text-xs text-[#687487]">{filteredItems.length} conteúdos · {monthItems.length} no mês</p></div>

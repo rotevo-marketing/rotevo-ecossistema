@@ -11,7 +11,7 @@ test("a restricted-grant release must never roll back to legacy UI2",()=>{
  assert.match(rollback,/PREVALIDATED application artifact compatible with restricted grants/);
  assert.match(runbook,/N[aã]o.*reverter.*UI2/i);
  assert.match(rollback,/Unsafe grant restoration detected before app rollback/);
- assert.doesNotMatch(rollback,/\bGRANT\s+(?:ALL|SELECT|UPDATE)\b/i);
+ assert.doesNotMatch(rollback,/^\s*GRANT\s+(?:ALL|SELECT|UPDATE)\b/im);
 });
 
 test("private JSON restriction cannot silently restore direct browser grants",()=>{

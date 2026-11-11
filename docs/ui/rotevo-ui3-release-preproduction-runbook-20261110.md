@@ -30,13 +30,19 @@
 5. Concluir avaliação manual de leitor de tela e navegação por teclado nas telas internas críticas. Para a identidade Equipe no ambiente hospedado, criar uma conta de teste adequadamente autorizada, sem alterar perfis de clientes.
 6. Congelar commit do release; exigir GitHub Actions e Vercel READY para o **mesmo SHA**. Registrar o código de produção antes da promoção.
 
-## 4. Execução hospedada condicionada a GO
+## 4. Execução hospedada condicionada a GO — troca coordenada
 
-1. Capturar o inventário de grants e o estado do aplicativo **imediatamente antes** da janela, além do backup restaurável.
-2. Aplicar somente as alterações de segurança reconciliadas em transações controladas. Não executar arquivos `PROPOSAL ONLY` como migrations automaticamente sem revisão. Testar pós-condições de `anon`, `authenticated`, `service_role` e RPCs com identidades de laboratório, respeitando direitos da conta; não executar ações reais de clientes.
-3. Reexecutar leitura e edição autorizadas pelo servidor, recusa de JSON direto e RPCs de conteúdo, ideia, Financeiro e Storage.
-4. Somente então promover o SHA exato da UI3 via Vercel. Verificar login Estrategista/Cliente/Equipe, projetos, planejamento publicado, contratos, arquivos, permissões, responsividade e logs.
-5. Monitorar erros após a mudança, mantendo checklist e ponto de retorno documentados.
+**Prevenção de indisponibilidade:** a UI2 publicada em `app.rotevo.com.br` ainda acessa `planning_projects.data` diretamente. Portanto, **não aplicar REVOKE enquanto qualquer instância UI2 puder receber tráfego legítimo**. O fluxo antigo «restringir grants e só depois publicar UI3» não está autorizado. Inversamente, publicar UI3 primeiro, sem controle da janela, mantém temporariamente exposta a permissão do JSON. Não existe prova de transição atômica ou sem indisponibilidade; explicitar e resolver essa janela antes do GO.
+
+1. Registrar o inventário de grants, versão/alias efetivamente servidos por `app.rotevo.com.br`, plano de acesso e backup privado mínimo restaurável. Preservar os dois acessos de estrategista até a identidade principal estar homologada.
+2. Preparar e **testar antes** uma versão de contingência UI3 com os grants restritos. Confirmar que login, edição autorizada, publicação e serviços básicos não dependem da leitura direta do JSON por `authenticated`. Não aceitar UI2 como contingência após o REVOKE.
+3. Estabelecer uma janela controlada que impeça a permanência de requisições UI2 durante o corte, com proteção de tráfego, checagem de instâncias e reversão operacional ensaiadas. Se não houver mecanismo demonstrável para essa contenção, **NO-GO**, sem tentar o corte em duas etapas com tráfego livre.
+4. Na janela protegida, substituir/encaminhar todo o tráfego à build UI3 homologada; **confirmar a versão efetivamente ativa e a ausência de instâncias UI2 atendendo usuários antes de executar qualquer REVOKE**. Se a promoção falhar ou o estado for incerto, abortar a mudança do banco.
+5. Aplicar somente os SQLs reconciliados e aprovados para grants/RPCs/tabelas, em transações controladas, sem rodar propostas `PROPOSAL ONLY` automaticamente. Confirmar no pós-teste a negação de `data` para `anon` e `authenticated`, acesso do servidor preservado, isolamento entre clientes e operações de edição/publicação legítimas. Se a transação abortar, não declarar que a exposição antiga foi corrigida.
+6. Liberar tráfego somente depois de confirmar versão UI3, testes de acesso de Estrategista/Cliente/Equipe, APIs, documentos, contratos, Storage e observabilidade. Ativar mensagens somente quando a tabela e as políticas correspondentes forem validadas.
+7. Monitorar 401/403/409/503, operações de escrita e logs; manter responsáveis e forma testada de contenção. Em incidente, suspender o avanço e usar apenas um artefato compatível com grants restritos; **nunca reabrir automaticamente o JSON privado**.
+
+Esta sequência é **proposta operacional**. A viabilidade técnica da janela protegida, a recuperação mínima e a versão de contingência ainda precisam ser comprovadas; não executar a publicação por inferência a partir deste documento.
 
 ## 5. Procedimento de falha ou rollback
 

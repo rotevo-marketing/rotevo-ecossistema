@@ -275,3 +275,50 @@
 .rv-ui3 .rv-ui2-client-execution table thead th {
   color: #606D82;
 }
+
+
+/* UI3 client portal — apply reviewed demo card hierarchy to the real
+   authenticated overview, without copying synthetic demo data or changing
+   any authorization, status or workflow behavior. */
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-overview-panel {
+  background: #fff;
+  border: 1px solid #E3E7F0 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  padding: 20px !important;
+  margin: 0;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel > div:first-child h2 {
+  color: #090D1C;
+  font-size: 16px;
+  font-weight: 650;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel .grid {
+  gap: 12px;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel button:focus-visible,
+.client-portal-v2.rv-ui3 .rv-ui2-client-content button:focus-visible {
+  outline: 2px solid #6C5CE7;
+  outline-offset: 2px;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-editorial .rv-ui3-editorial-task-list,
+.admin-v2.rv-ui3 .rv-ui3-editorial-task-list {
+  border-radius: 9px;
+  border-color: #E3E7F0;
+  box-shadow: none;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-editorial .rv-ui3-editorial-task-list tbody tr:hover,
+.admin-v2.rv-ui3 .rv-ui3-editorial-task-list tbody tr:hover {
+  background: #FBFAFF;
+}
+@media (max-width: 767px) {
+  .client-portal-v2.rv-ui3 .rv-ui3-client-overview-panel {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+}

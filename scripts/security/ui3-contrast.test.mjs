@@ -36,3 +36,12 @@ test('client execution status and priority pills use accessible contrast',()=>{
   assert.ok(ratio>=4.5,'status/priority dark text on '+bg+' must reach 4.5:1, got '+ratio.toFixed(2));
  }
 });
+
+test('UI3 selected task filters override legacy purple substitution to meet AA',()=>{
+ const css=readFileSync(new URL('../../src/app/rotevo-ui3.css',import.meta.url),'utf8');
+ assert.match(css,/\.rv-ui3 \.rv-ui2-client-execution button\[aria-pressed="true"\]/);
+ assert.match(css,/color:#5123C5/);
+ const fg=luminance('5123C5'),bg=luminance('F0EBFF');
+ const ratio=(Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);
+ assert.ok(ratio>=4.5,'selected filter must meet 4.5:1 contrast');
+});

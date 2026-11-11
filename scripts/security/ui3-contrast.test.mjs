@@ -22,3 +22,17 @@ test('strategist overview and work console secondary text meet WCAG AA on tinted
   }
  }
 });
+
+test('client execution status and priority pills use accessible contrast',()=>{
+ const source=readFileSync(new URL('../../src/Components/cliente/ProjectTimeline.tsx',import.meta.url),'utf8');
+ const shades=[...source.matchAll(/color:"#([0-9a-fA-F]{6})"/g)].map(m=>m[1]);
+ const statuses=[...source.matchAll(/(?:planned|in_progress|blocked|completed|cancelled):"#([0-9a-fA-F]{6})"/g)].map(m=>m[1]);
+ const colors=[...new Set([...shades,...statuses])];
+ assert.ok(colors.length>=8,'all task status and priority colors tested');
+ assert.match(source,/text-xs font-semibold text-\[#050810\]/);
+ for(const bg of colors){
+  const a=luminance('050810'),b=luminance(bg);
+  const ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+  assert.ok(ratio>=4.5,'status/priority dark text on '+bg+' must reach 4.5:1, got '+ratio.toFixed(2));
+ }
+});

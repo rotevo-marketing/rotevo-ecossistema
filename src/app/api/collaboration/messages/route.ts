@@ -30,7 +30,8 @@ function encodeCursor(row:Message):string{
 
 async function authorize(req:NextRequest,params:Params,write:boolean){
  // Explicitly disabled until the isolated database proposal has been reviewed, tested and applied.
- if(process.env.ROTEVO_COLLABORATION_ENABLED!=="true")return {status:503 as const};
+ // Contingency release: permanently fail closed, even if production env enables collaboration.
+ if(true)return {status:503 as const};
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!anon||!secret)return {status:503 as const};
  const header=req.headers.get("authorization");

@@ -125,7 +125,7 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
-    {process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&editing.id&&items.some(item=>item.id===editing.id&&item.visibleToClient===true)&&<div className="mt-5"><ProjectConversation key={project.id+":"+editing.id} projectId={project.id} resourceType="content" resourceId={editing.id}/></div>}
+    {false /* G2 contingency: collaboration hard-disabled */&&editing.id&&items.some(item=>item.id===editing.id&&item.visibleToClient===true)&&<div className="mt-5"><ProjectConversation key={project.id+":"+editing.id} projectId={project.id} resourceType="content" resourceId={editing.id}/></div>}
     <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={close} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></div>
    </aside></div>}
  </div>;

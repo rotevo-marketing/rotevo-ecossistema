@@ -70,3 +70,15 @@ Comparação direta consultada nos projetos produção e homologação:
 - **Build final READY:** `dpl_3oXjvJJSQMCfx6o9coMfgpuKD3ox`, SHA `04a42237e0bf421a2156fae0936bdbabf09dcd91`, Preview no projeto original, log com `Deployment completed` e compilação concluída.
 - **Limite do aceite:** não foi executado um GET HTTP externo da rota de mensagens nessa URL devido à restrição de acesso de rede; a garantia de fechamento é apoiada na leitura do código e na compilação, não em teste HTTP remoto da build. A promoção a Production pode reconstruir o deployment; confirmar a mesma árvore de código no alvo real após promover. O backend foi configurado para negar a rota mesmo que a variável Production esteja true.
 - **Não houve** alteração de credenciais Supabase, grants do banco real, domínios, aliases de produção ou merges. O WAF permaneceu inalterado.
+
+
+### Aliases confirmados na UI2 por consulta direta à Vercel
+
+Deployment atual `dpl_4rsZYULvXF5rojyF7Gz2MSxby3Cb`, SHA `bec8ee26a0a33a579ce223eaffccbb04f7aaf61a`:
+
+1. `app.rotevo.com.br`;
+2. `app.metodoepc.com.br`;
+3. `metodo-epc.vercel.app`;
+4. `rotevo-ecossistema-rotevo-marketing.vercel.app`.
+
+A URL específica de deployment `rotevo-ecossistema-3p7if1mu5-rotevo-marketing.vercel.app` também precisa ser verificada como ponto alternativo de acesso, sem confundi-la com um alias listado. Confirmar novamente essa lista e o tráfego imediatamente antes da janela. O filtro WAF deve abranger os quatro aliases efetivamente ativos, bem como outras URLs que forem demonstradas como acessíveis; proibir contornar o bloqueio por um nome legado não protegido.

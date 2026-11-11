@@ -97,7 +97,7 @@ await mutate('invoice.create',{title:'INTERNAL_EXPENSE_PRIVATE',counterparty:'IN
 let finance=await request('/api/admin/finance',admin);
 const invoice=finance.invoices.find(i=>i.title==='Synthetic A invoice'),bank=finance.accounts.find(i=>i.name==='Synthetic bank');
 assert.ok(invoice&&bank);
-const settlement={id:invoice.id,version:invoice.version,account_id:bank.id,amount_cents:4000,paid_on:new Date().toISOString().slice(0,10),method:'Pix'},requestId=randomUUID();
+const settlement={id:invoice.id,version:invoice.version,account_id:bank.id,amount_cents:4000,paid_on:new Date(Date.now()-24*60*60*1000).toISOString().slice(0,10),method:'Pix'},requestId=randomUUID();
 await mutate('invoice.settle',settlement,admin,requestId);await mutate('invoice.settle',settlement,admin,requestId);
 finance=await request('/api/admin/finance',admin);assert.equal(finance.invoices.find(i=>i.id===invoice.id).paid_cents,4000);
 await request('/api/admin/finance',reader);

@@ -42,6 +42,7 @@ try{
  await section.getByRole("button",{name:"Enviar mensagem"}).click();
  await section.getByText("Mensagem de teste acessível").waitFor({timeout:12000});
  assert.equal(await section.getByText("Mensagem de teste acessível").count(),1);
+ await page.waitForFunction(() => Array.from(document.querySelectorAll("textarea")).some(el => el.value === ""),{timeout:10000});
  assert.equal(await input.inputValue(),"");
  await input.focus();
  assert.equal(await input.evaluate(el=>el===document.activeElement),true,"Input accepts keyboard focus");

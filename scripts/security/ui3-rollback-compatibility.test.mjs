@@ -27,5 +27,5 @@ test("cutover procedure requires active UI3 and traffic containment before revok
  assert.match(runbook,/não aplicar REVOKE enquanto qualquer instância UI2 puder receber tráfego legítimo/i);
  assert.match(runbook,/confirmar a versão efetivamente ativa e a ausência de instâncias UI2/i);
  assert.match(runbook,/se não houver mecanismo demonstrável para essa contenção, \*\*NO-GO\*\*/i);
- assert.match(runbook,/somente um artefato compatível com grants restritos/i);
+ assert.match(runbook,/usar apenas um artefato compatível com grants restritos/i);
 });

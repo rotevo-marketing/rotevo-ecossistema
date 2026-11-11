@@ -3,12 +3,12 @@
 import {useCallback,useEffect,useId,useState} from "react";
 import {request} from "@/lib/operations/api";
 
-type Message={id:string;author_role:"client"|"staff"|"strategist";body:string;created_at:string};
+type Message={id:string;author_role:"client"|"staff"|"strategist";content_version?:string|null;body:string;created_at:string};
 type Response={messages:Message[];nextCursor:string|null};
 const label=(role:Message["author_role"])=>role==="client"?"Cliente":"Equipe Rotevo";
 
-export default function ProjectConversation({projectId,resourceType,resourceId}:{
- projectId:string;resourceType:"task"|"content";resourceId:string;
+export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false}:{
+ projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;
 }){
  const messageId=useId();
  const [messages,setMessages]=useState<Message[]>([]);
@@ -39,7 +39,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
   finally{setOlderLoading(false);}
  }
  async function send(event:React.FormEvent<HTMLFormElement>){
-  event.preventDefault();if(!body.trim()||saving)return;
+  event.preventDefault();if(!body.trim()||saving||readOnly)return;
   setSaving(true);setError("");
   try{
    await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim()});
@@ -54,7 +54,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
    <div className="mt-3">{nextCursor&&<button type="button" disabled={olderLoading} onClick={()=>void loadOlder()} className="mb-3 rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold disabled:opacity-50">{olderLoading?"Carregando...":"Carregar mensagens anteriores"}</button>}<ol aria-live="polite" className="max-h-64 space-y-3 overflow-y-auto">
     {messages.map(message=><li key={message.id} className="rounded-lg bg-[#F6F7FB] p-3">
      <div className="flex flex-wrap justify-between gap-2 text-xs font-semibold text-[#555E70]">
-      <span>{label(message.author_role)}</span>
+      <span>{label(message.author_role)}{message.content_version&&` · Versão ${message.content_version}`}</span>
       <time dateTime={message.created_at}>{new Date(message.created_at).toLocaleString("pt-BR")}</time>
      </div>
      <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#344056]">{message.body}</p>
@@ -62,12 +62,12 @@ export default function ProjectConversation({projectId,resourceType,resourceId}:
     {!messages.length&&<li className="text-xs text-[#697386]">Nenhuma mensagem registrada.</li>}
    </ol></div>}
   {error&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p role="alert" className="text-xs text-red-700">{error}</p><button type="button" onClick={()=>{setLoading(true);void reload();}} className="rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold">Tentar novamente</button></div>}
-  <form className="mt-4 space-y-2" onSubmit={send}>
+  {!readOnly&&<form className="mt-4 space-y-2" onSubmit={send}>
    <label htmlFor={messageId} className="block text-xs font-semibold">Nova mensagem</label>
    <textarea id={messageId} value={body} maxLength={3000} rows={3} disabled={saving} onChange={event=>setBody(event.target.value)}
     className="w-full rounded-lg border border-[#CFD4DF] p-3 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]" />
    <div className="flex justify-end"><button type="submit" disabled={saving||!body.trim()||loading||!!error}
     className="rounded-lg bg-[#6D35F5] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">{saving?"Enviando...":"Enviar mensagem"}</button></div>
-  </form>
+  </form>}
  </section>;
 }

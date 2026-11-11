@@ -15,14 +15,16 @@ assert.ok(process.env.SERVICE_ROLE_KEY);
 const client=createClient(api,process.env.SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const suffix=randomUUID(),email="ui3-staff-"+suffix+"@synthetic.invalid",password="Synthetic-UI3-Test-"+suffix+"!";
 const projectId=randomUUID(),clientId=randomUUID();
+const collaboration=process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true";
 async function must(query,label){const r=await query;assert.equal(r.error,null,label+": "+(r.error?.message??""));return r.data;}
 const account=await must(client.auth.admin.createUser({email,password,email_confirm:true}),"create isolated staff identity");
 await must(client.from("profiles").insert({id:account.user.id,email,full_name:"Synthetic Staff",role:"staff"}),"synthetic profile");
 await must(client.from("team_members").insert({user_id:account.user.id,display_name:"Synthetic Staff",role:"producer",active:true}),"synthetic membership");
 await must(client.from("clients").insert({id:clientId,name:"Synthetic Organization",slug:"synthetic-"+suffix}),"synthetic client");
-await must(client.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Assigned Project",slug:"synthetic-"+suffix,status:"draft"}),"synthetic project");
+await must(client.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Assigned Project",slug:"synthetic-"+suffix,status:"draft",data:{executionTimeline:[{id:"staff-shared-task",title:"Tarefa compartilhada",visibleToClient:true},{id:"staff-hidden-task",title:"PRIVATE_SYNTHETIC",visibleToClient:false}],editorialCalendar:[{id:"staff-shared-content",title:"Conteúdo compartilhado",visibleToClient:true,version:"01"}]}}),"synthetic project");
 await must(client.from("team_project_assignments").insert({user_id:account.user.id,project_id:projectId}),"synthetic assignment");
 await must(client.from("team_member_permissions").insert({user_id:account.user.id,permission:"projects.read"}),"synthetic permission");
+if(collaboration)await must(client.from("team_member_permissions").insert({user_id:account.user.id,permission:"projects.write"}),"synthetic collaboration write permission");
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 try {
@@ -47,7 +49,7 @@ try {
   throw error;
  }
  await page.getByRole("heading",{name:"Área da equipe ROTEVO"}).waitFor({timeout:15000});
- await page.getByText("Synthetic Assigned Project").waitFor({timeout:15000});
+ await page.getByText("Synthetic Assigned Project",{exact:true}).waitFor({timeout:15000});
  assert.equal(await page.getByText("Projetos atribuídos: 1").count(),1);
  assert.equal(await page.getByText("Nenhuma permissão de consulta concedida").count(),0);
  assert.equal(await page.getByRole("link",{name:"Acessar Financeiro"}).count(),0,"no finance.read must hide finance action");
@@ -67,6 +69,24 @@ try {
  }
  await page.setViewportSize({width:390,height:900});
  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-staff-390.png",fullPage:true});
+ if(collaboration){
+  await page.getByRole("button",{name:"Conversas de Synthetic Assigned Project",exact:true}).click();
+  const dialog=page.getByRole("dialog");
+  await dialog.getByRole("button",{name:"Tarefa: Tarefa compartilhada",exact:true}).waitFor();
+  assert.equal(await dialog.getByText("PRIVATE_SYNTHETIC").count(),0);
+  for(const [item,body] of [["Tarefa: Tarefa compartilhada","Resposta da equipe à tarefa"],["Conteúdo: Conteúdo compartilhado","Resposta da equipe ao conteúdo"]]){
+   await dialog.getByRole("button",{name:item,exact:true}).click();
+   const thread=dialog.getByRole("region",{name:"Conversa sobre este item"});
+   await thread.getByRole("textbox",{name:"Nova mensagem"}).fill(body);
+   await thread.getByRole("button",{name:"Enviar mensagem"}).click();
+   await thread.getByText(body,{exact:true}).waitFor();
+   await dialog.getByRole("button",{name:"Voltar aos itens",exact:true}).click();
+  }
+  await dialog.getByRole("button",{name:"Fechar",exact:true}).click();
+  console.log("PASS staff browser collaboration in shared task and content without exposing private items");
+ }else{
+  assert.equal(await page.getByRole("button",{name:/Conversas de/}).count(),0);
+ }
  const exitButton=page.getByRole("button",{name:"Sair"});
  await exitButton.focus();
  assert.equal(await exitButton.evaluate(node=>node===document.activeElement),true,"logout control must receive programmatic keyboard focus");

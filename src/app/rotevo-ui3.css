@@ -164,7 +164,8 @@
 
 /* UI3 editorial workspaces: one content base, channel-specific filtered views. */
 .rv-ui3 .rv-ui3-editorial-calendar{min-width:0}
-.rv-ui3 .rv-ui3-editorial-surface{padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-surface:not(.rv-ui3-task-surface){padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-surface.rv-ui3-task-surface{padding:16px;border:1px solid #E3E7F0;border-radius:12px;box-shadow:none}
 .rv-ui3 .rv-ui3-editorial-calendar :is(button,select,input):focus-visible,
 .rv-ui3 .rv-ui3-client-editorial :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
 .rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{border-color:#E3E6ED;border-radius:4px;background:#fff}

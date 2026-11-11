@@ -21,3 +21,11 @@ test("private JSON restriction cannot silently restore direct browser grants",()
  assert.doesNotMatch(grant,/GRANT\s+(?:ALL|SELECT|UPDATE)\s+ON\s+(?:TABLE\s+)?public\.planning_projects\s+TO\s+(?:anon|authenticated)/i);
  assert.match(grant,/has_column_privilege\('service_role','public\.planning_projects','data','UPDATE'\)/);
 });
+
+test("cutover procedure requires active UI3 and traffic containment before revoking private JSON grants",()=>{
+ const runbook=load("docs/ui/rotevo-ui3-release-preproduction-runbook-20261110.md");
+ assert.match(runbook,/não aplicar REVOKE enquanto qualquer instância UI2 puder receber tráfego legítimo/i);
+ assert.match(runbook,/confirmar a versão efetivamente ativa e a ausência de instâncias UI2/i);
+ assert.match(runbook,/se não houver mecanismo demonstrável para essa contenção, \*\*NO-GO\*\*/i);
+ assert.match(runbook,/somente um artefato compatível com grants restritos/i);
+});

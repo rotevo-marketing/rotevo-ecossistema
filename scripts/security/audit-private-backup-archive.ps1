@@ -2,7 +2,7 @@
 # Nao restaura, nao conecta ao Supabase, nao altera roles ou tabelas.
 # Exemplo: .\audit-private-backup-archive.ps1 -RunPath 'C:\CAMINHO_PRIVADO\rotevo-...'
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$RunPath])
+param([Parameter(Mandatory=$true)][string]$RunPath)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $expectedProject='kadvzjelkyfwouqmlxaa'

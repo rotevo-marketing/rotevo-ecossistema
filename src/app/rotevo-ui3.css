@@ -205,3 +205,61 @@
 .rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-height:42px;padding:3px}
 .rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{min-height:48px;padding:4px 2px}
 }
+
+
+/* UI3 | Neutral menu correction — 11/11/2026
+   Keep approved navigation structure, Tabler icons and functionality intact.
+   Resolve the competing UI2 classes without inventing a new theme. */
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar {
+  background: #fff;
+  border-right: 1px solid #E3E6ED;
+  box-shadow: none;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item {
+  color: #4A5266;
+  background: transparent;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+  min-height: 38px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:hover {
+  background: #F6F7FB;
+  color: #323647;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
+  background: #F6F4FC;
+  color: #453B75;
+  font-weight: 600;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+  background: #8173C8;
+  width: 2px;
+  top: 9px;
+  bottom: 9px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item svg {
+  stroke-width: 1.55;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:focus-visible,
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button:focus-visible {
+  outline: 2px solid #6C5CE7;
+  outline-offset: 2px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav {
+  background: #fff;
+  border-color: #E3E6ED;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button {
+  background: transparent;
+  color: #4A5266;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button:hover {
+  background: #F6F7FB;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button[aria-current="page"] {
+  background: #F6F4FC;
+  color: #453B75;
+  font-weight: 600;
+}

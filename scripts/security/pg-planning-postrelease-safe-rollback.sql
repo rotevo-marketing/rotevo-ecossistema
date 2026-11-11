@@ -1,5 +1,7 @@
 -- EPHEMERAL POSTGRESQL LAB ONLY. Exercises an application-only rollback after grants are hardened.
--- The old frontend/backend release may be restored, but private column grants must NOT be restored.
+-- Only a PREVALIDATED application artifact compatible with restricted grants may be restored.
+-- Never roll back to legacy UI2: it requires direct planning_projects.data access.
+-- This SQL checks privilege invariants; it does NOT certify a deployable recovery artifact.
 \set ON_ERROR_STOP on
 BEGIN;
 DO $guard$

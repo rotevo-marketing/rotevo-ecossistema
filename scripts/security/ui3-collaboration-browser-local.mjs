@@ -52,7 +52,7 @@ try{
  await page.addScriptTag({content:axe.source});
  const scan=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
  const serious=scan.violations.filter(x=>x.impact==="serious"||x.impact==="critical");
- console.log("ACCESSIBILITY collaboration",JSON.stringify(scan.violations.map(x=>({id:x.id,impact:x.impact,nodes:x.nodes.map(n=>n.target)}))));
+ console.log("ACCESSIBILITY collaboration",JSON.stringify(scan.violations.map(x=>({id:x.id,impact:x.impact,nodes:x.nodes.map(n=>({target:n.target,html:n.html,summary:n.failureSummary}))}))));
  assert.equal(serious.length,0,"Collaboration critical/serious WCAG violations");
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  assert.ok(overflow<=1,"Collaboration mobile horizontal overflow: "+overflow);

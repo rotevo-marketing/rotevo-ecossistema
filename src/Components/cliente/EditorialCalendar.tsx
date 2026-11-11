@@ -36,7 +36,15 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const [dayFilter,setDayFilter]=useState("");
  const [listSearch,setListSearch]=useState("");
  const [listOrder,setListOrder]=useState("deadline");
- const [listGroupMode,setListGroupMode]=useState<"client"|"flat">("client");
+ const [listGroupMode,setListGroupMode]=useState<"client"|"project"|"flat">("client");
+ const [searchOpen,setSearchOpen]=useState(false);
+ const [peopleOpen,setPeopleOpen]=useState(false);
+ const [filtersOpen,setFiltersOpen]=useState(false);
+ const [columnsOpen,setColumnsOpen]=useState(false);
+ const [moreOpen,setMoreOpen]=useState(false);
+ const [ownerFilter,setOwnerFilter]=useState("all");
+ const [priorityFilter,setPriorityFilter]=useState("all");
+ const [visibleColumns,setVisibleColumns]=useState({project:true,owner:true,status:true,priority:true,due:true});
  const [collapsedListGroups,setCollapsedListGroups]=useState<Record<string,boolean>>({});
  const [listSelection,setListSelection]=useState<string[]>([]);
  const [bulkPending,setBulkPending]=useState(false);
@@ -65,17 +73,20 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const keyOf=(item:{projectId:string;id:string})=>item.projectId+":"+item.id;
  const clientsByProject=new Map(projects.map(p=>[p.id,Array.isArray(p.clients)?p.clients[0]:p.clients]));
  const listItems=(contentScope==="active"?monthItems:filteredItems)
-  .filter(i=>(!dayFilter||i.publishDate===dayFilter)&&[i.title,i.projectTitle,clientsByProject.get(i.projectId)?.name,i.channel,i.owner].join(" ").toLocaleLowerCase("pt-BR").includes(listSearch.trim().toLocaleLowerCase("pt-BR")))
+  .filter(i=>(!dayFilter||i.publishDate===dayFilter)&&(ownerFilter==="all"||(ownerFilter==="unassigned"?!i.ownerUserId:i.ownerUserId===ownerFilter))&&(priorityFilter==="all"||(i.priority??"normal")===priorityFilter)&&[i.title,i.projectTitle,clientsByProject.get(i.projectId)?.name,i.channel,i.owner].join(" ").toLocaleLowerCase("pt-BR").includes(listSearch.trim().toLocaleLowerCase("pt-BR")))
   .sort((a,b)=>listOrder==="title"?a.title.localeCompare(b.title,"pt-BR"):listOrder==="latest"?b.publishDate.localeCompare(a.publishDate):a.publishDate.localeCompare(b.publishDate));
  const groupedList=new Map<string,{name:string;rows:typeof listItems}>();
  for(const item of listItems){
   const client=clientsByProject.get(item.projectId);
-  const key=listGroupMode==="flat"?"all":client?.id??item.projectId;
-  const group=groupedList.get(key)??{name:listGroupMode==="flat"?"Todos os conteúdos":client?.name??"Cliente",rows:[]};
+  const key=listGroupMode==="flat"?"all":listGroupMode==="project"?item.projectId:client?.id??item.projectId;
+  const group=groupedList.get(key)??{name:listGroupMode==="flat"?"Todos os conteúdos":listGroupMode==="project"?projects.find(p=>p.id===item.projectId)?.title??"Projeto":client?.name??"Cliente",rows:[]};
   group.rows.push(item);groupedList.set(key,group);
  }
  const selectedRows=listItems.filter(item=>listSelection.includes(keyOf(item)));
  const allSelected=listItems.length>0&&selectedRows.length===listItems.length;
+ const columnCount=1+(selectionEnabled?1:0)+Object.values(visibleColumns).filter(Boolean).length+(!clientView&&onLifecycleChange?1:0);
+ const groupAccent=(id:string)=>{let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return ["#7554D9","#3289CE","#279D81","#D58B3E","#C0658E"][h%5];};
+ const resetList=()=>{setListSearch("");setOwnerFilter("all");setPriorityFilter("all");setProjectFilter("all");setStatusFilter("all");setVisibleColumns({project:true,owner:true,status:true,priority:true,due:true});setListGroupMode("client");setCollapsedListGroups({});};
  async function applySelection(action:"archive"|"trash"|"restore"){
   if(!onBulkLifecycle||saving||bulkPending||!selectedRows.length)return;
   if(action==="trash"&&!window.confirm(`Mover ${selectedRows.length} conteúdo(s) para a Lixeira?`))return;
@@ -88,11 +99,11 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
  const prev=()=>{setDayFilter("");const d=new Date(y,m-2,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  const next=()=>{setDayFilter("");const d=new Date(y,m,1);setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);};
  return <div className="rv-ui3-editorial-calendar space-y-3">
-  <div className="rv-ui3-editorial-surface bg-white py-3">
+  <div className={view==="list"?"rv-ui3-editorial-surface relative rounded-xl border border-[#E3E7F0] bg-white p-4":"rv-ui3-editorial-surface bg-white py-3"}>
   {!clientView&&onLifecycleChange&&<nav aria-label="Estado dos conteúdos" className="mb-3 flex flex-wrap gap-2">{([["active","Ativos"],["archive","Arquivo"],["trash","Lixeira"]] as const).map(([scope,label])=><button key={scope} type="button" aria-pressed={contentScope===scope} onClick={()=>{setContentScope(scope);setSelected(null);setDayFilter("");setChannelFilter("all");setStatusFilter("all");setListSearch("");if(scope!=="active")setView("list");}} className={`min-h-9 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold ${contentScope===scope?"border-[#6D35F5] bg-[#F0ECFF] text-[#5123C5]":"border-[#E3E7F0] text-[#525B70]"}`}>{label}</button>)}</nav>}
   <div className="flex flex-wrap items-center justify-between gap-3">
-   <div><h2 className="sr-only">Calendário editorial</h2><p className="text-xs text-[#687487]">{filteredItems.length} conteúdos · {monthItems.length} no mês</p></div>
-   <div className="flex items-center gap-2">
+   <div><h2 className={view==="list"?"text-lg font-semibold text-[#323647]":"sr-only"}>{view==="list"?"Central de conteúdo":"Calendário editorial"}</h2><p className="mt-1 text-xs text-[#687487]">{filteredItems.length} conteúdos · {monthItems.length} no mês</p></div>
+   <div className={view==="list"?"hidden":"flex items-center gap-2"}>
     <button type="button" disabled={compact||contentScope!=="active"} onClick={()=>{setView("month");setDayFilter("");}} aria-pressed={view==="month"} className={`cursor-pointer rounded-lg px-3 py-2 text-xs font-medium disabled:hidden ${view==="month"?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]"}`}>Mês</button>
     <button type="button" onClick={()=>{setView("list");setDayFilter("");}} aria-pressed={view==="list"} className={`cursor-pointer rounded-lg px-3 py-2 text-xs font-medium disabled:hidden ${view==="list"?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]"}`}>Lista</button>
    </div>
@@ -102,8 +113,8 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
      <button type="button" aria-pressed={channelFilter==="all"} onClick={()=>{setChannelFilter("all");setDayFilter("");}} className={`min-h-9 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium ${channelFilter==="all"?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]"}`}>Todos os canais</button>
      {channels.map(channel=><button key={channel} type="button" aria-pressed={channelFilter===channel} onClick={()=>{setChannelFilter(channel);setDayFilter("");}} className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${channelFilter===channel?"bg-[#EDEAFF] text-[#5949D1]":"text-[#687487] hover:bg-[#F6F7FB]"}`}><ContentTablerIcon name={editorialChannelIcon(channel)} size={15}/>{channel}</button>)}
    </div>
-   {!clientView&&<div className="mb-4 flex flex-wrap items-center gap-3"><label className="min-w-[185px] flex-1 text-xs font-semibold text-[#525B70]">Projeto<select aria-label="Filtrar projeto editorial" value={projectFilter} onChange={e=>{setProjectFilter(e.target.value);setChannelFilter("all");setDayFilter("");}} className="mt-1 block w-full cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{projectLabel(p)}</option>)}</select></label><label className="min-w-[185px] flex-1 text-xs font-semibold text-[#525B70]">Situação<select aria-label="Filtrar situação editorial" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="mt-1 block w-full cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="all">Todas as situações</option>{Object.entries(editorialStatuses).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>{onNew&&<button type="button" disabled={projects.length===0} onClick={()=>onNew(projectFilter==="all"?"":projectFilter)} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">+ Novo conteúdo</button>}</div>}
-   <div className="mb-4 flex items-center justify-between gap-3">
+   {!clientView&&view==="month"&&<div className="mb-4 flex flex-wrap items-center gap-3"><label className="min-w-[185px] flex-1 text-xs font-semibold text-[#525B70]">Projeto<select aria-label="Filtrar projeto editorial" value={projectFilter} onChange={e=>{setProjectFilter(e.target.value);setChannelFilter("all");setDayFilter("");}} className="mt-1 block w-full cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{projectLabel(p)}</option>)}</select></label><label className="min-w-[185px] flex-1 text-xs font-semibold text-[#525B70]">Situação<select aria-label="Filtrar situação editorial" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="mt-1 block w-full cursor-pointer rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="all">Todas as situações</option>{Object.entries(editorialStatuses).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>{onNew&&<button type="button" disabled={projects.length===0} onClick={()=>onNew(projectFilter==="all"?"":projectFilter)} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">+ Novo conteúdo</button>}</div>}
+   <div className={view==="list"?"hidden":"mb-4 flex items-center justify-between gap-3"}>
     <button type="button" aria-label="Mês anterior" onClick={prev} className="cursor-pointer rounded-lg border px-3 py-2">‹</button>
     <h3 className="text-sm font-semibold capitalize">{new Intl.DateTimeFormat("pt-BR",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))}</h3>
     <button type="button" aria-label="Próximo mês" onClick={next} className="cursor-pointer rounded-lg border px-3 py-2">›</button>

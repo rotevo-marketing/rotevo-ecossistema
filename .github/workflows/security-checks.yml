@@ -108,6 +108,15 @@ jobs:
         run: node --test scripts/security/owner-bootstrap-contract.test.mjs
       - name: Verify release readiness security contracts
         run: node --test scripts/security/release-readiness-contract.test.mjs
+      - name: Syntax-check private archive audit without handling a real dump
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $issues=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('scripts/security/audit-private-backup-archive.ps1',[ref]$tokens,[ref]$issues) | Out-Null
+          if ($issues.Count -gt 0) { throw 'PowerShell archive audit syntax errors.' }
+          & pwsh -NoProfile -File scripts/security/audit-private-backup-archive.ps1 -RunPath './definitely-nonexistent-private-backup'
+          if ($LASTEXITCODE -eq 0) { throw 'Missing private archive was not rejected.' }
       - name: Enforce Ecossistema 2027 as the only presentation
         run: node --test scripts/security/only-ecosystem-2027.test.mjs
       - name: Validate operational dependency graphs

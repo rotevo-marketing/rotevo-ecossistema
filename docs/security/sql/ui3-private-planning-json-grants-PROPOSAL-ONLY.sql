@@ -24,6 +24,8 @@ END;
 $preflight$;
 -- PostgreSQL table grants override per-column REVOKE. Remove whole-table privileges first.
 REVOKE SELECT, UPDATE ON TABLE public.planning_projects FROM anon,authenticated;
+-- The candidate UI3 uses authenticated server APIs for creation/deletion; direct browser DML is not required.
+REVOKE INSERT, DELETE ON TABLE public.planning_projects FROM anon,authenticated;
 -- PUBLIC and explicit column grants are independent sources of effective privilege.
 REVOKE SELECT, UPDATE ON TABLE public.planning_projects FROM PUBLIC;
 REVOKE SELECT (data), UPDATE (data) ON TABLE public.planning_projects FROM PUBLIC,anon,authenticated;
@@ -34,6 +36,11 @@ GRANT SELECT (id,client_id,title,slug,description,status,published_at,created_at
 -- audited server endpoints using the service role after JWT and project authorization.
 DO $postflight$
 BEGIN
+ IF has_table_privilege('authenticated','public.planning_projects','INSERT')
+ OR has_table_privilege('authenticated','public.planning_projects','DELETE')
+ OR has_table_privilege('anon','public.planning_projects','INSERT')
+ OR has_table_privilege('anon','public.planning_projects','DELETE')
+ THEN RAISE EXCEPTION 'Browser roles can directly mutate projects'; END IF;
  IF has_column_privilege('anon','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','SELECT')
  OR has_column_privilege('authenticated','public.planning_projects','data','UPDATE')

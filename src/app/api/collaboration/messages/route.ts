@@ -1,3 +1,4 @@
+const ui3FallbackCollaborationDisabled=()=>true;
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {canAccessConversation,parseMessageBody,parseResource,requiredModule} from "@/lib/collaboration/guards";
@@ -31,7 +32,7 @@ function encodeCursor(row:Message):string{
 async function authorize(req:NextRequest,params:Params,write:boolean){
  // Explicitly disabled until the isolated database proposal has been reviewed, tested and applied.
  // Contingency release: permanently fail closed, even if production env enables collaboration.
- if(true)return {status:503 as const};
+ if(ui3FallbackCollaborationDisabled()||process.env.ROTEVO_COLLABORATION_ENABLED!=="true")return {status:503 as const};
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!anon||!secret)return {status:503 as const};
  const header=req.headers.get("authorization");

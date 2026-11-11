@@ -138,14 +138,14 @@ export default function ClientAreaPage(){
           </div>
           <span className="rv-ui2-client-identity"><RotevoTablerIcon name="users" size={17} stroke={1.7}/>{clientName||"Área do cliente"}</span>
         </header>
-       {projects.length>1&&["planning","execution","content","campaigns","meetings"].includes(tab)&&<label className="mb-5 block text-sm font-semibold">Projeto<select value={scopedProjects[0]?.id??""} onChange={e=>setSelectedProjectId(e.target.value)} className="ml-3 max-w-full rounded-xl border border-[#E3E7F0] bg-white p-3">{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
+       {projects.length>1&&["planning","content","campaigns","meetings"].includes(tab)&&<label className="mb-5 block text-sm font-semibold">Projeto<select value={scopedProjects[0]?.id??""} onChange={e=>setSelectedProjectId(e.target.value)} className="ml-3 max-w-full rounded-xl border border-[#E3E7F0] bg-white p-3">{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}<button type="button" onClick={()=>window.location.reload()} className="ml-3 rounded-lg border border-red-200 px-3 py-2 font-semibold">Tentar novamente</button></div>}
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
        !workspace?<p className="rounded-xl bg-white p-6 text-sm">Seus serviços não puderam ser carregados. Atualize a página.</p>:
        tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<ProjectTimeline key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
+       tab==="execution"?<ProjectTimeline projects={projects}/>:
        tab==="content"?<ClientContent key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

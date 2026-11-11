@@ -70,4 +70,65 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
    {model.invalidDates>0&&<p role="status" className="text-[13px] leading-5 text-[#525B70]">Alguns registros possuem datas inválidas e não foram usados nos cálculos de prazo. Confira os registros nos módulos de origem.</p>}
   </>}
  </div>;
+}  const dailyTasks=model.routine.filter(item=>item.kind==="task"&&item.due===today);
+  const overduePersonal=model.routine.filter(item=>item.kind==="task"&&!!item.due&&item.due<today);
+  const nextPersonal=model.routine.filter(item=>item.kind==="task"&&(!item.due||item.due>today));
+  const dayMeetings=model.meetings.filter(item=>item.due===today);
+  const upcomingMeetings=model.meetings.filter(item=>item.due!==today);
+  const month=today.slice(0,7);
+  const incoming=financial?.invoices.filter(i=>!i.cancelled&&i.direction==="in")??[];
+  const dueReceivables=incoming.filter(i=>balance(i)>0);
+  const dueTotal=dueReceivables.reduce((n,i)=>n+balance(i),0);
+  const paidThisMonth=financial?.settlements.filter(s=>!s.reversed&&s.paid_on.startsWith(month)&&incoming.some(i=>i.id===s.invoice_id)).reduce((n,s)=>n+s.amount_cents,0)??0;
+  const overdueTotal=overdueIncoming.reduce((n,i)=>n+balance(i),0);
+  const todayDate=new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
+  const surface="rounded-2xl border border-[#E3E7F0] bg-white p-4 sm:p-5";
+  const simpleAction="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-[#6034B7] hover:bg-[#F4F0FF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]";
+  const metrics:{title:string;value:string;detail:string;icon:RotevoIconName;onClick?:()=>void;warning?:boolean}[]=[
+   {title:"Para hoje",value:ready?String(dailyTasks.length):"—",detail:"Suas tarefas com prazo hoje",icon:"list-check",onClick:onOpenTasks},
+   {title:"Atrasadas",value:ready&&model.overdueTasks!==null?String(model.overdueTasks):"—",detail:"Tarefas abertas da operação",icon:"alert-circle",onClick:onOpenTasks,warning:(model.overdueTasks??0)>0},
+   {title:"Reuniões",value:ready&&!model.agendaUnavailable?String(dayMeetings.length):"—",detail:"Compromissos para hoje",icon:"calendar-week",onClick:onOpenMeetings},
+   {title:"Aprovações",value:ready&&model.pendingDecisions!==null?String(model.pendingDecisions):"—",detail:"Decisões formais pendentes",icon:"file-text",onClick:onOpenContent}
+  ];
+  const personalPriorities=[...overduePersonal,...dailyTasks,...nextPersonal].filter((item,index,arr)=>arr.findIndex(x=>x.key===item.key)===index).slice(0,6);
+  return <main aria-label="Meu dia na Rotevo" className="rv-ui3-daily-dashboard space-y-4 pb-6 text-[#323647] sm:space-y-5">
+    <header className="flex flex-wrap items-center justify-between gap-3">
+     <div><p className="text-xs font-medium capitalize text-[#697386]">{todayDate}</p><h2 className="mt-1 text-xl font-semibold tracking-tight text-[#111827]">Meu dia{userName?" · "+userName.split(" ")[0]:""}</h2><p className="mt-1 text-xs text-[#697386]">Sua rotina, compromissos e situação financeira em um só lugar.</p></div>
+     <button type="button" onClick={onOpenTasks} className={simpleAction}><RotevoTablerIcon name="list-check" size={16} stroke={1.6}/> Ver todas as tarefas</button>
+    </header>
+    {!ready?<section role={state==="loading"?"status":"alert"} className={surface}><p className="text-sm font-semibold">{state==="loading"?"Preparando a visão geral":state==="forbidden"?"Acesso não autorizado":"Não foi possível carregar a visão geral"}</p><p className="mt-2 text-xs text-[#697386]">Os indicadores só aparecem quando as fontes autorizadas estiverem disponíveis.</p></section>:<>
+     <section aria-label="Indicadores do dia" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map(metric=><button key={metric.title} type="button" onClick={metric.onClick} disabled={!metric.onClick} className={"group rounded-xl border border-[#E3E7F0] bg-white p-4 text-left transition-colors hover:border-[#C5B9F5] focus-visible:outline-2 focus-visible:outline-[#6C5CE7] "+(!metric.onClick?"cursor-default":"cursor-pointer")}>
+       <div className="flex items-center justify-between"><span className="text-xs font-medium text-[#697386]">{metric.title}</span><RotevoTablerIcon name={metric.icon} size={18} stroke={1.6}/></div>
+       <div className={"mt-3 text-[28px] font-semibold tabular-nums "+(metric.warning?"text-[#B73C4D]":"text-[#111827]")}>{metric.value}</div>
+       <p className="mt-1 text-[11px] text-[#697386]">{metric.detail}</p>
+      </button>)}
+     </section>
+     {(model.executionUnavailable||model.agendaUnavailable||model.editorialUnavailable||source==="unavailable"||source==="forbidden")&&<p role="status" className="rounded-lg border border-[#F4DBA6] bg-[#FFFAEF] p-3 text-xs text-[#826321]">Há informações operacionais indisponíveis. Totais desconhecidos foram apresentados como “—”, sem presumir valores.</p>}
+     <div className="grid gap-4 xl:grid-cols-2">
+      <section className={surface} aria-labelledby="daily-priorities">
+       <div className="flex items-center justify-between gap-3"><h3 id="daily-priorities" className="flex items-center gap-2 text-sm font-semibold"><RotevoTablerIcon name="list-check" size={18} stroke={1.6}/> Minhas prioridades</h3>{onOpenTasks&&<button type="button" onClick={onOpenTasks} className={simpleAction}>Abrir tarefas →</button>}</div>
+       {!userId?<p className="mt-4 text-xs text-[#697386]">Aguardando vínculo com sua conta de estrategista.</p>:personalPriorities.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{personalPriorities.map(item=><li key={item.key} className="flex items-start justify-between gap-2 py-3"><div className="min-w-0"><p className="text-sm font-medium text-[#263146]">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title} · {item.due?overviewDate(item.due):"Sem prazo"}{item.due&&item.due<today?" · Atrasada":""}</p></div><RecordLink item={item} label="Abrir"/></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma tarefa atribuída à sua conta para este período.</p>}
+       {model.unlinkedOwners>0&&<p className="mt-3 text-xs text-[#697386]">Existem atribuições somente por nome, que não foram associadas automaticamente à sua conta.</p>}
+      </section>
+      <section className={surface} aria-labelledby="daily-agenda">
+       <div className="flex items-center justify-between gap-3"><h3 id="daily-agenda" className="flex items-center gap-2 text-sm font-semibold"><RotevoTablerIcon name="calendar-week" size={18} stroke={1.6}/> Agenda do dia</h3>{onOpenMeetings&&<button type="button" onClick={onOpenMeetings} className={simpleAction}>Abrir agenda →</button>}</div>
+       {dayMeetings.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{dayMeetings.map(item=><li key={item.key} className="flex gap-3 py-3"><span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-[#6034B7]">{item.time??"—"}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title}</p></div><RecordLink item={item} label="Abrir"/></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">{model.agendaUnavailable?"Agenda parcialmente indisponível.":"Nenhuma reunião registrada para hoje."}</p>}
+       {upcomingMeetings.length>0&&<div className="mt-4 border-t border-[#EDF0F6] pt-3"><p className="text-xs font-semibold text-[#697386]">Próximos compromissos</p>{upcomingMeetings.slice(0,2).map(item=><p key={item.key} className="mt-2 text-xs text-[#525B70]">{overviewDate(item.due)} · {item.time??"Hora não informada"} · {item.title}</p>)}</div>}
+      </section>
+     </div>
+     <section className={surface} aria-labelledby="daily-finance">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 id="daily-finance" className="flex items-center gap-2 text-sm font-semibold"><RotevoTablerIcon name="currency-dollar" size={18} stroke={1.6}/> Resumo financeiro</h3>{onOpenFinance&&<button onClick={onOpenFinance} type="button" className={simpleAction}>Abrir Financeiro →</button>}</div>
+      <p className="mt-1 text-xs text-[#697386]">Recebimentos e saldos registrados · mês atual</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">{[{label:"A receber",value:financial?brl(dueTotal):"—",hint:"Saldo aberto de cobranças",icon:"hourglass" as RotevoIconName},{label:"Recebido no mês",value:financial?brl(paidThisMonth):"—",hint:"Baixas registradas",icon:"circle-check" as RotevoIconName},{label:"Em atraso",value:financial?brl(overdueTotal):"—",hint:"Recebimentos vencidos",icon:"alert-circle" as RotevoIconName}].map(metric=><div key={metric.label} className="rounded-lg border border-[#EDF0F6] bg-[#FAFBFD] p-3"><div className="flex items-center gap-2 text-xs text-[#697386]"><RotevoTablerIcon name={metric.icon} size={16} stroke={1.5}/>{metric.label}</div><p className="mt-2 text-lg font-semibold tabular-nums">{metric.value}</p><p className="mt-1 text-[11px] text-[#697386]">{metric.hint}</p></div>)}</div>
+      {!financial&&<p className="mt-3 text-xs text-[#697386]">{financialError||"Consultando lançamentos financeiros autorizados…"}</p>}
+      <p className="mt-3 text-[11px] text-[#697386]">Valores baseados nos registros do Financeiro; recebimentos exigem baixa confirmada.</p>
+     </section>
+     <section className={surface} aria-labelledby="daily-projects">
+      <div className="flex items-center justify-between gap-3"><h3 id="daily-projects" className="flex items-center gap-2 text-sm font-semibold"><RotevoTablerIcon name="report" size={18} stroke={1.6}/> Projetos que exigem atenção</h3><button type="button" onClick={onOpenProjects} className={simpleAction}>Ver projetos →</button></div>
+      {model.projectAttention.length?<ul className="mt-3 grid gap-2 md:grid-cols-2">{model.projectAttention.slice(0,4).map(({project,items})=><li key={project.id} className="rounded-lg border border-[#EDF0F6] p-3"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium">{project.title}</p><span className="rounded bg-[#F3F0FF] px-2 py-1 text-[11px] text-[#6034B7]">{items.length} pendência(s)</span></div><p className="mt-1 text-xs text-[#697386]">{overviewClient(project)?.name??"Cliente não informado"}</p><p className="mt-2 line-clamp-2 text-xs text-[#525B70]">{items[0].reasons.join(" · ")}</p><RecordLink item={items[0]} label="Abrir projeto"/></li>)}</ul>:<p className="mt-3 text-xs text-[#697386]">Nenhum projeto com pendência confirmada.</p>}
+     </section>
+     {model.invalidDates>0&&<p role="status" className="text-xs text-[#697386]">Algumas datas inválidas não foram incluídas nos indicadores.</p>}
+    </>}
+   </main>;
 }

@@ -88,7 +88,7 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
      {items.length>0?<div className="mt-5 flex flex-wrap gap-2" aria-label="Filtrar entregas">
        {[["active","Ativas"],["planned","Planejadas"],["in_progress","Em andamento"],["blocked","Aguardando"],["completed","Concluídas"]].map(([value,label])=>
         <button key={value} type="button" onClick={()=>{setFilter(value);setPage(1);}} aria-pressed={filter===value}
-          className={`cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium ${filter===value?"border-[#6D35F5] bg-[#F0EBFF] text-[#6D35F5]":"border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]"}`}>{label}</button>)}
+          className={`cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium ${filter===value?"border-[#5123C5] bg-[#F0EBFF] text-[#5123C5]":"border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB]"}`}>{label}</button>)}
       </div>:null}
      {filter==="completed"&&<div className="mt-4 flex flex-wrap items-center gap-2"><label className="text-xs font-medium text-[#697386]">Mês de conclusão <input type="month" value={completedMonth} onChange={e=>{setCompletedMonth(e.target.value);setPage(1);}} className="ml-2 rounded-lg border border-[#E3E7F0] p-2 text-xs"/></label><button type="button" onClick={()=>{setCompletedMonth("");setPage(1);}} className="cursor-pointer text-xs font-semibold text-[#5949D1] hover:underline">Todos os períodos</button></div>}
      {items.length===0?<div className="mt-5 rounded-xl bg-[#F6F7FB] p-5">
@@ -99,15 +99,15 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
        <td className="max-w-[300px] border-l-[3px] px-3 py-3 text-xs font-semibold text-[#1C2942]" style={{borderLeftColor:mondayStatus[state]??mondayStatus.planned}}><span className="block">{item.title}</span>{url&&<a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[11px] text-[#6D35F5] hover:underline">Ver material</a>}{process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&<details className="mt-2 font-normal"><summary className="cursor-pointer text-xs font-semibold text-[#6D35F5]">Conversa</summary><div className="mt-2"><ProjectConversation projectId={item.projectKey!} resourceType="task" resourceId={item.id}/></div></details>}</td>
        <td className="px-3 py-3"><span className="inline-flex max-w-[155px] items-center gap-2"><TaskAvatar name={item.projectTitle??"Projeto"} src={item.projectAvatarUrl} size={26}/><span className="truncate text-xs" title={item.projectTitle}>{item.projectTitle}</span></span></td>
        <td className="px-3 py-3">{item.owner?<span className="inline-flex min-w-[110px] items-center gap-2"><TaskAvatar name={item.owner} src={item.ownerAvatarUrl} size={26}/><span className="max-w-[120px] truncate text-xs" title={item.owner}>{item.owner}</span></span>:<span className="text-xs text-[#697386]">Não atribuído</span>}</td>
-       <td className="px-3 py-3"><span className="block rounded-md px-3 py-2 text-center text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span></td>
-       <td className="px-3 py-3"><span className="flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold text-white" style={{backgroundColor:pri.color}}><RotevoTablerIcon name="flag" size={14}/>{pri.name}</span></td>
+       <td className="px-3 py-3"><span className="block rounded-md px-3 py-2 text-center text-xs font-semibold text-[#050810]" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span></td>
+       <td className="px-3 py-3"><span className="flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold text-[#050810]" style={{backgroundColor:pri.color}}><RotevoTablerIcon name="flag" size={14}/>{pri.name}</span></td>
        <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-[#525B70]">{formatted(item.dueDate)}</td>
       </tr>;})}</tbody></table></div>:<div className="mt-6 border-l-2 border-[#E4E8F0] pl-5">
        {shown.map(item=>{const url=safeLink(item.driveUrl);const state=item.status??"planned";return <article key={`${item.projectKey}:${item.id}`} className="relative mb-6 rounded-xl border border-[#E3E7F0] p-4">
          <span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#6D35F5]"/>
          <div className="flex flex-wrap items-start justify-between gap-2">
           <div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{item.projectTitle}{item.phase?` · ${item.phase}`:""}</p></div>
-          <span className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span>
+          <span className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#050810]" style={{backgroundColor:mondayStatus[state]??mondayStatus.planned}}>{labels[state]??labels.planned}</span>
          </div>
          {item.description&&<p className="mt-3 text-sm text-[#525B70]">{item.description}</p>}
          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#697386]">

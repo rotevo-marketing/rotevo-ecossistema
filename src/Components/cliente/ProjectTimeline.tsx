@@ -58,7 +58,7 @@ const statusColor=(status?:string)=>statuses.find(s=>s.id===status)?.color??stat
 const priorityInfo=(priority?:string)=>priorities.find(p=>p.id===priority)??priorities[2];
 const isRow=(v:unknown):v is ExecutionItem=>!!v&&typeof v==="object"&&typeof (v as ExecutionItem).id==="string"&&typeof (v as ExecutionItem).title==="string";
 
-export default function ProjectTimeline({projects}:{projects:Project[]}){
+export default function ProjectTimeline({projects,clientName}:{projects:Project[];clientName?:string}){
  const [view,setView]=useState<"list"|"board">("list");
  const [section,setSection]=useState<"active"|"completed">("active");
  const [search,setSearch]=useState(""),[searchOpen,setSearchOpen]=useState(false);
@@ -75,23 +75,23 @@ export default function ProjectTimeline({projects}:{projects:Project[]}){
  const items=useMemo<Row[]>(()=>projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(i=>isRow(i)&&i.visibleToClient===true&&!i.deletedAt&&!i.archivedAt).map(i=>({...i,projectKey:p.id,projectTitle:p.title,projectAvatarUrl:p.clientAvatarUrl??undefined}))),[projects]);
  const people=useMemo(()=>[...new Set(items.map(i=>i.owner?.trim()).filter((v):v is string=>!!v))].sort((a,b)=>a.localeCompare(b,"pt-BR")),[items]);
  const filtered=useMemo(()=>items.filter(i=>{
-  if(section==="completed"?(i.status!=="completed"||(completedMonth&&!i.completedAt?.startsWith(completedMonth))):(i.status==="completed"||i.status==="cancelled"))return false;
+  if(section==="completed"?(i.status!=="completed"||(completedMonth&&!i.completedAt?.startsWith(completedMonth))):(view==="list"&&(i.status==="completed"||i.status==="cancelled")))return false;
   if(projectFilter!=="all"&&i.projectKey!==projectFilter)return false;
   if(owner!=="all"&&(owner==="unassigned"?!!i.owner?.trim():i.owner!==owner))return false;
   if(status!=="all"&&(i.status??"planned")!==status)return false;
   if(priority!=="all"&&(i.priority??"normal")!==priority)return false;
   if(deadline!=="all"){const d=i.dueDate??"";if(deadline==="today"&&d!==today())return false;if(deadline==="overdue"&&!(d&&d<today()&&isOpen(i)))return false;if(deadline==="upcoming"&&!(d&&d>today()))return false;}
   const q=search.trim().toLocaleLowerCase("pt-BR");return !q||[i.title,i.projectTitle,i.owner,i.description].some(v=>v?.toLocaleLowerCase("pt-BR").includes(q));
- }).sort((a,b)=>sort==="title"?a.title.localeCompare(b.title,"pt-BR"):sort==="priority"?priorities.findIndex(p=>p.id===(a.priority??"normal"))-priorities.findIndex(p=>p.id===(b.priority??"normal")):(a.dueDate??"9999").localeCompare(b.dueDate??"9999")),[items,section,completedMonth,projectFilter,owner,status,priority,deadline,search,sort]);
+ }).sort((a,b)=>sort==="title"?a.title.localeCompare(b.title,"pt-BR"):sort==="priority"?priorities.findIndex(p=>p.id===(a.priority??"normal"))-priorities.findIndex(p=>p.id===(b.priority??"normal")):(a.dueDate??"9999").localeCompare(b.dueDate??"9999")),[items,section,completedMonth,projectFilter,owner,status,priority,deadline,search,sort,view]);
  const currentPage=Math.min(page,Math.max(1,Math.ceil(filtered.length/pageSize)));
  const paged=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
  const groupRows=useMemo(()=>{
   const m=new Map<string,{name:string;items:Row[];avatar?:string}>();
   for(const item of paged){const key=group==="flat"?"all":group==="project"?item.projectKey:"client";
-  const name=group==="flat"?"Todas as tarefas":group==="project"?item.projectTitle:"Tarefas do cliente";
+  const name=group==="flat"?"Todas as tarefas":group==="project"?item.projectTitle:(clientName||"Tarefas do cliente");
   if(!m.has(key))m.set(key,{name,items:[],avatar:item.projectAvatarUrl});m.get(key)!.items.push(item);}
   return [...m.entries()];
- },[paged,group]);
+ },[paged,group,clientName]);
  const reset=()=>{setSearch("");setOwner("all");setStatus("all");setPriority("all");setDeadline("all");setProjectFilter("all");setCompletedMonth("");setSort("due");setPage(1);};
  const tableColumns=1+Object.values(columns).filter(Boolean).length;
  const tabler=(name:Parameters<typeof RotevoTablerIcon>[0]["name"],size=16)=><RotevoTablerIcon name={name} size={size} stroke={1.7}/>;

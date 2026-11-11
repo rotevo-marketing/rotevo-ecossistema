@@ -49,7 +49,7 @@ try {
   throw error;
  }
  await page.getByRole("heading",{name:"Área da equipe ROTEVO"}).waitFor({timeout:15000});
- await page.getByText("Synthetic Assigned Project",{exact:true}).waitFor({timeout:15000});
+ await page.getByRole("listitem").filter({hasText:"Synthetic Assigned Project"}).waitFor({timeout:15000});
  assert.equal(await page.getByText("Projetos atribuídos: 1").count(),1);
  assert.equal(await page.getByText("Nenhuma permissão de consulta concedida").count(),0);
  assert.equal(await page.getByRole("link",{name:"Acessar Financeiro"}).count(),0,"no finance.read must hide finance action");

@@ -2,6 +2,7 @@ name: UI3 isolated integrated Auth API Storage and Finance lab
 on:
   push:
     branches:
+      - integration/rotevo-ui3-rebranding-20261111
       - feat/rotevo-ui2-pilot-20261109
       - release/rotevo-ui3-rc-20261110
     paths:
@@ -60,6 +61,8 @@ jobs:
           version: 2.121.0
       - name: Install app dependencies without running application
         run: npm ci --no-audit --no-fund
+      - name: Verify recovered visual contracts
+        run: node --test scripts/security/ui3-task-*.test.mjs scripts/security/ui3-editorial-ux-round.test.mjs scripts/security/ui3-visual-round-20261110.test.mjs scripts/security/ui3-contrast.test.mjs
       - name: Prepare Playwright before Next.js starts
         shell: bash
         run: |

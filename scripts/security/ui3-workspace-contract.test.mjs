@@ -155,7 +155,7 @@ test("editorial admin and client share channel filtering without duplicating con
  assert.match(admin,/references/);
  assert.match(admin,/visibleToClient/);
  assert.match(admin,/version/);
- assert.match(portal,/view==="approvals"\?approvals:displayed/);
+ assert.match(portal,/filter==="attention"\?approvals:displayed/);
  assert.match(portal,/x\.status==="idea_pending"\|\|x\.status==="awaiting"/);
  assert.match(portal,/i\.visibleToClient===true/);
  assert.match(portal,/d\.content_version===\(i\.version\?\?""\)/);

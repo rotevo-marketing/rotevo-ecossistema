@@ -44,8 +44,11 @@ try{
  assert.equal(await section.getByText("Mensagem de teste acessível").count(),1);
  await page.waitForFunction(() => Array.from(document.querySelectorAll("textarea")).some(el => el.value === ""),{timeout:10000});
  assert.equal(await input.inputValue(),"");
- await input.focus();
- assert.equal(await input.evaluate(el=>el===document.activeElement),true,"Input accepts keyboard focus");
+ await input.click();
+ await page.keyboard.insertText("Teste de teclado");
+ await page.waitForFunction(() => Array.from(document.querySelectorAll("textarea")).some(el => el.value === "Teste de teclado"));
+ assert.equal(await input.inputValue(),"Teste de teclado","Input must accept real keyboard entry");
+ await input.fill("");
  await page.addScriptTag({content:axe.source});
  const scan=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
  const serious=scan.violations.filter(x=>x.impact==="serious"||x.impact==="critical");

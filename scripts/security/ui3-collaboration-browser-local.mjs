@@ -32,10 +32,10 @@ try{
  // Use the actual portal navigation rather than mounting a synthetic component.
  await page.getByRole("button",{name:"Menu",exact:true}).click();
  const menu=page.getByRole("navigation",{name:"Navegação do portal"});
- await menu.getByRole("button",{name:"Tarefas e entregas"}).click();
- await page.getByText("Tarefa acessível").waitFor({timeout:20000});
- await page.getByText("Conversa sobre esta tarefa").click();
- const section=page.getByRole("region",{name:"Conversa sobre este item"});
+ await menu.getByRole("button",{name:"Tarefas",exact:true}).click();
+ await page.getByRole("button",{name:"Tarefa acessível",exact:true}).click({timeout:20000});
+ const detail=page.getByRole("dialog",{name:"Detalhes da tarefa Tarefa acessível",exact:true});
+ const section=detail.getByRole("region",{name:"Conversa sobre este item"});
  await section.getByRole("heading",{name:"Conversa sobre este item"}).waitFor();
  const input=section.getByRole("textbox",{name:"Nova mensagem"});
  await input.fill("Mensagem de teste acessível");

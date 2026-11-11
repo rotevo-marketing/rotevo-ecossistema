@@ -146,11 +146,11 @@ export default function ClientAreaPage(){
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
        tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName}/>:
-       tab==="content"?<ClientContent key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
+       tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
        tab==="onboarding"?<Block title="Etapas do seu projeto" icon="alert-square-rounded"><div className="space-y-4">{projects.flatMap(p=>(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectTitle:p.title}))).length===0?<p className="text-sm text-[#697386]">Nenhuma etapa de onboarding foi compartilhada pela equipe até o momento.</p>:projects.map(p=><div key={p.id}><h3 className="mb-2 text-sm font-semibold">{p.title}</h3><div className="divide-y divide-[#E3E7F0]">{(p.data?.onboardingChecklist??[]).filter(i=>i.visibleToClient===true).map(i=><div key={i.id} className="flex items-center justify-between gap-2 py-3"><span className="text-sm">{i.done?"✓":"○"} {i.title}</span>{i.link&&i.link.startsWith("https://")&&<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6D35F5]">Abrir material ↗</a>}</div>)}</div></div>)}</div></Block> :
-       tab==="meetings"?<ClientMeetings key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
+       tab==="meetings"?<ClientMeetings projects={projects}/>:
        tab==="contract"?<ClientContracts contracts={workspace?.contracts??[]}/>:
        tab==="drive"?<ClientDrive folders={workspace?.folders??[]}/>:
        <Block title={selected.name} icon={selected.icon}>

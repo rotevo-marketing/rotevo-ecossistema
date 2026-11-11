@@ -37,7 +37,15 @@ permissions:
 
 jobs:
   local-auth-rest:
-    name: Isolated real Auth + HTTP + Storage + financial SQL
+    name: Isolated Auth, HTTP, Storage and Finance (${{ matrix.mode }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: release
+            collaboration: 'true'
+          - mode: contingency
+            collaboration: 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -74,7 +82,10 @@ jobs:
           cd "$RUNNER_TEMP/rotevo-ui3-local"
           supabase start --exclude studio,mailpit,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor
           supabase status -o env > "$RUNNER_TEMP/ui3-local-supabase.env"
-      - name: Verify remaining integrated flows with real local services and original HTTP routes
+      - name: Verify integrated flows against the restricted database
+        env:
+          LAB_MODE: ${{ matrix.mode }}
+          LAB_COLLABORATION: ${{ matrix.collaboration }}
         shell: bash
         run: |
           set -euo pipefail
@@ -95,10 +106,15 @@ jobs:
           export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
           export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
           export ROTEVO_FINANCE_ENABLED="true"
-          export ROTEVO_COLLABORATION_ENABLED="true"
-          export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED="true"
+          export ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
+          export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
           unset VERCEL_ENV
-          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          if [ "$LAB_MODE" = "contingency" ]; then
+            npm run build
+            npm run start -- --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          else
+            npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          fi
           next_pid=$!
           trap 'kill "$next_pid" 2>/dev/null || true' EXIT
           ready=0
@@ -111,8 +127,12 @@ jobs:
             exit 1
           fi
           node scripts/security/ui3-integrated-local-http.mjs
-          node scripts/security/ui3-collaboration-integrated-local.mjs
-          node scripts/security/ui3-collaboration-browser-local.mjs
+          if [ "$LAB_MODE" = "contingency" ]; then
+            node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+          else
+            node scripts/security/ui3-collaboration-integrated-local.mjs
+            node scripts/security/ui3-collaboration-browser-local.mjs
+          fi
           # Only the local synthetic stack is reachable from the browser test.
           node scripts/security/ui3-staff-browser-local.mjs
           node scripts/security/ui3-portal-browser-local.mjs
@@ -120,7 +140,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui3-synthetic-staff-viewport
+          name: ui3-synthetic-staff-viewport-${{ matrix.mode }}
           path: |
             ${{ runner.temp }}/ui3-synthetic-staff-390.png
             ${{ runner.temp }}/ui3-synthetic-collaboration-390.png

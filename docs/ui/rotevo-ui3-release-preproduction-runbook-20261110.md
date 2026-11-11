@@ -84,3 +84,23 @@ O dump e os relatórios de erro devem permanecer no computador administrativo. P
 - A configuração de autenticação Vercel observada exclui domínios personalizados. Ela não comprova contenção de tráfego em `app.rotevo.com.br`. Antes da janela, demonstrar um controle temporário de tráfego que mantenha acesso de homologação e seja testável no domínio, incluindo a ausência de tráfego legítimo para a UI2 antes do REVOKE.
 
 **NO-GO hospedado nesta verificação.** Faltam evidência de recuperação do administrador principal, verificação final dos controles de implantação e contingência, conclusão da homologação residual e aprovação específica do responsável para a janela. Recuperar todos os cadastros de teste não é requisito. Não há limpeza necessária para publicar.
+
+
+## 9. Confirmação do responsável e ensaio de transição
+
+O responsável confirmou login em produção, acesso ao Painel do Estrategista, visualização dos clientes e controle da caixa postal de recuperação. O acesso administrativo atual fica aceito. A recuperação de senha de ponta a ponta continua sujeita a teste com identidade sintética ou a operação assistida autorizada, sem redefinir a senha principal para homologação.
+
+O laboratório executa dois cenários independentes com os grants G2 e as demais propostas SQL já aplicadas em instâncias descartáveis. O cenário de contingência compila e inicia a build de produção com ambas as flags de colaboração desligadas. Ele verifica Auth, isolamento de clientes, edição, publicação, Storage, Financeiro e portal de Equipe, além de confirmar que a API de mensagens fica indisponível. A build de contingência hospedada deve usar as mesmas flags, incluindo a flag pública no momento da compilação. Validar seu SHA, ambiente e URL protegida antes da janela.
+
+### Controle temporário de tráfego
+
+A regra candidata é uma regra WAF de projeto com condição Hostname igual a `app.rotevo.com.br` e ação Deny. O WAF oferece regras personalizadas inclusive no plano Hobby. A regra de projeto independe de qual deployment recebe o domínio e implica uma janela de indisponibilidade para esse hostname. Conferir no painel permissão para publicar, cota disponível, precedência e demais aliases públicos da UI2. Ensaiar o bloqueio e a remoção em hostname descartável sob controle da organização antes de usar a regra no domínio real. A consulta à configuração ativa não comprovou a existência de uma regra nem a disponibilidade operacional no projeto.
+
+1. Registrar a configuração WAF original, o deployment servido, os aliases e o SHA das builds principal e de contingência. Confirmar que as URLs geradas para verificação permanecem protegidas.
+2. Na janela aprovada, publicar a regra temporária. Confirmar de fora que páginas, APIs e aliases legados relevantes estão contidos, inclusive acessos com sessão, e aguardar a drenagem das requisições em curso. Abortar antes do SQL se a contenção falhar.
+3. Associar o domínio à build UI3 aprovada, mantendo o WAF ativo. Conferir o alias e a versão pelo painel e pela URL protegida da mesma build. Verificar login e os fluxos essenciais antes de aplicar SQL.
+4. Executar apenas o pacote SQL aprovado. Revalidar grants, RLS, Auth, edição/publicação, Equipe e isolamento pela URL protegida. Ativar mensagens em uma etapa separada.
+5. Se a UI3 falhar após G2, manter a contenção e trocar pela build UI3 de contingência compatível ou corrigir a UI3. Se falhar antes de qualquer alteração SQL, recuperar o estado prévio do aplicativo e do WAF. Em ambos os casos confirmar versão e comportamento antes de liberar tráfego.
+6. Remover somente a regra temporária após os pós-testes. Conferir o domínio público, acessos autorizados e logs. Sessões com código UI2 já carregado no navegador podem precisar recarregar; o WAF da Vercel não intercepta chamadas diretas ao Supabase.
+
+Referências: [Regras WAF](https://vercel.com/docs/vercel-firewall/vercel-waf/custom-rules) e [Condições de regras](https://vercel.com/docs/vercel-firewall/vercel-waf/rule-configuration).

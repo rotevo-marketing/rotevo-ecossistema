@@ -50,3 +50,12 @@ Comparação direta consultada nos projetos produção e homologação:
 - SQL G2 diverge das permissões efetivas esperadas ou o pós-teste não preserva `service_role`.
 
 **Sem gatilho para exclusão de usuários.** Não fazer limpeza dos 11 perfis sem vínculo, pois não tem relação com a publicação. Não criar SMTP pago só para homologação. Autorizar produção somente com autorização específica do responsável.
+
+
+## 5. Contingência prévia no projeto original (11/11/2026)
+
+- Branch separada: `release/ui3-fallback-g2-20261111`, criada a partir do SHA `f2ca4c568920c414324f80d7e168e8ca192787d2`. A branch `main` e a produção foram preservadas.
+- No projeto Vercel original `rotevo-ecossistema`, **somente Preview** nessa branch recebeu `ROTEVO_COLLABORATION_ENABLED=false` e `NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED=false`. Nenhum valor/segredo Supabase foi alterado.
+- Deployment de contingência isolado `dpl_DKhMcggRBe5JWZpuHnmnw43C8TVR`; conferir estado READY, SHA e ausência de endpoints de colaboração antes de promover esta evidência a aprovada.
+- **Alerta operacional crítico:** variáveis exclusivas de Preview **não migram automaticamente** para um deployment Production promovido/recriado. O preview com flags falsas **não é suficiente** para marcar a contingência de produção como pronta. Será obrigatório congelar uma build/estratégia de produção com ambas as flags false, testar suas variáveis efetivas e garantir que sua ativação durante a contenção não reabra mensagens. Essa validação é anterior à aprovação da janela.
+- Referências oficiais: https://vercel.com/docs/deployments/promoting-a-deployment e https://vercel.com/docs/environment-variables.

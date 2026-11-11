@@ -70,7 +70,8 @@
 /* Project list and onboarding share one operational surface, not nested decorative cards. */
 .rv-ui3 .rv-ui3-projects-surface,.rv-ui3 .rv-ui3-onboarding-surface{border:0;border-radius:0;box-shadow:none;padding:0}
 .rv-ui3 .rv-ui3-project-list{border-bottom:1px solid var(--rv3-border)}
-.rv-ui3 .rv-ui3-project-row{border:0!important;border-radius:0!important;box-shadow:none!important}
+.rv-ui3 .rv-ui3-project-row{border:0!important;border-bottom:1px solid #E3E6ED!important;border-radius:0!important;box-shadow:none!important}
+.rv-ui3 .rv-ui3-project-row:last-child{border-bottom:0!important}
 .rv-ui3 .rv-ui3-onboarding-surface table{border-collapse:collapse}
 .rv-ui3 .rv-ui3-onboarding-surface table thead{background:#F8F9FB}
 .rv-ui3 .rv-ui3-onboarding-surface table thead th{font-size:11px;font-weight:600;color:var(--rv3-muted)}

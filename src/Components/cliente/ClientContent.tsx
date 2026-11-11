@@ -1,5 +1,5 @@
-const ui3FallbackCollaborationEnabled=()=>false;
 "use client";
+const ui3FallbackCollaborationEnabled=()=>false;
 import {useEffect,useMemo,useRef,useState} from "react";
 import {ContentTablerIcon,type ContentIconName} from "@/Components/ContentTablerIcon";
 import {supabase} from "@/lib/supabase";

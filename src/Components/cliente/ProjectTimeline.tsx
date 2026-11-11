@@ -1,5 +1,5 @@
-const ui3FallbackCollaborationEnabled=()=>false;
 "use client";
+const ui3FallbackCollaborationEnabled=()=>false;
 import { useMemo, useState } from "react";
 import { RotevoTablerIcon } from "@/Components/RotevoTablerIcon";
 import { TaskAvatar } from "@/Components/admin/TaskGridCells";

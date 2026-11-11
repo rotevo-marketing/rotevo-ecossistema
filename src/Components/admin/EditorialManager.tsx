@@ -1,5 +1,5 @@
-const ui3FallbackCollaborationEnabled=()=>false;
 "use client";
+const ui3FallbackCollaborationEnabled=()=>false;
 import {useEffect,useMemo,useState} from "react";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import DialogFocus from "@/Components/ui/DialogFocus";

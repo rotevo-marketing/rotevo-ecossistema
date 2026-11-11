@@ -59,3 +59,14 @@ Comparação direta consultada nos projetos produção e homologação:
 - Deployment de contingência isolado `dpl_DKhMcggRBe5JWZpuHnmnw43C8TVR`; conferir estado READY, SHA e ausência de endpoints de colaboração antes de promover esta evidência a aprovada.
 - **Alerta operacional crítico:** variáveis exclusivas de Preview **não migram automaticamente** para um deployment Production promovido/recriado. O preview com flags falsas **não é suficiente** para marcar a contingência de produção como pronta. Será obrigatório congelar uma build/estratégia de produção com ambas as flags false, testar suas variáveis efetivas e garantir que sua ativação durante a contenção não reabra mensagens. Essa validação é anterior à aprovação da janela.
 - Referências oficiais: https://vercel.com/docs/deployments/promoting-a-deployment e https://vercel.com/docs/environment-variables.
+
+
+### Resultado do ensaio da contingência no projeto Vercel original
+
+- Foi criada a branch exclusiva `release/ui3-fallback-g2-20261111`, sem alterar `main` ou o PR #5.
+- As duas variáveis de colaboração com valor `false` foram configuradas **somente para Preview** dessa branch no projeto `rotevo-ecossistema`.
+- Para tornar a contenção independente das diferenças entre variáveis Preview e Production, foi criado um commit de código **somente na branch de fallback** que impede a exibição de mensagens nos componentes clientes e obriga o endpoint `/api/collaboration/messages` a retornar `503`, independentemente do ambiente. Esse código não foi incorporado ao release principal.
+- A primeira tentativa de compilação encontrou erro de TypeScript devido ao guard constante; corrigiu-se mantendo fluxo de narrowing. A segunda encontrou a necessidade de preservar a diretiva `"use client"` no topo dos componentes. Ambas as falhas foram corrigidas na branch exclusiva.
+- **Build final READY:** `dpl_3oXjvJJSQMCfx6o9coMfgpuKD3ox`, SHA `04a42237e0bf421a2156fae0936bdbabf09dcd91`, Preview no projeto original, log com `Deployment completed` e compilação concluída.
+- **Limite do aceite:** não foi executado um GET HTTP externo da rota de mensagens nessa URL devido à restrição de acesso de rede; a garantia de fechamento é apoiada na leitura do código e na compilação, não em teste HTTP remoto da build. A promoção a Production pode reconstruir o deployment; confirmar a mesma árvore de código no alvo real após promover. O backend foi configurado para negar a rota mesmo que a variável Production esteja true.
+- **Não houve** alteração de credenciais Supabase, grants do banco real, domínios, aliases de produção ou merges. O WAF permaneceu inalterado.

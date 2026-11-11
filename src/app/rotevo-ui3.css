@@ -205,3 +205,10 @@
 .rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-height:42px;padding:3px}
 .rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{min-height:48px;padding:4px 2px}
 }
+
+/* UI2 rebrands text-[#5123C5] to #6C5CE7 in interactive elements.
+   On #F0EBFF that drops small-label contrast below WCAG AA. Override only
+   selected execution controls, preserving the surrounding design system. */
+.rv-ui3 .rv-ui2-client-execution button[aria-pressed="true"] {
+  color:#5123C5;
+}

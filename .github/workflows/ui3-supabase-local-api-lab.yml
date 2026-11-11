@@ -22,6 +22,8 @@ on:
       - 'src/Components/shared/ProjectConversation.tsx'
       - 'src/app/api/team/my-access/route.ts'
       - 'src/app/equipe/meu-acesso/page.tsx'
+      - 'src/app/rotevo-ui3.css'
+      - 'scripts/security/team-my-access-api-behavior.test.mjs'
       - 'src/app/admin/equipe/page.tsx'
       - 'src/Components/strategic-editor/StrategicDocumentReader.tsx'
       - 'src/Components/strategic-editor/editor.css'
@@ -66,7 +68,7 @@ jobs:
       - name: Install app dependencies without running application
         run: npm ci --no-audit --no-fund
       - name: Verify recovered visual contracts
-        run: node --test scripts/security/ui3-task-*.test.mjs scripts/security/ui3-editorial-ux-round.test.mjs scripts/security/ui3-visual-round-20261110.test.mjs scripts/security/ui3-contrast.test.mjs
+        run: node --test scripts/security/ui3-task-*.test.mjs scripts/security/ui3-editorial-ux-round.test.mjs scripts/security/ui3-visual-round-20261110.test.mjs scripts/security/ui3-contrast.test.mjs scripts/security/team-my-access-api-behavior.test.mjs
       - name: Prepare Playwright before Next.js starts
         shell: bash
         run: |

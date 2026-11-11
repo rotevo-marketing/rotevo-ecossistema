@@ -270,3 +270,8 @@
 .rv-ui3 .rv-ui2-client-execution button[aria-pressed="true"] {
   color:#5123C5;
 }
+
+/* Keep the execution table header readable under the shared module rules. */
+.rv-ui3 .rv-ui2-client-execution table thead th {
+  color: #606D82;
+}

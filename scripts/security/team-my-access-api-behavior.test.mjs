@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
+import * as collaborationGuards from "../../src/lib/collaboration/guards.ts";
 
 const route=readFileSync(new URL("../../src/app/api/team/my-access/route.ts",import.meta.url),"utf8");
 const code=ts.transpileModule(route,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -47,13 +48,14 @@ function harness({token="Bearer fixture",authenticated=true,reset=false,profileR
  const module={exports:{}};
  const modules={
   "next/server":{NextResponse:response},
-  "@supabase/supabase-js":{createClient}
+  "@supabase/supabase-js":{createClient},
+  "@/lib/collaboration/guards":collaborationGuards
  };
  vm.runInNewContext(code,{module,exports:module.exports,require:id=>{
   if(!Object.hasOwn(modules,id))throw Error("Unexpected module: "+id);
   return modules[id];
  },process:{env:{NEXT_PUBLIC_SUPABASE_URL:"https://synthetic.invalid",NEXT_PUBLIC_SUPABASE_ANON_KEY:"anon",SUPABASE_SERVICE_ROLE_KEY:"service"}}});
- const request={headers:{get:key=>key==="authorization"?token:null}};
+ const request={nextUrl:new URL("https://synthetic.invalid/api/team/my-access"),headers:{get:key=>key==="authorization"?token:null}};
  return {GET:module.exports.GET,request,calls};
 }
 

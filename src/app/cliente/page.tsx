@@ -145,7 +145,7 @@ export default function ClientAreaPage(){
        tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<ProjectTimeline projects={projects}/>:
+       tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName}/>:
        tab==="content"?<ClientContent key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

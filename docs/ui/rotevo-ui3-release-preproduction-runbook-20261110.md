@@ -41,7 +41,7 @@
 ## 5. Procedimento de falha ou rollback
 
 - **Não restaurar grants inseguros de `planning_projects.data`** para recuperar uma tela antiga; isso reabre a exposição de JSON.
-- Se o problema for exclusivamente de frontend/backend, reverter a versão Vercel para o SHA de produção previamente identificado **mantendo a correção G2**. Validar endpoints de serviço e UI antes de declarar recuperação.
+- Se o problema for exclusivamente da conversa, desligar imediatamente as duas flags de colaboração. **Não** reverter à antiga produção UI2, pois seu código acessa diretamente `planning_projects.data` e falhará após a revogação G2. Para bugs gerais da UI3, somente executar rollback a um artefato **previamente validado como compatível com os grants restritos**; na falta dele, bloquear promoção e aplicar correção para frente (fix-forward) sem reabrir permissões. Registrar e testar uma versão de contingência compatível antes da janela.
 - Se o problema for de dados ou schema, suspender a promoção, preservar logs e restaurar somente com backup privado previamente ensaiado, realizando re-homologação dos grants e RPCs antes de reabrir acesso.
 - O ensaio automatizado `scripts/security/pg-planning-postrelease-safe-rollback.sql` confirmou apenas a propriedade de **rollback da aplicação sem reabrir grants**, não a restauração de um backup real.
 

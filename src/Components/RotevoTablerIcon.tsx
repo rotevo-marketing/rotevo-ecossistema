@@ -17,6 +17,11 @@ const artwork: Record<string, ReactNode> = {
   "chevron-up": <path d="M6 15l6 -6l6 6"/>,
   "arrow-left": <><path d="M5 12h14"/><path d="M5 12l6 -6"/><path d="M5 12l6 6"/></>,
   "check": <path d="M5 12l5 5l10 -10"/>,
+  // Tabler Icons: bell.svg (MIT) https://tabler.io/icons/icon/bell
+  "bell": <>
+    <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
+    <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+  </>,
   "h-2": <>
     <path d="M17 12a2 2 0 1 1 4 0c0 .591 -.417 1.318 -.816 1.858l-3.184 4.143l4 0" />
     <path d="M4 6v12" />

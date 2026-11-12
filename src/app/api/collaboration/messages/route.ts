@@ -87,13 +87,14 @@ async function presentMessages(admin:SupabaseClient,rows:Message[],projectClient
  const ids=[...new Set(rows.map(row=>row.author_user_id))];
  const [prefs,profiles]=await Promise.all([
   admin.from("user_preferences").select("user_id,display_name,avatar_asset_id").in("user_id",ids),
-  admin.from("profiles").select("id,full_name").in("id",ids)
+  admin.from("profiles").select("id,full_name,email,client_id").in("id",ids)
  ]);
  if(prefs.error||profiles.error)throw Error("conversation_author_lookup_failed");
- const names=new Map((profiles.data??[]).map(row=>[row.id,row.full_name as string|null]));
+ const profileById=new Map((profiles.data??[]).map(row=>[row.id,row]));
  const users=new Map((prefs.data??[]).map(row=>[row.user_id,row]));
  const needsClientCover=rows.some(row=>row.author_role==="client"&&!users.get(row.author_user_id)?.avatar_asset_id);
- const cover=needsClientCover?await admin.from("clients").select("cover_image_url").eq("id",projectClientId).maybeSingle():null;
+ const hasClientAuthor=rows.some(row=>row.author_role==="client");
+ const cover=hasClientAuthor?await admin.from("clients").select("name,contact_name,contact_email,cover_image_url").eq("id",projectClientId).maybeSingle():null;
  if(cover?.error)throw Error("conversation_client_avatar_lookup_failed");
  const coverRef=cover?.data?.cover_image_url;
  const coverAsset=typeof coverRef==="string"&&coverRef.startsWith("asset://")?coverRef.slice(8):"";
@@ -113,7 +114,17 @@ async function presentMessages(admin:SupabaseClient,rows:Message[],projectClient
  const coverUrl=coverAsset?signed.get(coverAsset)??null:typeof coverRef==="string"&&coverRef.startsWith("https://")?coverRef:null;
  return rows.map(({author_user_id,...message})=>{
   const person=users.get(author_user_id);
-  const name=(person?.display_name||names.get(author_user_id)||"").trim();
+  const profile=profileById.get(author_user_id);
+  const preferredName=String(person?.display_name??"").trim();
+  const profileName=String(profile?.full_name??"").trim();
+  const companyName=String(cover?.data?.name??"").trim();
+  const contactName=String(cover?.data?.contact_name??"").trim();
+  const contactEmail=String(cover?.data?.contact_email??"").trim().toLowerCase();
+  const accountEmail=String(profile?.email??"").trim().toLowerCase();
+  const verifiedContact=message.author_role==="client"&&profile?.client_id===projectClientId&&!!contactName&&!!contactEmail&&accountEmail===contactEmail;
+  const isCompany=(name:string)=>!!name&&!!companyName&&name.toLocaleLowerCase("pt-BR")===companyName.toLocaleLowerCase("pt-BR");
+  const name=verifiedContact&&(!preferredName||isCompany(preferredName))&&(!profileName||isCompany(profileName))
+    ?contactName:(preferredName&&!isCompany(preferredName)?preferredName:profileName||preferredName);
   const fallback=message.author_role==="client"?"Cliente":"Equipe Rotevo";
   const asset=person?.avatar_asset_id as string|null|undefined;
   return {...message,author_name:name||fallback,author_avatar_url:(asset?signed.get(asset):undefined)??(message.author_role==="client"?coverUrl:null)??null};

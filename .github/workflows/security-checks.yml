@@ -246,6 +246,40 @@ jobs:
       - name: Verify Gate B remains fail-closed and outside migrations
         run: node --test scripts/security/ui3-gate-b-contract.test.mjs
 
+  editorial-workflow-isolated:
+    name: Editorial approval and adjustment (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: workflow-fixture-only
+          POSTGRES_DB: rotevo_workflow_fixture
+        ports:
+          - 127.0.0.1:55434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_workflow_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55434"
+      PGUSER: postgres
+      PGPASSWORD: workflow-fixture-only
+      PGDATABASE: rotevo_workflow_fixture
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test client approvals, atomic status changes and notification routing
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-editorial-workflow-isolated.sql
+
   profile-grants-isolated:
     name: Profile privilege isolation (synthetic PostgreSQL)
     runs-on: ubuntu-latest

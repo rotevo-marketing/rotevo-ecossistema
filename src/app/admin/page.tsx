@@ -21,6 +21,7 @@ import EditorialManager from "@/Components/admin/EditorialManager";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import { supabase } from "@/lib/supabase";
+import {useSessionBoundary} from "@/hooks/useSessionBoundary";
 
 const NAV_ITEMS:{id:string;label:string;icon:RotevoIconName}[]=[
  {id:"overview",label:"Visão geral",icon:"layout-dashboard"},
@@ -120,6 +121,7 @@ export default function AdminPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userId,setUserId]=useState<string|null>(null);
+  const sessionBlocked=useSessionBoundary(userId,"strategist","/estrategista/login");
   const [overviewForbidden,setOverviewForbidden]=useState(false);
   const [userName, setUserName] = useState("");
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
@@ -206,7 +208,7 @@ export default function AdminPage() {
 
     if (userError || !userData.user) {
       window.localStorage.removeItem("metodo-epc-strategist-auth");
-      router.push("/estrategista/login");
+      router.replace("/estrategista/login");
       return;
     }
 
@@ -218,7 +220,7 @@ export default function AdminPage() {
       .single();
 
     if (profileError || profile?.role !== "strategist") {
-      await supabase.auth.signOut();
+      // Do not sign out a new session opened in another tab.
       window.localStorage.removeItem("metodo-epc-strategist-auth");
       router.push("/estrategista/login");
       return;
@@ -360,6 +362,7 @@ export default function AdminPage() {
   }
 
 
+  if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
   return (
     <main className="admin-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{`

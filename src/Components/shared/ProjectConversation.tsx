@@ -48,7 +48,10 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   event.preventDefault();if(!body.trim()||saving||readOnly)return;
   setSaving(true);setError("");
   try{
-   await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim()});
+   const {data:actor,error:identityError}=await supabase.auth.getUser();
+   const expectedAuthorUserId=mountedAuthor.current;
+   if(identityError||!expectedAuthorUserId||actor.user?.id!==expectedAuthorUserId)throw Error("A conta mudou. Reabra o painel antes de enviar.");
+   await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim(),expectedAuthorUserId});
    setBody("");await reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível enviar a mensagem. Seu texto foi preservado.");}
   finally{setSaving(false);}

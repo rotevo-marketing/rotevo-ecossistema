@@ -26,10 +26,17 @@ export default function WorkflowNotificationBell({userId}:{userId:string}){
  const [unread,setUnread]=useState(0);
  const [error,setError]=useState("");
  const identity=useRef(userId);
- useEffect(()=>{identity.current=userId;setNotices([]);setUnread(0);setOpen(false);},[userId]);
+ const revision=useRef(0);
+ // Invalidate in-flight requests on every identity change, before effects run.
+ if(identity.current!==userId){identity.current=userId;revision.current+=1;}
+ useEffect(()=>{setNotices([]);setUnread(0);setOpen(false);setError("");},[userId]);
  const refresh=useCallback(async()=>{
+  const expected=identity.current;
+  const currentRevision=++revision.current;
+  const isCurrent=()=>identity.current===expected&&revision.current===currentRevision;
   const {data:actor,error:authError}=await supabase.auth.getUser();
-  if(authError||!actor.user||actor.user.id!==identity.current){
+  if(!isCurrent())return;
+  if(authError||!actor.user||actor.user.id!==expected){
    setNotices([]);setUnread(0);setOpen(false);return;
   }
   try{
@@ -37,10 +44,11 @@ export default function WorkflowNotificationBell({userId}:{userId:string}){
     request<Result>("/api/workflow/notifications?limit=30"),
     request<Result>("/api/workflow/notifications?limit=50&unread=true")
    ]);
+   if(!isCurrent())return;
    setNotices(list.notifications);
    setUnread(newCount.notifications.length);
    setError("");
-  }catch{setError("Não foi possível atualizar as notificações.");}
+  }catch{if(isCurrent())setError("Não foi possível atualizar as notificações.");}
  },[]);
  useEffect(()=>{
   let alive=true;
@@ -49,7 +57,8 @@ export default function WorkflowNotificationBell({userId}:{userId:string}){
   const i=window.setInterval(check,30000);
   document.addEventListener("visibilitychange",check);
   const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
-   if(event==="SIGNED_OUT"||session?.user.id!==identity.current){
+   if(event==="SIGNED_OUT"||(session?.user&&session.user.id!==identity.current)){
+    revision.current+=1;
     setNotices([]);setUnread(0);setOpen(false);
    }
   });
@@ -57,13 +66,15 @@ export default function WorkflowNotificationBell({userId}:{userId:string}){
  },[refresh,userId]);
  async function read(n:Notice){
   if(n.read_at||loading)return;
+  const expected=identity.current;
+  const atStart=revision.current;
   setLoading(true);setError("");
   try{
    const {data:actor,error:authError}=await supabase.auth.getUser();
-   if(authError||!actor.user||actor.user.id!==identity.current)throw Error("Sessão alterada.");
-   await request("/api/workflow/notifications","PATCH",{notificationId:n.notification_id,expectedAuthorUserId:identity.current});
-   await refresh();
-  }catch(e){setError(e instanceof Error?e.message:"Não foi possível marcar como lida.");}
+   if(authError||!actor.user||actor.user.id!==expected||revision.current!==atStart)throw Error("Sessão alterada.");
+   await request("/api/workflow/notifications","PATCH",{notificationId:n.notification_id,expectedAuthorUserId:expected});
+   if(identity.current===expected&&revision.current===atStart)await refresh();
+  }catch(e){if(identity.current===expected)setError(e instanceof Error?e.message:"Não foi possível marcar como lida.");}
   finally{setLoading(false);}
  }
  return <div className="relative">

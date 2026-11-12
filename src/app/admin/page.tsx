@@ -146,6 +146,7 @@ export default function AdminPage() {
     return()=>{document.removeEventListener("keydown",handleKey);document.removeEventListener("pointerdown",handlePointer);};
   },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
+  const [notificationTarget,setNotificationTarget]=useState<{projectId:string;contentId:string;nonce:number}|null>(null);
   // Keep the active module, deep links, reloads and browser Back/Forward in sync.
   useEffect(()=>{
     const readSection=()=>{
@@ -379,7 +380,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="black" size={27}/></Link><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
             <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden"><RotevoTablerIcon name="menu-2" size={19} stroke={1.7}/><span className="sr-only">Menu</span></button>
-            {process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&userId&&!sessionBlocked&&<WorkflowNotificationBell userId={userId}/>}
+            {process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&userId&&!sessionBlocked&&<WorkflowNotificationBell userId={userId} onOpenContent={(projectId,contentId)=>{if(!projects.some(p=>p.id===projectId&&p.data?.editorialCalendar?.some(item=>item.id===contentId&&!item.archivedAt&&!item.deletedAt)))return;if(!confirmDiscardChanges())return;setNotificationTarget({projectId,contentId,nonce:Date.now()});navigateWorkspace("content");}}/>}
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
@@ -477,7 +478,7 @@ export default function AdminPage() {
           )}
         </section>
         </>}
-        {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} notificationTarget={notificationTarget} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="clients" && !isLoading && <ClientsDirectory projects={projects}/>}
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
         {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}

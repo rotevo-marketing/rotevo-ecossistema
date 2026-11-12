@@ -159,6 +159,8 @@ export async function POST(req:NextRequest){
  if(body===null)return fail(400);
  const session=await authorize(req,params,true);
  if("status" in session && typeof session.status==="number")return fail(session.status);
+ const expectedAuthor=(raw as Record<string,unknown>).expectedAuthorUserId;
+ if(expectedAuthor!==undefined&&(typeof expectedAuthor!=="string"||expectedAuthor!==session.userId))return fail(409);
  const {data,error}=await session.admin.from("rotevo_collaboration_messages").insert({
   project_id:params.projectId,resource_type:params.resourceType,resource_id:params.resourceId,
   author_user_id:session.userId,author_role:session.role,content_version:session.contentVersion,body

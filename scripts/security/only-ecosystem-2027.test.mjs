@@ -259,7 +259,7 @@ test("operational meetings remain in the authorized hub and overview, outside pl
  assert.match(agenda,/\/api\/admin\/project\/update/);
  assert.match(agenda,/expectedUpdatedAt:updatedAt/);
  assert.match(agenda,/Reuniões e acompanhamento/);
- assert.match(dashboard,/Próximas Reuniões/);
+ assert.match(dashboard,/aria-labelledby="daily-agenda"/);
  assert.match(source("lib/overview/model.ts"),/Compromisso vencido/);
 });
 

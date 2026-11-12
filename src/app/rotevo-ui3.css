@@ -360,3 +360,6 @@
  box-shadow:none;
  transform:none;
 }
+
+/* A single square active rail, rendered in the nav component. */
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before{content:none!important;display:none!important}

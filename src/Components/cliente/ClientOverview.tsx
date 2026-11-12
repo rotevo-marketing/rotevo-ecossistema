@@ -20,7 +20,7 @@ const monthLabel=(month:string)=>new Intl.DateTimeFormat("pt-BR",{month:"long",y
 const linkClass="cursor-pointer text-xs font-semibold text-[#6533CF] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
 
 
-export default function ClientOverview({projects,workspace,onNavigate,clientName}:{projects:Project[];workspace:ClientWorkspace;clientName?:string;onNavigate:(module:PortalModule,projectId?:string,contentId?:string)=>void}){
+export default function ClientOverview({projects,workspace,onNavigate,clientName,personName}:{projects:Project[];workspace:ClientWorkspace;clientName?:string;personName?:string;onNavigate:(module:PortalModule,projectId?:string,contentId?:string)=>void}){
  const allowed=(module:PortalModule)=>workspace.modules.includes(module);
  const [month,setMonth]=useState(()=>todayInBrazil().slice(0,7));
  const [meetingDay,setMeetingDay]=useState("");
@@ -100,7 +100,9 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  ];
  const hour=Number(new Intl.DateTimeFormat("en-GB",{hour:"2-digit",hourCycle:"h23",timeZone:"America/Sao_Paulo"}).format(new Date()));
  const greeting=hour<12?"Bom dia":hour<18?"Boa tarde":"Boa noite";
- const greetingName=/rubim/i.test(clientName??"")?"Rosane":clientName&&!/\b(ltda|consultoria|desenvolvimento|empresa|eireli)\b/i.test(clientName)?clientName.trim().split(/\s+/)[0]:"";
+ const accountName=(personName??"").trim();
+ const personalAccountName=accountName&&!/\b(ltda|consultoria|desenvolvimento|empresa|eireli|financeira)\b/i.test(accountName)&&!/^[A-Z]\.\s/.test(accountName)?accountName.split(/\s+/)[0]:"";
+ const greetingName=personalAccountName||(/rubim/i.test(clientName??"")?"Rosane":"");
  const fullDate=new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"America/Sao_Paulo"}).format(new Date());
  const datedLabel=fullDate.charAt(0).toUpperCase()+fullDate.slice(1);
  const openVisible=openTasks.filter(t=>!t.archivedAt&&!t.deletedAt);

@@ -38,7 +38,7 @@ test("editorial month/list navigation filters by project and status and opens a 
  assert.match(source,/statusFilter==="all"/);
  assert.match(source,/role="dialog" aria-modal="true" aria-label="Detalhes do conteúdo"/);
  assert.match(source,/safe\(active\.driveUrl\)/);
- assert.match(source,/clientView&&<EditorialDecision/);
+ assert.match(source,/clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"&&<EditorialDecision/);
 });
 test("editorial review remains an independent client decision bound to content version",()=>{
  const source=readFileSync(new URL("Components/cliente/EditorialDecision.tsx",root),"utf8");

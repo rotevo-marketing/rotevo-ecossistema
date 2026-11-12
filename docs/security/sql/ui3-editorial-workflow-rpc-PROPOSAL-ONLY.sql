@@ -87,10 +87,19 @@ begin
  v_kind := case when p_phase='idea' then 'editorial_idea_approvals' else 'editorial_approvals' end;
  v_key := 'editorial:' || p_project_id::text || ':' || p_phase || ':' ||
              p_content_id || ':' || p_content_version;
- insert into rotevo_workflow.approval_requests(
-  project_id,resource_type,resource_id,phase,resource_version,requested_by,request_key)
- values(p_project_id,'content',p_content_id,p_phase,p_content_version,v_actor,v_key)
- returning id into v_request_id;
+ select id into v_request_id from rotevo_workflow.approval_requests
+ where project_id=p_project_id and resource_type='content' and resource_id=p_content_id
+   and phase=p_phase and resource_version=p_content_version and status='pending'
+ for update;
+ if v_request_id is null then
+  -- Bridge old `idea_pending` / `awaiting_client` entries without fabricating
+  -- an earlier strategist request or creating a second source of approval.
+  insert into rotevo_workflow.approval_requests(
+   project_id,resource_type,resource_id,phase,resource_version,requested_by,request_key,context)
+  values(p_project_id,'content',p_content_id,p_phase,p_content_version,
+         null,v_key,jsonb_build_object('origin','legacy_status_bridge'))
+  returning id into v_request_id;
+ end if;
 
  -- The legacy decision is inserted in the same transaction so old client views
  -- continue to read approval history. A request for adjustments writes one

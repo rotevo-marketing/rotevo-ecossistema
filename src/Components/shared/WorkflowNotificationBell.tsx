@@ -18,8 +18,8 @@ const label=(n:Notice)=>{
  return "Atualização do projeto";
 };
 
-/** Preview only. Mount AFTER PR #8 session-boundary integration and E2E approval. */
-export default function WorkflowNotificationBell({userId}:{userId:string}){
+/** Feature-gated workflow inbox; navigations are resolved by the authenticated parent. */
+export default function WorkflowNotificationBell({userId,onOpenContent}:{userId:string;onOpenContent?:(projectId:string,resourceId:string)=>void}){
  const [open,setOpen]=useState(false);
  const [loading,setLoading]=useState(false);
  const [notices,setNotices]=useState<Notice[]>([]);
@@ -95,6 +95,7 @@ export default function WorkflowNotificationBell({userId}:{userId:string}){
      <p className="text-xs font-semibold text-[#344056]">{label(n)}{!n.read_at&&<span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-[#6D35F5]" aria-label="Não lida"/>}</p>
      <p className="mt-1 truncate text-xs text-[#697386]">{n.project_title}</p>
      <p className="mt-1 text-[11px] text-[#8B95A5]">{new Date(n.occurred_at).toLocaleString("pt-BR")}</p>
+     {onOpenContent&&n.resource_id&&n.project_id&&<button type="button" onClick={()=>{setOpen(false);onOpenContent(n.project_id,n.resource_id);}} className="mt-2 mr-3 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] focus-visible:outline-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="external-link" size={14} stroke={1.6}/> Ver conteúdo</button>}
      {!n.read_at&&<button type="button" disabled={loading} onClick={()=>void read(n)} className="mt-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] disabled:opacity-50">
       <RotevoTablerIcon name="check" size={14} stroke={1.6}/> Marcar como lida
      </button>}

@@ -136,7 +136,6 @@ export default function ClientAreaPage(){
           <div className="rv-ui2-client-heading-copy">
             <h1>{tab==="overview"?"Visão geral":selected.name}</h1>
           </div>
-          <span className="rv-ui2-client-identity"><RotevoTablerIcon name="users" size={17} stroke={1.7}/>{clientName||"Área do cliente"}</span>
         </header>
        {projects.length>1&&["planning","content","campaigns","meetings"].includes(tab)&&<label className="mb-5 block text-sm font-semibold">Projeto<select value={scopedProjects[0]?.id??""} onChange={e=>setSelectedProjectId(e.target.value)} className="ml-3 max-w-full rounded-xl border border-[#E3E7F0] bg-white p-3">{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}<button type="button" onClick={()=>window.location.reload()} className="ml-3 rounded-lg border border-red-200 px-3 py-2 font-semibold">Tentar novamente</button></div>}

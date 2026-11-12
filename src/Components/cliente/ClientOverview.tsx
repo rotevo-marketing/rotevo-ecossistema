@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import ClientEditorialMiniCalendar from "./ClientEditorialMiniCalendar";
 import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
@@ -99,6 +100,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  ];
  const hour=Number(new Intl.DateTimeFormat("en-GB",{hour:"2-digit",hourCycle:"h23",timeZone:"America/Sao_Paulo"}).format(new Date()));
  const greeting=hour<12?"Bom dia":hour<18?"Boa tarde":"Boa noite";
+ const greetingName=/rubim/i.test(clientName??"")?"Rosane":clientName&&!/\b(ltda|consultoria|desenvolvimento|empresa|eireli)\b/i.test(clientName)?clientName.trim().split(/\s+/)[0]:"";
  const fullDate=new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"America/Sao_Paulo"}).format(new Date());
  const datedLabel=fullDate.charAt(0).toUpperCase()+fullDate.slice(1);
  const openVisible=openTasks.filter(t=>!t.archivedAt&&!t.deletedAt);
@@ -107,11 +109,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const agendaToday=nextMeetings.filter(m=>m.date===today);
  const upcoming=nextMeetings.filter(m=>m.date>today).slice(0,3);
  const approvalsCount=pendingIdeas.length+pendingFinal.length;
- const focusTasks=[...openVisible].sort((a,b)=>{
-  const aScore=a.dueDate&&a.dueDate<today?0:a.dueDate===today?1:2;
-  const bScore=b.dueDate&&b.dueDate<today?0:b.dueDate===today?1:2;
-  return aScore-bScore||(a.dueDate??"9999").localeCompare(b.dueDate??"9999");
- }).slice(0,6);
+ const focusApprovals=contentAttention;
  const safeMeetingUrl=(value?:string)=>{if(!value)return null;try{const url=new URL(value);return url.protocol==="https:"&&!url.username&&!url.password?url.href:null;}catch{return null;}};
  const kpis=[
   {title:"Para hoje",value:allowed("execution")?String(dueToday.length):"—",detail:"Entregas com prazo hoje",mod:"execution" as PortalModule,ico:"list-check" as RotevoIconName,style:"border-[#E1D8FB] bg-[#F7F4FF]"},
@@ -122,7 +120,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  return <main aria-label="Visão geral do cliente" className="rv-ui3-client-daily-dashboard space-y-4 pb-6 text-[#323647] sm:space-y-5">
   <header className="py-2">
    <p className="flex items-center gap-2 text-xs font-medium text-[#697386]">{icon("calendar-week",15)} {datedLabel}</p>
-   <h2 className="mt-2 text-[clamp(23px,2.3vw,32px)] font-semibold tracking-tight text-[#17172A]">{greeting}.</h2>
+   <h2 className="mt-2 text-[clamp(23px,2.3vw,32px)] font-semibold tracking-tight text-[#17172A]">{greeting}{greetingName?", "+greetingName:""}.</h2>
    <p className="mt-2 max-w-xl text-[13px] leading-5 text-[#646C80]">Suas entregas, compromissos e decisões em um só lugar.</p>
   </header>
   <section aria-label="Indicadores do projeto" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -135,30 +133,15 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   </section>
   <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)]">
    {allowed("execution")&&<section className={card} aria-labelledby="client-focus-title">
-    <div className="flex items-center justify-between gap-3"><div><h3 id="client-focus-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("list-check",18)} Meu foco</h3><p className="mt-1 text-xs text-[#697386]">Entregas compartilhadas, por prazo e urgência.</p></div><span className="rounded-lg bg-[#F4F1FC] px-2.5 py-1 text-xs font-medium text-[#6034B7]">{focusTasks.length}</span></div>
-    {focusTasks.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{focusTasks.map((t,index)=>{
-      const dueText=t.dueDate&&t.dueDate<today?"Atrasada":t.dueDate===today?"Hoje":t.dueDate?displayDate(t.dueDate):"Sem prazo";
-      return <li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId)} className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-[#F8F7FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-[#263146]">{t.title}</span><span className="mt-1 block text-[11px] text-[#697386]">{projects.find(p=>p.id===t.projectId)?.title??"Projeto"}</span></span><span className={"inline-flex shrink-0 items-center gap-1 text-[11px] font-medium "+(t.dueDate&&t.dueDate<today?"text-[#B73C4D]":"text-[#697386]")}>{icon("flag",14)} {dueText}</span></button></li>
-    })}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma entrega compartilhada em aberto.</p>}
+    <div className="flex items-center justify-between gap-3"><div><h3 id="client-focus-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("list-check",18)} Meu foco</h3><p className="mt-1 text-xs text-[#697386]">Aprovações e decisões que precisam da sua resposta.</p></div><span className="rounded-lg bg-[#F4F1FC] px-2.5 py-1 text-xs font-medium text-[#6034B7]">{approvalsLoading||approvalsFailed?"—":focusApprovals.length}</span></div>
+    {approvalsLoading?<p role="status" className="mt-4 text-xs text-[#697386]">Consultando aprovações…</p>:approvalsFailed?<p role="status" className="mt-4 text-xs text-[#697386]">Não foi possível consultar as aprovações.</p>:focusApprovals.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{focusApprovals.slice(0,6).map((item,index)=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-[#F8F7FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-[#263146]">{item.title}</span><span className="mt-1 block truncate text-[11px] text-[#697386]">{item.meta}</span></span><span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#B66C21]">{icon("flag",14)} Aprovar</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma aprovação pendente.</p>}
    </section>}
    {allowed("meetings")&&<section className={card} aria-labelledby="client-agenda-title">
     <div className="flex items-center justify-between gap-3"><h3 id="client-agenda-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("calendar-week",18)} Agenda</h3><span className="text-[11px] text-[#697386]">{displayDate(today)}</span></div>
     {agendaToday.length?<ul className="mt-3 space-y-2">{agendaToday.map(m=><li key={m.projectId+":"+m.id} className="rounded-xl border border-[#E8E5F3] bg-[#F8F6FF] p-3"><p className="text-[13px] font-medium">{m.title}</p><p className="mt-1 text-xs text-[#697386]">{m.time??"Horário a definir"}</p><div className="mt-2 flex flex-wrap gap-2">{safeMeetingUrl(m.meetingUrl)?<a href={safeMeetingUrl(m.meetingUrl)!} target="_blank" rel="noopener noreferrer" className="rounded-md bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white">Entrar na reunião</a>:null}<button type="button" onClick={()=>onNavigate("meetings",m.projectId)} className="rounded-md border border-[#E3E7F0] bg-white px-3 py-2 text-xs font-medium">Visualizar</button></div></li>)}</ul>:<p className="mt-4 rounded-lg bg-[#F8F9FC] px-3 py-4 text-xs text-[#697386]">Nenhuma reunião agendada para hoje.</p>}
     {upcoming.length>0&&<div className="mt-4 border-t border-[#EDF0F6] pt-3"><p className="text-xs font-semibold text-[#697386]">Próximos compromissos</p>{upcoming.map(m=><button type="button" key={m.projectId+":"+m.id} onClick={()=>onNavigate("meetings",m.projectId)} className="mt-2 block w-full text-left text-xs text-[#525B70] hover:text-[#5949D1]">{displayDate(m.date)} · {m.time??"Hora a definir"} · {m.title}</button>)}</div>}
    </section>}
-   {allowed("execution")&&<section className={card}>
-    <div className="flex items-center justify-between"><h3 className="text-[15px] font-semibold">Entregas do projeto</h3><span className="text-xs text-[#697386]">{openVisible.length} em aberto</span></div>
-    <p className="mt-2 text-xs text-[#697386]">Acompanhe a execução das atividades que a Rotevo compartilhou com sua conta.</p>
-    <button type="button" onClick={()=>onNavigate("execution")} className="mt-3 text-xs font-semibold text-[#6034B7] hover:underline">Consultar tarefas</button>
-   </section>}
-   {allowed("content")&&<section className={card}>
-    <div className="flex items-center justify-between"><h3 className="text-[15px] font-semibold">Conteúdos programados</h3><span className="text-xs text-[#697386]">{monthContent.length} no mês</span></div>
-    {monthContent.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{monthContent.slice().sort((a,b)=>(a.publishDate??"").localeCompare(b.publishDate??"")).slice(0,4).map(item=><li key={item.projectId+":"+item.id}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.id)} className="w-full py-3 text-left"><span className="block truncate text-[13px] font-medium">{item.title}</span><span className="mt-1 block text-[11px] text-[#697386]">{displayDate(item.publishDate??"")} · {item.channel}</span></button></li>)}</ul>:<p className="mt-3 text-xs text-[#697386]">Nenhum conteúdo compartilhado neste mês.</p>}
-   </section>}
   </div>
-  {allowed("content")&&<section className={card} aria-label="Aprovações pendentes">
-   <h3 className="text-[15px] font-semibold">Aprovações que precisam da sua atenção</h3>
-   {approvalsLoading||approvalsFailed?<p className="mt-3 text-xs text-[#697386]">{approvalsLoading?"Consultando aprovações…":"Não foi possível consultar as aprovações."}</p>:contentAttention.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{contentAttention.slice(0,4).map(item=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="w-full py-3 text-left"><span className="block text-[13px] font-medium">{item.title}</span><span className="mt-1 text-xs text-[#697386]">{item.meta}</span></button></li>)}</ul>:<p className="mt-3 text-xs text-[#697386]">Nenhuma aprovação pendente.</p>}
-  </section>}
+  {allowed("content")&&<ClientEditorialMiniCalendar items={publishedContent} onSelect={(projectId,contentId)=>onNavigate("content",projectId,contentId)}/>}
  </main>;
 }

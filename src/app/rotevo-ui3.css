@@ -339,3 +339,24 @@
  border-top-left-radius:0!important;
  border-bottom-left-radius:0!important;
 }
+
+/* Client navigation: consistent straight accent rail, matching strategist. */
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
+ position:relative;
+ background:#F6F4FC;
+ color:#453B75;
+ font-weight:600;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+ content:"";
+ position:absolute;
+ top:9px;
+ bottom:9px;
+ left:0;
+ width:2px;
+ background:#8173C8;
+ border:0;
+ border-radius:0!important;
+ box-shadow:none;
+ transform:none;
+}

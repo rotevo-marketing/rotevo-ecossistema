@@ -247,6 +247,8 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-gate-b-workflow-isolated.sql
       - name: Verify Gate B remains fail-closed and outside migrations
         run: node --test scripts/security/ui3-gate-b-contract.test.mjs
+      - name: Guard notification state against cross-tab session responses
+        run: node --test scripts/security/ui3-notification-session-isolation.test.mjs
 
   editorial-workflow-isolated:
     name: Editorial approval and adjustment (disposable PostgreSQL)

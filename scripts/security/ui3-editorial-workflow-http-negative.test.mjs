@@ -18,3 +18,14 @@ test("unreleased editorial approval endpoint refuses requests even with body",as
  const body=await response.json();
  assert.equal(body.error,"Fluxo de aprovações em homologação.");
 });
+
+test("unreleased strategist approval-request endpoint rejects body with 503",async()=>{
+ const response=await fetch(new URL("/api/workflow/editorial/request",base),{
+  method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({projectId:"00000000-0000-4000-8000-000000000001",
+   contentId:"post",contentVersion:"01",phase:"idea"})
+ });
+ assert.equal(response.status,503);
+ assert.equal(response.headers.get("cache-control"),"no-store");
+ assert.equal((await response.json()).error,"Envio para aprovação em homologação.");
+});

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
 import {portalTarget} from "@/lib/ui/navigation";
 import { supabase } from "@/lib/supabase";
+import {useSessionBoundary} from "@/hooks/useSessionBoundary";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
@@ -54,6 +55,8 @@ export default function ClientAreaPage(){
  const [clientName,setClientName]=useState("");
  const [clientAvatar,setClientAvatar]=useState("");
  const [loading,setLoading]=useState(true);
+ const [authenticatedUserId,setAuthenticatedUserId]=useState<string|null>(null);
+ const sessionBlocked=useSessionBoundary(authenticatedUserId,"client","/");
  const [error,setError]=useState("");
  const [tab,setTab]=useState<MenuId>("overview");
  const [focusedContent,setFocusedContent]=useState<string|null>(null);
@@ -74,9 +77,10 @@ export default function ClientAreaPage(){
    const {data:auth}=await supabase.auth.getUser();
    if(!auth.user){router.replace("/");return;}
    const {data:profile}=await supabase.from("profiles").select("role, client_id").eq("id",auth.user.id).single();
-   if(!profile){await supabase.auth.signOut();router.replace("/");return;}
+   if(!profile){router.replace("/");return;}
    if(profile.role==="strategist"){router.replace("/admin");return;}
-   if(profile.role!=="client"||!profile.client_id){await supabase.auth.signOut();router.replace("/");return;}
+   if(profile.role!=="client"||!profile.client_id){router.replace("/");return;}
+    if(mounted)setAuthenticatedUserId(auth.user.id);
    const {data:sessionData}=await supabase.auth.getSession();
    const token=sessionData.session?.access_token;
    if(!token){if(mounted){setError("Sessão expirada. Faça login novamente.");setLoading(false);}return;}
@@ -117,6 +121,7 @@ export default function ClientAreaPage(){
        <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
  </nav>;
+ if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
  return <main className="client-portal-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
    <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]"><div className="flex w-full items-center justify-between gap-3 px-5 py-3">

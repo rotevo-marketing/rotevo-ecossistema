@@ -280,7 +280,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Test client approvals, atomic status changes and notification routing
-        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-editorial-workflow-isolated.sql
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-editorial-workflow-request-isolated.sql
 
   profile-grants-isolated:
     name: Profile privilege isolation (synthetic PostgreSQL)

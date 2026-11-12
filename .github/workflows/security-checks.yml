@@ -66,6 +66,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  collaboration-contract-isolated:
+    name: Collaboration guardrails (read-only, isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify collaboration API and UI remain fail-closed
+        run: node --test scripts/security/ui3-collaboration-release-contract.test.mjs
+      - name: Verify tenant isolation and resource authorization
+        run: node --test scripts/security/ui3-collaboration-guards.test.mjs
+
   local-test-guards:
     name: Test API runner isolation guards
     runs-on: ubuntu-latest
@@ -93,6 +113,8 @@ jobs:
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify conversation tenant isolation and resource visibility
         run: node --test scripts/security/ui3-collaboration-guards.test.mjs
+      - name: Confirm collaboration stays fail-closed until isolated DB approval
+        run: node --test scripts/security/ui3-collaboration-release-contract.test.mjs
       - name: Verify profile menu and task status palettes
         run: node --test scripts/security/admin-profile-task-colors.test.mjs
       - name: Verify operational agenda form validations

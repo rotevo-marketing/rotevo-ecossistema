@@ -73,9 +73,11 @@ begin
 
  -- No principal approver field exists in client_users yet. Do not designate
  -- a recipient arbitrarily when multiple client accounts exist.
- select count(*),min(id) into v_recipients,v_recipient
+ select count(*) into v_recipients
  from public.profiles
  where client_id=v_project.client_id and role='client';
+ select id into v_recipient from public.profiles
+ where client_id=v_project.client_id and role='client' limit 1;
  if v_recipients<>1 then
   raise exception 'Explicit approver designation required' using errcode='42501';end if;
 

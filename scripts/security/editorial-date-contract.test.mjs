@@ -38,7 +38,7 @@ test("editorial month/list navigation filters by project and status and opens a 
  assert.match(source,/statusFilter==="all"/);
  assert.match(source,/role="dialog" aria-modal="true" aria-label="Detalhes do conteúdo"/);
  assert.match(source,/safe\(active\.driveUrl\)/);
- assert.match(source,/clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"&&<EditorialDecision/);
+ assert.match(source,/clientView&&\(process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"\|\|process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\)\&\&<EditorialDecision/);
 });
 test("editorial review remains an independent client decision bound to content version",()=>{
  const source=readFileSync(new URL("Components/cliente/EditorialDecision.tsx",root),"utf8");
@@ -54,4 +54,10 @@ test("manager uses titled approval records and project-bound task association",(
  assert.doesNotMatch(source,/Gerenciar conteúdos/);
  assert.match(source,/editing\.relatedTaskId/);
  assert.match(source,/visibleToClient===true/);
+});
+
+test("workflow decision buttons require collaboration while legacy decisions remain usable",()=>{
+ const source=readFileSync(new URL("Components/cliente/EditorialCalendar.tsx",root),"utf8");
+ assert.match(source,/approval=\{clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&/);
+ assert.match(source,/NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\)\&\&<EditorialDecision/);
 });

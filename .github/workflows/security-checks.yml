@@ -180,6 +180,8 @@ jobs:
         run: node --test scripts/security/local-admin-api-negative.test.mjs
       - name: Verify collaboration endpoints are closed by default
         run: node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+      - name: Ensure next-generation editorial approval stays off by default
+        run: node --test scripts/security/ui3-editorial-workflow-http-negative.test.mjs
       - name: Stop isolated server
         if: always()
         run: |

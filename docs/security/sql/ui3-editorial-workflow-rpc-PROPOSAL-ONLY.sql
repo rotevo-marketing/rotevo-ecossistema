@@ -62,13 +62,17 @@ begin
   )
  then raise exception 'Content module unavailable' using errcode='42501';end if;
 
- select count(*),min(value),min(pos)
- into v_matches,v_item,v_position
+ select count(*) into v_matches
+ from jsonb_array_elements(
+   case when jsonb_typeof(v_project.data->'editorialCalendar')='array'
+     then v_project.data->'editorialCalendar' else '[]'::jsonb end
+ ) as e(value) where value->>'id'=p_content_id;
+ select value,pos into v_item,v_position
  from jsonb_array_elements(
    case when jsonb_typeof(v_project.data->'editorialCalendar')='array'
      then v_project.data->'editorialCalendar' else '[]'::jsonb end
  ) with ordinality as e(value,pos)
- where value->>'id'=p_content_id;
+ where value->>'id'=p_content_id limit 1;
  if v_matches<>1 or v_item->>'visibleToClient' is distinct from 'true'
   or coalesce(v_item->>'version','')<>p_content_version
   or v_item ? 'deletedAt' and coalesce(v_item->>'deletedAt','')<>''

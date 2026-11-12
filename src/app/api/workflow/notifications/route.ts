@@ -19,7 +19,7 @@ async function authorized(req:NextRequest){
 }
 export async function GET(req:NextRequest){
  const session=await authorized(req);
- if("status" in session)return respond({error:"Notificações indisponíveis ou não autorizadas."},session.status);
+ if("status" in session&&typeof session.status==="number")return respond({error:"Notificações indisponíveis ou não autorizadas."},session.status);
  const raw=req.nextUrl.searchParams.get("limit"),only=req.nextUrl.searchParams.get("unread");
  if(raw!==null&&!/^[1-9][0-9]?$/.test(raw))return respond({error:"Limite inválido."},400);
  const limit=raw?Number(raw):30;
@@ -30,7 +30,7 @@ export async function GET(req:NextRequest){
 }
 export async function PATCH(req:NextRequest){
  const session=await authorized(req);
- if("status" in session)return respond({error:"Notificações indisponíveis ou não autorizadas."},session.status);
+ if("status" in session&&typeof session.status==="number")return respond({error:"Notificações indisponíveis ou não autorizadas."},session.status);
  let raw:unknown;try{raw=await req.json();}catch{return respond({error:"Dados inválidos."},400);}
  if(!raw||typeof raw!=="object"||Array.isArray(raw))return respond({error:"Dados inválidos."},400);
  const id=(raw as Record<string,unknown>).notificationId;

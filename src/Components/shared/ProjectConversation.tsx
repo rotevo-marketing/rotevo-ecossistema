@@ -2,10 +2,10 @@
 
 import {useCallback,useEffect,useId,useState} from "react";
 import {request} from "@/lib/operations/api";
+import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 
-type Message={id:string;author_role:"client"|"staff"|"strategist";content_version?:string|null;body:string;created_at:string};
+type Message={id:string;author_role:"client"|"staff"|"strategist";author_name:string;author_avatar_url:string|null;content_version?:string|null;body:string;created_at:string};
 type Response={messages:Message[];nextCursor:string|null};
-const label=(role:Message["author_role"])=>role==="client"?"Cliente":"Equipe Rotevo";
 
 export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false}:{
  projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;
@@ -52,12 +52,16 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   <p className="mt-1 text-xs text-[#697386]">Mensagens separadas das decisões de aprovação.</p>
   {loading?<p role="status" className="mt-3 text-sm">Carregando mensagens...</p>:
    <div className="mt-3">{nextCursor&&<button type="button" disabled={olderLoading} onClick={()=>void loadOlder()} className="mb-3 rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold disabled:opacity-50">{olderLoading?"Carregando...":"Carregar mensagens anteriores"}</button>}<ol aria-live="polite" className="max-h-64 space-y-3 overflow-y-auto">
-    {messages.map(message=><li key={message.id} className="rounded-lg bg-[#F6F7FB] p-3">
-     <div className="flex flex-wrap justify-between gap-2 text-xs font-semibold text-[#555E70]">
-      <span>{label(message.author_role)}{message.content_version&&` · Versão ${message.content_version}`}</span>
-      <time dateTime={message.created_at}>{new Date(message.created_at).toLocaleString("pt-BR")}</time>
+    {messages.map(message=><li key={message.id} className="flex items-start gap-2.5 border-b border-[#EFF1F5] py-3 last:border-0">
+     <TaskAvatar name={message.author_name} src={message.author_avatar_url} size={30}/>
+     <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+       <span className="text-xs font-semibold text-[#293144]">{message.author_name}</span>
+       <time dateTime={message.created_at} className="text-[11px] font-normal text-[#7B8496]">{new Date(message.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</time>
+       {message.content_version&&<span className="text-[11px] font-normal text-[#7B8496]">Versão {message.content_version}</span>}
+      </div>
+      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#344056]">{message.body}</p>
      </div>
-     <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#344056]">{message.body}</p>
     </li>)}
     {!messages.length&&<li className="text-xs text-[#697386]">Nenhuma mensagem registrada.</li>}
    </ol></div>}

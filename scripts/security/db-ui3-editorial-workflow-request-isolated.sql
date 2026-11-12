@@ -77,4 +77,33 @@ begin
  then raise exception 'Private notifications leaked to browser role';end if;
 end $deny$;
 
+-- Multiple client users with no designated approver: request must be denied.
+update public.planning_projects set data='{"editorialCalendar":[{"id":"multi-user-c","version":"04","status":"idea","visibleToClient":true}]}'::jsonb
+ where id='b0000000-0000-4000-8000-000000000003';
+do $deny$
+declare forbidden boolean:=false;
+begin
+ perform set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000007',false);
+ begin
+  perform public.rotevo_editorial_workflow_request(
+   'b0000000-0000-4000-8000-000000000003','multi-user-c','04','idea');
+ exception when insufficient_privilege then forbidden:=true;end;
+ if not forbidden then raise exception 'Multi-user approval recipient was chosen without designation';end if;
+ if (select data #>> '{editorialCalendar,0,status}' from public.planning_projects
+     where id='b0000000-0000-4000-8000-000000000003')<>'idea'
+ then raise exception 'Denied request changed editorial status';end if;
+end $deny$;
+
+-- Inactive G2 staff cannot submit a client request.
+do $deny$
+declare forbidden boolean:=false;
+begin
+ perform set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000006',false);
+ begin
+  perform public.rotevo_editorial_workflow_request(
+   'b0000000-0000-4000-8000-000000000003','multi-user-c','04','idea');
+ exception when insufficient_privilege then forbidden:=true;end;
+ if not forbidden then raise exception 'Inactive staff could submit approval';end if;
+end $deny$;
+
 select 'FULL_EDITORIAL_REQUEST_AND_DECISION_PASS' as result;

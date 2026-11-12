@@ -266,6 +266,8 @@ jobs:
         run: node --test scripts/security/ui3-gate-b-contract.test.mjs
       - name: Guard notification state against cross-tab session responses
         run: node --test scripts/security/ui3-notification-session-isolation.test.mjs
+      - name: Verify notification bell remains disabled and session-bound by default
+        run: node --test scripts/security/ui3-notification-mount.test.mjs
 
   editorial-workflow-isolated:
     name: Editorial approval and adjustment (disposable PostgreSQL)

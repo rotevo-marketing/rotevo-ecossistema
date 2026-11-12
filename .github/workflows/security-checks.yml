@@ -29,6 +29,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cross-tab-session-guard:
+    name: Cross-tab session regression (isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify stale portal and message sender identity protection
+        run: node --test scripts/security/ui3-session-boundary.test.mjs
+
   dependencies:
     name: Audit dependencies (report)
     runs-on: ubuntu-latest

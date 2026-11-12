@@ -210,6 +210,42 @@ jobs:
       - name: Verify production build with isolated configuration
         run: npm run build
 
+  gate-b-workflow-isolated:
+    name: Gate B workflow schema and transaction tests (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: gate-b-local-only
+          POSTGRES_DB: rotevo_gate_b_isolated
+        ports:
+          - 127.0.0.1:55433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_gate_b_isolated"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55433"
+      PGUSER: postgres
+      PGPASSWORD: gate-b-local-only
+      PGDATABASE: rotevo_gate_b_isolated
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test Gate B SQL with synthetic users and projects
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-gate-b-workflow-isolated.sql
+      - name: Verify Gate B remains fail-closed and outside migrations
+        run: node --test scripts/security/ui3-gate-b-contract.test.mjs
+
   profile-grants-isolated:
     name: Profile privilege isolation (synthetic PostgreSQL)
     runs-on: ubuntu-latest

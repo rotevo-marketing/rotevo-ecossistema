@@ -93,6 +93,8 @@ jobs:
         run: node --test scripts/security/client-project-projection.test.mjs
       - name: Verify conversation tenant isolation and resource visibility
         run: node --test scripts/security/ui3-collaboration-guards.test.mjs
+      - name: Confirm collaboration stays fail-closed until isolated DB approval
+        run: node --test scripts/security/ui3-collaboration-release-contract.test.mjs
       - name: Verify profile menu and task status palettes
         run: node --test scripts/security/admin-profile-task-colors.test.mjs
       - name: Verify operational agenda form validations

@@ -29,3 +29,14 @@ test("unreleased strategist approval-request endpoint rejects body with 503",asy
  assert.equal(response.headers.get("cache-control"),"no-store");
  assert.equal((await response.json()).error,"Envio para aprovação em homologação.");
 });
+
+test("notification list and mark-read are fail-closed without release flags",async()=>{
+ const list=await fetch(new URL("/api/workflow/notifications?limit=30",base));
+ assert.equal(list.status,503);
+ assert.equal(list.headers.get("cache-control"),"no-store");
+ const patch=await fetch(new URL("/api/workflow/notifications",base),{
+  method:"PATCH",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({notificationId:"00000000-0000-4000-8000-000000000001"})
+ });
+ assert.equal(patch.status,503);
+});

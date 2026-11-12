@@ -247,7 +247,7 @@ test("task hub supports authorized inline team reassignment and reprioritization
 
 test("overview consults formal editorial decisions without duplicating the editorial calendar",()=>{
  const overview=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/total fica indisponível até que seja possível conferir as decisões/);
+ assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/Totais desconhecidos foram apresentados como/);
 });
 
 test("operational meetings remain in the authorized hub and overview, outside planning tabs",()=>{

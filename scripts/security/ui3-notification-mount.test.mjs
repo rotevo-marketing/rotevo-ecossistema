@@ -31,3 +31,15 @@ test("notification navigation checks project scope before opening content",()=>{
  assert.match(bell,/onOpenContent\(n\.project_id,n\.resource_id\)/);
  assert.match(bell,/Marcar como lida/);
 });
+
+test("Meu Foco shows only user-bound actionable notifications behind release flag",()=>{
+ const focus=read("src/Components/admin/WorkflowFocusQueue.tsx");
+ const overview=read("src/Components/admin/AdminOperationsOverview.tsx");
+ const admin=read("src/app/admin/page.tsx");
+ assert.match(focus,/actionable=new Set\(\["adjustments_requested","message_sent"\]\)/);
+ assert.match(focus,/latest\.user\?\.id!==userId/);
+ assert.match(focus,/onOpenContent\(n\.project_id,n\.resource_id\)/);
+ assert.match(overview,/NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"/);
+ assert.match(overview,/WorkflowFocusQueue userId=\{userId\}/);
+ assert.match(admin,/onOpenNotification=\{openWorkflowContent\}/);
+});

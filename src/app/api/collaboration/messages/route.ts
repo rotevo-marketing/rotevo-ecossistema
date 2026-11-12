@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from "next/server";
-import {createClient} from "@supabase/supabase-js";
+import {createClient,type SupabaseClient} from "@supabase/supabase-js";
 import {canAccessConversation,parseMessageBody,parseResource,requiredModule,sharedContentVersion} from "@/lib/collaboration/guards";
 import {workspaceForClient} from "@/lib/operations/model";
 
@@ -7,7 +7,8 @@ export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:status===429?"Limite de mensagens atingido. Tente novamente em um minuto.":"Conversa indisponível ou acesso não autorizado."},{status,headers:{"Cache-Control":"no-store"}});
 const safe=(payload:unknown,status=200)=>NextResponse.json(payload,{status,headers:{"Cache-Control":"no-store"}});
 type Params={projectId:string;resourceId:string;resourceType:"task"|"content"};
-type Message={id:string;project_id:string;resource_type:string;resource_id:string;content_version:string|null;author_role:string;body:string;created_at:string};
+type Message={id:string;project_id:string;resource_type:string;resource_id:string;content_version:string|null;author_role:string;author_user_id:string;body:string;created_at:string};
+type VisibleMessage=Omit<Message,"author_user_id">&{author_name:string;author_avatar_url:string|null};
 const PAGE_SIZE=30;
 function decodeCursor(raw:string|null):{created_at:string;id:string}|null|false{
  if(raw===null)return null;
@@ -76,7 +77,47 @@ async function authorize(req:NextRequest,params:Params,write:boolean){
  }
  if(!canAccessConversation({role:profile.role,userClientId:profile.client_id,projectClientId:project.client_id,workspaceModules:modules,projectData:project.data,resourceType:params.resourceType,resourceId:params.resourceId,teamActive,assigned,permissions}))
   return {status:403 as const};
- return {admin,userId:identity.user.id,role:profile.role as string,contentVersion:params.resourceType==="content"?sharedContentVersion(project.data,params.resourceId):null};
+ return {admin,userId:identity.user.id,role:profile.role as string,projectClientId:project.client_id as string,contentVersion:params.resourceType==="content"?sharedContentVersion(project.data,params.resourceId):null};
+}
+
+
+// Resolve identities only after item authorization. Never return email or author_user_id.
+async function presentMessages(admin:SupabaseClient,rows:Message[],projectClientId:string):Promise<VisibleMessage[]>{
+ if(!rows.length)return [];
+ const ids=[...new Set(rows.map(row=>row.author_user_id))];
+ const [prefs,profiles]=await Promise.all([
+  admin.from("user_preferences").select("user_id,display_name,avatar_asset_id").in("user_id",ids),
+  admin.from("profiles").select("id,full_name").in("id",ids)
+ ]);
+ if(prefs.error||profiles.error)throw Error("conversation_author_lookup_failed");
+ const names=new Map((profiles.data??[]).map(row=>[row.id,row.full_name as string|null]));
+ const users=new Map((prefs.data??[]).map(row=>[row.user_id,row]));
+ const needsClientCover=rows.some(row=>row.author_role==="client"&&!users.get(row.author_user_id)?.avatar_asset_id);
+ const cover=needsClientCover?await admin.from("clients").select("cover_image_url").eq("id",projectClientId).maybeSingle():null;
+ if(cover?.error)throw Error("conversation_client_avatar_lookup_failed");
+ const coverRef=cover?.data?.cover_image_url;
+ const coverAsset=typeof coverRef==="string"&&coverRef.startsWith("asset://")?coverRef.slice(8):"";
+ const assetIds=[...new Set([...ids.map(id=>users.get(id)?.avatar_asset_id).filter((id):id is string=>typeof id==="string"),...(coverAsset?[coverAsset]:[])])];
+ const signed=new Map<string,string>();
+ if(assetIds.length){
+  const assets=await admin.from("project_assets").select("id,storage_path").eq("purpose","avatar").in("id",assetIds);
+  if(assets.error)throw Error("conversation_avatar_lookup_failed");
+  const paths=(assets.data??[]).map(row=>row.storage_path as string);
+  if(paths.length){
+   const urls=await admin.storage.from("rotevo-private").createSignedUrls(paths,3600);
+   if(urls.error||urls.data?.some(item=>item.error))throw Error("conversation_avatar_signing_failed");
+   const byPath=new Map((urls.data??[]).map(item=>[item.path,item.signedUrl]));
+   for(const asset of assets.data??[]){const url=byPath.get(asset.storage_path);if(url)signed.set(asset.id,url);}
+  }
+ }
+ const coverUrl=coverAsset?signed.get(coverAsset)??null:typeof coverRef==="string"&&coverRef.startsWith("https://")?coverRef:null;
+ return rows.map(({author_user_id,...message})=>{
+  const person=users.get(author_user_id);
+  const name=(person?.display_name||names.get(author_user_id)||"").trim();
+  const fallback=message.author_role==="client"?"Cliente":"Equipe Rotevo";
+  const asset=person?.avatar_asset_id as string|null|undefined;
+  return {...message,author_name:name||fallback,author_avatar_url:(asset?signed.get(asset):undefined)??(message.author_role==="client"?coverUrl:null)??null};
+ });
 }
 
 export async function GET(req:NextRequest){
@@ -87,7 +128,7 @@ export async function GET(req:NextRequest){
  const cursor=decodeCursor(req.nextUrl.searchParams.get("cursor"));
  if(cursor===false)return fail(400);
  let query=session.admin.from("rotevo_collaboration_messages")
-  .select("id,project_id,resource_type,resource_id,content_version,author_role,body,created_at")
+  .select("id,project_id,resource_type,resource_id,content_version,author_role,author_user_id,body,created_at")
   .eq("project_id",params.projectId).eq("resource_type",params.resourceType).eq("resource_id",params.resourceId)
   .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(PAGE_SIZE+1);
  if(cursor)query=query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);
@@ -97,7 +138,7 @@ export async function GET(req:NextRequest){
  const hasMore=rows.length>PAGE_SIZE;
  const slice=rows.slice(0,PAGE_SIZE);
  const nextCursor=hasMore&&slice.length?encodeCursor(slice[slice.length-1]):null;
- return safe({messages:slice.reverse(),nextCursor});
+ try{const messages=await presentMessages(session.admin,slice.reverse(),session.projectClientId);return safe({messages,nextCursor});}catch{return fail(503);}
 }
 export async function POST(req:NextRequest){
  let raw:unknown;try{raw=await req.json();}catch{return fail(400);}

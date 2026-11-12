@@ -324,3 +324,18 @@
     border-radius: 12px !important;
   }
 }
+
+/* UI3 | Straight accent rails in both strategist and client navigation.
+   Keep rounded corners for controls; only vertical status/selection rails are square. */
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before,
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+ border-radius:0!important;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before {
+ border-radius:0!important;
+}
+.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-4,
+.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-\[4px\] {
+ border-top-left-radius:0!important;
+ border-bottom-left-radius:0!important;
+}

@@ -363,3 +363,17 @@
 
 /* A single square active rail, rendered in the nav component. */
 .client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before{content:none!important;display:none!important}
+
+/* UI 3.0: rectangular, inset marker drawn as a background layer, not rounded pseudo-content. */
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"] {
+ background-color:#EDEAFF;
+ background-image:linear-gradient(#8173C8,#8173C8);
+ background-repeat:no-repeat;
+ background-position:left center;
+ background-size:2px calc(100% - 18px);
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before,
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::after {
+ content:none!important;
+ display:none!important;
+}

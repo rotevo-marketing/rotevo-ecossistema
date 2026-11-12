@@ -114,7 +114,7 @@ export default function ClientAreaPage(){
  const nav=<nav aria-label="Navegação do portal" className="space-y-0.5">
    {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
        onClick={()=>{setTab(item.id);setMobileMenu(false)}} className={`rv-ui2-nav-item relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors ${collapsed?"lg:justify-center lg:px-2":""} ${tab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>
-       {tab===item.id&&<span aria-hidden="true" className="pointer-events-none absolute left-0 top-[9px] bottom-[9px] w-[2px] rounded-none bg-[#8173C8]"/>}<Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
+       <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
  </nav>;
  return <main className="client-portal-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">

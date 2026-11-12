@@ -153,7 +153,7 @@ test("central task board searches linked projects and task titles without adding
 
 test("admin operations summary keeps formal document reviews actionable per project",()=>{
  const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(panel,/Projetos em Atenção/);assert.match(model,/ecosystem2027/);assert.match(model,/reviewStatus!=="review"/);assert.match(panel,/RecordLink item=\{items\[0\]\}/);
+ assert.match(panel,/Projetos que exigem atenção/);assert.match(model,/ecosystem2027/);assert.match(model,/reviewStatus!=="review"/);assert.match(panel,/RecordLink item=\{items\[0\]\}/);
 });
 
 test("admin overview omits publication-rate decorations and retains actual blocked records",()=>{

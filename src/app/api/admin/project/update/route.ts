@@ -186,6 +186,29 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    if(typeof item.id!=="string"||(!uuid.test(item.id)&&!oldEditorialById.has(item.id)))return fail(400);
    for(const key of ["archivedAt","deletedAt"]){const value=item[key];if(value!==undefined&&(typeof value!=="string"||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))return fail(400);}
    if(item.archivedAt&&item.deletedAt)return fail(400);
+
+   // A customer decision is a formal versioned event, not an editable status.
+   // The strategist may start production only after an actual idea approval.
+   const before=oldEditorialById.get(item.id);
+   const nextStatus=String(item.status??"");
+   const priorStatus=String(before?.status??"");
+   const nextVersion=String(item.version??"");
+   const priorVersion=String(before?.version??"");
+   const protectedStatuses=["idea_pending","idea_approved","idea_changes","changes_requested","approved"];
+   if(!before){
+    if(nextStatus!=="idea")return fail(400);
+   }else if(nextStatus!==priorStatus){
+    if(protectedStatuses.includes(nextStatus))return fail(409);
+    if(["idea","idea_pending"].includes(priorStatus)&&nextStatus!=="idea")return fail(409);
+    if(priorStatus==="idea_approved"){
+     if(nextStatus!=="production"||priorVersion!==nextVersion)return fail(409);
+     const {data:approved,error:approvalError}=await admin.from("editorial_idea_approvals")
+      .select("decision").eq("project_id",b.projectId).eq("content_id",item.id).eq("content_version",priorVersion).maybeSingle();
+     if(approvalError||approved?.decision!=="approved")return fail(409);
+    }
+    if(priorStatus==="idea_changes"&&(nextStatus!=="idea"||priorVersion===nextVersion))return fail(409);
+   }
+
    for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
     if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    }

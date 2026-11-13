@@ -1,6 +1,7 @@
 "use client";
 
-import {useCallback,useEffect,useId,useState} from "react";
+import {useCallback,useEffect,useId,useRef,useState} from "react";
+import {supabase} from "@/lib/supabase";
 import {request} from "@/lib/operations/api";
 import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 
@@ -18,6 +19,8 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
  const [olderLoading,setOlderLoading]=useState(false);
  const [nextCursor,setNextCursor]=useState<string|null>(null);
  const [error,setError]=useState("");
+ const mountedAuthor=useRef<string|null>(null);
+ useEffect(()=>{let active=true;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceType,resourceId]);
  const path="/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});
  const reload=useCallback(async()=>{
   try{const response=await request<Response>(path);setMessages(response.messages);setNextCursor(response.nextCursor);setError("");}
@@ -42,7 +45,10 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   event.preventDefault();if(!body.trim()||saving||readOnly)return;
   setSaving(true);setError("");
   try{
-   await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim()});
+   const {data,error:identityError}=await supabase.auth.getUser();
+   const expectedAuthorUserId=mountedAuthor.current;
+   if(identityError||!expectedAuthorUserId||data.user?.id!==expectedAuthorUserId)throw Error("A conta mudou. Reabra o painel antes de enviar.");
+   await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim(),expectedAuthorUserId});
    setBody("");await reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível enviar a mensagem. Seu texto foi preservado.");}
   finally{setSaving(false);}

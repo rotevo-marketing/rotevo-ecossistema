@@ -50,3 +50,8 @@ Nenhum deploy, Preview, merge, alteração de plano, execução de migração em
 - Cinco tabelas internas do schema `rotevo_workflow` estão com RLS habilitada e **nenhuma política retornada por `pg_policies`**. Os GRANTs explícitos inspecionados mostram somente `postgres` nessas tabelas; o acesso externo deve permanecer via RPCs autorizadas, com revisão integral de `SECURITY DEFINER` e `search_path`. Não criar permissões abertas de tabela para contornar isso.
 - As duas RPCs públicas de notificação existem no laboratório; funções de solicitações/decisões também existem, mas não substituem os testes autenticados de GoTrue/PostgREST, nem comprovam autorização multiusuário.
 - Nenhuma estrutura `client_action_assignments`/`client_action_submissions` foi criada neste bloco.
+
+## Atualização de interface incremental
+- `EditorialCalendar.tsx`: `idea_pending` agora recebe rótulo de exibição "Ideia" (compatibilidade legada); `idea_changes` recebe "Ajustes na ideia", incluindo cores de lista/calendário.
+- Estados de decisão e correção de ideia foram excluídos da seleção manual de situações. A projeção de decisão existente passa a diferenciar correção de ideia (`idea_changes`) de correção final (`changes_requested`).
+- **Ainda não é a integração completa de aprovação**: os acionadores e transações do PR #11 devem ser conciliados com o PR #14. Não ativar workflow por esta alteração isolada.

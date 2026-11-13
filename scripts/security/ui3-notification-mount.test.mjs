@@ -9,13 +9,13 @@ test("notification bell is gated by public feature flag and current authenticate
  ]){
   const source=read(page);
   assert.match(source,/import WorkflowNotificationBell from "@\/Components\/shared\/WorkflowNotificationBell"/);
-  assert.ok(source.includes('process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&'+actor+'&&!sessionBlocked&&<WorkflowNotificationBell userId={'+actor+'} onOpenContent='));
+  assert.ok(source.includes('process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&'+actor+'&&!sessionBlocked&&<WorkflowNotificationBell userId={'+actor+'} onOpenContent='));
   assert.ok(source.includes("useSessionBoundary("));
  }
 });
 test("notification endpoint rejects disabled server flag",()=>{
  const source=read("src/app/api/workflow/notifications/route.ts");
- assert.ok(source.includes('process.env.ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"'));
+ assert.ok(source.includes('process.env.ROTEVO_NOTIFICATIONS_ENABLED!=="true"'));
 });
 
 test("notification navigation checks project scope before opening content",()=>{
@@ -39,7 +39,7 @@ test("Meu Foco shows only user-bound actionable notifications behind release fla
  assert.match(focus,/actionable=new Set\(\["adjustments_requested","message_sent"\]\)/);
  assert.match(focus,/latest\.user\?\.id!==userId/);
  assert.match(focus,/onOpenContent\(n\.project_id,n\.resource_id\)/);
- assert.match(overview,/NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"/);
+ assert.match(overview,/NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"/);
  assert.match(overview,/WorkflowFocusQueue userId=\{userId\}/);
  assert.match(admin,/onOpenNotification=\{openWorkflowContent\}/);
 });

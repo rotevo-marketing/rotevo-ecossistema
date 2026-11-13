@@ -116,6 +116,8 @@ jobs:
         run: node --test scripts/security/agenda-form-contract.test.mjs
       - name: Verify editorial calendar date validation
         run: node --test scripts/security/editorial-date-contract.test.mjs
+      - name: Verify UI3 operational contract transitions and date isolation
+        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs
       - name: Verify onboarding link validation contracts
         run: node --test scripts/security/onboarding-link-contract.test.mjs
       - name: Verify administrative editors use authorized project writes

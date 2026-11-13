@@ -42,3 +42,11 @@ Arquivo `src/lib/workflow/ui3OperationalContracts.ts` e teste `scripts/security/
 
 ## Segurança e publicação
 Nenhum deploy, Preview, merge, alteração de plano, execução de migração em produção ou mudança de dados reais foi autorizado por este documento. O registro não deve ser interpretado como aprovação de release.
+
+## Auditoria adicional de laboratório (somente leitura, 13/11)
+- `planning_projects.data` permanece `jsonb`. Os dados de conteúdo e tarefas devem ser alterados por rotas compatíveis com CAS; não introduzir atualização concorrente que substitua todo o JSON indiscriminadamente.
+- `user_preferences` contém `user_id`, `display_name`, `avatar_asset_id` e `updated_at`; **não existe coluna de tema no esquema inspecionado**, portanto Claro/Escuro/Sistema exige migração isolada e testes de autorização antes de integração.
+- `editorial_approvals` e `editorial_idea_approvals` registram recurso/versão, decisão, comentário e `decided_by`; `rotevo_collaboration_messages` conserva histórico separado de conversa.
+- Cinco tabelas internas do schema `rotevo_workflow` estão com RLS habilitada e **nenhuma política retornada por `pg_policies`**. Os GRANTs explícitos inspecionados mostram somente `postgres` nessas tabelas; o acesso externo deve permanecer via RPCs autorizadas, com revisão integral de `SECURITY DEFINER` e `search_path`. Não criar permissões abertas de tabela para contornar isso.
+- As duas RPCs públicas de notificação existem no laboratório; funções de solicitações/decisões também existem, mas não substituem os testes autenticados de GoTrue/PostgREST, nem comprovam autorização multiusuário.
+- Nenhuma estrutura `client_action_assignments`/`client_action_submissions` foi criada neste bloco.

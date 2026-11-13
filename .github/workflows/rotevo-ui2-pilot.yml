@@ -1,0 +1,136 @@
+name: Rotevo UI2 visual pilot validation
+on:
+  push:
+    branches:
+      - feat/rotevo-ui2-pilot-20261109
+      - release/rotevo-ui3-rc-20261110
+    paths:
+      - 'src/**'
+      - 'scripts/security/ui2-visual-contract.test.mjs'
+      - 'scripts/security/ui3-workspace-contract.test.mjs'
+      - 'scripts/security/ui3-main-parity.test.mjs'
+      - 'src/app/admin/equipe/page.tsx'
+      - 'scripts/security/ui3-hosted-catalog-snapshot.mjs'
+      - 'scripts/security/ui3-authenticated-findings.test.mjs'
+      - 'scripts/security/ui3-raw-json-release-gate.test.mjs'
+      - 'scripts/security/ui3-contrast.test.mjs'
+      - 'scripts/security/presentation-access-behavior.test.mjs'
+      - 'scripts/security/ui3-full-sql-compat-local.mjs'
+      - 'scripts/security/ui3-sql-baseline.mjs'
+      - 'scripts/finance/database-isolated.sql'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - 'docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'
+      - 'scripts/security/client-project-projection.test.mjs'
+      - 'scripts/security/team-my-access-api-behavior.test.mjs'
+      - 'scripts/security/admin-project-api-behavior.test.mjs'
+      - '.github/workflows/rotevo-ui2-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: offline-build-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: offline-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: UI2 visual contract
+        run: node --test scripts/security/ui2-visual-contract.test.mjs
+      - name: UI3 workspace and navigation contract
+        run: node --test scripts/security/ui3-workspace-contract.test.mjs
+      - name: Main-only release feature equivalence guards
+        run: node --test scripts/security/ui3-main-parity.test.mjs
+      - name: Authenticated audit regressions (synthetic DOM only)
+        run: node --test scripts/security/ui3-authenticated-findings.test.mjs
+      - name: Existing project and editorial security contracts
+        run: |
+          node --test scripts/security/client-project-projection.test.mjs
+          node --test scripts/security/ecosystem-document-workflow.test.mjs
+          node --test scripts/security/progressive-planning-contract.test.mjs
+          node --test scripts/security/ui2-presentation-visibility.test.mjs
+      - name: UI2 pre-release operational, authorization and client journey regression
+        shell: bash
+        run: |
+          status=0
+          for contract in \
+            isolated-client-journey \
+            release-readiness-contract \
+            staff-access-boundary \
+            overview-management \
+            admin-project-editor-contract \
+            onboarding-link-contract \
+            agenda-form-contract \
+            campaigns-contract \
+            execution-dependencies \
+            planning-stages \
+            strategic-editor-prototype; do
+            echo "::group::Security contract: $contract"
+            node --test "scripts/security/$contract.test.mjs" || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
+      - name: Comprehensive offline regression matrix (no customer data)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for spec in \
+            scripts/finance/domain.test.mjs \
+            scripts/finance/lifecycle.test.mjs \
+            scripts/security/document-html-persistence.test.cjs \
+            scripts/security/visual-html.test.mjs \
+            scripts/security/visual-html-component.test.cjs \
+            scripts/security/team-project-access-behavior.test.mjs \
+            scripts/security/client-assets-behavior.test.mjs \
+            scripts/security/client-project-api-behavior.test.mjs \
+            scripts/security/team-my-access-api-behavior.test.mjs \
+            scripts/security/admin-project-api-behavior.test.mjs \
+            scripts/security/ui3-raw-json-release-gate.test.mjs \
+            scripts/security/ui3-contrast.test.mjs \
+            scripts/security/presentation-access-behavior.test.mjs \
+            scripts/security/finance-publication.test.mjs \
+            scripts/security/operational-integration.test.mjs \
+            scripts/security/auth-schema-preflight.test.mjs \
+            scripts/security/admin-route-contract.test.mjs \
+            scripts/security/admin-profile-task-colors.test.mjs \
+            scripts/security/only-ecosystem-2027.test.mjs \
+            scripts/security/client-account-rollback.test.mjs \
+            scripts/security/owner-bootstrap-contract.test.mjs; do
+            echo "::group::Offline homologation: $spec"
+            node --test "$spec"
+            echo "::endgroup::"
+          done
+      - name: Selected SQL baseline compatibility (disposable PostgreSQL WASM)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/ui3-sql-lab" --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.16
+          ROTEVO_SQL_LAB_MODULE="$RUNNER_TEMP/ui3-sql-lab/node_modules/@electric-sql/pglite/dist/index.js" node scripts/security/ui3-full-sql-compat-local.mjs
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Next.js build (bounded retry for intermittent Google Fonts loader)
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "Next.js build attempt $attempt/3"
+            if npm run build; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Build failed after three attempts. Investigate the actual compilation failure."
+              exit 1
+            fi
+            echo "::warning::Build failed. Retrying once more after an 8-second delay; next/font/google can fail on extensionless Google Fonts URLs."
+            sleep 8
+          done

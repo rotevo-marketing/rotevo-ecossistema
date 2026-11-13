@@ -33,3 +33,22 @@
 .clientHeader { grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: clamp(4px, 2vw, 20px); }
 .clientHeader .headerLink { color: #000000; font-size: clamp(12px, calc(4vw - 0.8px), 16px); font-weight: 600; white-space: nowrap; padding-inline: 2px; }
 .clientHeader .headerLink:is(:hover, :focus) { color: #000000; }
+
+/* Shared product identity: clear surface, navy type and restrained brand accents. */
+.screen{color:var(--rv-text);background-color:var(--rv-canvas);background-image:radial-gradient(ellipse at 10% 15%,#6d35f510,transparent 50%),radial-gradient(ellipse at 90% 90%,#ade60a0c,transparent 45%);background-size:auto;padding:40px 20px}
+.card{background:var(--rv-surface);border-color:var(--rv-border);border-radius:20px;box-shadow:0 16px 48px #0b142a0a;padding:36px 32px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.025em;color:var(--rv-text)}
+.field{font-weight:500;color:var(--rv-secondary)}
+.input{background:#f9fafd;border-color:var(--rv-border);color:var(--rv-text);transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:var(--rv-purple);box-shadow:0 0 0 3px #6d35f50d}
+.input::placeholder{color:var(--rv-muted)}
+.button{background:var(--rv-lime);color:var(--rv-navy);border-radius:12px;font-weight:650}
+.button:hover{background:var(--rv-lime-hover)}
+.link,.reveal{color:var(--rv-purple-dark)}
+.link:not([aria-disabled=true]):hover{color:var(--rv-purple-dark);text-decoration-thickness:2px}
+.note,.recoveryDisabled,.footer{color:var(--rv-muted)}
+.footer{font-size:12px}.separator{background:var(--rv-border)}
+.message{background:var(--rv-subtle);border-color:var(--rv-border);color:var(--rv-secondary)}
+.error{color:var(--rv-danger);border-color:#edc8cc;background:var(--rv-danger-tint)}
+.screen :is(a,button,input,[role=link]):focus-visible{outline-color:var(--rv-purple)}
+@media(max-width:480px){.screen{padding:28px 16px}.card{padding:28px 22px}.title{font-size:24px}}

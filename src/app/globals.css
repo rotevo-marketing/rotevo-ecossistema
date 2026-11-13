@@ -71,3 +71,9 @@ h3 {
   box-shadow: 0 20px 25px -5px rgb(15 23 42 / 0.05);
   outline-color: #cbd5e1;        /* slate-300 */
 }
+
+/* Cursor consistente para elementos interativos. */
+@layer base {
+  button:not(:disabled), [role="button"]:not([aria-disabled="true"]), a[href], summary, label:has(input[type="file"]:not(:disabled)) { cursor: pointer; }
+  button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
+}

@@ -1,0 +1,113 @@
+name: Supabase isolated legacy baseline smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - '.github/workflows/supabase-isolated-schema-smoke.yml'
+      - 'docs/security/lab-legacy-baseline-local-only.sql'
+      - 'docs/security/tests/**'
+      - 'scripts/security/authenticated-local-http.mjs'
+      - 'src/app/api/admin/project/create/route.ts'
+      - 'src/app/api/presentation/project/route.ts'
+      - 'supabase/migrations/20261015_harden_profile_authorization.sql'
+
+permissions:
+  contents: read
+
+jobs:
+  local-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - name: Prepare detached local Supabase workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rotevo-security-lab"
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase init
+          mkdir -p supabase/migrations
+          cp "$GITHUB_WORKSPACE/docs/security/lab-legacy-baseline-local-only.sql" supabase/migrations/20261015000000_legacy_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_team_roles.sql" supabase/migrations/20261015000001_team_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261015_harden_profile_authorization.sql" supabase/migrations/20261015000002_profile_hardening_fixture.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261020204843_operation_workspace_and_editorial.sql" supabase/migrations/20261015000003_operations_workspace_fixture.sql
+          mkdir -p supabase/tests/database
+          # Legacy vulnerability characterization is kept as an archival test; hardened grants are validated below.
+          cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_isolation_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-tenant-write-isolation-local.test.sql" supabase/tests/database/synthetic_tenant_write_isolation_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/synthetic-team-roles-local.test.sql" supabase/tests/database/synthetic_team_roles_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/staged-profile-hardening-local.test.sql" supabase/tests/database/staged_profile_hardening_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/planning-data-json-exposure-local.test.sql" supabase/tests/database/planning_data_json_exposure_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/planning-data-column-grant-proposal-local.test.sql" supabase/tests/database/planning_data_column_grant_proposal_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/planning-data-revocation-rollback-local.test.sql" supabase/tests/database/planning_data_revocation_rollback_test.sql
+          cp "$GITHUB_WORKSPACE/docs/security/tests/is-strategist-execute-grants-local.test.sql" supabase/tests/database/is_strategist_execute_grants_test.sql
+          cat > supabase/tests/database/schema_smoke.sql <<'SQL'
+          BEGIN;
+          CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+          SELECT plan(6);
+          SELECT has_table('public','profiles','profiles fixture exists');
+          SELECT has_table('public','clients','clients fixture exists');
+          SELECT has_table('public','client_users','client_users fixture exists');
+          SELECT has_table('public','planning_projects','planning_projects fixture exists');
+          SELECT has_function('public','is_strategist',ARRAY[]::text[],'function fixture exists');
+          SELECT is((SELECT count(*)::integer FROM pg_policies
+            WHERE schemaname='public' AND tablename IN
+            ('profiles','clients','client_users','planning_projects')),16,'fixture loads 16 policies');
+          SELECT * FROM finish();
+          ROLLBACK;
+          SQL
+      - name: Start wholly local Supabase and run database smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase start
+          supabase test db --local
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Test authenticated HTTP denials with disposable local users
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase status -o env > "$RUNNER_TEMP/local-supabase.env"
+          set -a
+          source "$RUNNER_TEMP/local-supabase.env"
+          set +a
+          export NEXT_PUBLIC_SUPABASE_URL="http://127.0.0.1:54321"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
+          export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
+          export ROTEVO_LOCAL_INVITE_AUTH_PROBE="YES_LOCAL_ONLY"
+          cd "$GITHUB_WORKSPACE"
+          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/next-test.log" 2>&1 &
+          next_pid=$!
+          trap 'kill "$next_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 40 "$RUNNER_TEMP/next-test.log"
+            exit 1
+          fi
+          node scripts/security/authenticated-local-http.mjs
+      - name: Stop detached local environment
+        if: always()
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/rotevo-security-lab"
+          supabase stop --no-backup || true

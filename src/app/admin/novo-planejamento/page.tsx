@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
+import {request} from "@/lib/operations/api";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -49,6 +50,9 @@ export default function NovoPlanejamentoPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [registeredClients,setRegisteredClients]=useState<{id:string;name:string;slug:string;status:string}[]>([]);
+  const [clientId,setClientId]=useState("");
+  const [clientsReady,setClientsReady]=useState(false);
   const [clientName, setClientName] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -59,7 +63,7 @@ export default function NovoPlanejamentoPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
-  const clientSlug = useMemo(() => createSlug(clientName), [clientName]);
+  const clientSlug = useMemo(() => registeredClients.find(c=>c.id===clientId)?.slug??createSlug(clientName), [clientName,clientId,registeredClients]);
 
   const projectSlug = useMemo(() => {
     const baseSlug = createSlug(projectTitle);
@@ -91,6 +95,7 @@ export default function NovoPlanejamentoPage() {
         return;
       }
 
+      try{const result=await request<{clients:{id:string;name:string;slug:string;status:string}[]}>("/api/admin/clients");setRegisteredClients(result.clients);setClientsReady(true);}catch{setErrorMessage("Não foi possível carregar os clientes cadastrados. Atualize antes de continuar.");}
       setUserEmail(userData.user.email ?? "");
       setIsLoading(false);
     }
@@ -156,6 +161,8 @@ export default function NovoPlanejamentoPage() {
   function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if(!clientsReady){setErrorMessage("Aguarde o carregamento dos clientes antes de continuar.");return;}
+    if(!clientId&&registeredClients.some(c=>c.name.trim().toLocaleLowerCase("pt-BR")===clientName.trim().toLocaleLowerCase("pt-BR"))){setErrorMessage("Este cliente já está cadastrado. Selecione-o na lista acima.");return;}
     if (!clientName.trim()) {
       setErrorMessage("Informe o nome do cliente.");
       return;
@@ -171,7 +178,16 @@ export default function NovoPlanejamentoPage() {
       return;
     }
 
+    // Keep the first step consistent with client identifiers and server project limits.
+    const finalSlug = projectSlug === clientSlug || projectSlug.startsWith(`${clientSlug}-`)
+      ? projectSlug : `${clientSlug}-${projectSlug}`;
+    if ((!clientId && clientSlug.length > 65) || finalSlug.length > 180 || projectTitle.trim().length > 180) {
+      setErrorMessage("O nome ou título é longo demais para o identificador do planejamento. Utilize uma versão mais curta.");
+      return;
+    }
+
     const draft = {
+      clientId:clientId||undefined,
       clientName: clientName.trim(),
       clientSlug,
       projectTitle: projectTitle.trim(),
@@ -189,7 +205,7 @@ export default function NovoPlanejamentoPage() {
   }
 
   return (
-    <main className="admin-new-project-v2 min-h-screen bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-new-project-v2 rv-ui2 min-h-screen bg-[#F6F7FB] text-[#323647]">
       <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">
@@ -211,7 +227,7 @@ export default function NovoPlanejamentoPage() {
 
       <style jsx global>{` .admin-new-project-v2, .admin-new-project-v2 h1, .admin-new-project-v2 h2, .admin-new-project-v2 h3 { font-family: var(--font-body), Arial, Helvetica, sans-serif !important; } `}</style>
       <section className="mx-auto max-w-4xl px-5 pb-20 pt-10 sm:px-8 lg:px-10">
-        <div className="rounded-2xl border border-[#E3E7F0] bg-white p-6 sm:p-8 lg:p-10">
+        <div className="rounded-xl border border-[#E3E6ED] bg-white p-5 shadow-sm sm:p-7 lg:p-8">
           <h1 className="text-[30px] leading-[38px] font-bold tracking-[-0.02em] text-[#090D1C]">
             Criar novo projeto
           </h1>
@@ -229,11 +245,14 @@ export default function NovoPlanejamentoPage() {
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             {/* Nome do cliente */}
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
+              <label className="mb-4 block text-sm font-medium">Cliente cadastrado<select value={clientId} onChange={e=>{setClientId(e.target.value);setClientName(registeredClients.find(c=>c.id===e.target.value)?.name??"");}} className="mt-2 block w-full rounded-xl border border-slate-200 bg-white p-3"><option value="">Cadastrar uma nova empresa</option>{registeredClients.filter(c=>c.status!=="archived").map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              <label htmlFor="planning-client-name" className="mb-2 block text-sm font-semibold text-slate-700">
                 Nome do cliente
               </label>
               <input
+                id="planning-client-name"
                 type="text"
+                readOnly={Boolean(clientId)}
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Ex: Cliente Demo"
@@ -248,11 +267,12 @@ export default function NovoPlanejamentoPage() {
 
             {/* Título do planejamento */}
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
+              <label htmlFor="planning-project-title" className="mb-2 block text-sm font-semibold text-slate-700">
                 Título do planejamento
               </label>
               <input
                 type="text"
+                id="planning-project-title"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 placeholder="Ex: Planejamento Estratégico 2026"
@@ -386,16 +406,16 @@ export default function NovoPlanejamentoPage() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-[#0B142A] px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Escolher módulos
+                Escolher documentos
               </button>
             </div>
           </form>
         </div>
       </section>
 
-      <footer className="bg-[#A7E000]">
+      <footer className="border-t border-[#E3E6ED] bg-white text-[#687487]">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-sm font-medium text-[#090D1C] sm:flex-row sm:justify-between sm:px-8 lg:px-10">
           <span>© 2026 Rotevo. Todos os direitos reservados.</span>
           <span>Rotevo Estratégia &amp; Consultoria</span>

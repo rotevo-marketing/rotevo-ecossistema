@@ -1,0 +1,265 @@
+/* UI3 | Workspace foundation. Applies only to opted-in admin/client shells.
+   Rich strategic document content (.se-paper, .bn-editor) intentionally excluded. */
+.rv-ui3{--rv3-canvas:#F6F7FB;--rv3-surface:#fff;--rv3-text:#323647;--rv3-muted:#687487;--rv3-border:#E3E6ED;--rv3-accent:#6C5CE7;--rv3-accent-soft:#EDEAFF;color:var(--rv3-text);font-family:var(--font-body),Inter,Arial,sans-serif}
+.rv-ui3 .rv-ui2-workspace,.rv-ui3 .rv-ui2-client-content{background:var(--rv3-surface)}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-content{max-width:none;padding:18px clamp(16px,2vw,32px) 40px}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace .rv-ui2-workspace-heading,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-content .rv-ui2-client-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px;padding:4px 0 16px;border:0;border-bottom:1px solid var(--rv3-border);border-radius:0;background:#fff;box-shadow:none}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace-heading h1,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-heading h1{margin:0;font-size:20px;line-height:1.4;font-weight:600;letter-spacing:-.025em;color:var(--rv3-text)}
+.rv-ui3 .rv-ui2-heading-eyebrow,.rv-ui3 .rv-ui2-client-eyebrow,.rv-ui3 .rv-ui2-heading-description,.rv-ui3 .rv-ui2-client-heading-copy>p:last-child{display:none}
+.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-identity{max-width:220px;min-height:32px;padding:6px 9px;border:1px solid var(--rv3-border);background:#fff;border-radius:8px;color:var(--rv3-muted);font-size:11px;font-weight:500}
+.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-identity svg{width:16px;height:16px}
+.rv-ui3 .rv-ui2-heading-primary,.rv-ui3 .rv-ui2-heading-secondary{min-height:36px;padding:8px 12px;font-size:12px;border-radius:8px;box-shadow:none!important}
+.rv-ui3 .rv-ui2-workspace .rv-ui2-stats{margin-top:8px;gap:8px}
+.rv-ui3 .rv-ui2-workspace .rv-ui2-stats .rv-ui2-stat{padding:12px 14px;border-radius:9px;box-shadow:none}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-overview{gap:12px}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-dashboard-intro{padding:0;gap:8px}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-dashboard-label{font-size:10px;color:var(--rv3-muted);font-weight:550}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-dashboard-intro h2{font-size:16px;font-weight:600}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-dashboard-intro p{font-size:12px}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-overview-kpi{min-height:100px;padding:13px 15px;box-shadow:none}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-overview-kpi::before{display:none}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-kpi-icon{width:27px;height:27px;border-radius:7px;background:#F6F7FA;color:var(--rv3-muted)}
+.rv-ui3 .rv-ui2-module{margin-top:8px}
+.rv-ui3 .rv-ui2-module :is(button,a,summary,select){transition:background-color .12s ease,border-color .12s ease}
+.rv-ui3 .rv-ui2-module :is(button,a,summary):focus-visible{outline:2px solid var(--rv3-accent);outline-offset:2px}
+.rv-ui3 .rv-ui2-module :is(h2,h3){letter-spacing:-.012em}
+.rv-ui3 :is(.rv-ui2-project-row,.rv-ui2-task-board tbody tr){box-shadow:none}
+.rv-ui3 .rv-ui2-module table thead{background:#F8F9FB}
+.rv-ui3 .rv-ui2-module table th{font-size:11px;color:var(--rv3-muted);font-weight:600;letter-spacing:0}
+.rv-ui3 .rv-ui2-module table tbody tr:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui2-project-list{gap:0}
+.rv-ui3 .rv-ui2-project-row{border-radius:0;border-left:0;border-right:0;border-top:0;padding:12px 6px}
+.rv-ui3 .rv-ui2-project-row:hover{border-color:var(--rv3-border);background:#F9FAFC}
+.rv-ui3 .rv-ui2-client-content :is(.rv-ui2-client-section){box-shadow:none}
+.rv-ui3 .rv-ui2-client-overview{gap:12px}
+.rv-ui3 .rv-ui2-client-overview>.grid,.rv-ui3 .rv-ui2-client-overview>section{box-shadow:none}
+.rv-ui3 .rv-ui2-client-drive article{min-height:unset}
+.rv-ui3 :is(.rv-ui2-module,.rv-ui2-workspace,.rv-ui2-client-content) :is(input,select,textarea){accent-color:var(--rv3-accent)}
+.rv-ui3 :is(.rv-ui2-module,.rv-ui2-workspace,.rv-ui2-client-content) :is(input,select,textarea):focus-visible{outline:2px solid var(--rv3-accent);outline-offset:2px}
+/* Preserve semantic status colors; normalize icons only in global chrome, not document content. */
+.rv-ui3 :is(.rv-ui2-nav-item,.rv-ui2-topbar) svg{stroke-width:1.55}
+@media(max-width:767px){
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-content{padding:14px 14px 36px}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace .rv-ui2-workspace-heading,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-content .rv-ui2-client-heading{padding:2px 0 12px;gap:10px;background:#fff}
+.rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace-heading h1,.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-heading h1{font-size:18px}
+.rv-ui3 .rv-ui2-heading-actions{width:auto;gap:7px}
+.rv-ui3 .rv-ui2-heading-actions>*{flex:initial;min-height:38px}
+.rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-identity{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){.rv-ui3 *, .rv-ui3 *::before,.rv-ui3 *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Existing new-planning wizard, presented in its native form inside intercepted modal. */
+.rv3-modal-new-planning .admin-new-project-v2{min-height:0;background:#fff}
+.rv3-modal-new-planning .admin-new-project-v2>header,
+.rv3-modal-new-planning .admin-new-project-v2>footer{display:none}
+.rv3-modal-new-planning .admin-new-project-v2>section{max-width:none;padding:16px 20px 28px}
+.rv3-modal-new-planning .admin-new-project-v2>section>div{padding:0;border:0;box-shadow:none}
+.rv3-modal-new-planning .admin-new-project-v2 h1{font-size:19px;line-height:1.4;font-weight:600;color:#323647}
+.rv3-modal-new-planning .admin-new-project-v2 form{margin-top:18px}
+.rv3-modal-new-planning .admin-new-project-v2 form :is(input,select,textarea){border-radius:8px}
+@media(max-width:640px){.rv3-modal-new-planning .admin-new-project-v2>section{padding:12px 14px 22px}}
+
+/* Project settings drawer keeps the existing permission-checked page, not a duplicate workflow. */
+.rv3-modal-client-access .admin-access-v2{min-height:0;background:#fff}
+.rv3-modal-client-access .admin-access-v2>header,.rv3-modal-client-access .admin-access-v2>footer{display:none}
+.rv3-modal-client-access .admin-access-v2>section{max-width:none;padding:14px 18px 28px}
+.rv3-modal-client-access .admin-access-v2>section :is(h1,h2){letter-spacing:-.02em}
+.rv3-modal-client-access .admin-access-v2>section h1{font-size:19px;line-height:1.4}
+.rv3-modal-client-access .admin-access-v2 :is(button,select,input,textarea):focus-visible{outline:2px solid var(--rv3-accent);outline-offset:2px}
+@media(max-width:640px){.rv3-modal-client-access .admin-access-v2>section{padding:12px 13px 22px}}
+/* Project list and onboarding share one operational surface, not nested decorative cards. */
+.rv-ui3 .rv-ui3-projects-surface,.rv-ui3 .rv-ui3-onboarding-surface{border:0;border-radius:0;box-shadow:none;padding:0}
+.rv-ui3 .rv-ui3-project-list{border-bottom:1px solid var(--rv3-border)}
+.rv-ui3 .rv-ui3-project-row{border:0!important;border-radius:0!important;box-shadow:none!important}
+.rv-ui3 .rv-ui3-onboarding-surface table{border-collapse:collapse}
+.rv-ui3 .rv-ui3-onboarding-surface table thead{background:#F8F9FB}
+.rv-ui3 .rv-ui3-onboarding-surface table thead th{font-size:11px;font-weight:600;color:var(--rv3-muted)}
+.rv-ui3 .rv-ui3-onboarding-surface table tbody td{padding-top:11px;padding-bottom:11px}
+
+/* UI3 operational overviews: prioritize decisions, tasks and authorized records. */
+.rv-ui3 .rv-ui3-overview-summary{margin-bottom:4px}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi{min-height:36px;padding:6px 8px;border:0!important;box-shadow:none!important;background:transparent!important}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi::before{display:none!important}
+.rv-ui3 .rv-ui3-overview-panel,.rv-ui3 .rv-ui3-work-console,.rv-ui3 .rv-ui3-client-overview-panel{border:0!important;border-radius:0!important;box-shadow:none!important}
+.rv-ui3 .rv-ui3-overview-panel,.rv-ui3 .rv-ui3-work-console{padding:16px 0}
+.rv-ui3 .rv-ui3-attention-first{border-bottom:1px solid #E3E6ED!important}
+.rv-ui3 .rv-ui3-client-overview-panel{padding:15px 0}
+.rv-ui3 .rv-ui3-client-status{margin:6px 0}
+.rv-ui3 .rv-ui3-client-status button:focus-visible,.rv-ui3 .rv-ui3-work-console button:focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui2-overview .rv-ui3-work-console>div:first-child{margin-bottom:4px}
+.rv-ui3 .rv-ui2-overview .rv-ui3-work-console li:last-child{border-bottom:0}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel>div:first-child h2 svg{width:17px;height:17px;stroke-width:1.55}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel>div:first-child h2{font-size:14px;font-weight:600}
+.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel .grid{gap:8px}
+@media(max-width:767px){
+.rv-ui3 .rv-ui3-overview-summary{gap:4px 8px}
+.rv-ui3 .rv-ui3-overview-summary .rv-ui2-overview-kpi{max-width:100%}
+.rv-ui3 .rv-ui3-client-status{gap:4px 8px}
+}
+
+/* UI3 strategic planning workspace. Deliberately excludes document body and BlockNote. */
+.workspace-production.rv-ui3{--pw-border:#E3E6ED;--pw-purple:#6C5CE7;--pw-purple-tint:#EDEAFF;--pw-purple-ink:#5949D1;--pw-navy:#323647}
+.workspace-production.rv-ui3 .workspace-project-page{background:#fff;color:#323647}
+.workspace-production.rv-ui3 .rv-ui3-planning-intro{padding-top:14px}
+.workspace-production.rv-ui3 .rv-ui3-planning-header{max-width:none;margin:0;background:#fff;border:0;border-radius:0;box-shadow:none;padding:0}
+.workspace-production.rv-ui3 .rv-ui3-planning-header .pw-breadcrumb{font-size:11px;color:#687487;margin:0 0 7px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title{gap:10px;margin:0 0 8px;padding:0;align-items:center}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-photo{width:38px;height:38px;border:1px solid #E3E6ED;box-shadow:none}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-identity{gap:2px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-client{font-size:11px;font-weight:500;color:#687487}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-identity h1{font-size:18px;line-height:1.4;font-weight:600;letter-spacing:-.02em;color:#323647}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-meta{gap:8px;font-size:11px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-meta>span:first-child{display:none}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-meta-divider{display:none}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-status{background:#F6F7FB;border:1px solid #E3E6ED;color:#687487}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-client-view{margin-left:auto;min-height:34px;padding:7px 11px;border:1px solid #E3E6ED;background:#fff;color:#5949D1;font-size:11px}
+.workspace-production.rv-ui3 .rv-ui3-planning-controls{padding:8px 0 10px;border:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.workspace-production.rv-ui3 .rv-ui3-planning-controls>span{margin-right:auto;font-size:11px;color:#687487}
+.workspace-production.rv-ui3 .rv-ui3-planning-controls :is(a,button){display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 10px;border:1px solid #E3E6ED;border-radius:8px;background:#fff;box-shadow:none;color:#5949D1;font-size:11px;font-weight:550}
+.workspace-production.rv-ui3 .rv-ui3-planning-controls :is(a,button):hover{background:#F6F7FB}
+.workspace-production.rv-ui3 .rv-ui3-planning-nav-wrap{margin:0}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs{padding:0 0 0 1px;margin:0;border:0;border-bottom:1px solid #E3E6ED;box-shadow:none;display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs>button{flex:0 0 auto;min-height:42px;padding:10px 13px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#687487;font-size:12px;font-weight:500}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs>button:hover{background:#F6F7FB;color:#323647}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs>button[aria-selected=true]{color:#5949D1;border-bottom:2px solid #6C5CE7;background:transparent;font-weight:600}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs>button:focus-visible{outline:2px solid #6C5CE7;outline-offset:-3px}
+.workspace-production.rv-ui3 .rv-ui3-documents-config{margin-top:2px;border:0;border-radius:0;box-shadow:none;padding:12px 0}
+.workspace-production.rv-ui3 .rv-ui3-documents-config h2{font-size:15px;font-weight:600;color:#323647}
+.workspace-production.rv-ui3 .rv-ui3-documents-config h2+p{font-size:12px;color:#687487}
+.workspace-production.rv-ui3 .rv-ui3-documents-search{width:min(260px,100%)}
+.workspace-production.rv-ui3 .rv-ui3-document-groups{gap:0}
+.workspace-production.rv-ui3 .rv-ui3-document-group{padding:14px 0 6px;border:0;border-radius:0;border-bottom:1px solid #E3E6ED;background:#fff}
+.workspace-production.rv-ui3 .rv-ui3-document-group h3{color:#323647;font-weight:600}
+.workspace-production.rv-ui3 .rv-ui3-document-group .grid{min-width:0}
+.workspace-production.rv-ui3 .rv-ui3-document-group .grid:last-child{border-bottom:0}
+.workspace-production.rv-ui3 .rv-ui3-progressive-settings>div{border-radius:0;box-shadow:none}
+.workspace-production.rv-ui3 .rv-ui3-progressive-settings h2{font-size:13px;font-weight:600}
+.workspace-production.rv-ui3 .rv-ui3-planning-footer{display:none}
+.workspace-production.rv-ui3 .pw-planning.workspace-real{min-height:calc(100dvh - 250px);border:0;border-radius:0;box-shadow:none}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-document-nav{border-right:1px solid #E3E6ED;background:#fff}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-nav-title h2{font-size:13px;font-weight:600}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-area-title{font-size:11px;padding:9px 7px;border-radius:7px}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-doc-list{gap:2px}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-doc-list>button{padding:9px 9px;font-size:11px;line-height:1.45;border:0;border-radius:7px;box-shadow:none}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-doc-list>button[aria-current=page]{background:#EDEAFF;color:#5949D1}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-doc-list small{font-size:10px;color:#687487}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .workspace-editor-main{min-width:0;background:#fff}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .workspace-document-title{font-size:17px;font-weight:600;letter-spacing:-.02em;color:#323647}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-docbar{border-bottom:1px solid #E3E6ED}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-edit-tools{border:1px solid #E3E6ED;box-shadow:none}
+.workspace-production.rv-ui3 .pw-planning.workspace-real .pw-save-status{color:#687487}
+.workspace-production.rv-ui3 .pw-planning.workspace-real :is(button,input,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+@media(max-width:767px){
+.workspace-production.rv-ui3 .rv-ui3-planning-intro{padding:12px 14px 4px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-photo{width:32px;height:32px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-identity h1{font-size:16px}
+.workspace-production.rv-ui3 .rv-ui3-planning-title .pw-project-client-view{margin-left:0}
+.workspace-production.rv-ui3 .rv-ui3-planning-controls>span{width:100%}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs{gap:1px}
+.workspace-production.rv-ui3 .rv-ui3-planning-tabs>button{padding:9px 10px;font-size:11px}
+.workspace-production.rv-ui3 .rv-ui3-documents-search{width:100%}
+.workspace-production.rv-ui3 .rv-ui3-document-group .grid{grid-template-columns:minmax(0,1fr) 54px 54px;gap:5px}
+.workspace-production.rv-ui3 .rv-ui3-progressive-settings{padding-left:14px;padding-right:14px}
+}
+
+/* UI3 editorial workspaces: one content base, channel-specific filtered views. */
+.rv-ui3 .rv-ui3-editorial-calendar{min-width:0}
+.rv-ui3 .rv-ui3-editorial-surface{padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-calendar :is(button,select,input):focus-visible,
+.rv-ui3 .rv-ui3-client-editorial :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{border-color:#E3E6ED;border-radius:4px;background:#fff}
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui3-editorial-form label{color:#687487}
+.rv-ui3 .rv-ui3-editorial-form :is(input,textarea,select){border-color:#E3E6ED;border-radius:8px;color:#323647}
+.rv-ui3 .rv-ui3-editorial-form input:focus-visible,
+.rv-ui3 .rv-ui3-editorial-form textarea:focus-visible,
+.rv-ui3 .rv-ui3-editorial-form select:focus-visible{outline:2px solid #6C5CE7;outline-offset:1px}
+.rv-ui3 .rv-ui3-editorial-form-group{background:#fff}
+.rv-ui3 .rv-ui3-campaign-toolbar,.rv-ui3 .rv-ui3-campaign-metrics,.rv-ui3 .rv-ui3-campaign-list{border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-campaign-metrics{margin-top:0}
+.rv-ui3 .rv-ui3-campaign-list table thead th{font-size:11px;font-weight:600;color:#687487}
+.rv-ui3 .rv-ui3-campaign-list table tbody tr:hover{background:#FAFBFE}
+.rv-ui3 .rv-ui3-campaign-list table td{vertical-align:middle}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7{min-width:0}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div{min-width:0}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div button{min-width:0}
+@media(max-width:640px){
+.rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{min-height:44px;padding:3px}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div{min-height:42px;padding:3px}
+.rv-ui3 .rv-ui3-client-editorial .grid.grid-cols-7>div button{font-size:9px;line-height:1.2}
+.rv-ui3 .rv-ui3-campaign-metrics>div{gap:4px 8px}
+}
+
+/* UI3 meetings: a continuous, restrained agenda with private notes outside the client projection. */
+.rv-ui3 .rv-ui3-meetings-surface,.rv-ui3 .rv-ui3-meeting-editor{border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-meetings :is(button,input,select,textarea):focus-visible,
+.rv-ui3 .rv-ui3-meeting-editor :is(button,input,select,textarea):focus-visible,
+.rv-ui3 .rv-ui3-client-meetings :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{border-radius:5px;box-shadow:none}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button[aria-pressed="true"]{background:#EDEAFF;border-color:#6C5CE7;color:#5949D1}
+.rv-ui3 .rv-ui3-meeting-editor .divide-y>div{padding-top:12px;padding-bottom:12px}
+.rv-ui3 .rv-ui3-meeting-editor>div:first-child h2{font-size:14px;font-weight:600}
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-width:0}
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div button{min-width:0}
+@media(max-width:640px){
+.rv-ui3 .rv-ui3-client-meetings .rv-ui3-meetings-calendar>div{min-height:42px;padding:3px}
+.rv-ui3 .rv-ui3-meetings-surface .grid.grid-cols-7 button{min-height:48px;padding:4px 2px}
+}
+
+
+/* UI3 | Neutral menu correction — 11/11/2026
+   Keep approved navigation structure, Tabler icons and functionality intact.
+   Resolve the competing UI2 classes without inventing a new theme. */
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar {
+  background: #fff;
+  border-right: 1px solid #E3E6ED;
+  box-shadow: none;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item {
+  color: #4A5266;
+  background: transparent;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+  min-height: 38px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:hover {
+  background: #F6F7FB;
+  color: #323647;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
+  background: #F6F4FC;
+  color: #453B75;
+  font-weight: 600;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+  background: #8173C8;
+  width: 2px;
+  top: 9px;
+  bottom: 9px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item svg {
+  stroke-width: 1.55;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:focus-visible,
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button:focus-visible {
+  outline: 2px solid #6C5CE7;
+  outline-offset: 2px;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav {
+  background: #fff;
+  border-color: #E3E6ED;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button {
+  background: transparent;
+  color: #4A5266;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button:hover {
+  background: #F6F7FB;
+}
+.admin-v2.rv-ui2.rv-ui3 .rv-ui3-mobile-nav button[aria-current="page"] {
+  background: #F6F4FC;
+  color: #453B75;
+  font-weight: 600;
+}

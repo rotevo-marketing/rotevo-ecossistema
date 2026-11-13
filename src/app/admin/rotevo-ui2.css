@@ -1,0 +1,168 @@
+/* Rotevo UI 2.0 — isolated visual pilot on the Strategist workspace.
+   Functional status colors remain distinct; never infer a business status from CSS alone. */
+.rv-ui2 {
+  --ui2-canvas: #F6F7FB;
+  --ui2-surface: #FFFFFF;
+  --ui2-border: #E3E6ED;
+  --ui2-text: #323647;
+  --ui2-muted: #687487;
+  --ui2-accent: #6C5CE7;
+  --ui2-accent-light: #EDEAFF;
+  background: var(--ui2-canvas);
+  color: var(--ui2-text);
+  font-family: var(--font-body), Arial, sans-serif;
+}
+.rv-ui2 .rv-ui2-topbar {box-shadow:0 1px 0 rgba(24,30,48,.025)}
+.rv-ui2 .rv-ui2-sidebar {background:#fff}
+.rv-ui2 .rv-ui2-nav-item {
+  min-height:38px;
+  transition:background-color .14s ease,color .14s ease;
+}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"] {position:relative;font-weight:650}
+.rv-ui2 .rv-ui2-nav-item[aria-current="page"]::before {
+  content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;
+  background:var(--ui2-accent);
+}
+.rv-ui2 .rv-ui2-workspace .rv-page-heading {padding-bottom:15px;border-bottom:1px solid var(--ui2-border)}
+.rv-ui2 .rv-ui2-workspace .rv-page-heading h1 {font-weight:650}
+.rv-ui2 .rv-ui2-workspace > section,
+.rv-ui2 .rv-ui2-workspace article,
+.rv-ui2 .rv-ui2-workspace [class*="rounded-2xl"][class*="border"] {
+  box-shadow:0 1px 3px rgba(29,35,53,.025);
+}
+/* Reduce inflated panels only within operational dashboards; leave document sheets unchanged. */
+.rv-ui2 [data-ui2-surface] {
+  border:1px solid var(--ui2-border);
+  border-radius:10px;
+  background:var(--ui2-surface);
+  box-shadow:0 1px 2px rgba(28,37,57,.025);
+}
+.rv-ui2 .rv-ui2-task-board {
+  --ui2-row-line:#E9EBF1;
+  border-color:var(--ui2-border);
+  border-radius:10px;
+}
+.rv-ui2 .rv-ui2-task-board table {border-collapse:collapse; width:100%}
+.rv-ui2 .rv-ui2-task-board thead {background:#F8F9FC;color:#5E697C}
+.rv-ui2 .rv-ui2-task-board thead th {
+  font-weight:600;letter-spacing:0; font-size:11px;
+  border-bottom:1px solid var(--ui2-border);
+  padding-top:11px;padding-bottom:11px;
+}
+.rv-ui2 .rv-ui2-task-board tbody tr {border-color:var(--ui2-row-line)}
+.rv-ui2 .rv-ui2-task-board tbody tr:hover {background:#FBFBFF}
+.rv-ui2 .rv-ui2-task-board tbody td {padding-top:9px;padding-bottom:9px}
+.rv-ui2 .rv-ui2-task-board input:focus-visible,
+.rv-ui2 .rv-ui2-task-board select:focus-visible,
+.rv-ui2 .rv-ui2-task-board button:focus-visible {
+  outline:2px solid var(--ui2-accent);outline-offset:2px;
+}
+.rv-ui2 .rv-ui2-task-board button[aria-pressed="true"] {transition:background-color .12s ease}
+.rv-ui2 .rv-ui2-footer {color:#7B8595}
+@media (prefers-reduced-motion:reduce){
+ .rv-ui2 *, .rv-ui2 *::before, .rv-ui2 *::after {transition-duration:0.01ms!important;animation-duration:0.01ms!important}
+}
+@media(max-width:768px){
+ .rv-ui2 .rv-ui2-workspace {padding-top:18px}
+ .rv-ui2 .rv-ui2-workspace .rv-page-heading h1 {font-size:21px}
+}
+
+
+/* UI2 corrective layout: operational hierarchy, not superficial utility overrides. */
+.admin-v2.rv-ui2 .rv-ui2-workspace .rv-ui2-workspace-heading {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:22px;
+  padding:26px 28px;
+  margin:0 0 22px;
+  border:1px solid #E6E2F8;
+  border-radius:16px;
+  background:linear-gradient(115deg,#FFFFFF 0%,#FFFFFF 50%,#F1EFFF 100%);
+  box-shadow:0 4px 18px rgba(65,56,126,.035);
+}
+.admin-v2.rv-ui2 .rv-ui2-heading-copy {min-width:0;max-width:670px}
+.admin-v2.rv-ui2 .rv-ui2-heading-eyebrow {
+  display:flex;align-items:center;gap:9px;
+  color:#6C5CE7;font-size:10px;font-weight:750;letter-spacing:.12em;
+  margin:0 0 12px;
+}
+.admin-v2.rv-ui2 .rv-ui2-heading-eyebrow span {color:#B3ACC5}
+.admin-v2.rv-ui2 .rv-ui2-workspace-heading h1 {
+  font-size:clamp(23px,2.25vw,33px);
+  line-height:1.18;
+  letter-spacing:-.037em;
+  font-weight:680;
+  color:#303447;
+}
+.admin-v2.rv-ui2 .rv-ui2-heading-description {
+  margin:12px 0 0;
+  max-width:575px;
+  color:#687487;
+  font-size:13px;
+  line-height:1.65;
+}
+.admin-v2.rv-ui2 .rv-ui2-heading-actions {
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+}
+.admin-v2.rv-ui2 .rv-ui2-heading-primary,
+.admin-v2.rv-ui2 .rv-ui2-heading-secondary {box-shadow:0 1px 2px rgba(34,32,82,.05)}
+.admin-v2.rv-ui2 .rv-ui2-overview {display:grid;gap:17px}
+.admin-v2.rv-ui2 .rv-ui2-dashboard-intro {
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:12px;
+  padding:0 2px;
+}
+.admin-v2.rv-ui2 .rv-ui2-dashboard-label {
+  font-size:10px;font-weight:750;letter-spacing:.105em;color:#6C5CE7;
+}
+.admin-v2.rv-ui2 .rv-ui2-dashboard-intro h2 {
+  margin:5px 0 0;font-size:19px;font-weight:650;
+  color:#323647;line-height:1.25;letter-spacing:-.025em;
+}
+.admin-v2.rv-ui2 .rv-ui2-dashboard-intro p {
+  margin:6px 0 0;color:#687487;font-size:12px;line-height:1.55;
+}
+.admin-v2.rv-ui2 .rv-ui2-dashboard-indicator {
+  display:inline-flex;align-items:center;gap:7px;
+  color:#697386;background:#fff;border:1px solid #E3E6ED;
+  padding:8px 10px;border-radius:8px;font-size:11px;
+}
+.admin-v2.rv-ui2 .rv-ui2-overview-kpis {margin-top:0}
+.admin-v2.rv-ui2 .rv-ui2-overview-kpi {
+  position:relative;
+  padding:18px 19px;
+  min-height:150px;
+  box-shadow:0 2px 10px rgba(30,36,59,.025);
+}
+.admin-v2.rv-ui2 .rv-ui2-overview-kpi::before {
+  content:"";
+  position:absolute;left:0;top:19px;bottom:19px;
+  width:3px;border-radius:0 5px 5px 0;background:#D8D1FF;
+}
+.admin-v2.rv-ui2 .rv-ui2-kpi-icon {
+  width:34px;height:34px;display:grid;place-items:center;
+  border-radius:9px;background:#F1EFFF;color:#6C5CE7;
+}
+.admin-v2.rv-ui2 .rv-ui2-attention-panel {
+  border:1px solid #E3E6ED;
+  border-left:3px solid #6C5CE7;
+}
+@media(max-width:767px) {
+  .admin-v2.rv-ui2 .rv-ui2-workspace .rv-ui2-workspace-heading {
+    align-items:stretch;flex-direction:column;gap:17px;
+    padding:19px 17px;border-radius:13px;
+    background:linear-gradient(140deg,#fff 25%,#F5F3FF 100%);
+  }
+  .admin-v2.rv-ui2 .rv-ui2-workspace-heading h1 {font-size:24px}
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions {width:100%}
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions > * {flex:1;white-space:nowrap}
+  .admin-v2.rv-ui2 .rv-ui2-dashboard-indicator {display:none}
+}
+
+
+@media(max-width:430px){
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions {flex-direction:column;align-items:stretch}
+  .admin-v2.rv-ui2 .rv-ui2-heading-actions > * {width:100%;flex:none}
+}

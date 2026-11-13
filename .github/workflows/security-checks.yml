@@ -1,0 +1,271 @@
+name: Security checks (development)
+
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    name: Audit dependencies (report)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Enforce production dependency audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit-production-ci.json
+          result=$?
+          set -e
+          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync("npm-audit-production-ci.json","utf8")); const v=a.metadata?.vulnerabilities || {}; console.log("Production dependency findings:",JSON.stringify(v)); if(a.error)console.log("Audit returned an error:",a.error.code || "unknown");'
+          if [ "$result" -ne 0 ]; then
+            echo "Blocking deployment candidate: production dependency audit failed"
+            exit 1
+          fi
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-production
+          path: npm-audit-production-ci.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  local-test-guards:
+    name: Test API runner isolation guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install locked dependencies for ESM-importing security tests
+        run: npm ci --no-audit --no-fund
+      - name: Check authorization schema readiness without a database
+        run: node --test scripts/security/auth-schema-preflight.test.mjs
+      - name: Simulate Auth rollback outcomes without database
+        run: node --test scripts/security/client-account-rollback.test.mjs
+      - name: Verify API authorization order contracts
+        run: node --test scripts/security/admin-route-contract.test.mjs
+      - name: Verify project authorization decisions with isolated fixtures
+        run: node --test scripts/security/team-project-access-behavior.test.mjs
+      - name: Verify client-project JSON projection is allowlisted
+        run: node --test scripts/security/client-project-projection.test.mjs
+      - name: Verify conversation tenant isolation and resource visibility
+        run: node --test scripts/security/ui3-collaboration-guards.test.mjs
+      - name: Verify profile menu and task status palettes
+        run: node --test scripts/security/admin-profile-task-colors.test.mjs
+      - name: Verify operational agenda form validations
+        run: node --test scripts/security/agenda-form-contract.test.mjs
+      - name: Verify editorial calendar date validation
+        run: node --test scripts/security/editorial-date-contract.test.mjs
+      - name: Verify onboarding link validation contracts
+        run: node --test scripts/security/onboarding-link-contract.test.mjs
+      - name: Verify administrative editors use authorized project writes
+        run: node --test scripts/security/admin-project-editor-contract.test.mjs
+      - name: Verify restricted staff access boundaries
+        run: node --test scripts/security/staff-access-boundary.test.mjs
+      - name: Verify corporate owner bootstrap guards
+        run: node --test scripts/security/owner-bootstrap-contract.test.mjs
+      - name: Verify release readiness security contracts
+        run: node --test scripts/security/release-readiness-contract.test.mjs
+      - name: Prevent legacy UI2 rollback after JSON grant restriction
+        run: node --test scripts/security/ui3-rollback-compatibility.test.mjs
+      - name: Syntax-check private archive audit without handling a real dump
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $issues=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('scripts/security/audit-private-backup-archive.ps1',[ref]$tokens,[ref]$issues) | Out-Null
+          if ($issues.Count -gt 0) { $issues | ForEach-Object { Write-Host ('Line '+$_.Extent.StartLineNumber+': '+$_.Message) }; throw 'PowerShell archive audit syntax errors.' }
+          # O teste de preflight exige um workspace Windows privado; nao executar o script aqui.
+      - name: Enforce Ecossistema 2027 as the only presentation
+        run: node --test scripts/security/only-ecosystem-2027.test.mjs
+      - name: Validate operational dependency graphs
+        run: node --test scripts/security/execution-dependencies.test.mjs
+      - name: Exercise synthetic client and two-project operational journey
+        run: node --test scripts/security/isolated-client-journey.test.mjs
+      - name: Validate strategic document approval and publication workflow
+        run: node --test scripts/security/ecosystem-document-workflow.test.mjs
+      - name: Verify operational data, private publication and portal visibility
+        run: node --test scripts/security/operational-integration.test.mjs
+      - name: Verify financial publication gates
+        run: node --test scripts/security/finance-publication.test.mjs
+      - name: Reject orphaned legacy components
+        run: node scripts/security/legacy-dependency-inventory.mjs --fail-on-orphans
+      - name: Prevent deprecated legacy runtime entry points
+        run: node scripts/security/legacy-entrypoint-inventory.mjs --fail-on-live-legacy
+      - name: Inventory remaining direct planning project consumers
+        run: node scripts/security/planning-project-consumer-inventory.mjs
+      - name: Verify remote targets are blocked
+        run: node --test scripts/security/local-admin-api-guard.test.mjs
+
+  http-negative:
+    name: Anonymous HTTP rejection (isolated Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+      ROTEVO_LOCAL_APP_URL: http://127.0.0.1:3000/
+      ROTEVO_LOCAL_API_TESTS: YES_LOCAL_ONLY
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Start Next.js on loopback only
+        shell: bash
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > /tmp/rotevo-next-test.log 2>&1 &
+          echo $! > /tmp/rotevo-next-test.pid
+          for i in $(seq 1 60); do
+            status="$(curl -sS --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/admin/projects || true)"
+            if [ "$status" = "401" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -n 80 /tmp/rotevo-next-test.log
+          exit 1
+      - name: Reject unauthenticated HTTP operations
+        run: node --test scripts/security/local-admin-api-negative.test.mjs
+      - name: Verify collaboration endpoints are closed by default
+        run: node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+      - name: Stop isolated server
+        if: always()
+        run: |
+          if test -f /tmp/rotevo-next-test.pid; then
+            kill "$(cat /tmp/rotevo-next-test.pid)" || true
+          fi
+
+  build:
+    name: Production build verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify production build with isolated configuration
+        run: npm run build
+
+  profile-grants-isolated:
+    name: Profile privilege isolation (synthetic PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: rotevo_security_test
+        ports:
+          - 127.0.0.1:55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55432"
+      PGUSER: postgres
+      PGPASSWORD: isolated-test-only
+      PGDATABASE: rotevo_security_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated profile column grants
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-profile-grants-isolated.sql
+      - name: Verify proposed team RLS schema and grants in isolation
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-team-schema-isolated.sql
+      - name: Verify activation grants and staff/client isolation with hosted default grants
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_activation_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_activation_isolated -f scripts/security/activation-boundary-isolated.sql
+      - name: Test private collaboration table grants in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_collaboration_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_collaboration_isolated -f scripts/security/db-collaboration-isolated.sql
+
+  typecheck:
+    name: TypeScript verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify TypeScript
+        run: npx tsc --noEmit

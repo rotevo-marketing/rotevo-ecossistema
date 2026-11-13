@@ -112,27 +112,6 @@ begin
   raise exception 'Inactive staff received notification';end if;
 end $assert$;
 
--- Add a second client account only after the single-approver positive cases.
--- Legacy-status decisions must fail closed on multi-user tenants too.
-insert into public.profiles(id,role,client_id)
-values('a0000000-0000-4000-8000-000000000004','client','f0000000-0000-4000-8000-000000000001');
-update public.planning_projects
- set data=jsonb_set(data,'{editorialCalendar}',(data->'editorialCalendar')||
-  '[{"id":"multi-client-decision","version":"05","status":"idea_pending","visibleToClient":true}]'::jsonb)
- where id='b0000000-0000-4000-8000-000000000003';
-do $multi$
-declare denied boolean:=false;
-begin
- perform set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',false);
- begin
-  perform public.rotevo_editorial_workflow_decide(
-   'b0000000-0000-4000-8000-000000000003','multi-client-decision','05','idea','approved',null);
- exception when insufficient_privilege then denied:=true;end;
- if not denied then raise exception 'Multi-user client decision accepted without named approver';end if;
- if (select count(*) from rotevo_workflow.operational_events where resource_id='multi-client-decision')<>0 then
-  raise exception 'Denied multi-user decision created event';end if;
-end $multi$;
-
 -- Two failed invocations are rolled back as subtransactions and do not emit events.
 do $reject$
 declare rejected boolean;
@@ -155,5 +134,28 @@ begin
      where project_id='b0000000-0000-4000-8000-000000000003')<>3 then
   raise exception 'Failed request emitted an event';end if;
 end $reject$;
+
+-- Add a second client account only after the single-approver positive cases.
+-- Legacy-status decisions must fail closed on multi-user tenants too.
+insert into public.profiles(id,role,client_id)
+values('a0000000-0000-4000-8000-000000000004','client','f0000000-0000-4000-8000-000000000001');
+update public.planning_projects
+ set data=jsonb_set(data,'{editorialCalendar}',(data->'editorialCalendar')||
+  '[{"id":"multi-client-decision","version":"05","status":"idea_pending","visibleToClient":true}]'::jsonb)
+ where id='b0000000-0000-4000-8000-000000000003';
+do $multi$
+declare denied boolean:=false;
+begin
+ perform set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',false);
+ begin
+  perform public.rotevo_editorial_workflow_decide(
+   'b0000000-0000-4000-8000-000000000003','multi-client-decision','05','idea','approved',null);
+ exception when insufficient_privilege then denied:=true;end;
+ if not denied then raise exception 'Multi-user client decision accepted without named approver';end if;
+ if (select count(*) from rotevo_workflow.operational_events where resource_id='multi-client-decision')<>0 then
+  raise exception 'Denied multi-user decision created event';end if;
+end $multi$;
+
+
 
 select 'EDITORIAL_TRANSACTION_DISPOSABLE_PASS' as result;

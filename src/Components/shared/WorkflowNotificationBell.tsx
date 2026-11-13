@@ -24,12 +24,13 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
  const [loading,setLoading]=useState(false);
  const [notices,setNotices]=useState<Notice[]>([]);
  const [unread,setUnread]=useState(0);
+ const [pilotAllowed,setPilotAllowed]=useState(false);
  const [error,setError]=useState("");
  const identity=useRef(userId);
  const revision=useRef(0);
  // Invalidate in-flight requests on every identity change, before effects run.
  if(identity.current!==userId){identity.current=userId;revision.current+=1;}
- useEffect(()=>{setNotices([]);setUnread(0);setOpen(false);setError("");},[userId]);
+ useEffect(()=>{setNotices([]);setUnread(0);setOpen(false);setError("");setPilotAllowed(false);},[userId]);
  const refresh=useCallback(async()=>{
   const expected=identity.current;
   const currentRevision=++revision.current;
@@ -37,7 +38,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
   const {data:actor,error:authError}=await supabase.auth.getUser();
   if(!isCurrent())return;
   if(authError||!actor.user||actor.user.id!==expected){
-   setNotices([]);setUnread(0);setOpen(false);return;
+   setNotices([]);setUnread(0);setOpen(false);setPilotAllowed(false);return;
   }
   try{
    const [list,newCount]=await Promise.all([
@@ -47,8 +48,9 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
    if(!isCurrent())return;
    setNotices(list.notifications);
    setUnread(newCount.notifications.length);
+   setPilotAllowed(true);
    setError("");
-  }catch{if(isCurrent())setError("Não foi possível atualizar as notificações.");}
+  }catch{if(isCurrent()){setPilotAllowed(false);setNotices([]);setUnread(0);setOpen(false);setError("Não foi possível atualizar as notificações.");}}
  },[]);
  useEffect(()=>{
   let alive=true;
@@ -59,7 +61,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
   const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
    if(event==="SIGNED_OUT"||(session?.user&&session.user.id!==identity.current)){
     revision.current+=1;
-    setNotices([]);setUnread(0);setOpen(false);
+    setNotices([]);setUnread(0);setOpen(false);setPilotAllowed(false);
    }
   });
   return()=>{alive=false;window.clearInterval(i);document.removeEventListener("visibilitychange",check);subscription.unsubscribe();};
@@ -77,6 +79,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
   }catch(e){if(identity.current===expected)setError(e instanceof Error?e.message:"Não foi possível marcar como lida.");}
   finally{setLoading(false);}
  }
+ if(!pilotAllowed)return null;
  return <div className="relative">
   <button type="button" aria-label={unread>0?"Notificações: "+unread+" não lidas":"Notificações"} aria-haspopup="dialog" aria-expanded={open}
    onClick={()=>{setOpen(v=>!v);if(!open)void refresh();}}

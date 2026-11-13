@@ -18,6 +18,34 @@ const editorialPriorityOptions=[{value:"low" as const,label:"Baixa",color:"#9CA5
 const projectLabel=(p:EditorialProject)=>{const c=Array.isArray(p.clients)?p.clients[0]:p.clients;return c?.name?`${c.name} · ${p.title}`:p.title;};
 const fmt=(d:string)=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?`${m[3]}/${m[2]}/${m[1]}`:"Sem data"};
 const safe=(s?:string)=>{try{const x=new URL(s??"");return x.protocol==="https:"?x.href:null;}catch{return null;}};
+
+const detailChannelPalette:Record<string,{fg:string;bg:string;border:string}>={
+ facebook:{fg:"#1877F2",bg:"#EAF2FF",border:"#BFD7FF"},
+ instagram:{fg:"#A92C84",bg:"#FCECF6",border:"#F2C4DF"},
+ youtube:{fg:"#C62828",bg:"#FFF0F0",border:"#F7CACA"},
+ tiktok:{fg:"#25616B",bg:"#E7F7F7",border:"#A9DEDF"},
+ linkedin:{fg:"#0A66C2",bg:"#E9F3FD",border:"#B6D8F5"},
+ pinterest:{fg:"#BD081C",bg:"#FDECEF",border:"#F3C1CB"},
+ whatsapp:{fg:"#16844A",bg:"#E9F7EF",border:"#B5E3C6"}
+};
+const detailFunnelPalette:Record<string,{fg:string;bg:string;border:string}>={
+ "Atração":{fg:"#0369A1",bg:"#E0F2FE",border:"#BAE6FD"},
+ "Consideração":{fg:"#6D45AD",bg:"#F1EAFE",border:"#D8C7FA"},
+ "Conversão":{fg:"#047857",bg:"#DCFCE7",border:"#A7F3D0"},
+ "Relacionamento":{fg:"#AD5D12",bg:"#FFF3DF",border:"#FAD8A6"},
+ "Retenção":{fg:"#295F98",bg:"#E8F1FC",border:"#BDDAFA"}
+};
+function DetailPill({label,kind,icon}:{label:string;kind:"channel"|"format"|"status"|"funnel";icon?:string}){
+ const normalized=label.trim().toLowerCase();
+ const palette=kind==="channel"?detailChannelPalette[normalized]??{fg:"#526176",bg:"#EEF1F6",border:"#DCE2EA"}:
+ kind==="funnel"?detailFunnelPalette[label]??{fg:"#526176",bg:"#EEF1F6",border:"#DCE2EA"}:
+ kind==="status"?{fg:editorialStatusColors[Object.entries(editorialStatuses).find(([,v])=>v===label)?.[0] as EditorialItem["status"]]??"#526176",bg:"#F3F5F8",border:"#DCE2EA"}:
+ {fg:normalized.includes("vídeo")||normalized.includes("reel")?"#7045A9":"#526176",bg:normalized.includes("vídeo")||normalized.includes("reel")?"#F3EAFE":"#EEF1F6",border:normalized.includes("vídeo")||normalized.includes("reel")?"#DFCCF6":"#DCE2EA"};
+ return <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold" style={{backgroundColor:palette.bg,borderColor:palette.border,color:palette.fg}}>
+ {icon&&<RotevoTablerIcon name={icon} size={14} stroke={1.8}/>}
+ <span className="truncate">{label}</span></span>;
+}
+
 function EditorialOwnerCell({value,onCommit,label}:{value:string;onCommit:(next:string)=>void;label:string}){
  const [draft,setDraft]=useState(value);
  useEffect(()=>setDraft(value),[value]);
@@ -174,7 +202,15 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
    <DialogFocus onClose={()=>setSelected(null)}/>
    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E5E9F1] px-4 py-3 sm:px-6"><div><p className="inline-flex items-center gap-2 text-xs font-medium text-[#697386]"><RotevoTablerIcon name="list-check" size={15} stroke={1.6}/> Detalhes do conteúdo</p></div><button type="button" aria-label="Fechar" title="Fechar detalhes" onClick={()=>setSelected(null)} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="x" size={18}/></button></header>
    <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto overscroll-contain lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:overflow-hidden"><div className="min-w-0 p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain">
-    <div><h3 className="text-[21px] font-semibold leading-snug tracking-tight text-[#252B3A] sm:text-[23px]">{active.title}</h3><p className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-[#687487]"><RotevoTablerIcon name="folder" size={15} stroke={1.6}/>{active.projectTitle}</p><p className="mt-1 text-xs text-[#697386]">{active.channel} · {active.format} · {fmt(active.publishDate)} · Versão {active.version||"Não informada"}</p></div>
+    <div><h3 className="text-[21px] font-semibold leading-snug tracking-tight text-[#252B3A] sm:text-[23px]">{active.title}</h3><p className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-[#687487]"><RotevoTablerIcon name="folder" size={15} stroke={1.6}/>{active.projectTitle}</p><div aria-label="Canal, formato e situação editorial" className="mt-3 flex flex-wrap items-center gap-2">
+      <DetailPill kind="channel" label={active.channel} icon={editorialChannelIcon(active.channel)}/>
+      <DetailPill kind="format" label={active.format||"Formato não informado"} icon="video"/>
+      <DetailPill kind="status" label={editorialStatuses[decisionStatus(active) as EditorialItem["status"]]??decisionStatus(active)} icon="circle-dot"/>
+     </div>
+     <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#697386]">
+      <span className="inline-flex items-center gap-1.5"><RotevoTablerIcon name="calendar-week" size={15} stroke={1.7}/>{fmt(active.publishDate)}</span>
+      <span className="inline-flex items-center gap-1.5"><RotevoTablerIcon name="git-branch" size={15} stroke={1.7}/>Versão {active.version||"Não informada"}</span>
+     </div></div>
     
     <section aria-label="Propriedades do conteúdo" className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 py-2 sm:grid-cols-2">
      <div className="flex min-w-0 items-center gap-2"><span className="w-20 shrink-0 text-xs text-[#697386]">Situação</span><div className="min-w-0 flex-1">{contentScope==="active"&&!clientView&&onStatusChange?<TaskDropdown presentation="detail" label="Alterar situação editorial" value={active.status} options={editorialStatusOptions} disabled={["approved","changes_requested","idea_approved"].includes(active.status)} onChange={value=>{if(window.confirm("Atualizar situação operacional? O histórico de aprovação do cliente será preservado."))onStatusChange(active.projectId,active,value);}}/>:<span className="inline-flex items-center gap-1.5 rounded-md bg-[#F4F2FA] px-2 py-1.5 text-xs" style={{color:editorialStatusColors[decisionStatus(active) as EditorialItem["status"]]??"#525B70"}}><span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-current"/>{editorialStatuses[decisionStatus(active) as EditorialItem["status"]]??decisionStatus(active)}</span>}</div></div>
@@ -183,17 +219,55 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
      <div className="flex min-w-0 items-center gap-2"><span className="w-20 shrink-0 text-xs text-[#697386]">Prazo</span><div className="min-w-0 flex-1">{contentScope==="active"&&!clientView&&onEdit?<button type="button" title="Alterar a data no editor de conteúdo" onClick={()=>{onEdit(active.projectId,active);setSelected(null);}} className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-xs text-[#525B70] hover:bg-[#F2F6FC] hover:text-[#6D35F5]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.7}/>{fmt(active.publishDate)}</button>:<span className="inline-flex min-h-9 items-center gap-2 px-2 text-xs text-[#525B70]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.7}/>{fmt(active.publishDate)}</span>}</div></div>
      <p className="text-[11px] text-[#697386] sm:col-span-2">As decisões de aprovação são registradas separadamente da situação editorial.</p>
     </section>
-    {active.ideaSummary&&<section className="mt-5"><h4 className="text-sm font-semibold">Resumo da ideia</h4><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#344056]">{active.ideaSummary}</p></section>}
-    {(active.objective||active.audience||active.keyMessage||active.cta)&&<section className="mt-5 rounded-xl border border-[#EAECF2] bg-white p-4"><h4 className="text-sm font-semibold">Direcionamento estratégico</h4>{active.objective&&<p className="mt-2 text-sm"><strong>Objetivo:</strong> {active.objective}</p>}{active.audience&&<p className="mt-2 text-sm"><strong>Público:</strong> {active.audience}</p>}{active.keyMessage&&<p className="mt-2 text-sm"><strong>Mensagem:</strong> {active.keyMessage}</p>}{active.cta&&<p className="mt-2 text-sm"><strong>CTA:</strong> {active.cta}</p>}</section>}
-    <h4 className="mt-6 text-sm font-semibold">Legenda</h4><div className="mt-3 min-h-[90px] whitespace-pre-wrap rounded-xl border border-[#E8EBF1] bg-white p-4 text-sm leading-7 text-[#344056]">{active.caption||"Nenhuma legenda cadastrada."}</div>
-    <h4 className="mt-5 text-sm font-semibold">Material</h4>{safe(active.driveUrl)?<a href={safe(active.driveUrl)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-medium text-[#5949D1] hover:bg-[#F7F5FF]"><RotevoTablerIcon name="link" size={18}/> Abrir material no Drive ↗</a>:<p className="mt-2 text-sm text-[#697386]">Nenhum link de material disponível.</p>}
+
+    <section className="mt-6" aria-label="Direcionamento estratégico">
+     <h4 className="mb-3 text-sm font-semibold text-[#323647]">Direcionamento estratégico</h4>
+     <div className="rounded-xl border border-[#E3E7F0] bg-white p-4 sm:p-5">
+      <dl className="space-y-3 text-sm leading-6 text-[#344056]">
+       <div><dt className="text-xs font-medium text-[#697386]">Resumo da ideia</dt><dd className="mt-1 whitespace-pre-wrap">{active.ideaSummary?.trim()||"Não informado."}</dd></div>
+       <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">Objetivo do conteúdo</dt><dd className="mt-1 whitespace-pre-wrap">{active.objective?.trim()||"Não informado."}</dd></div>
+       <div className="grid grid-cols-1 gap-3 border-t border-[#EDF0F5] pt-3 sm:grid-cols-2">
+        <div><dt className="text-xs font-medium text-[#697386]">Público</dt><dd className="mt-1 whitespace-pre-wrap">{active.audience?.trim()||"Não informado."}</dd></div>
+        <div><dt className="mb-2 text-xs font-medium text-[#697386]">Etapa do funil</dt><dd>{active.funnelStage?.trim()?<DetailPill kind="funnel" label={active.funnelStage} icon="filter"/>:<span className="text-[#697386]">Não especificada</span>}</dd></div>
+       </div>
+       <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">Mensagem principal</dt><dd className="mt-1 whitespace-pre-wrap">{active.keyMessage?.trim()||"Não informada."}</dd></div>
+       <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">CTA · Chamada para ação</dt><dd className="mt-1 whitespace-pre-wrap">{active.cta?.trim()||"Não informado."}</dd></div>
+      </dl>
+     </div>
+    </section>
+    <section className="mt-6" aria-label="Referências criativas">
+     <h4 className="mb-3 text-sm font-semibold text-[#323647]">Referências criativas</h4>
+     {(active.references??[]).filter(ref=>ref.url?.trim()||ref.note?.trim()).length>0?<div className="space-y-3">
+      {(active.references??[]).filter(ref=>ref.url?.trim()||ref.note?.trim()).map((ref,index)=><div key={index} className="rounded-xl border border-[#E3E7F0] bg-white p-4">
+       <h5 className="text-xs font-semibold text-[#344056]">Referência {index+1}</h5>
+       {safe(ref.url)?<a href={safe(ref.url)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex max-w-full items-center gap-2 break-all text-xs font-semibold text-[#5949D1] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="external-link" size={15} stroke={1.6}/> Abrir referência criativa</a>:ref.url?.trim()?<p className="mt-2 text-xs text-[#697386]">Link indisponível ou inválido.</p>:null}
+       {ref.note?.trim()&&<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#344056]"><strong className="font-semibold">O que aproveitar:</strong> {ref.note}</p>}
+      </div>)}
+     </div>:<div className="rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm text-[#697386]">Nenhuma referência criativa cadastrada.</div>}
+    </section>
+    <section className="mt-6" aria-label="Legenda e materiais">
+     <h4 className="mb-3 text-sm font-semibold text-[#323647]">Legenda e materiais</h4>
+     <div className="rounded-xl border border-[#E3E7F0] bg-white p-4 sm:p-5">
+      <div className="space-y-3">
+       <div><h5 className="text-xs font-medium text-[#697386]">Link do roteiro ou briefing</h5>{safe(active.briefUrl)?<a href={safe(active.briefUrl)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F5FF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="file-text" size={16} stroke={1.6}/> Abrir roteiro ou briefing <RotevoTablerIcon name="external-link" size={13}/></a>:<p className="mt-1 text-sm text-[#697386]">Não informado.</p>}</div>
+       <div className="border-t border-[#EDF0F5] pt-3"><h5 className="text-xs font-medium text-[#697386]">Link do material da publicação</h5>{safe(active.driveUrl)?<a href={safe(active.driveUrl)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F5FF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="folder" size={16} stroke={1.6}/> Abrir material da publicação <RotevoTablerIcon name="external-link" size={13}/></a>:<p className="mt-1 text-sm text-[#697386]">Não informado.</p>}</div>
+      </div>
+      <div className="mt-4 border-t border-[#EDF0F5] pt-4">
+       <div className="flex flex-wrap items-center justify-between gap-2"><h5 className="text-xs font-semibold text-[#344056]">Legenda</h5>{!!active.caption?.trim()&&<button type="button" onClick={()=>{if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(active.caption??"");}} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#DCE2EB] px-2.5 py-1.5 text-xs font-medium text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="copy" size={14} stroke={1.6}/> Copiar legenda</button>}</div>
+       <div className="mt-2 min-h-[90px] whitespace-pre-wrap rounded-lg border border-[#E8EBF1] bg-[#FAFBFE] p-4 text-sm leading-7 text-[#344056]">{active.caption||"Nenhuma legenda cadastrada."}</div>
+      </div>
+     </div>
+    </section>
+    {active.reviewNotes?.trim()&&<section className="mt-6" aria-label="Observações de revisão">
+     <h4 className="mb-3 text-sm font-semibold text-[#323647]">Observações de revisão</h4>
+     <div className="rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm leading-6 text-[#344056]"><p className="whitespace-pre-wrap">{active.reviewNotes}</p></div>
+    </section>}
     {!clientView&&onEdit&&contentScope==="active"&&<button type="button" onClick={()=>{onEdit(active.projectId,active);setSelected(null);}} className="mt-5 cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1]">Editar conteúdo e situação</button>}
     </div><aside aria-label="Atualizações e aprovações do conteúdo" className="flex min-h-[300px] min-w-0 flex-col border-t border-[#E3E7F0] bg-white p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-t-0">
-    <div className="border-b border-[#E3E7F0] pb-3"><h4 className="inline-flex items-center gap-2 text-sm font-semibold text-[#323647]"><RotevoTablerIcon name="message-circle" size={17} stroke={1.6}/> Conversa e atividade</h4><p className="mt-1 text-xs text-[#697386]">Aprovações e solicitações relacionadas a esta versão.</p></div>
+    <div className="border-b border-[#E3E7F0] pb-3"><h4 className="inline-flex items-center gap-2 text-sm font-semibold text-[#323647]"><RotevoTablerIcon name="message-circle" size={17} stroke={1.6}/> Conversa e aprovações</h4><p className="mt-1 text-xs text-[#697386]">Mensagens, solicitações e decisões relacionadas a esta versão.</p></div>
     {process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&active.visibleToClient===true?<ProjectConversation projectId={active.projectId} resourceType="content" resourceId={active.id}/>:<div className="mt-4 rounded-xl border border-[#E5E9F1] bg-[#FAFBFD] p-3"><p className="mb-3 text-xs leading-5 text-[#697386]">A conversa sobre ajustes ficará disponível após a homologação e ativação da comunicação bilateral.</p><label className="sr-only" htmlFor="content-message-unavailable">Mensagem indisponível</label><textarea id="content-message-unavailable" rows={2} disabled placeholder="Escrever uma mensagem (em breve)" className="w-full resize-none rounded-lg border border-[#E3E7F0] bg-white p-3 text-xs disabled:cursor-not-allowed"/><p className="mt-2 text-[11px] text-[#8B95A5]">Envio desativado neste ambiente.</p></div>}
     {ideaDecisions.filter(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??"")).map(row=><p key={"idea"+row.project_id+row.content_id} className="mt-3 rounded-lg bg-white p-3 text-xs text-[#525B70]">Decisão da ideia: {row.decision==="approved"?"Aprovada":"Ajustes solicitados"}{row.comment&&<span className="mt-1 block whitespace-pre-wrap">{row.comment}</span>}</p>)}
     {!clientView&&clientDecisions.some(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))&&<section className="mt-5 rounded-xl border border-[#E3E7F0] bg-white p-4"><h4 className="text-sm font-semibold">Última decisão do cliente</h4>{clientDecisions.filter(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??"")).map(row=><div key={row.project_id+row.content_id+row.content_version}><p className="mt-2 text-sm text-[#525B70]">{row.decision==="approved"?"Versão aprovada":"Ajustes solicitados"}{row.decided_at?" · "+new Date(row.decided_at).toLocaleString("pt-BR"):""}</p>{row.comment&&<p className="mt-2 whitespace-pre-wrap rounded-lg bg-white p-3 text-sm text-[#344056]">{row.comment}</p>}</div>)}</section>}
-    {active.reviewNotes&&<div className="mt-5 rounded-xl border border-[#E3E7F0] bg-white p-4"><h4 className="text-sm font-semibold">Observações de revisão</h4><p className="mt-2 whitespace-pre-wrap text-sm text-[#525B70]">{active.reviewNotes}</p></div>}
     {clientView&&<EditorialDecision key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} item={active} onDecision={decision=>setClientDecisions(prev=>[...prev.filter(row=>!(row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))),{project_id:active.projectId,content_id:active.id,content_version:active.version??"",decision}])}/>}
    </aside></div></section>
   </div>}

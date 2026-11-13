@@ -96,7 +96,7 @@ test("task operations use the selected official Tabler icons",()=>{
 
 test("task title visibly behaves as a clickable detail opener",()=>{
  assert.match(tasks,/cursor-pointer items-center gap-1\.5/);
- assert.match(tasks,/underline-offset-4/);
+ assert.match(tasks,/focus-visible:outline-offset-2/);
  assert.match(tasks,/openDetails\(\{task,project,client\}\)/);
  assert.match(tasks,/openDetails\(x\)/);
 });

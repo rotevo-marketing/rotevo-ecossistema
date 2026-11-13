@@ -217,7 +217,7 @@ test("central task creation keeps dependencies empty and blocks premature comple
 
 test("overview distinguishes name-only ownership and preserves recorded prerequisites",()=>{
  const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(panel,/atribuídas apenas por nome/);assert.match(model,/task.ownerUserId===userId/);assert.match(model,/task.dependencies/);assert.match(model,/pré-requisito/);
+ assert.match(panel,/atribuições somente por nome/);assert.match(model,/task.ownerUserId===userId/);assert.match(model,/task.dependencies/);assert.match(model,/pré-requisito/);
 });
 
 test("advanced prerequisite editing stays in the project and task table resets compact filters",()=>{

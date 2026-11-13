@@ -113,10 +113,13 @@ begin
  -- continue to read approval history. A request for adjustments writes one
  -- conversation message first, with no second comment editor.
  if p_decision='changes_requested' then
+  -- No duplicate message_sent; formal adjustment emits adjustments_requested below.
+  perform set_config('rotevo_workflow.skip_message_event','on',true);
   insert into public.rotevo_collaboration_messages(
    project_id,resource_type,resource_id,content_version,author_user_id,author_role,body)
   values(p_project_id,'content',p_content_id,p_content_version,v_actor,'client',v_comment)
   returning id into v_message_id;
+  perform set_config('rotevo_workflow.skip_message_event','off',true);
  end if;
  if p_phase='idea' then
   insert into public.editorial_idea_approvals(

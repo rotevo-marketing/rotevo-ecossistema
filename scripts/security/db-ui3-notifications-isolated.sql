@@ -122,3 +122,38 @@ begin
  if v_count<>0 then raise exception 'Unshared task notification visible to client';end if;
 end $task$;
 select 'TASK_NOTIFICATION_TRANSACTION_AND_TENANT_PASS' as result;
+
+
+-- Pilot guard must protect the RPC endpoint even when called without the Next.js allowlist.
+-- Install only after all legacy workflow tests above; zero rows means closed by default.
+\ir ../../docs/security/sql/ui3-notification-pilot-db-guard-PROPOSAL-ONLY.sql
+update public.team_members set active=true where user_id='a0000000-0000-4000-8000-000000000007';
+select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000007',false);
+select set_config('request.jwt.claims','{"app_metadata":{}}',false);
+set role authenticated;
+do $pilot$
+begin
+ if exists(select 1 from public.rotevo_workflow_list_notifications(30,false))
+ then raise exception 'Unauthorized direct RPC caller can read pilot inbox';end if;
+end $pilot$;
+reset role;
+insert into rotevo_workflow.notification_pilot_users(user_id,enabled)
+values('a0000000-0000-4000-8000-000000000007',true);
+set role authenticated;
+do $pilot$
+begin
+ if (select count(*) from public.rotevo_workflow_list_notifications(30,false)
+     where project_id='b0000000-0000-4000-8000-000000000002')<>1
+ then raise exception 'Authorized pilot lost G2 notice';end if;
+end $pilot$;
+reset role;
+update rotevo_workflow.notification_pilot_users set enabled=false
+ where user_id='a0000000-0000-4000-8000-000000000007';
+set role authenticated;
+do $pilot$
+begin
+ if exists(select 1 from public.rotevo_workflow_list_notifications(30,false))
+ then raise exception 'Revoked pilot still reads notices';end if;
+end $pilot$;
+reset role;
+select 'NOTIFICATIONS_PILOT_DB_DIRECT_RPC_REVOKED_PASS' as result;

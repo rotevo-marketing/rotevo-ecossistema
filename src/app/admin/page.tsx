@@ -9,6 +9,7 @@ import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import AdminOperationsOverview from "@/Components/admin/AdminOperationsOverview";
 import AdminUserMenu from "@/Components/admin/AdminUserMenu";
+import WorkflowNotificationBell from "@/Components/shared/WorkflowNotificationBell";
 import CentralTarefas from "@/Components/admin/CentralTarefas";
 import CampaignsHub,{type CampaignRecord} from "@/Components/admin/CampaignsHub";
 import {AdminOnboardingHub,AdminMeetingsHub} from "@/Components/admin/OperationalHubs";
@@ -21,6 +22,7 @@ import EditorialManager from "@/Components/admin/EditorialManager";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import { supabase } from "@/lib/supabase";
+import {useSessionBoundary} from "@/hooks/useSessionBoundary";
 
 const NAV_ITEMS:{id:string;label:string;icon:RotevoIconName}[]=[
  {id:"overview",label:"Visão geral",icon:"layout-dashboard"},
@@ -120,6 +122,7 @@ export default function AdminPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userId,setUserId]=useState<string|null>(null);
+  const sessionBlocked=useSessionBoundary(userId,"strategist","/estrategista/login");
   const [overviewForbidden,setOverviewForbidden]=useState(false);
   const [userName, setUserName] = useState("");
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
@@ -143,6 +146,8 @@ export default function AdminPage() {
     return()=>{document.removeEventListener("keydown",handleKey);document.removeEventListener("pointerdown",handlePointer);};
   },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
+  const [notificationTarget,setNotificationTarget]=useState<{projectId:string;contentId:string;nonce:number}|null>(null);
+  const [notificationTaskTarget,setNotificationTaskTarget]=useState<{projectId:string;taskId:string;nonce:number}|null>(null);
   // Keep the active module, deep links, reloads and browser Back/Forward in sync.
   useEffect(()=>{
     const readSection=()=>{
@@ -160,6 +165,18 @@ export default function AdminPage() {
     url.searchParams.set("section",section);
     window.history.pushState(null,"",url.pathname+url.search+url.hash);
     setWorkspaceTab(section);
+  }
+  function openWorkflowContent(projectId:string,contentId:string){
+    if(!projects.some(p=>p.id===projectId&&p.data?.editorialCalendar?.some(item=>item.id===contentId&&!item.archivedAt&&!item.deletedAt)))return;
+    if(!confirmDiscardChanges())return;
+    setNotificationTarget({projectId,contentId,nonce:Date.now()});
+    navigateWorkspace("content");
+  }
+  function openWorkflowTask(projectId:string,taskId:string){
+    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&item.visibleToClient===true&&!item.archivedAt&&!item.deletedAt)))return;
+    if(!confirmDiscardChanges())return;
+    setNotificationTaskTarget({projectId,taskId,nonce:Date.now()});
+    navigateWorkspace("tasks");
   }
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const [mobileMenu,setMobileMenu]=useState(false);
@@ -206,7 +223,7 @@ export default function AdminPage() {
 
     if (userError || !userData.user) {
       window.localStorage.removeItem("metodo-epc-strategist-auth");
-      router.push("/estrategista/login");
+      router.replace("/estrategista/login");
       return;
     }
 
@@ -218,7 +235,7 @@ export default function AdminPage() {
       .single();
 
     if (profileError || profile?.role !== "strategist") {
-      await supabase.auth.signOut();
+      // Do not sign out a new session opened in another tab.
       window.localStorage.removeItem("metodo-epc-strategist-auth");
       router.push("/estrategista/login");
       return;
@@ -360,6 +377,7 @@ export default function AdminPage() {
   }
 
 
+  if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
   return (
     <main className="admin-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
       <style jsx global>{`
@@ -375,6 +393,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="black" size={27}/></Link><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
             <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden"><RotevoTablerIcon name="menu-2" size={19} stroke={1.7}/><span className="sr-only">Menu</span></button>
+            {process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&userId&&!sessionBlocked&&<WorkflowNotificationBell userId={userId} onOpenContent={openWorkflowContent} onOpenTask={openWorkflowTask}/>}
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
@@ -399,7 +418,7 @@ export default function AdminPage() {
           </div>
         </header>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
-        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>navigateWorkspace("projects")} onOpenTasks={()=>navigateWorkspace("tasks")} onOpenMeetings={()=>navigateWorkspace("meetings")} onOpenContent={()=>navigateWorkspace("content")} onOpenFinance={()=>navigateWorkspace("finance")}/></div>}
+        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>navigateWorkspace("projects")} onOpenTasks={()=>navigateWorkspace("tasks")} onOpenMeetings={()=>navigateWorkspace("meetings")} onOpenContent={()=>navigateWorkspace("content")} onOpenFinance={()=>navigateWorkspace("finance")} onOpenNotification={openWorkflowContent} onOpenTaskNotification={openWorkflowTask}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
         <section aria-labelledby="projects-heading" className="rv-ui2-section rv-ui3-projects-surface mt-3 bg-white">
           <div className="flex items-start justify-between gap-3">
@@ -472,10 +491,10 @@ export default function AdminPage() {
           )}
         </section>
         </>}
-        {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} notificationTarget={notificationTarget} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="clients" && !isLoading && <ClientsDirectory projects={projects}/>}
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
-        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} notificationTask={notificationTaskTarget} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 

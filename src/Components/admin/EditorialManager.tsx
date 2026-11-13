@@ -16,7 +16,7 @@ type Project=Omit<EditorialProject,"data"> & {updated_at:string;clients:Client|C
 const blank:EditorialItem={id:"",title:"",channel:"Instagram",format:"Reels",publishDate:"",caption:"",driveUrl:"",version:"01",status:"idea",visibleToClient:false};
 function client(p:Project){return Array.isArray(p.clients)?p.clients[0]:p.clients;}
 function safe(u:string){if(!u)return true;try{return new URL(u).protocol==="https:";}catch{return false;}}
-export default function EditorialManager({projects,onChanged}:{projects:Project[];onChanged:(id:string,data:Project["data"],updatedAt:string)=>void}){
+export default function EditorialManager({projects,onChanged,notificationTarget}:{projects:Project[];onChanged:(id:string,data:Project["data"],updatedAt:string)=>void;notificationTarget?:{projectId:string;contentId:string;nonce:number}|null}){
  const [projectId,setProjectId]=useState(""),[editing,setEditing]=useState<EditorialItem|null>(null);
  const [members,setMembers]=useState<{user_id:string;display_name:string;avatar_url?:string|null}[]>([]);
  const [clientPhotos,setClientPhotos]=useState<Record<string,string>>({});
@@ -28,6 +28,14 @@ export default function EditorialManager({projects,onChanged}:{projects:Project[
  })();return()=>{alive=false};},[]);
  const [saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [focusItem,setFocusItem]=useState<{projectId:string;contentId:string;channel:string;publishDate:string;nonce:number}|undefined>();
+ useEffect(()=>{
+  if(!notificationTarget)return;
+  const target=projects.find(p=>p.id===notificationTarget.projectId);
+  const item=target?.data?.editorialCalendar?.find(row=>row.id===notificationTarget.contentId&&!row.archivedAt&&!row.deletedAt);
+  if(!item)return;
+  setProjectId(target!.id);
+  setFocusItem({projectId:target!.id,contentId:item.id,channel:item.channel,publishDate:item.publishDate,nonce:notificationTarget.nonce});
+ },[notificationTarget,projects]);
  const project=projects.find(p=>p.id===projectId);
  const items=useMemo(()=>Array.isArray(project?.data?.editorialCalendar)?project.data.editorialCalendar:[],[project]);
  const baseline=editing?.id?items.find(item=>item.id===editing.id):blank;

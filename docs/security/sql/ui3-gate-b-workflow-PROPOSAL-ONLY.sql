@@ -12,7 +12,9 @@ create table if not exists rotevo_workflow.approval_requests (
  resource_id text not null check(length(resource_id) between 1 and 100),
  phase text not null check(phase in ('idea','final','delivery')),
  resource_version text not null check(length(resource_version) between 1 and 80),
- requested_by uuid not null references auth.users(id) on delete restrict,
+ -- Legacy items may already be awaiting approval without an identified requester.
+ -- Never attribute their request to the client who is deciding.
+ requested_by uuid references auth.users(id) on delete restrict,
  requested_at timestamptz not null default now(),
  status text not null default 'pending' check(status in ('pending','approved','changes_requested','cancelled','superseded')),
  decided_at timestamptz,

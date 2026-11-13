@@ -1,5 +1,5 @@
 "use client";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
@@ -58,7 +58,7 @@ const statusColor=(status?:string)=>statuses.find(s=>s.id===status)?.color??stat
 const priorityInfo=(priority?:string)=>priorities.find(p=>p.id===priority)??priorities[2];
 const isRow=(v:unknown):v is ExecutionItem=>!!v&&typeof v==="object"&&typeof (v as ExecutionItem).id==="string"&&typeof (v as ExecutionItem).title==="string";
 
-export default function ProjectTimeline({projects,clientName}:{projects:Project[];clientName?:string}){
+export default function ProjectTimeline({projects,clientName,focusTask}:{projects:Project[];clientName?:string;focusTask?:{projectId:string;taskId:string;nonce:number}|null}){
  const [view,setView]=useState<"list"|"board">("list");
  const [section,setSection]=useState<"active"|"completed">("active");
  const [search,setSearch]=useState(""),[searchOpen,setSearchOpen]=useState(false);
@@ -73,6 +73,7 @@ export default function ProjectTimeline({projects,clientName}:{projects:Project[
  const [completedMonth,setCompletedMonth]=useState("");
  const pageSize=30;
  const items=useMemo<Row[]>(()=>projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(i=>isRow(i)&&i.visibleToClient===true&&!i.deletedAt&&!i.archivedAt).map(i=>({...i,projectKey:p.id,projectTitle:p.title,projectAvatarUrl:p.clientAvatarUrl??undefined}))),[projects]);
+ useEffect(()=>{if(!focusTask)return;const target=items.find(item=>item.projectKey===focusTask.projectId&&item.id===focusTask.taskId);if(target)setSelected(target);},[focusTask?.nonce,items]);
  const people=useMemo(()=>[...new Set(items.map(i=>i.owner?.trim()).filter((v):v is string=>!!v))].sort((a,b)=>a.localeCompare(b,"pt-BR")),[items]);
  const filtered=useMemo(()=>items.filter(i=>{
   if(section==="completed"?(i.status!=="completed"||(completedMonth&&!i.completedAt?.startsWith(completedMonth))):(view==="list"&&(i.status==="completed"||i.status==="cancelled")))return false;

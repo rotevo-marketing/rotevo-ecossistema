@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
 import {portalTarget} from "@/lib/ui/navigation";
 import { supabase } from "@/lib/supabase";
+import {useSessionBoundary} from "@/hooks/useSessionBoundary";
+import WorkflowNotificationBell from "@/Components/shared/WorkflowNotificationBell";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
@@ -54,9 +56,12 @@ export default function ClientAreaPage(){
  const [clientName,setClientName]=useState("");
  const [clientAvatar,setClientAvatar]=useState("");
  const [loading,setLoading]=useState(true);
+ const [authenticatedUserId,setAuthenticatedUserId]=useState<string|null>(null);
+ const sessionBlocked=useSessionBoundary(authenticatedUserId,"client","/");
  const [error,setError]=useState("");
  const [tab,setTab]=useState<MenuId>("overview");
  const [focusedContent,setFocusedContent]=useState<string|null>(null);
+ const [focusedTask,setFocusedTask]=useState<{projectId:string;taskId:string;nonce:number}|null>(null);
  const [collapsed,setCollapsed]=useState(false);
  const [mobileMenu,setMobileMenu]=useState(false);
  const [profileOpen,setProfileOpen]=useState(false);
@@ -74,9 +79,10 @@ export default function ClientAreaPage(){
    const {data:auth}=await supabase.auth.getUser();
    if(!auth.user){router.replace("/");return;}
    const {data:profile}=await supabase.from("profiles").select("role, client_id").eq("id",auth.user.id).single();
-   if(!profile){await supabase.auth.signOut();router.replace("/");return;}
+   if(!profile){router.replace("/");return;}
    if(profile.role==="strategist"){router.replace("/admin");return;}
-   if(profile.role!=="client"||!profile.client_id){await supabase.auth.signOut();router.replace("/");return;}
+   if(profile.role!=="client"||!profile.client_id){router.replace("/");return;}
+    if(mounted)setAuthenticatedUserId(auth.user.id);
    const {data:sessionData}=await supabase.auth.getSession();
    const token=sessionData.session?.access_token;
    if(!token){if(mounted){setError("Sessão expirada. Faça login novamente.");setLoading(false);}return;}
@@ -117,11 +123,13 @@ export default function ClientAreaPage(){
        <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
  </nav>;
+ if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
  return <main className="client-portal-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
    <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]"><div className="flex w-full items-center justify-between gap-3 px-5 py-3">
       <div className="flex items-center gap-3"><RotevoLogo variant="black" size={27}/><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Portal do Cliente</span></div>
       <div className="flex items-center gap-3"><button type="button" onClick={()=>setMobileMenu(v=>!v)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden" aria-expanded={mobileMenu}><RotevoTablerIcon name="menu-2" size={19} stroke={1.7}/><span className="sr-only">Menu</span></button>
+       {process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&authenticatedUserId&&!sessionBlocked&&<WorkflowNotificationBell userId={authenticatedUserId} onOpenContent={(projectId,contentId)=>{if(!workspace?.modules.includes("content" as never))return;const target=projects.find(p=>p.id===projectId);if(!target?.data?.editorialCalendar?.some(item=>item.id===contentId&&item.visibleToClient===true&&!item.archivedAt&&!item.deletedAt))return;openModule("content",projectId,contentId);}} onOpenTask={(projectId,taskId)=>{if(!workspace?.modules.includes("execution" as never))return;const target=projects.find(p=>p.id===projectId);if(!target?.data?.executionTimeline?.some(task=>task.id===taskId&&task.visibleToClient===true&&!task.archivedAt&&!task.deletedAt))return;openModule("execution",projectId);setFocusedTask({projectId,taskId,nonce:Date.now()});}}/>}
        <div className="relative"><button type="button" aria-label="Abrir menu da conta" aria-expanded={profileOpen} aria-controls="client-account-menu" onClick={()=>setProfileOpen(v=>!v)} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#E3E6ED] px-2 py-1.5 hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C5CE7]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6D35F5] text-sm font-bold text-white">{account.avatar||clientAvatar?<img src={account.avatar||clientAvatar} alt="" className="h-full w-full rounded-full object-cover"/>:(account.profile?.displayName||clientName).trim().charAt(0).toLocaleUpperCase("pt-BR")||"C"}</span><span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{account.profile?.displayName||clientName||"Minha conta"}</span><RotevoTablerIcon name="chevron-down" size={14} stroke={1.7}/></button>
        {profileOpen&&<><button type="button" aria-label="Fechar menu da conta" className="fixed inset-0 z-40 cursor-default" onClick={()=>setProfileOpen(false)}/><div id="client-account-menu" className="absolute right-0 top-full z-50 mt-2 w-[min(288px,calc(100vw-24px))] rounded-xl border border-[#E3E7F0] bg-white p-3 text-[#090D1C] shadow-xl"><div className="border-b border-[#E3E7F0] px-1 pb-3 pt-1"><p className="truncate text-sm font-semibold text-[#323647]">{account.profile?.displayName||clientName||"Minha conta"}</p>{account.profile?.email&&<p className="mt-1 truncate text-xs text-[#697386]">{account.profile.email}</p>}</div><div className="mt-2 space-y-1"><AccountProfileButton/><Link href="/esqueci-senha" onClick={()=>setProfileOpen(false)} className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-[#323647] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="key" size={18} stroke={1.7}/>Alterar senha</Link><div className="my-1 border-t border-[#E3E7F0]"/><button type="button" onClick={()=>{setProfileOpen(false);void logout()}} className="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#B33A4D] hover:bg-[#FFF4F5] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="logout" size={18} stroke={1.7}/>Sair</button></div></div></>}</div></div>
    </div></header>
@@ -144,7 +152,7 @@ export default function ClientAreaPage(){
        tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName}/>:
+       tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

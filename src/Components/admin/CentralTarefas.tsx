@@ -66,7 +66,7 @@ function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{proje
   </div>}
  </div>;
 }
-export default function CentralTarefas({projects,onChanged,onOpenContent}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void}){
+export default function CentralTarefas({projects,onChanged,onOpenContent,notificationTask}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void;notificationTask?:{projectId:string;taskId:string;nonce:number}|null}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
  const [section,setSection]=useState<"active"|"completed"|"archived"|"trash">("active");
  const [completedWindow,setCompletedWindow]=useState<"7"|"30"|"90"|"all">("30");
@@ -134,6 +134,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent}:{proje
   .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
  const selected=tasks.find(x=>x.project.id+":"+x.task.id===detailKey);
  const openDetails=(x:Item)=>{setDetailKey(x.project.id+":"+x.task.id);setDetailDraft({title:x.task.title,description:x.task.description??"",driveUrl:x.task.driveUrl??"",referenceUrl:x.task.referenceUrl??"",dueDate:x.task.dueDate??"",visibleToClient:x.task.visibleToClient===true,checklist:x.task.checklist??[],dependencies:x.task.dependencies??[]});setError("");};
+ useEffect(()=>{if(!notificationTask)return;const target=tasks.find(x=>x.project.id===notificationTask.projectId&&x.task.id===notificationTask.taskId&&x.task.visibleToClient===true&&!x.task.archivedAt&&!x.task.deletedAt);if(!target)return;setProjectId(target.project.id);setSection("active");openDetails(target);},[notificationTask?.nonce,tasks]);
  const linkedContent=selected?(selected.project.data?.editorialCalendar??[]).filter(item=>item.relatedTaskId===selected.task.id):[];
  useEffect(()=>{let mounted=true;const pairs=projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>!!i.relatedTaskId).map(()=>p.id));const ids=[...new Set(pairs)];if(!ids.length){void Promise.resolve().then(()=>{if(mounted){setApprovalRows([]);setApprovalUnavailable(false);}});return()=>{mounted=false;};}void (async()=>{const {data,error}=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids).order("decided_at",{ascending:false}).limit(150);if(mounted){setApprovalUnavailable(!!error);setApprovalRows(error?[]:(data??[]));}})();return()=>{mounted=false};},[projects]);
  const owners=useMemo(()=>[...new Set(tasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);

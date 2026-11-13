@@ -153,7 +153,7 @@ test("central task board searches linked projects and task titles without adding
 
 test("admin operations summary keeps formal document reviews actionable per project",()=>{
  const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(panel,/Projetos em Atenção/);assert.match(model,/ecosystem2027/);assert.match(model,/reviewStatus!=="review"/);assert.match(panel,/RecordLink item=\{items\[0\]\}/);
+ assert.match(panel,/Projetos que exigem atenção/);assert.match(model,/ecosystem2027/);assert.match(model,/reviewStatus!=="review"/);assert.match(panel,/model\.projectAttention\.slice\(0,4\)/);
 });
 
 test("admin overview omits publication-rate decorations and retains actual blocked records",()=>{
@@ -217,7 +217,7 @@ test("central task creation keeps dependencies empty and blocks premature comple
 
 test("overview distinguishes name-only ownership and preserves recorded prerequisites",()=>{
  const panel=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(panel,/atribuídas apenas por nome/);assert.match(model,/task.ownerUserId===userId/);assert.match(model,/task.dependencies/);assert.match(model,/pré-requisito/);
+ assert.match(panel,/atribuições somente por nome/);assert.match(model,/task.ownerUserId===userId/);assert.match(model,/task.dependencies/);assert.match(model,/pré-requisito/);
 });
 
 test("advanced prerequisite editing stays in the project and task table resets compact filters",()=>{
@@ -230,7 +230,7 @@ test("advanced prerequisite editing stays in the project and task table resets c
 });
 test("task priority controls remain specialized and overview does not duplicate team workload",()=>{
  const timeline=source("Components/admin/ExecutionTimelineEditor.tsx"),board=source("Components/admin/CentralTarefas.tsx"),overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(timeline,/Prioridade/);assert.match(board,/Filtrar prioridade/);assert.match(board,/setPriority\("all"\)/);assert.doesNotMatch(overview,/Distribuição da carga por responsável/);assert.match(overview,/Minha Rotina/);
+ assert.match(timeline,/Prioridade/);assert.match(board,/Filtrar prioridade/);assert.match(board,/setPriority\("all"\)/);assert.doesNotMatch(overview,/Distribuição da carga por responsável/);assert.match(overview,/Meu foco/);
 });
 
 test("task hub supports authorized inline team reassignment and reprioritization",()=>{
@@ -247,7 +247,7 @@ test("task hub supports authorized inline team reassignment and reprioritization
 
 test("overview consults formal editorial decisions without duplicating the editorial calendar",()=>{
  const overview=source("Components/admin/AdminOperationsOverview.tsx"),model=source("lib/overview/model.ts");
- assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/total fica indisponível até que seja possível conferir as decisões/);
+ assert.match(overview,/loadOverviewDecisions/);assert.match(model,/content_version/);assert.match(model,/decisionSource===\"ready\"/);assert.doesNotMatch(overview,/Agenda editorial e aprovações|Próximas publicações/);assert.match(overview,/Totais desconhecidos foram apresentados como/);
 });
 
 test("operational meetings remain in the authorized hub and overview, outside planning tabs",()=>{
@@ -259,7 +259,7 @@ test("operational meetings remain in the authorized hub and overview, outside pl
  assert.match(agenda,/\/api\/admin\/project\/update/);
  assert.match(agenda,/expectedUpdatedAt:updatedAt/);
  assert.match(agenda,/Reuniões e acompanhamento/);
- assert.match(dashboard,/Próximas Reuniões/);
+ assert.match(dashboard,/aria-labelledby="daily-agenda"/);
  assert.match(source("lib/overview/model.ts"),/Compromisso vencido/);
 });
 

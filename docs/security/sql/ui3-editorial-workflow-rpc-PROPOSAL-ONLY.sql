@@ -19,6 +19,7 @@ as $fn$
 declare
  v_actor uuid := auth.uid();
  v_client uuid;
+ v_client_approver_count integer;
  v_project public.planning_projects%rowtype;
  v_item jsonb;
  v_position bigint;
@@ -40,6 +41,13 @@ begin
  end if;
  select client_id into v_client from public.profiles where id=v_actor and role='client';
  if v_client is null then raise exception 'Client authorization required' using errcode='42501';end if;
+ -- A client may have multiple accounts; until a named approver is supported,
+ -- no user can authorize a formal decision on behalf of such a client.
+ select count(*) into v_client_approver_count from public.profiles
+ where client_id=v_client and role='client';
+ if v_client_approver_count<>1 then
+  raise exception 'Explicit approver designation required' using errcode='42501';
+ end if;
  if p_content_id is null or p_content_id !~ '^[A-Za-z0-9_-]{1,80}$'
   or p_content_version is null or length(btrim(p_content_version)) not between 1 and 30
   or p_phase not in ('idea','final') or p_decision not in ('approved','changes_requested')

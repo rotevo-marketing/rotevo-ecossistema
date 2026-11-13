@@ -47,7 +47,6 @@ export default function WorkflowFocusQueue({userId,onOpenContent,onOpenTask}:{
  return <div className="mt-4 border-t border-[#EDF0F6] pt-3" aria-label="Notificações que exigem atenção">
   <p className="text-xs font-semibold text-[#525B70]">Aprovações e mensagens pendentes</p>
   {status==="loading"&&<p role="status" className="mt-2 text-xs text-[#697386]">Consultando pendências...</p>}
-  {status==="unavailable"&&<p role="status" className="mt-2 text-xs text-[#697386]">Pendências de aprovações indisponíveis no momento.</p>}
   {status==="ready"&&!items.length&&<p className="mt-2 text-xs text-[#697386]">Nenhuma solicitação de ajuste ou mensagem não lida.</p>}
   {status==="ready"&&items.length>0&&<ul className="mt-2 divide-y divide-[#EDF0F6]">{items.map(n=><li key={n.notification_id}>
    <button type="button" onClick={()=>{if(n.event_type==="message_sent"&&n.event_phase==="task")onOpenTask?.(n.project_id,n.resource_id);else onOpenContent(n.project_id,n.resource_id);}}

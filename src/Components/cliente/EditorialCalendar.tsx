@@ -35,14 +35,14 @@ const detailFunnelPalette:Record<string,{fg:string;bg:string;border:string}>={
  "Relacionamento":{fg:"#AD5D12",bg:"#FFF3DF",border:"#FAD8A6"},
  "Retenção":{fg:"#295F98",bg:"#E8F1FC",border:"#BDDAFA"}
 };
-function DetailPill({label,kind,icon}:{label:string;kind:"channel"|"format"|"status"|"funnel";icon?:string}){
+function DetailPill({label,kind}:{label:string;kind:"channel"|"format"|"status"|"funnel"}){
  const normalized=label.trim().toLowerCase();
  const palette=kind==="channel"?detailChannelPalette[normalized]??{fg:"#526176",bg:"#EEF1F6",border:"#DCE2EA"}:
  kind==="funnel"?detailFunnelPalette[label]??{fg:"#526176",bg:"#EEF1F6",border:"#DCE2EA"}:
  kind==="status"?{fg:editorialStatusColors[Object.entries(editorialStatuses).find(([,v])=>v===label)?.[0] as EditorialItem["status"]]??"#526176",bg:"#F3F5F8",border:"#DCE2EA"}:
  {fg:normalized.includes("vídeo")||normalized.includes("reel")?"#7045A9":"#526176",bg:normalized.includes("vídeo")||normalized.includes("reel")?"#F3EAFE":"#EEF1F6",border:normalized.includes("vídeo")||normalized.includes("reel")?"#DFCCF6":"#DCE2EA"};
  return <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold" style={{backgroundColor:palette.bg,borderColor:palette.border,color:palette.fg}}>
- {icon&&<RotevoTablerIcon name={icon} size={14} stroke={1.8}/>}
+ {kind==="channel"?<ContentTablerIcon name={editorialChannelIcon(label)} size={14} stroke={1.8}/>:kind==="format"?<ContentTablerIcon name={label.toLowerCase().includes("vídeo")||label.toLowerCase().includes("reel")?"video":"photo"} size={14} stroke={1.8}/>:<RotevoTablerIcon name={kind==="funnel"?"chart-funnel":"bulb"} size={14} stroke={1.8}/>}
  <span className="truncate">{label}</span></span>;
 }
 
@@ -203,13 +203,13 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E5E9F1] px-4 py-3 sm:px-6"><div><p className="inline-flex items-center gap-2 text-xs font-medium text-[#697386]"><RotevoTablerIcon name="list-check" size={15} stroke={1.6}/> Detalhes do conteúdo</p></div><button type="button" aria-label="Fechar" title="Fechar detalhes" onClick={()=>setSelected(null)} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#E3E7F0] text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="x" size={18}/></button></header>
    <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto overscroll-contain lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:overflow-hidden"><div className="min-w-0 p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain">
     <div><h3 className="text-[21px] font-semibold leading-snug tracking-tight text-[#252B3A] sm:text-[23px]">{active.title}</h3><p className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-[#687487]"><RotevoTablerIcon name="folder" size={15} stroke={1.6}/>{active.projectTitle}</p><div aria-label="Canal, formato e situação editorial" className="mt-3 flex flex-wrap items-center gap-2">
-      <DetailPill kind="channel" label={active.channel} icon={editorialChannelIcon(active.channel)}/>
-      <DetailPill kind="format" label={active.format||"Formato não informado"} icon="video"/>
-      <DetailPill kind="status" label={editorialStatuses[decisionStatus(active) as EditorialItem["status"]]??decisionStatus(active)} icon="circle-dot"/>
+      <DetailPill kind="channel" label={active.channel}/>
+      <DetailPill kind="format" label={active.format||"Formato não informado"}/>
+      <DetailPill kind="status" label={editorialStatuses[decisionStatus(active) as EditorialItem["status"]]??decisionStatus(active)}/>
      </div>
      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#697386]">
       <span className="inline-flex items-center gap-1.5"><RotevoTablerIcon name="calendar-week" size={15} stroke={1.7}/>{fmt(active.publishDate)}</span>
-      <span className="inline-flex items-center gap-1.5"><RotevoTablerIcon name="git-branch" size={15} stroke={1.7}/>Versão {active.version||"Não informada"}</span>
+      <span className="inline-flex items-center gap-1.5"><RotevoTablerIcon name="history" size={15} stroke={1.7}/>Versão {active.version||"Não informada"}</span>
      </div></div>
     
     <section aria-label="Propriedades do conteúdo" className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 py-2 sm:grid-cols-2">
@@ -228,7 +228,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
        <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">Objetivo do conteúdo</dt><dd className="mt-1 whitespace-pre-wrap">{active.objective?.trim()||"Não informado."}</dd></div>
        <div className="grid grid-cols-1 gap-3 border-t border-[#EDF0F5] pt-3 sm:grid-cols-2">
         <div><dt className="text-xs font-medium text-[#697386]">Público</dt><dd className="mt-1 whitespace-pre-wrap">{active.audience?.trim()||"Não informado."}</dd></div>
-        <div><dt className="mb-2 text-xs font-medium text-[#697386]">Etapa do funil</dt><dd>{active.funnelStage?.trim()?<DetailPill kind="funnel" label={active.funnelStage} icon="filter"/>:<span className="text-[#697386]">Não especificada</span>}</dd></div>
+        <div><dt className="mb-2 text-xs font-medium text-[#697386]">Etapa do funil</dt><dd>{active.funnelStage?.trim()?<DetailPill kind="funnel" label={active.funnelStage}/>:<span className="text-[#697386]">Não especificada</span>}</dd></div>
        </div>
        <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">Mensagem principal</dt><dd className="mt-1 whitespace-pre-wrap">{active.keyMessage?.trim()||"Não informada."}</dd></div>
        <div className="border-t border-[#EDF0F5] pt-3"><dt className="text-xs font-medium text-[#697386]">CTA · Chamada para ação</dt><dd className="mt-1 whitespace-pre-wrap">{active.cta?.trim()||"Não informado."}</dd></div>
@@ -253,7 +253,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
        <div className="border-t border-[#EDF0F5] pt-3"><h5 className="text-xs font-medium text-[#697386]">Link do material da publicação</h5>{safe(active.driveUrl)?<a href={safe(active.driveUrl)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F5FF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="folder" size={16} stroke={1.6}/> Abrir material da publicação <RotevoTablerIcon name="external-link" size={13}/></a>:<p className="mt-1 text-sm text-[#697386]">Não informado.</p>}</div>
       </div>
       <div className="mt-4 border-t border-[#EDF0F5] pt-4">
-       <div className="flex flex-wrap items-center justify-between gap-2"><h5 className="text-xs font-semibold text-[#344056]">Legenda</h5>{!!active.caption?.trim()&&<button type="button" onClick={()=>{if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(active.caption??"");}} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#DCE2EB] px-2.5 py-1.5 text-xs font-medium text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="copy" size={14} stroke={1.6}/> Copiar legenda</button>}</div>
+       <div className="flex flex-wrap items-center justify-between gap-2"><h5 className="text-xs font-semibold text-[#344056]">Legenda</h5>{!!active.caption?.trim()&&<button type="button" onClick={()=>{if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(active.caption??"");}} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#DCE2EB] px-2.5 py-1.5 text-xs font-medium text-[#525B70] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="file-text" size={14} stroke={1.6}/> Copiar legenda</button>}</div>
        <div className="mt-2 min-h-[90px] whitespace-pre-wrap rounded-lg border border-[#E8EBF1] bg-[#FAFBFE] p-4 text-sm leading-7 text-[#344056]">{active.caption||"Nenhuma legenda cadastrada."}</div>
       </div>
      </div>

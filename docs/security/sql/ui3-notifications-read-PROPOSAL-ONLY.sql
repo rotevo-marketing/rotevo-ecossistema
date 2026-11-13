@@ -13,15 +13,15 @@ as $fn$
   join public.planning_projects p on p.id=e.project_id
   join public.profiles profile on profile.id=p_user
   where e.id=p_event
-   and e.resource_type='content'
+   and e.resource_type in ('content','task')
    and exists(
     select 1
     from jsonb_array_elements(
-     case when jsonb_typeof(p.data->'editorialCalendar')='array'
-      then p.data->'editorialCalendar' else '[]'::jsonb end
+     case when jsonb_typeof(p.data->(case when e.resource_type='task' then 'executionTimeline' else 'editorialCalendar' end))='array'
+      then p.data->(case when e.resource_type='task' then 'executionTimeline' else 'editorialCalendar' end) else '[]'::jsonb end
     ) as c(value)
     where c.value->>'id'=e.resource_id
-      and c.value->>'visibleToClient'='true'
+      and (profile.role<>'client' or c.value->>'visibleToClient'='true')
       and coalesce(c.value->>'deletedAt','')=''
       and coalesce(c.value->>'archivedAt','')=''
    )
@@ -30,10 +30,10 @@ as $fn$
      profile.role='client'
      and profile.client_id=p.client_id
      and (not (p.data ? 'portalModules') or
-          jsonb_typeof(p.data->'portalModules')='array' and p.data->'portalModules' ? 'content')
+          jsonb_typeof(p.data->'portalModules')='array' and p.data->'portalModules' ? (case when e.resource_type='task' then 'execution' else 'content' end))
      and exists(select 1 from public.client_workspaces w
       where w.client_id=p.client_id and jsonb_typeof(w.data->'modules')='array'
-      and w.data->'modules'?'content')
+      and w.data->'modules'?(case when e.resource_type='task' then 'execution' else 'content' end))
     )
     or (
      profile.role in ('strategist','staff')

@@ -128,6 +128,19 @@ select 'TASK_NOTIFICATION_TRANSACTION_AND_TENANT_PASS' as result;
 -- Install only after all legacy workflow tests above; zero rows means closed by default.
 \ir ../../docs/security/sql/ui3-notification-pilot-db-guard-PROPOSAL-ONLY.sql
 update public.team_members set active=true where user_id='a0000000-0000-4000-8000-000000000007';
+-- Build an explicit, live G2-visible fixture rather than relying on old approval events.
+update public.planning_projects set data=jsonb_set(data,'{editorialCalendar}',
+ '[{"id":"pilot-db-guard","visibleToClient":false,"status":"review"}]'::jsonb,true)
+where id='b0000000-0000-4000-8000-000000000002';
+with event as (
+ insert into rotevo_workflow.operational_events
+ (project_id,resource_type,resource_id,event_type,actor_user_id,idempotency_key)
+ values('b0000000-0000-4000-8000-000000000002','content','pilot-db-guard',
+ 'message_sent','a0000000-0000-4000-8000-000000000002','pilot-db-guard-test-event')
+ returning id
+)
+insert into rotevo_workflow.user_notifications(event_id,recipient_user_id)
+select id,'a0000000-0000-4000-8000-000000000007'::uuid from event;
 select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000007',false);
 select set_config('request.jwt.claims','{"app_metadata":{}}',false);
 set role authenticated;
@@ -143,7 +156,7 @@ set role authenticated;
 do $pilot$
 begin
  if (select count(*) from public.rotevo_workflow_list_notifications(30,false)
-     where project_id='b0000000-0000-4000-8000-000000000002')<>1
+     where resource_id='pilot-db-guard')<>1
  then raise exception 'Authorized pilot lost G2 notice';end if;
 end $pilot$;
 reset role;

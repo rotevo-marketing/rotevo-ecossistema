@@ -101,6 +101,8 @@ jobs:
         run: node --test scripts/security/editorial-date-contract.test.mjs
       - name: Verify editorial detail presents all fields and preserves conversation
         run: node --test scripts/security/editorial-detail-complete.test.mjs
+      - name: Verify editorial idea approval and adjustment transition
+        run: node --test scripts/security/editorial-idea-flow-contract.test.mjs
       - name: Verify onboarding link validation contracts
         run: node --test scripts/security/onboarding-link-contract.test.mjs
       - name: Verify administrative editors use authorized project writes

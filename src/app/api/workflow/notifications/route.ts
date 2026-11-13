@@ -5,7 +5,7 @@ import {isUuid} from "@/lib/collaboration/guards";
 export const runtime="nodejs";
 const respond=(body:unknown,status:number)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 async function authorized(req:NextRequest){
- if(process.env.ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true")return {status:503 as const};
+ if(process.env.ROTEVO_NOTIFICATIONS_ENABLED!=="true")return {status:503 as const};
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
  if(!url||!anon)return {status:503 as const};
  const token=req.headers.get("authorization");
@@ -15,6 +15,10 @@ async function authorized(req:NextRequest){
  const {data:identity,error}=await client.auth.getUser(bearer);
  if(error||!identity.user)return {status:401 as const};
  if(identity.user.app_metadata?.rotevo_password_reset_required===true)return {status:403 as const};
+ // Pilot is deny-by-default. Only current authenticated accounts on the explicit server-side
+ // allowlist can read or acknowledge notifications during the controlled rollout.
+ const pilot=(process.env.ROTEVO_NOTIFICATIONS_PILOT_USER_IDS??"").split(",").map(id=>id.trim()).filter(isUuid);
+ if(!pilot.length||!pilot.includes(identity.user.id))return {status:403 as const};
  return {client,userId:identity.user.id};
 }
 export async function GET(req:NextRequest){

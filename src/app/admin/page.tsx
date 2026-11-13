@@ -147,6 +147,7 @@ export default function AdminPage() {
   },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
   const [notificationTarget,setNotificationTarget]=useState<{projectId:string;contentId:string;nonce:number}|null>(null);
+  const [notificationTaskTarget,setNotificationTaskTarget]=useState<{projectId:string;taskId:string;nonce:number}|null>(null);
   // Keep the active module, deep links, reloads and browser Back/Forward in sync.
   useEffect(()=>{
     const readSection=()=>{
@@ -170,6 +171,12 @@ export default function AdminPage() {
     if(!confirmDiscardChanges())return;
     setNotificationTarget({projectId,contentId,nonce:Date.now()});
     navigateWorkspace("content");
+  }
+  function openWorkflowTask(projectId:string,taskId:string){
+    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&item.visibleToClient===true&&!item.archivedAt&&!item.deletedAt)))return;
+    if(!confirmDiscardChanges())return;
+    setNotificationTaskTarget({projectId,taskId,nonce:Date.now()});
+    navigateWorkspace("tasks");
   }
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const [mobileMenu,setMobileMenu]=useState(false);
@@ -386,7 +393,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3"><Link href="/admin" aria-label="Rotevo - Painel do Estrategista"><RotevoLogo variant="black" size={27}/></Link><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Painel do Estrategista</span></div>
           <div className="flex items-center gap-2">
             <button type="button" aria-label="Abrir menu do estrategista" aria-expanded={mobileMenu} onClick={()=>setMobileMenu(!mobileMenu)} className="cursor-pointer rounded-lg border border-[#DCE1EB] px-3 py-2 text-xs lg:hidden"><RotevoTablerIcon name="menu-2" size={19} stroke={1.7}/><span className="sr-only">Menu</span></button>
-            {process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&userId&&!sessionBlocked&&<WorkflowNotificationBell userId={userId} onOpenContent={openWorkflowContent}/>}
+            {process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&userId&&!sessionBlocked&&<WorkflowNotificationBell userId={userId} onOpenContent={openWorkflowContent} onOpenTask={openWorkflowTask}/>}
             <AdminUserMenu email={userEmail} name={userName} avatarUrl={userAvatar} onLogout={handleLogout}/>
           </div>
         </div>
@@ -411,7 +418,7 @@ export default function AdminPage() {
           </div>
         </header>
         {errorMessage && !isLoading && <div role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-5"><p className="text-sm font-semibold text-red-800">{errorMessage}</p><p className="mt-2 text-xs text-red-700">Os totais e os vínculos de projetos não podem ser apresentados enquanto a consulta estiver indisponível.</p><button type="button" onClick={()=>void loadAdminData()} className="mt-3 rounded-lg bg-[#0B142A] px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button></div>}
-        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>navigateWorkspace("projects")} onOpenTasks={()=>navigateWorkspace("tasks")} onOpenMeetings={()=>navigateWorkspace("meetings")} onOpenContent={()=>navigateWorkspace("content")} onOpenFinance={()=>navigateWorkspace("finance")} onOpenNotification={openWorkflowContent}/></div>}
+        {workspaceTab==="overview" && <div className="mt-8"><AdminOperationsOverview projects={projects} userId={userId} userName={userName} state={isLoading?"loading":overviewForbidden?"forbidden":errorMessage?"error":"ready"} onOpenProjects={()=>navigateWorkspace("projects")} onOpenTasks={()=>navigateWorkspace("tasks")} onOpenMeetings={()=>navigateWorkspace("meetings")} onOpenContent={()=>navigateWorkspace("content")} onOpenFinance={()=>navigateWorkspace("finance")} onOpenNotification={openWorkflowContent} onOpenTaskNotification={openWorkflowTask}/></div>}
         {workspaceTab==="projects" && !errorMessage && <>
         <section aria-labelledby="projects-heading" className="rv-ui2-section rv-ui3-projects-surface mt-3 bg-white">
           <div className="flex items-start justify-between gap-3">
@@ -487,7 +494,7 @@ export default function AdminPage() {
         {workspaceTab==="content" && !isLoading && <EditorialManager projects={projects} notificationTarget={notificationTarget} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="clients" && !isLoading && <ClientsDirectory projects={projects}/>}
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
-        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} notificationTask={notificationTaskTarget} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 

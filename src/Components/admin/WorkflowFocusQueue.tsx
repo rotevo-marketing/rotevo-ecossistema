@@ -43,6 +43,7 @@ export default function WorkflowFocusQueue({userId,onOpenContent,onOpenTask}:{
   });
   return()=>{active=false;window.clearInterval(interval);document.removeEventListener("visibilitychange",check);subscription.unsubscribe();};
  },[userId]);
+ if(status==="unavailable")return null;
  return <div className="mt-4 border-t border-[#EDF0F6] pt-3" aria-label="Notificações que exigem atenção">
   <p className="text-xs font-semibold text-[#525B70]">Aprovações e mensagens pendentes</p>
   {status==="loading"&&<p role="status" className="mt-2 text-xs text-[#697386]">Consultando pendências...</p>}

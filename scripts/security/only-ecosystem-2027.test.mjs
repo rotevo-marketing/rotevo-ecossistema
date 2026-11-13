@@ -230,7 +230,7 @@ test("advanced prerequisite editing stays in the project and task table resets c
 });
 test("task priority controls remain specialized and overview does not duplicate team workload",()=>{
  const timeline=source("Components/admin/ExecutionTimelineEditor.tsx"),board=source("Components/admin/CentralTarefas.tsx"),overview=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(timeline,/Prioridade/);assert.match(board,/Filtrar prioridade/);assert.match(board,/setPriority\("all"\)/);assert.doesNotMatch(overview,/Distribuição da carga por responsável/);assert.match(overview,/Minha Rotina/);
+ assert.match(timeline,/Prioridade/);assert.match(board,/Filtrar prioridade/);assert.match(board,/setPriority\("all"\)/);assert.doesNotMatch(overview,/Distribuição da carga por responsável/);assert.match(overview,/Meu foco/);
 });
 
 test("task hub supports authorized inline team reassignment and reprioritization",()=>{

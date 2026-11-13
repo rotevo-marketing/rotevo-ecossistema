@@ -74,3 +74,18 @@ test("transactional content and task SQL preserve authorized recipient checks",(
  assert.match(notice,/profile\.role<>'client' or c\.value->>'visibleToClient'='true'/);
  assert.match(decision,/rotevo_workflow\.skip_message_event/);
 });
+
+test("controlled production pilot denies notification access unless user is allowlisted",()=>{
+ const route=read("src/app/api/workflow/notifications/route.ts");
+ const bell=read("src/Components/shared/WorkflowNotificationBell.tsx");
+ const queue=read("src/Components/admin/WorkflowFocusQueue.tsx");
+ const decision=read("src/app/api/workflow/editorial/decision/route.ts");
+ const requestRoute=read("src/app/api/workflow/editorial/request/route.ts");
+ assert.match(route,/ROTEVO_NOTIFICATIONS_ENABLED!=="true"/);
+ assert.match(route,/ROTEVO_NOTIFICATIONS_PILOT_USER_IDS/);
+ assert.match(route,/!pilot.length\|\|!pilot.includes\(identity.user.id\)/);
+ assert.match(bell,/if\(!pilotAllowed\)return null/);
+ assert.match(queue,/if\(status==="unavailable"\)return null/);
+ assert.match(decision,/ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"/);
+ assert.match(requestRoute,/ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"/);
+});

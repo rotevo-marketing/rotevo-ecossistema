@@ -11,6 +11,7 @@ Data: 14/11/2026. Estado: **CANDIDATO EM HOMOLOGAÇÃO**. Nenhum deployment, mer
 2. Visão Geral estrategista: quatro seções Para hoje/Atrasadas/Aprovações/Agenda; listas reais, datas, links e prioridade operacional; Financeiro e Projetos continuam no painel. Atrasadas usa a mesma fonte global que sua contagem para não divergir da lista; o aviso de responsáveis apenas por nome permanece.
 3. `ClientActionDeliveryPanel` movido da Visão Geral para Tarefas, sob a seção Atribuídas a mim, sem upload/download de arquivos. O servidor apenas registra URL do Google Drive.
 4. Contratos e E2E de navegador atualizados para a localização da entrega em Tarefas, sem enfraquecer asserts de autorização.
+6. Portais de cliente: quando a flag de atribuições estiver ativa, o menu Tarefas disponibiliza somente a fila pessoal mesmo sem a permissão geral do módulo execution; o ProjectTimeline permanece sujeito a workspace.modules.includes('execution'), prevenindo leitura de tarefas gerais não compartilhadas.
 5. CSS de Claro/Escuro/Sistema ampliado para cartões, navegação, cabeçalho e controles normais, mantendo canvas de documentos sem inversão.
 
 ## Auditoria funcional do código (não equivale a E2E de produção)

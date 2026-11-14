@@ -16,6 +16,7 @@ for f in \
  docs/security/sql/ui3-client-action-review-PROPOSAL-ONLY.sql \
  docs/security/sql/ui3-client-action-review-queue-PROPOSAL-ONLY.sql \
  docs/security/sql/ui3-client-action-notifications-PROPOSAL-ONLY.sql \
+ docs/security/sql/ui3-notifications-read-pilot-PROPOSAL-ONLY.sql \
  docs/security/sql/ui3-editorial-designate-approver-rpc-PROPOSAL-ONLY.sql \
  docs/security/sql/ui3-editorial-workflow-request-PROPOSAL-ONLY.sql \
  docs/security/sql/ui3-editorial-workflow-rpc-PROPOSAL-ONLY.sql \

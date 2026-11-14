@@ -78,9 +78,12 @@ select exists (
       -- Ordinary editorial/task notifications still require module sharing.
       (
        (
-        pg_catalog.jsonb_typeof(project.data->'portalModules')<>'array'
-        or project.data->'portalModules'?
-           (case when e.resource_type='task' then 'execution' else 'content' end)
+        not (project.data ? 'portalModules')
+        or (
+         pg_catalog.jsonb_typeof(project.data->'portalModules')='array'
+         and project.data->'portalModules'?
+            (case when e.resource_type='task' then 'execution' else 'content' end)
+        )
        )
        and exists(
         select 1 from public.client_workspaces w

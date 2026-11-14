@@ -1,8 +1,11 @@
 -- Gate B disposable PostgreSQL 17 verification. NEVER connect to hosted Supabase.
 \set ON_ERROR_STOP on
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin bypassrls;
+do $roles$
+begin
+ if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin;end if;
+ if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin;end if;
+ if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin bypassrls;end if;
+end $roles$;
 create schema auth;
 create table auth.users(id uuid primary key);
 create table public.planning_projects(id uuid primary key, data jsonb not null default '{}'::jsonb);

@@ -76,7 +76,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
   finally{setBusy("");}
  }
  return <section data-ui3-client-actions aria-label="Minhas entregas atribuídas" className="rounded-xl border border-[#E3E6ED] bg-white p-4">
-  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Minhas entregas</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
+  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Atribuídas a mim</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
   <p className="mt-1 text-xs text-[#697386]">Grave ou prepare o material no Google Drive e cole o link aqui. A Rotevo não armazena arquivos.</p>
   {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}
   {loading?<p role="status" className="mt-3 text-xs">Consultando entregas…</p>

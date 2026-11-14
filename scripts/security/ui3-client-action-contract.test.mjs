@@ -132,7 +132,12 @@ test("client panel accepts Drive URLs without file upload or download",()=>{
  const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
  const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
  const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
- assert.ok(overview.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ // The minimal UI release intentionally does not mount this pilot panel.
+ // Preserve the existing server-side flag and prevent accidental client exposure.
+ const portal=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
+ assert.doesNotMatch(overview,/ClientActionDeliveryPanel/);
+ assert.doesNotMatch(portal,/ClientActionDeliveryPanel/);
+ assert.match(portal,/tab==="execution"\?<ProjectTimeline/);
  assert.ok(panel.includes("validGoogleDriveUrl(url)"));
  assert.ok(panel.includes('type="url"'));
  assert.ok(panel.includes("driveUrl:current.url"));

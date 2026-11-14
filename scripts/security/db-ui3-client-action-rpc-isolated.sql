@@ -126,3 +126,17 @@ begin
  then raise exception 'Browser role has private table SELECT';end if;
  raise notice 'UI3_CLIENT_ACTION_RPC_TENANCY_PASS';
 end $priv$;
+
+-- Revoking visibility must immediately remove a previously assigned item.
+update public.planning_projects
+set data=jsonb_set(data,'{editorialCalendar,0,visibleToClient}','false'::jsonb,false)
+where id='00000000-0000-4000-8000-000000000011';
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012',false);
+set role authenticated;
+do $revoked$
+declare rows jsonb;
+begin
+ select public.rotevo_client_action_list('00000000-0000-4000-8000-000000000011') into rows;
+ if jsonb_array_length(rows)<>0 then raise exception 'Revoked resource leaked via assignment listing';end if;
+end $revoked$;
+reset role;

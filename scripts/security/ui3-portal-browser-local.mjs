@@ -2,6 +2,7 @@
 // No external network, hosted identities or customer data.
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
+import {execFileSync} from "node:child_process";
 import {createClient} from "@supabase/supabase-js";
 import {chromium} from "playwright";
 import axe from "axe-core";
@@ -9,6 +10,17 @@ const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
 assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,"YES_LOCAL_ONLY");
 assert.equal(api,"http://127.0.0.1:54321");
 assert.equal(app,"http://127.0.0.1:3000/");
+/** Read-only direct PostgreSQL assertion against this disposable local database. */
+function localNotice(sql){
+ assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,"YES_LOCAL_ONLY");
+ assert.equal(api,"http://127.0.0.1:54321");
+ const result=execFileSync("psql",["-X","-A","-t","-v","ON_ERROR_STOP=1","-c",sql],{
+  encoding:"utf8",timeout:10000,env:{...process.env,PGHOST:"127.0.0.1",PGPORT:"54322",
+   PGUSER:"postgres",PGDATABASE:"postgres",PGPASSWORD:"postgres"}
+ });
+ return result.trim();
+}
+
 const db=createClient(api,process.env.SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const suffix=randomUUID();
 async function must(query,label){const r=await query;assert.equal(r.error,null,label+": "+(r.error?.message??""));return r.data;}
@@ -46,6 +58,21 @@ const assignResult=await fetch(new URL("/api/workflow/client-actions",app),{
 });
 assert.equal(assignResult.status,200,"synthetic assignment must be available before client browser login");
 const assignmentPayload=await assignResult.json();assert.ok(assignmentPayload.assignment?.id);
+const assignmentId=assignmentPayload.assignment.id;
+assert.match(assignmentId,/^[a-f0-9-]{36}$/i);
+const assignmentNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
+ from rotevo_workflow.operational_events e
+ join rotevo_workflow.user_notifications n on n.event_id=e.id
+ where e.idempotency_key='client-action:assigned:${assignmentId}'`);
+assert.equal(assignmentNotice,"assignment_changed:"+client.id,
+ "A released assignment must create exactly one private notification for its intended client");
+console.log("PASS synthetic assignment generates exactly one private notification for assigned client");
+const deniedNotifications=await fetch(new URL("/api/workflow/notifications?unread=true",app),{
+ headers:{Authorization:"Bearer "+adminLogin.session.access_token}});
+assert.equal(deniedNotifications.status,503,
+ "Notification API must remain unavailable while the server pilot flag is disabled");
+console.log("PASS notification route fails closed outside the explicit pilot");
+
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 async function session(role,account,path,destination){
  const page=await browser.newPage({viewport:{width:1440,height:900},locale:"pt-BR"});
@@ -221,7 +248,15 @@ try {
  });
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
- console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ const submissionNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
+ from rotevo_workflow.operational_events e
+ join rotevo_workflow.user_notifications n on n.event_id=e.id
+ where e.idempotency_key like 'client-action:submitted:%'
+ and e.metadata->>'actionId'='${assignmentId}'`);
+assert.equal(submissionNotice,"item_ready:"+admin.id,
+ "Client submission must notify the authorized internal owner exactly once");
+console.log("PASS synthetic Drive delivery generates exactly one private review notification");
+console.log("PASS browser client Drive URL submission and persisted status after refresh");
  // General viewport assertions intentionally target Overview, not the Tasks panel.
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Visão geral",exact:true}).click();

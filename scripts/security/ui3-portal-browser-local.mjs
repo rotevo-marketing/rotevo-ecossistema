@@ -129,15 +129,18 @@ try {
  const clientPortalSource=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const delivery=customer.locator("[data-ui3-client-actions]");
  if(clientPortalSource.includes("ClientActionDeliveryPanel")){
+  const openTasks=async()=>{await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});const menu=customer.getByRole("button",{name:"Menu",exact:true});if(await menu.isVisible())await menu.click();await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();};
+  await openTasks();
   await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
-  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});await openTasks();
   await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
   await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
   await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
   await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
-  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});await openTasks();
   await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
   assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+  const menu=customer.getByRole("button",{name:"Menu",exact:true});if(await menu.isVisible())await menu.click();await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Visão geral",exact:true}).click();
   console.log("PASS browser client Drive URL submission and persisted status after refresh");
  }else{
   assert.equal(await delivery.count(),0,"client action pilot must stay hidden in minimal release");

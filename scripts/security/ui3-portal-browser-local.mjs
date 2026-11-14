@@ -86,6 +86,33 @@ async function auditAppearance(role,page){
 try {
  const customer=await session("client",client,"/","/cliente");
   await auditAppearance('client',customer);
+ // Verify the actual per-account UI preference, media query switching, and persistence (not only forced CSS tokens).
+ await customer.setViewportSize({width:390,height:900});
+ await customer.emulateMedia({colorScheme:"dark"});
+ await customer.getByRole("button",{name:"Abrir menu da conta"}).click();
+ const appearance=customer.getByRole("group",{name:"Aparência da plataforma"});
+ await appearance.getByRole("button",{name:"Sistema"}).waitFor();
+ await appearance.getByRole("button",{name:"Sistema"}).click();
+ await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="dark");
+ assert.equal(await appearance.getByRole("button",{name:"Sistema"}).getAttribute("aria-pressed"),"true");
+ await customer.emulateMedia({colorScheme:"light"});
+ await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="light");
+ await appearance.getByRole("button",{name:"Escuro"}).click();
+ await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="dark");
+ await customer.emulateMedia({colorScheme:"light"});
+ assert.equal(await customer.locator("html").getAttribute("data-rotevo-appearance"),"dark","explicit dark overrides system");
+ await appearance.getByRole("button",{name:"Sistema"}).click();
+ await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="light");
+ await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
+ await customer.reload({waitUntil:"networkidle"});
+ await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor();
+ await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="light");
+ await customer.getByRole("button",{name:"Abrir menu da conta"}).click();
+ const savedChoice=customer.getByRole("group",{name:"Aparência da plataforma"}).getByRole("button",{name:"Sistema"});
+ await savedChoice.waitFor();
+ assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
+ await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
+ console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});

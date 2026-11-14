@@ -34,8 +34,8 @@ select exists (
      then project.data->(case when e.resource_type='task' then 'executionTimeline' else 'editorialCalendar' end)
      else '[]'::jsonb end) element(value)
     where element.value->>'id'=e.resource_id
-      and pg_catalog.coalesce(element.value->>'deletedAt','')=''
-      and pg_catalog.coalesce(element.value->>'archivedAt','')=''
+      and coalesce(element.value->>'deletedAt','')=''
+      and coalesce(element.value->>'archivedAt','')=''
       and (
        profile.role in ('staff','strategist')
        or element.value->>'visibleToClient'='true'
@@ -43,7 +43,7 @@ select exists (
       and (
        e.resource_type<>'content'
        or e.resource_version is null
-       or pg_catalog.coalesce(element.value->>'version','')=e.resource_version
+       or coalesce(element.value->>'version','')=e.resource_version
       )
    )
    and (
@@ -67,8 +67,8 @@ select exists (
           and assignment.project_id=e.project_id
           and assignment.resource_type=e.resource_type
           and assignment.resource_id=e.resource_id
-          and pg_catalog.coalesce(assignment.resource_version,'')=
-              pg_catalog.coalesce(e.resource_version,'')
+          and coalesce(assignment.resource_version,'')=
+              coalesce(e.resource_version,'')
           and assignment.client_user_id=p_user
           and assignment.released_at is not null
           and assignment.status<>'cancelled'
@@ -117,9 +117,9 @@ select exists (
         and assignment.project_id=e.project_id
         and assignment.resource_type=e.resource_type
         and assignment.resource_id=e.resource_id
-        and pg_catalog.coalesce(assignment.resource_version,'')=
-            pg_catalog.coalesce(e.resource_version,'')
-        and pg_catalog.coalesce(assignment.internal_owner_user_id,assignment.created_by)=p_user
+        and coalesce(assignment.resource_version,'')=
+            coalesce(e.resource_version,'')
+        and coalesce(assignment.internal_owner_user_id,assignment.created_by)=p_user
       )
      )
     )
@@ -139,7 +139,7 @@ returns table(
 declare v_actor uuid:=auth.uid();
 begin
  if v_actor is null then raise exception 'Authentication required' using errcode='42501';end if;
- if pg_catalog.coalesce(auth.jwt()->'app_metadata'->>'rotevo_password_reset_required','false')='true'
+ if coalesce(auth.jwt()->'app_metadata'->>'rotevo_password_reset_required','false')='true'
  then raise exception 'Initial password change required' using errcode='42501';end if;
  if p_limit is null or p_limit not between 1 and 50
  then raise exception 'Invalid notification limit' using errcode='22023';end if;
@@ -150,7 +150,7 @@ begin
  join rotevo_workflow.operational_events e on e.id=n.event_id
  join public.planning_projects project on project.id=e.project_id
  where n.recipient_user_id=v_actor
-   and (not pg_catalog.coalesce(p_unread_only,false) or n.read_at is null)
+   and (not coalesce(p_unread_only,false) or n.read_at is null)
    and rotevo_workflow.can_view_event(v_actor,e.id)
  order by e.occurred_at desc,e.id desc
  limit p_limit;
@@ -167,10 +167,10 @@ returns boolean language plpgsql security definer set search_path='' as $fn$
 declare v_actor uuid:=auth.uid();v_updated uuid;
 begin
  if v_actor is null then raise exception 'Authentication required' using errcode='42501';end if;
- if pg_catalog.coalesce(auth.jwt()->'app_metadata'->>'rotevo_password_reset_required','false')='true'
+ if coalesce(auth.jwt()->'app_metadata'->>'rotevo_password_reset_required','false')='true'
  then raise exception 'Initial password change required' using errcode='42501';end if;
  update rotevo_workflow.user_notifications n
- set read_at=pg_catalog.coalesce(n.read_at,pg_catalog.clock_timestamp())
+ set read_at=coalesce(n.read_at,pg_catalog.clock_timestamp())
  from rotevo_workflow.operational_events e
  where n.id=p_notification_id and n.recipient_user_id=v_actor
    and n.event_id=e.id and rotevo_workflow.can_view_event(v_actor,e.id)

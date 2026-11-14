@@ -10,7 +10,7 @@ type Draft={url:string;note:string;requestKey:string};
 const editable=(status:string)=>["pending","in_progress","correction_requested"].includes(status);
 
 /** Never accepts a binary file. Client uploads directly to Google Drive and pastes a URL. */
-export default function ClientActionDeliveryPanel({projects}:{projects:Project[]}){
+export default function ClientActionDeliveryPanel({projects,userId}:{projects:Project[];userId:string}){
  const [items,setItems]=useState<Action[]>([]);
  const [urls,setUrls]=useState<Record<string,string>>({});
  const [notes,setNotes]=useState<Record<string,string>>({});
@@ -19,7 +19,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
  const [revision,setRevision]=useState(0);
  const ids=projects.map(p=>p.id).sort().join("|");
  useEffect(()=>{
-  let active=true;let userId="";
+  let active=true;
   setItems([]);setLoading(true);setError("");
   const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
    // INITIAL_SESSION may temporarily be null during hydration. Do not permanently
@@ -30,8 +30,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
   });
   void (async()=>{
    try{
-    const {data,error:authError}=await supabase.auth.getUser();
-    if(authError||!data.user)throw Error("Sessão expirada.");userId=data.user.id;
+    if(!userId)throw Error("Sessão expirada.");
     const results=await Promise.allSettled(projects.map(async p=>{
      const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
      const r=await request<{assignments:Omit<Action,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
@@ -46,7 +45,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
   })();
   return()=>{active=false;subscription.unsubscribe();};
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[ids,revision]);
+ },[ids,userId,revision]);
  async function submit(item:Action){
   if(busy||!editable(item.status))return;
   const url=(urls[item.id]??"").trim(),note=(notes[item.id]??"").trim();

@@ -171,7 +171,7 @@ try {
  await strategist.setViewportSize({width:1440,height:900});
  const accountButton=strategist.getByRole("button",{name:/Abrir menu de/});
  await accountButton.waitFor();
- assert.ok((await accountButton.innerText()).trim().length>1,"strategist username should be visible in header");
+ assert.ok((await accountButton.innerText()).trim().length<=2,"strategist name must stay inside the expanded account menu");
  await accountButton.click();
  await strategist.getByRole("button",{name:"Sair",exact:true}).waitFor();
  await accountButton.click();

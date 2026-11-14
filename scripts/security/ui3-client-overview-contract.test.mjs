@@ -24,9 +24,13 @@ test("dashboard never invents client ownership or approver designation",()=>{
  assert.match(source,/marketingCampaigns\?\?\[\]\)\.filter\(i=>i\.visibleToClient===true\)/);
 });
 test("client dashboard retains module gates and date-based overdue semantics",()=>{
- assert.match(source,/allowed\("execution"\)&&<section/);
- assert.match(source,/allowed\("content"\)&&<section/);
- assert.match(source,/allowed\("meetings"\)&&<section/);
+ // The minimal release renders card shells but keeps data and interactions permission-gated.
+ assert.match(source,/allowed\("execution"\)\?projects\.flatMap/);
+ assert.match(source,/!allowed\("execution"\)\?<p/);
+ assert.match(source,/allowed\("content"\)\?projects\.flatMap/);
+ assert.match(source,/!allowed\("content"\)\?<p/);
+ assert.match(source,/allowed\("meetings"\)\?projects\.flatMap/);
+ assert.match(source,/!allowed\("meetings"\)\?<p/);
  assert.match(source,/t\.dueDate<today/);
  assert.match(source,/t\.dueDate===today/);
  assert.match(source,/onNavigate\("content",item\.projectId,item\.contentId\)/);

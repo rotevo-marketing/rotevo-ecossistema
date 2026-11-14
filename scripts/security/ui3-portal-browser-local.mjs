@@ -104,7 +104,7 @@ try {
  await appearance.getByRole("button",{name:"Sistema"}).click();
  await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="light");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
- await customer.reload({waitUntil:"networkidle"});
+ await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor();
  await customer.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="light");
  await customer.getByRole("button",{name:"Abrir menu da conta"}).click();

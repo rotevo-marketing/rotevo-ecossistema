@@ -1,6 +1,6 @@
 # Rotevo UI 3.0 — PR #17 | Auditoria de prontidão das notificações
 **Data:** 14/11/2026  
-**Escopo:** auditoria read-only dos dois bancos e preparação de migração aditiva exclusiva de homologação; nenhum dado real ou objeto de produção alterado.  
+**Escopo:** auditoria read-only dos dois bancos; migração aditiva de homologação executada e validada; nenhum objeto de produção alterado.  
 **Status de liberação:** **NO-GO para produção** até autorização específica da migração/flags/deployment.  
 **PR:** https://github.com/rotevo-marketing/rotevo-ecossistema/pull/17  
 **Última bateria autenticada aprovada:** https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/43635948501 (11/11 SUCCESS, laboratório descartável; não é validação do banco hospedado).
@@ -59,6 +59,17 @@ Arquivo de proposta: `docs/security/sql/ui3-homologation-notification-v2-MIGRATI
 
 **Até a verificação de segurança e a liberação específica, NO-GO para ativação de notificações em produção.**
 
+## 3.1. Reconciliação da homologação executada e verificada (14/11/2026)
+**Alvo exclusivo:** projeto Supabase `tqedxahsqbskninjenfg`, nome `rotevo-ui3-homologacao`. Migração registrada como `20261114202706_ui3_homologation_private_actions_notification_v2` pelo Supabase.
+
+**Resultado:** execução bem-sucedida. Verificação posterior dos catálogos confirmou `client_action_assignments`, `client_action_submissions`, os três gatilhos de eventos e as novas RPCs `rotevo_workflow_list_notifications_v2` (11 campos), `rotevo_workflow_mark_notification_read_v2`, `can_view_event_v2`. As RPCs originais v1 e seu helper permanecem preservados.
+
+**Preservação de dados:** após a migração, zero eventos, notificações, atribuições ou entregas registrados; continua **uma** conta previamente habilitada na tabela de piloto, inalterada. Nenhum cliente real foi usado em testes ou mutado.
+
+**Segurança:** `anon` não tem `EXECUTE` em listagem v2; `authenticated` pode executar somente a RPC pública, cujo corpo verifica `auth.uid()`, destinatário e acesso atual; `anon` e `authenticated` não podem executar o helper `can_view_event_v2` diretamente. RLS está ativado nas tabelas privadas de atribuição e entrega, sem políticas diretas. O Security Advisor apresentou o aviso esperado de `SECURITY DEFINER` executável por usuários autenticados nas RPCs públicas, exigindo validação contínua da autorização por identidade e destinatário antes de ativar o piloto.
+
+**Ainda não concluído:** teste ponta a ponta **hospedado** com duas contas de teste autorizadas, configuração controlada de piloto, verificação das flags e qualquer migração/publicação de produção. CI e testes do laboratório descartável não substituem esse aceite.
+
 ## 4. Segurança e aceitação
 - `SECURITY DEFINER` não equivale a acesso livre: a RPC pública deve exigir `auth.uid()`; helper privado sem `EXECUTE` para `anon`/`authenticated`; nenhuma leitura direta das tabelas de workflow; `search_path` fechado e objetos qualificados.
 - Confirmação de `app_metadata` para reset de senha; jamais confiar em `user_metadata` para autorização.
@@ -83,7 +94,7 @@ Arquivo de proposta: `docs/security/sql/ui3-homologation-notification-v2-MIGRATI
 - [x] Divergência estrutural entre os dois Supabase levantada por consultas read-only.
 - [x] Proposta SQL e navegação por `action_id` implementadas em branch, não nos bancos hospedados.
 - [x] Proposta de migração aditiva de homologação preparada, preservando assinatura v1 e piloto existente.
-- [ ] Migração de homologação executada com resultado verificável e sem alteração de usuários existentes.
+- [x] Migração de homologação executada com resultado verificável e sem alteração de usuários existentes.
 - [ ] Ambiente hospedado autorizado e reconciliado com a proposta, com testes de piloto/G2.
 - [ ] Usuários autorizados do piloto e flags aprovados.
 - [ ] Auditoria final de release e autorização específica de merge/deployment.

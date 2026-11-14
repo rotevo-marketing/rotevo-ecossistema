@@ -61,7 +61,7 @@ try{
  await detail.getByRole("button",{name:"Fechar",exact:true}).click();
  await page.getByRole("button",{name:"Menu",exact:true}).click();
  await menu.getByRole("button",{name:"Conteúdo",exact:true}).click();
- await page.getByRole("group",{name:"Visualização de conteúdos"}).getByRole("button",{name:"Lista",exact:true}).click();
+ // Client content automatically selects compact list at 390px; legacy view toggle is hidden.\n assert.equal(await page.getByRole("group",{name:"Visualização de conteúdos"}).count(),0);
  await page.getByRole("button",{name:"Conteúdo acessível",exact:true}).click();
  const editorial=page.getByRole("dialog");
  const editorialThread=editorial.getByRole("region",{name:"Conversa sobre este item"});

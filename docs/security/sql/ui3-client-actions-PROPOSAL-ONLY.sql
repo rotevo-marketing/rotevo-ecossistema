@@ -48,7 +48,7 @@ create table if not exists rotevo_workflow.client_action_submissions (
  request_key text not null unique check(length(request_key) between 8 and 250),
  unique(assignment_id,attempt_number),
  check(submission_url is not null and length(trim(submission_url))>0),
- check(submission_url ~ '^https://(drive|docs)\\.google\\.com/' and length(submission_url)<=2048),
+ check(submission_url ~ '^https://(drive|docs)[.]google[.]com/' and length(submission_url)<=2048),
  check(reviewed_at is null or reviewed_by is not null)
 );
 create index if not exists idx_ui3_client_submissions_assignment

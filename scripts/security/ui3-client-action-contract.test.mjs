@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseClientActionCreate,parseClientActionList} from "../../src/lib/workflow/clientActionsContract.ts";
+import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
  projectId:"00000000-0000-4000-8000-000000000011",
@@ -39,4 +39,19 @@ test("API fails closed by default and relies on SQL authorization, not service r
  assert.match(source,/rotevo_client_action_create/);
  assert.match(source,/rotevo_client_action_list/);
  assert.doesNotMatch(source,/SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test("submissions bind UUID, idempotency key and note to account identity",()=>{
+ const good={assignmentId:base.projectId,expectedAuthorUserId:base.expectedAuthorUserId,
+  requestKey:"submission-request-001",note:"Vídeo enviado para revisão"};
+ assert.equal(parseClientActionSubmit(good)?.assignmentId,base.projectId);
+ assert.equal(parseClientActionSubmit({...good,note:""}),null);
+ assert.equal(parseClientActionSubmit({...good,assignmentId:"invalid"}),null);
+ assert.equal(parseClientActionSubmit({...good,storagePath:"tenant-secret"}),null);
+ const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/submit/route.ts",import.meta.url),"utf8");
+ assert.match(route,/ROTEVO_CLIENT_ACTIONS_ENABLED!=="true"/);
+ assert.match(route,/client\.auth\.getUser\(token\)/);
+ assert.match(route,/identity\.user\.id!==args\.expectedAuthorUserId/);
+ assert.match(route,/rotevo_client_action_submit/);
+ assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });

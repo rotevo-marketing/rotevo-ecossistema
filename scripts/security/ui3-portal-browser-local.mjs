@@ -253,6 +253,7 @@ try {
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
  const delivery=customer.locator("[data-ui3-client-actions]");
+ const targetDelivery=delivery.locator("li").filter({hasText:"Enviar URL sintética da entrega no Google Drive"});
  // On failure, report only UI state and HTTP status; never print tokens or customer data.
  await delivery.first().waitFor({state:"visible",timeout:10000});
  const diagnostic=await delivery.first().innerText();
@@ -278,9 +279,9 @@ try {
   }));throw e;
  });
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
- await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
- await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ await targetDelivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
+ await targetDelivery.getByRole("button",{name:"Enviar link para validação"}).click();
+ await targetDelivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
  // The heading is server-rendered before client hydration. Wait for workspace
@@ -298,8 +299,8 @@ try {
    menuEntries:await customer.getByRole("navigation",{name:"Navegação do portal"}).allTextContents().catch(()=>[])
   }));throw e;
  });
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
- assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+ await targetDelivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ assert.equal(await targetDelivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
  const submissionNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
  from rotevo_workflow.operational_events e
  join rotevo_workflow.user_notifications n on n.event_id=e.id

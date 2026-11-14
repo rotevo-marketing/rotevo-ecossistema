@@ -47,3 +47,6 @@ Data: 14/11/2026. Estado: **CANDIDATO EM HOMOLOGAÇÃO**. Nenhum deployment, mer
 - PR #17 não deve ser mesclado nem publicado até cumprir esses critérios.
 
 **Observação:** aprovação de CI e presença de componentes não significam entrega visível em produção. A publicação anterior revelou precisamente essa divergência e este gate deve impedi-la no próximo release.
+
+## Script de bloqueio pré-build
+Execute `node scripts/security/ui3-pr17-release-env-check.mjs` no contexto privado das variáveis **do build Production** antes de requisitar a única implantação final. Esse comando é somente leitura, não imprime os UUIDs dos destinatários e devolve exit code 1 quando faltar uma flag, houver destinatário inválido/duplicado ou a colaboração pública/privada estiver incoerente. Para o gate de colaboração, declarar `ROTEVO_PR17_COLLABORATION_RELEASE_MODE=enabled` somente depois da homologação G2; `disabled` preserva os recursos ocultos e, portanto, deve receber aceite explícito de escopo. A execução do gate não substitui inspeção visual nem testes autorizados.

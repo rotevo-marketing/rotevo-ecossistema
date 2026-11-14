@@ -70,6 +70,34 @@ Arquivo de proposta: `docs/security/sql/ui3-homologation-notification-v2-MIGRATI
 
 **Ainda não concluído:** teste ponta a ponta **hospedado** com duas contas de teste autorizadas, configuração controlada de piloto, verificação das flags e qualquer migração/publicação de produção. CI e testes do laboratório descartável não substituem esse aceite.
 
+
+## 3.2. Pré-homologação hospedada e corte de produção (14/11/2026)
+
+### Teste de negação na homologação hospedada, sem alteração de dados
+Foi usada uma transação explicitamente revertida com a role `authenticated` e JWT simulado para um UUID sintético sem cadastro. A RPC `public.rotevo_workflow_list_notifications_v2(30,false)` retornou **0 notificações**, e `auth.uid()` apontou o UUID simulado. Nenhuma conta Auth ou notificação foi criada.
+
+**Limitação importante:** essa verificação negativa não substitui um E2E positivo hospedado, com login Auth real, contas sintéticas autorizadas, atribuição, entrega, destinatário e marcação como lida. O banco hospedado de homologação possui uma única conta Auth preexistente, que será preservada e não utilizada como fixture.
+
+### Auditoria Vercel READ-ONLY
+Projeto: `rotevo-ecossistema` (`prj_tWUAryuFidBJhhPPwlW3J8rSt6xH`). Inventário feito listando nomes e escopos de variáveis, **sem descriptografar segredos**.
+
+| Variável / grupo | Situação constatada |
+|---|---|
+| `ROTEVO_CLIENT_ACTIONS_ENABLED` | Presente apenas em Production |
+| `NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED` | **Ausente** |
+| `ROTEVO_APPEARANCE_ENABLED` e `NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED` | **Ausentes** |
+| `ROTEVO_NOTIFICATIONS_ENABLED` e `NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED` | Somente branch Preview antiga; **ausentes em Production** |
+| `ROTEVO_NOTIFICATIONS_PILOT_USER_IDS` | Somente branch Preview antiga; **ausente em Production** |
+| `ROTEVO_WORKFLOW_APPROVALS_ENABLED` e `NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED` | Presentes em Production, sem validar valores |
+| `ROTEVO_PR17_COLLABORATION_RELEASE_MODE` | **Ausente** |
+
+Não alterar essas variáveis antes da revisão de destinatários e da autorização de release. Valores `NEXT_PUBLIC_` são incorporados no build e exigem build/deployment novo para mudar a UI. O gate do release `scripts/security/ui3-pr17-release-env-check.mjs` exige consistência e piloto não vazio, sem imprimir identificadores.
+
+### Produção: proposta exclusivamente documental
+Arquivo: `docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql`. Guardas verificam os pré-requisitos existentes do banco de produção, os três triggers originais e a ausência das RPCs `v2`. A migração criaria apenas o controle privado do piloto e as RPCs `v2`, **sem refazer as atribuições/gatilhos existentes**. É aditiva e não altera os valores de clientes, eventos nem as flags.
+
+**Não executada.** Antes de qualquer aplicação em produção, verificar backup atual e restaurabilidade, assinatura dos objetos, privacidade dos dados, autorização formal do proprietário e procedimentos de rollback, de acordo com a documentação do Supabase. Ver https://supabase.com/docs/guides/platform/backups e https://supabase.com/docs/guides/database/functions.
+
 ## 4. Segurança e aceitação
 - `SECURITY DEFINER` não equivale a acesso livre: a RPC pública deve exigir `auth.uid()`; helper privado sem `EXECUTE` para `anon`/`authenticated`; nenhuma leitura direta das tabelas de workflow; `search_path` fechado e objetos qualificados.
 - Confirmação de `app_metadata` para reset de senha; jamais confiar em `user_metadata` para autorização.
@@ -95,8 +123,10 @@ Arquivo de proposta: `docs/security/sql/ui3-homologation-notification-v2-MIGRATI
 - [x] Proposta SQL e navegação por `action_id` implementadas em branch, não nos bancos hospedados.
 - [x] Proposta de migração aditiva de homologação preparada, preservando assinatura v1 e piloto existente.
 - [x] Migração de homologação executada com resultado verificável e sem alteração de usuários existentes.
-- [ ] Ambiente hospedado autorizado e reconciliado com a proposta, com testes de piloto/G2.
-- [ ] Usuários autorizados do piloto e flags aprovados.
+- [x] Ambiente hospedado de homologação reconciliado e teste negativo com identidade sintética sem registros aprovado.
+- [ ] Testes positivos autenticados de piloto/G2 com usuários sintéticos em homologação hospedada.
+- [x] Nomes e escopos das flags Vercel inventariados, sem revelar valores sensíveis.
+- [ ] Usuários autorizados do piloto e flags de Production aprovados e configurados.
 - [ ] Auditoria final de release e autorização específica de merge/deployment.
 
 **Restrição permanente desta etapa:** não houve merge em `main`, Vercel Preview/Production deployment, DDL/DML hospedado ou alteração dos dados reais dos clientes.

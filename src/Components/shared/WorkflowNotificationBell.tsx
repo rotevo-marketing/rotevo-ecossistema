@@ -15,6 +15,9 @@ const label=(n:Notice)=>{
  if(n.event_type==="approval_approved")return "Versão aprovada pelo cliente";
  if(n.event_type==="adjustments_requested")return "Cliente solicitou ajustes";
  if(n.event_type==="message_sent")return n.event_phase==="task"?"Nova mensagem em uma tarefa":"Nova mensagem na conversa";
+ if(n.event_type==="assignment_changed")return "Atualização de atividade atribuída";
+ if(n.event_type==="item_ready")return "Entrega do cliente aguardando revisão";
+ if(n.event_type==="task_delivery_accepted")return "Entrega validada pela equipe";
  return "Atualização do projeto";
 };
 
@@ -98,7 +101,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
      <p className="text-xs font-semibold text-[#344056]">{label(n)}{!n.read_at&&<span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-[#6D35F5]" aria-label="Não lida"/>}</p>
      <p className="mt-1 truncate text-xs text-[#697386]">{n.project_title}</p>
      <p className="mt-1 text-[11px] text-[#8B95A5]">{new Date(n.occurred_at).toLocaleString("pt-BR")}</p>
-     {(n.event_type==="message_sent"&&n.event_phase==="task"?onOpenTask:onOpenContent)&&n.resource_id&&n.project_id&&<button type="button" onClick={()=>{setOpen(false);if(n.event_type==="message_sent"&&n.event_phase==="task")onOpenTask?.(n.project_id,n.resource_id);else onOpenContent?.(n.project_id,n.resource_id);}} className="mt-2 mr-3 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] focus-visible:outline-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="external-link" size={14} stroke={1.6}/> {n.event_type==="message_sent"&&n.event_phase==="task"?"Ver tarefa":"Ver conteúdo"}</button>}
+     {(n.event_phase==="task"?onOpenTask:onOpenContent)&&n.resource_id&&n.project_id&&<button type="button" onClick={()=>{setOpen(false);if(n.event_phase==="task")onOpenTask?.(n.project_id,n.resource_id);else onOpenContent?.(n.project_id,n.resource_id);}} className="mt-2 mr-3 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] focus-visible:outline-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="external-link" size={14} stroke={1.6}/> {n.event_phase==="task"?"Ver tarefa":"Ver conteúdo"}</button>}
      {!n.read_at&&<button type="button" disabled={loading} onClick={()=>void read(n)} className="mt-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] disabled:opacity-50">
       <RotevoTablerIcon name="check" size={14} stroke={1.6}/> Marcar como lida
      </button>}

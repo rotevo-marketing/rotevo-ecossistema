@@ -143,7 +143,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const oldEditorial=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
  const newEditorial=Array.isArray(nextRoot.editorialCalendar)?nextRoot.editorialCalendar:[];
  const oldEditorialById=new Map(oldEditorial.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v]));
- const materialFields=["title","channel","format","publishDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"];
+ const materialFields=["title","channel","format","publishDate","deadlineDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"];
  const ideaFields=["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"];
  const referencesChanged=(before:Record<string,unknown>,after:Record<string,unknown>)=>JSON.stringify(before.references??[])!==JSON.stringify(after.references??[]);
  const changedIdeaVersions=new Map<string,string>();
@@ -186,6 +186,18 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    if(typeof item.id!=="string"||(!uuid.test(item.id)&&!oldEditorialById.has(item.id)))return fail(400);
    for(const key of ["archivedAt","deletedAt"]){const value=item[key];if(value!==undefined&&(typeof value!=="string"||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))return fail(400);}
    if(item.archivedAt&&item.deletedAt)return fail(400);
+   // Backwards-compatible deadline: existing content without this field is valid.
+   // Validate only when the deadline is introduced or changed; do not rewrite legacy dates.
+   const oldDeadline=oldEditorialById.get(item.id)?.deadlineDate;
+   const deadline=item.deadlineDate;
+   if(deadline!==oldDeadline&&deadline!==undefined&&deadline!==null&&deadline!==""){
+    if(typeof deadline!=="string"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(deadline))return fail(400);
+    const [year,month,day]=deadline.split("-").map(Number);
+    const parsed=new Date(Date.UTC(year,month-1,day));
+    if(parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day)return fail(400);
+    if(typeof item.publishDate==="string"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(item.publishDate)&&deadline>item.publishDate)return fail(400);
+   }
+
    for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
     if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    }

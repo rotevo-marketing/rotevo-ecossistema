@@ -53,6 +53,8 @@ test("UI3 dark token contrast meets minimum WCAG 2.2 AA for visible text and con
  const scope=css.slice(css.lastIndexOf('/* UI3 appearance pilot'));
  const token=(name)=>{const m=scope.match(new RegExp('--rv3-'+name+':#([0-9a-fA-F]{6})'));assert.ok(m,name+" token missing");return m[1];};
  const surface=token('surface'),text=token('text'),muted=token('muted'),border=token('border'),accent=token('accent');
+ assert.equal(token('canvas'),'000000');
+ assert.ok(ratio(border,token('raised'))>=3,"raised controls must meet non-text 3:1");
  assert.ok(ratio(text,surface)>=4.5,"dark normal text must meet AA");
  assert.ok(ratio(muted,surface)>=4.5,"dark metadata must meet AA");
  assert.ok(ratio(accent,surface)>=4.5,"dark links must meet AA");

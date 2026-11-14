@@ -11,7 +11,7 @@ test("saved content reveals its channel and month without adding phantom channel
  assert.match(calendar,/scopedItems\.filter\(i=>projectFilter==="all"\|\|i\.projectId===projectFilter\)/);
  assert.match(calendar,/contentScope==="trash"/);
  assert.match(calendar,/onLifecycleChange/);
- assert.match(client,/!i\.archivedAt&&!i\.deletedAt/);
+ assert.match(client,/!row\.archivedAt&&!row\.deletedAt/);
  assert.match(calendar,/setChannelFilter\(focusItem\.channel\)/);
  assert.match(manager,/setFocusItem\(\{projectId:target\.id/);
  assert.match(manager,/onChanged\(target\.id,result\.project\.data/);
@@ -42,18 +42,18 @@ test("task-like editorial metadata is optional and bounded on server",()=>{
 });
 test("client and strategist details are two-pane, keeping formal approvals separated from editable operational status",()=>{
  assert.match(calendar,/aria-label="Atualizações e aprovações do conteúdo"/);
- assert.match(client,/aria-label="Solicitações e aprovações"/);
- assert.match(client,/EditorialIdeaDecision/);
- assert.match(client,/EditorialDecision/);
+ assert.match(client,/<EditorialCalendar projects=\{projects\} clientView/);
+ assert.match(calendar,/ideaDecisions\.filter/);
+ assert.match(calendar,/<EditorialDecision/);
  assert.match(decision,/rpc\("rotevo_editorial_decide"/);
  assert.match(manager,/A aprovação formal exige uma decisão registrada no fluxo do cliente/);
  assert.match(calendar,/editorialStatusOptions/);
- assert.match(calendar,/disabled=\{\["approved","changes_requested","idea_approved"\]\.includes\(active\.status\)\}/);
- assert.match(calendar,/Rotevo · Detalhes do conteúdo/);
+ assert.match(calendar,/disabled=\{workflowSending\|\|\["approved","changes_requested","idea_approved"\]\.includes\(active\.status\)\}/);
+ assert.match(calendar,/aria-label="Detalhes do conteúdo"/);
  assert.match(client,/visibleToClient===true/);
 });
 test("bidirectional comments use the shared component rather than an unsafe direct client writer",()=>{
  assert.match(calendar,/ProjectConversation/);
- assert.match(client,/ProjectConversation/);
+ assert.match(client,/<EditorialCalendar projects=\{projects\} clientView/);
  assert.doesNotMatch(manager,/\/api\/editorial\/comments/);
 });

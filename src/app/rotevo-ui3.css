@@ -587,13 +587,13 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 /* Apply the account palette to workspace surfaces, including floating controls. */
 html[data-rotevo-appearance="dark"] {
  color-scheme:dark;
- --rv3-canvas:#000;
+ --rv3-canvas:#000000;
  --rv3-surface:#171717;
- --rv3-raised:#222;
+ --rv3-raised:#222222;
  --rv3-hover:#2d2d2d;
  --rv3-text:#f2f2f2;
  --rv3-muted:#bdbdbd;
- --rv3-border:#575757;
+ --rv3-border:#737373;
  --rv3-accent:#bfb3ff;
  --rv3-accent-soft:#2a233a;
 }

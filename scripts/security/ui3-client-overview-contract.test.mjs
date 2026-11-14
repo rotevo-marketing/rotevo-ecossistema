@@ -24,7 +24,11 @@ test("dashboard never invents client ownership or approver designation",()=>{
  assert.match(source,/marketingCampaigns\?\?\[\]\)\.filter\(i=>i\.visibleToClient===true\)/);
 });
 test("client dashboard retains module gates and date-based overdue semantics",()=>{
- assert.match(source,/allowed\("execution"\)&&<section/);
+ assert.match(source,/const tasks=allowed\("execution"\)\?projects\.flatMap/);
+ assert.match(source,/allowed\("execution"\)\?dueToday\.length:"—"/);
+ assert.match(source,/allowed\("execution"\)\?overdue\.length:"—"/);
+ assert.match(source,/Tarefas não compartilhadas com esta conta/);
+ assert.doesNotMatch(source,/allowed\("execution"\)&&<section/);
  assert.match(source,/allowed\("content"\)&&<section/);
  assert.match(source,/allowed\("meetings"\)&&<section/);
  assert.match(source,/t\.dueDate<today/);

@@ -75,7 +75,7 @@ async function auditAppearance(role,page){
   await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-"+role+"-"+mode+"-390.png",fullPage:true});
   await page.addScriptTag({content:axe.source});
   const report=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"rule",values:["color-contrast"]}}));
-  const issues=report.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}));
+  const issues=report.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,190)}))}));
   console.log("APPEARANCE_VISUAL_AUDIT",role,mode,JSON.stringify(issues));
   if(mode==="dark"&&issues.length)console.log("NO_GO_DARK_VISUAL_AUDIT",role,JSON.stringify(issues));
  }

@@ -5,7 +5,7 @@ import type {EditorialItem} from "./EditorialCalendar";
 
 type Item=EditorialItem&{projectId:string};
 type Props={items:Item[];onSelect:(projectId:string,contentId:string)=>void};
-const tone:Record<EditorialItem["status"],string>={idea:"#E5E7EB",idea_pending:"#FAEED5",idea_approved:"#DCF3E8",production:"#D9D5FA",recording:"#DDE8FF",review:"#E7DFFA",awaiting_client:"#F6E9D7",changes_requested:"#F9E4D9",approved:"#DEF3E6",scheduled:"#DFE9FF",published:"#E1E6EB"};
+const tone:Record<EditorialItem["status"],string>={idea:"#E5E7EB",idea_pending:"#E5E7EB",idea_changes:"#F9E4D9",idea_approved:"#DCF3E8",production:"#D9D5FA",recording:"#DDE8FF",review:"#E7DFFA",awaiting_client:"#F6E9D7",changes_requested:"#F9E4D9",approved:"#DEF3E6",scheduled:"#DFE9FF",published:"#E1E6EB"};
 export default function ClientEditorialMiniCalendar({items,onSelect}:Props){
  const [month,setMonth]=useState(()=>todayInBrazil().slice(0,7));
  const [channel,setChannel]=useState("all");

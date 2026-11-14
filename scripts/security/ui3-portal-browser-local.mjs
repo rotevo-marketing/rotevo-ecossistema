@@ -82,28 +82,28 @@ const clientNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:f
 const peerNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 await must(clientNotify.auth.signInWithPassword({email:client.email,password:client.password}),"synthetic client notification sign-in");
 await must(peerNotify.auth.signInWithPassword({email:peer.email,password:peer.password}),"synthetic peer notification sign-in");
-const clientInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+const clientInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
  p_limit:30,p_unread_only:true}),"list own private pilot notices");
 assert.equal(clientInbox.length,2,"Two individual assignments must appear only to the intended client");
 assert.ok(clientInbox.some(n=>n.resource_id==="ui3-personal-task"),
  "Assignment notice must be available without exposing the execution module");
 assert.ok(clientInbox.every(n=>n.event_type==="assignment_changed"));
-const peerInbox=await must(peerNotify.rpc("rotevo_workflow_list_notifications",{
+const peerInbox=await must(peerNotify.rpc("rotevo_workflow_list_notifications_v2",{
  p_limit:30,p_unread_only:true}),"read same-tenant non-assignee inbox");
 assert.equal(peerInbox.length,0,"Other client users in the same tenant must not receive private assignments");
-const unauthorizedMark=await must(peerNotify.rpc("rotevo_workflow_mark_notification_read",{
+const unauthorizedMark=await must(peerNotify.rpc("rotevo_workflow_mark_notification_read_v2",{
  p_notification_id:clientInbox[0].notification_id}),"test denial of cross-account mark-read");
 assert.equal(unauthorizedMark,false,"Another client cannot acknowledge someone else's notification");
-const marked=await must(clientNotify.rpc("rotevo_workflow_mark_notification_read",{
+const marked=await must(clientNotify.rpc("rotevo_workflow_mark_notification_read_v2",{
  p_notification_id:clientInbox[0].notification_id}),"acknowledge personal notification");
 assert.equal(marked,true);
-const afterMark=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+const afterMark=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
  p_limit:30,p_unread_only:true}),"requery unread personal notifications");
 assert.equal(afterMark.length,1,"Mark-read must reduce unread count, not erase the event");
 const disabled=localNotice(`update rotevo_workflow.notification_pilot_users
  set enabled=false where user_id='${client.id}'::uuid returning user_id::text`);
 assert.ok(disabled.split("\n").includes(client.id),"Synthetic pilot was revoked");
-const disabledInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+const disabledInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
  p_limit:30,p_unread_only:false}),"deny private notices after pilot revocation");
 assert.equal(disabledInbox.length,0,"Pilot revocation must immediately hide notifications");
 localNotice(`update rotevo_workflow.notification_pilot_users
@@ -309,7 +309,7 @@ try {
 assert.equal(submissionNotice,"item_ready:"+admin.id,
  "Client submission must notify the authorized internal owner exactly once");
 console.log("PASS synthetic Drive delivery generates exactly one private review notification");
-const staffNotifications=await must(syntheticAuth.rpc("rotevo_workflow_list_notifications",{
+const staffNotifications=await must(syntheticAuth.rpc("rotevo_workflow_list_notifications_v2",{
  p_limit:30,p_unread_only:true}),"authorized team inbox");
 assert.ok(staffNotifications.some(n=>n.event_type==="item_ready"&&n.resource_id==="ui3-drive-demo"),
  "Authorized internal owner must see a private Drive delivery notice");

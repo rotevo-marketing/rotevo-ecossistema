@@ -1,4 +1,5 @@
--- UI3 PR17 | NOTIFICATIONS READ PILOT — PROPOSAL ONLY.
+-- UI3 PR17 | NOTIFICATIONS READ PILOT V2 — ADDITIVE PROPOSAL ONLY.
+-- Keeps the existing hosted 10-column RPC and original can_view_event untouched.
 -- Never apply to production/hosted Supabase without an explicit migration approval.
 -- The CI local installer runs this against disposable 127.0.0.1:54322 only.
 -- Prerequisites: Gate B workflow schema + client action assignments/events.
@@ -16,7 +17,7 @@ revoke all on rotevo_workflow.notification_pilot_users from PUBLIC,anon,authenti
 -- This private helper is intentionally SECURITY DEFINER because the workflow
 -- tables are private and have no authenticated grants. It does not trust p_user
 -- by itself as authorization for the public entry points below use auth.uid().
-create or replace function rotevo_workflow.can_view_event(p_user uuid,p_event uuid)
+create or replace function rotevo_workflow.can_view_event_v2(p_user uuid,p_event uuid)
 returns boolean language sql stable security definer set search_path='' as $fn$
 select exists (
  select 1
@@ -129,10 +130,10 @@ select exists (
    )
 );
 $fn$;
-revoke all on function rotevo_workflow.can_view_event(uuid,uuid)
+revoke all on function rotevo_workflow.can_view_event_v2(uuid,uuid)
  from PUBLIC,anon,authenticated;
 
-create or replace function public.rotevo_workflow_list_notifications(
+create or replace function public.rotevo_workflow_list_notifications_v2(
  p_limit integer default 30,p_unread_only boolean default false)
 returns table(
  notification_id uuid,event_id uuid,project_id uuid,project_title text,
@@ -154,17 +155,17 @@ begin
  join public.planning_projects project on project.id=e.project_id
  where n.recipient_user_id=v_actor
    and (not coalesce(p_unread_only,false) or n.read_at is null)
-   and rotevo_workflow.can_view_event(v_actor,e.id)
+   and rotevo_workflow.can_view_event_v2(v_actor,e.id)
  order by e.occurred_at desc,e.id desc
  limit p_limit;
 end;
 $fn$;
-revoke all on function public.rotevo_workflow_list_notifications(integer,boolean)
+revoke all on function public.rotevo_workflow_list_notifications_v2(integer,boolean)
  from PUBLIC,anon;
-grant execute on function public.rotevo_workflow_list_notifications(integer,boolean)
+grant execute on function public.rotevo_workflow_list_notifications_v2(integer,boolean)
  to authenticated;
 
-create or replace function public.rotevo_workflow_mark_notification_read(
+create or replace function public.rotevo_workflow_mark_notification_read_v2(
  p_notification_id uuid)
 returns boolean language plpgsql security definer set search_path='' as $fn$
 declare v_actor uuid:=auth.uid();v_updated uuid;
@@ -176,13 +177,13 @@ begin
  set read_at=coalesce(n.read_at,pg_catalog.clock_timestamp())
  from rotevo_workflow.operational_events e
  where n.id=p_notification_id and n.recipient_user_id=v_actor
-   and n.event_id=e.id and rotevo_workflow.can_view_event(v_actor,e.id)
+   and n.event_id=e.id and rotevo_workflow.can_view_event_v2(v_actor,e.id)
  returning n.id into v_updated;
  return v_updated is not null;
 end;
 $fn$;
-revoke all on function public.rotevo_workflow_mark_notification_read(uuid)
+revoke all on function public.rotevo_workflow_mark_notification_read_v2(uuid)
  from PUBLIC,anon;
-grant execute on function public.rotevo_workflow_mark_notification_read(uuid)
+grant execute on function public.rotevo_workflow_mark_notification_read_v2(uuid)
  to authenticated;
 commit;

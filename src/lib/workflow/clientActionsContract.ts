@@ -50,3 +50,16 @@ export function parseClientActionList(raw:unknown):{projectId:string;expectedAut
  return typeof x.projectId==="string"&&uuid.test(x.projectId)&&typeof x.expectedAuthorUserId==="string"&&uuid.test(x.expectedAuthorUserId)
  ?{projectId:x.projectId,expectedAuthorUserId:x.expectedAuthorUserId}:null;
 }
+
+export function parseClientActionSubmit(raw:unknown):{
+ assignmentId:string;note:string;requestKey:string;expectedAuthorUserId:string
+}|null{
+ if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
+ const x=raw as Record<string,unknown>;
+ if(Object.keys(x).some(k=>!["assignmentId","note","requestKey","expectedAuthorUserId"].includes(k)))return null;
+ if(typeof x.assignmentId!=="string"||!uuid.test(x.assignmentId)
+ ||typeof x.expectedAuthorUserId!=="string"||!uuid.test(x.expectedAuthorUserId)
+ ||typeof x.note!=="string"||x.note.trim().length<3||x.note.length>4000
+ ||typeof x.requestKey!=="string"||!/^[a-zA-Z0-9:_-]{8,250}$/.test(x.requestKey))return null;
+ return {assignmentId:x.assignmentId,note:x.note.trim(),requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId};
+}

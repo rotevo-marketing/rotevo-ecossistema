@@ -20,3 +20,18 @@ test("appearance accepts only system light dark and does not alter existing prof
  assert.match(sql,/auth\.uid\(\)/);
  assert.match(sql,/revoke all on function public\.rotevo_account_appearance_set/);
 });
+
+test("appearance menu is shared by strategist and client but remains disabled without flags",()=>{
+ const menu=readFileSync(new URL("../../src/Components/admin/AdminUserMenu.tsx",import.meta.url),"utf8");
+ const client=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
+ const preference=readFileSync(new URL("../../src/Components/operations/AccountAppearancePreference.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../../src/app/rotevo-ui3.css",import.meta.url),"utf8");
+ assert.match(menu,/NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"/);
+ assert.match(client,/NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"/);
+ assert.match(preference,/supabase\.auth\.getUser\(\)/);
+ assert.match(preference,/expectedAuthorUserId:user/);
+ assert.match(preference,/prefers-color-scheme: dark/);
+ assert.doesNotMatch(preference,/localStorage/);
+ assert.match(css,/html\[data-rotevo-appearance="dark"\] \.rv-ui3/);
+ assert.match(css,/\.se-paper,\.bn-editor/);
+});

@@ -21,9 +21,11 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
  useEffect(()=>{
   let active=true;let userId="";
   setItems([]);setLoading(true);setError("");
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
-   if(!session?.user||(userId&&session.user.id!==userId)){
-    active=false;setItems([]);setUrls({});setNotes({});setDrafts({});setBusy("");setError("");
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+   // INITIAL_SESSION may temporarily be null during hydration. Do not permanently
+   // disable the query before getUser() resolves; only actual sign-out/account switch invalidates it.
+   if(event==="SIGNED_OUT"||(userId&&session?.user&&session.user.id!==userId)){
+    active=false;setItems([]);setUrls({});setNotes({});setDrafts({});setBusy("");setError("Sessão alterada.");setLoading(false);
    }
   });
   void (async()=>{

@@ -138,7 +138,7 @@ try {
  await delivery.first().waitFor({state:"visible",timeout:10000});
  const diagnostic=await delivery.first().innerText();
  console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
- try { await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000}); } catch(e) { console.log("CLIENT_ASSIGNMENT_PANEL_AFTER_TIMEOUT",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,440)); throw e; }
+ try { await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000}); } catch(e) { console.log("CLIENT_ASSIGNMENT_PANEL_AFTER_TIMEOUT",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,440),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]")); throw e; }
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");

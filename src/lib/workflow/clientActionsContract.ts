@@ -10,7 +10,7 @@ export type CreateClientAction={
  instructions:string;dueDate:string|null;requestKey:string;
  expectedAuthorUserId:string;
 };
-const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const date=/^\d{4}-\d{2}-\d{2}$/;
 export function validClientActionDate(x:string):boolean{
  if(!date.test(x))return false;

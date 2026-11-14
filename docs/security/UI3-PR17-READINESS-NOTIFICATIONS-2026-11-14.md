@@ -1,12 +1,12 @@
 # Rotevo UI 3.0 — PR #17 | Auditoria de prontidão das notificações
 **Data:** 14/11/2026  
-**Escopo:** somente auditoria read-only de produção e homologação; revisão da proposta SQL e plano de reversão.  
+**Escopo:** auditoria read-only dos dois bancos e preparação de migração aditiva exclusiva de homologação; nenhum dado real ou objeto de produção alterado.  
 **Status de liberação:** **NO-GO para produção** até autorização específica da migração/flags/deployment.  
 **PR:** https://github.com/rotevo-marketing/rotevo-ecossistema/pull/17  
 **Última bateria autenticada aprovada:** https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/43635948501 (11/11 SUCCESS, laboratório descartável; não é validação do banco hospedado).
 
 ## 1. Fontes e evidência (consultas somente leitura)
-Inspeção via catálogos `pg_class`, `pg_proc`, `pg_trigger`, `pg_get_function_result` em dois projetos Supabase conectados. Nenhum DDL ou DML executado.
+Inspeção via catálogos `pg_class`, `pg_proc`, `pg_trigger`, `pg_get_function_result` em dois projetos Supabase conectados. Até esta revisão, nenhum DDL ou DML hospedado executado.
 
 | Objeto / capacidade | Produção: Rotevo (`kadvzjelkyfwouqmlxaa`) | Homologação (`tqedxahsqbskninjenfg`) |
 |---|---|---|
@@ -37,19 +37,27 @@ Conclusão: os bancos têm configurações parciais e diferentes. A instalação
 6. API fechada quando a flag de notificações está desabilitada.
 **Limite:** não se trata de teste do binário publicado com flags habilitadas contra um banco hospedado.
 
-## 3. Impedimento estrutural de migração
-Na homologação, `public.rotevo_workflow_list_notifications(integer,boolean)` atualmente retorna **10** campos. A nova proposta acrescenta `action_id text`, total **11**. `CREATE OR REPLACE FUNCTION` não permite mudar o tipo de retorno de uma função existente.
+## 3. Reconciliação sem destruir RPCs anteriores
+Na homologação, `public.rotevo_workflow_list_notifications(integer,boolean)` retorna 10 campos; o novo `action_id` exige 11. O PostgreSQL não permite alterar a assinatura de retorno por `CREATE OR REPLACE`. **A solução adotada é aditiva, sem DROP:** a nova API chama `public.rotevo_workflow_list_notifications_v2`, a leitura de recibos chama `public.rotevo_workflow_mark_notification_read_v2` e o helper privado se chama `rotevo_workflow.can_view_event_v2`. Todas as funções existentes permanecem preservadas.
 
-**Sequência futura, sob autorização separada e janela de implantação:**
-1. Obter snapshot/backup verificável do ambiente alvo e registrar assinatura, grants, dependências e definição atual de todas as RPCs. Não presumir que o backup anterior cobre a nova janela.
-2. Inventariar referências SQL a essa função e dependências reais (`pg_depend`); realizar análise também de consumidores externos (PostgREST/API e código), que não aparecem em `pg_depend`.
-3. Revisar uma migração transacional, idempotente e **específica por ambiente**: na homologação, se necessário e **sem CASCADE**, retirar a assinatura antiga dentro da transação e recriar a RPC com o retorno novo; na produção, criar apenas os objetos ausentes após validação de schema/colunas. Nunca remover as tabelas de eventos/atribuições existentes em produção.
-4. Manter tabela-piloto vazia/desabilitada e as flags de leitura desligadas até a verificação de RLS, grants, `auth.uid()`, G2 e versão do código.
-5. Rodar testes sintéticos hospedados com usuários **explicitamente autorizados**, incluindo login, GET, PATCH, destinatário correto, cruzamento de clientes, usuários revogados, acesso à tarefa individual sem `execution`, conteúdo não publicado, histórico e deep links.
-6. Validar o release-env-check com valores de flags, **sem emitir credenciais nos logs**. Registrar hashes do commit e SQL aplicado, versões dos objetos e checklist de rollback.
-7. Solicitar autorização específica para migrar produção, habilitar piloto e publicar o release. São autorizações distintas.
+### Evidência adicional de homologação (read-only)
+- O banco de homologação possui **zero eventos e zero notificações** antes da intervenção, duas entradas de projetos e uma conta Auth.
+- Existe **uma conta de piloto habilitada**; preservar integralmente esse registro, inclusive seu status de habilitação. Não converter, apagar ou usar como usuário de teste.
+- A RPC original possui grants para `authenticated`, `service_role` e `postgres` e retorna dez campos.
+- A consulta de dependências SQL de views/funções não identificou dependentes declarados, mas consumidores HTTP de PostgREST não aparecem em `pg_depend`.
 
-**Não executar a proposta SQL diretamente na homologação conectada sem aprovação expressa**, mesmo que seja um projeto não produtivo; esta auditoria limita-se a leitura e planejamento.
+### Migração separada, exclusivamente para homologação
+Arquivo de proposta: `docs/security/sql/ui3-homologation-notification-v2-MIGRATION-REVIEW.sql`. Contém guarda transacional que **aborta** se as tabelas de atribuições ou RPC v2 já existirem, ou se eventos/notificações estiverem preenchidos. Adiciona tabelas privadas de atribuições/entregas, funções de emissão e gatilhos, além das RPCs v2 e seu helper. **Não modifica as RPCs v1** nem os registros de `notification_pilot_users`.
+
+**Sequência de controle:**
+1. Verificar novamente o catálogo, estado das tabelas, grants, triggers, migrações e dependências imediatamente antes da aplicação.
+2. Confirmar backup/snapshot de homologação e autorização delimitada a esse banco; interromper se houver divergência.
+3. Aplicar apenas a migração aditiva em transação; checar contagem de objetos, RLS, privilégios e compatibilidade das RPCs v1/v2.
+4. Criar contas e dados **sintéticos** explicitamente delimitados para testes de autenticação/G2. Sem utilizar o usuário do piloto preexistente nem clientes reais.
+5. Testar consulta, marcação como lida, revogação, destinatário e isolamentos; preservar a flag do servidor desligada.
+6. Para produção: preparar migração própria, backup e plano de reversão com novo aceite; não reutilizar a migração de homologação em produção.
+
+**Até a verificação de segurança e a liberação específica, NO-GO para ativação de notificações em produção.**
 
 ## 4. Segurança e aceitação
 - `SECURITY DEFINER` não equivale a acesso livre: a RPC pública deve exigir `auth.uid()`; helper privado sem `EXECUTE` para `anon`/`authenticated`; nenhuma leitura direta das tabelas de workflow; `search_path` fechado e objetos qualificados.
@@ -74,7 +82,8 @@ Na homologação, `public.rotevo_workflow_list_notifications(integer,boolean)` a
 - [x] CI isolado de UI e notificações, release e contingência, 11/11.
 - [x] Divergência estrutural entre os dois Supabase levantada por consultas read-only.
 - [x] Proposta SQL e navegação por `action_id` implementadas em branch, não nos bancos hospedados.
-- [ ] Migração específica por ambiente, assinatura de retorno e plano de reversão revisados formalmente.
+- [x] Proposta de migração aditiva de homologação preparada, preservando assinatura v1 e piloto existente.
+- [ ] Migração de homologação executada com resultado verificável e sem alteração de usuários existentes.
 - [ ] Ambiente hospedado autorizado e reconciliado com a proposta, com testes de piloto/G2.
 - [ ] Usuários autorizados do piloto e flags aprovados.
 - [ ] Auditoria final de release e autorização específica de merge/deployment.

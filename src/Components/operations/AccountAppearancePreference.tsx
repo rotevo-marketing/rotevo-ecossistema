@@ -44,8 +44,7 @@ export default function AccountAppearancePreference(){
    }catch(e){if(alive){setError(e instanceof Error?e.message:"Preferência indisponível.");document.documentElement.removeAttribute("data-rotevo-appearance");}}
    finally{if(alive)setLoading(false);}
   })();
-  return()=>{alive=false;mq.removeEventListener("change",onSystem);subscription.data.subscription.unsubscribe();
-   document.documentElement.removeAttribute("data-rotevo-appearance");};
+  return()=>{alive=false;mq.removeEventListener("change",onSystem);subscription.data.subscription.unsubscribe();};
  },[]);
  async function change(next:Choice){
   if(busy||!user||loading)return;
@@ -59,6 +58,7 @@ export default function AccountAppearancePreference(){
    setChoice(result.appearance);
    const matches=window.matchMedia("(prefers-color-scheme: dark)").matches;
    document.documentElement.dataset.rotevoAppearance=result.appearance==="system"?(matches?"dark":"light"):result.appearance;
+   window.dispatchEvent(new CustomEvent("rotevo-appearance-updated",{detail:{appearance:result.appearance,userId:user}}));
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar a preferência.");}
   finally{setBusy(false);}
  }

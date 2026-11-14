@@ -650,3 +650,7 @@ html[data-rotevo-appearance="dark"] .rv-ui3-floating {
  color:var(--rv3-text);
  border-color:var(--rv3-border);
 }
+
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-footer > div {
+ color:var(--rv3-muted);
+}

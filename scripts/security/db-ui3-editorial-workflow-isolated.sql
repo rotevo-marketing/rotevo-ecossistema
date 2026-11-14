@@ -12,6 +12,7 @@ alter table public.planning_projects add column client_id uuid;
 alter table public.planning_projects add column updated_at timestamptz not null default now();
 create table public.profiles(id uuid primary key references auth.users(id),role text not null,client_id uuid);
 create table public.client_workspaces(client_id uuid primary key,data jsonb not null);
+create table public.client_users(client_id uuid not null,user_id uuid not null,primary key(client_id,user_id));
 create table public.team_members(user_id uuid primary key references auth.users(id),role text,active boolean);
 create table public.team_project_assignments(user_id uuid,project_id uuid,primary key(user_id,project_id));
 create table public.team_member_permissions(user_id uuid,permission text,primary key(user_id,permission));
@@ -52,6 +53,9 @@ insert into public.profiles(id,role,client_id) values
  ('a0000000-0000-4000-8000-000000000005','staff',null),
  ('a0000000-0000-4000-8000-000000000006','staff',null),
  ('a0000000-0000-4000-8000-000000000007','strategist',null);
+insert into public.client_users(client_id,user_id)
+ select client_id,id from public.profiles where role='client';
+\ir ../../docs/security/sql/ui3-designated-editorial-approvers-PROPOSAL-ONLY.sql
 insert into public.client_workspaces(client_id,data) values
  ('f0000000-0000-4000-8000-000000000001','{"modules":["content","execution"]}'),
  ('f0000000-0000-4000-8000-000000000002','{"modules":["content"]}');
@@ -139,6 +143,7 @@ end $reject$;
 -- Legacy-status decisions must fail closed on multi-user tenants too.
 insert into public.profiles(id,role,client_id)
 values('a0000000-0000-4000-8000-000000000004','client','f0000000-0000-4000-8000-000000000001');
+ insert into public.client_users(client_id,user_id) values('f0000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000004');
 update public.planning_projects
  set data=jsonb_set(data,'{editorialCalendar}',(data->'editorialCalendar')||
   '[{"id":"multi-client-decision","version":"05","status":"idea_pending","visibleToClient":true}]'::jsonb)

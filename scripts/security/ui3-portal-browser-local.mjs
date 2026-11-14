@@ -147,7 +147,11 @@ try {
  // Portal starts on overview after reload. Reopen the personal Tasks area before
  // checking that the assignment persisted; do not change the approved navigation.
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ // The heading is server-rendered before client hydration. Wait for workspace
+ // and project loading to finish so a click cannot be swallowed on reload.
+ await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ assert.equal(await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded"),"true","mobile menu opens after portal hydration");
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
   console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
    path:new URL(customer.url()).pathname,
@@ -164,7 +168,11 @@ try {
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ // The heading is server-rendered before client hydration. Wait for workspace
+ // and project loading to finish so a click cannot be swallowed on reload.
+ await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ assert.equal(await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded"),"true","mobile menu opens after portal hydration");
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
   console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
    path:new URL(customer.url()).pathname,

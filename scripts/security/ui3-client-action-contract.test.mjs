@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {spawnSync} from "node:child_process";
 import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview,validGoogleDriveUrl} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
@@ -188,4 +189,25 @@ test("production notification proposal is guarded, additive and never replays ex
  assert.equal((sql.match(/^commit;$/gm)??[]).length,1);
  assert.match(hosted,/Dedicated for project tqedxahsqbskninjenfg/);
  assert.match(hosted,/Notification v2 already installed: abort rather than overwrite/);
+});
+
+test("hosted Auth smoke is a dry-run without both explicit opt-ins, and CI blocks execution",()=>{
+ const file=new URL("./ui3-hosted-auth-smoke.mjs",import.meta.url);
+ const environment={...process.env,
+  ROTEVO_HOSTED_SUPABASE_URL:"https://tqedxahsqbskninjenfg.supabase.co",
+  ROTEVO_HOSTED_ANON_KEY:"synthetic-public-placeholder",
+  ROTEVO_HOSTED_SERVICE_KEY:"synthetic-admin-placeholder"};
+ delete environment.ROTEVO_HOSTED_AUTH_SMOKE;
+ const dry=spawnSync(process.execPath,[file.pathname],{env:environment,encoding:"utf8",timeout:15000});
+ assert.equal(dry.status,0,dry.stderr);
+ assert.match(dry.stdout,/DRY RUN: no API calls/);
+ const noFlag=spawnSync(process.execPath,[file.pathname,"--execute"],{
+  env:environment,encoding:"utf8",timeout:15000});
+ assert.equal(noFlag.status,0,noFlag.stderr);
+ assert.match(noFlag.stdout,/DRY RUN: no API calls/);
+ const ci=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"true",ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(ci.status,0,"CI must fail before any privileged Auth network request");
+ assert.match(ci.stderr,/Cannot run in CI or Vercel/);
 });

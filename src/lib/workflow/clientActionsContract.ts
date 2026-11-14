@@ -81,3 +81,18 @@ export function parseClientActionReview(raw:unknown):{
  return {assignmentId:x.assignmentId,submissionId:x.submissionId,
    decision:x.decision,feedback:x.feedback.trim(),expectedAuthorUserId:x.expectedAuthorUserId};
 }
+
+/** Immutable RLS-uploaded private asset; the original name never enters Storage paths. */
+export function parseClientActionSubmitAsset(raw:unknown):{
+ assignmentId:string;note:string;requestKey:string;expectedAuthorUserId:string;privateStoragePath:string
+}|null{
+ if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
+ const x=raw as Record<string,unknown>;
+ if(Object.keys(x).some(k=>!["assignmentId","note","requestKey","expectedAuthorUserId","privateStoragePath"].includes(k)))return null;
+ const base=parseClientActionSubmit({assignmentId:x.assignmentId,note:x.note,requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId});
+ if(!base||typeof x.privateStoragePath!=="string")return null;
+ if(!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(pdf|png|jpe?g|webp|mp4|mov)$/.test(x.privateStoragePath))return null;
+ const [assignmentId,userId]=x.privateStoragePath.split("/");
+ if(assignmentId!==base.assignmentId||userId!==base.expectedAuthorUserId)return null;
+ return {...base,privateStoragePath:x.privateStoragePath};
+}

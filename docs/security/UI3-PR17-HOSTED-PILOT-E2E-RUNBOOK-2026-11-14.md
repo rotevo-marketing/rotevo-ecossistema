@@ -15,6 +15,13 @@ Comprovar **positivamente**, com login real no Supabase Auth hospedado, atribui�
 - Criar e eliminar usuários **somente** por Supabase Auth Admin, em ambiente de servidor confiável, com acesso escopado a homologação. Docs: https://supabase.com/docs/reference/javascript/auth-admin-createuser
 - Sem deployment Vercel, merge, flags de Production ou migração de produção durante o teste.
 
+## Smoke test hospedado de Auth (etapa anterior a H01–H14)
+O script `scripts/security/ui3-hosted-auth-smoke.mjs` está disponível na branch. Ele **não foi executado contra o Supabase hospedado**; foi verificado sintaticamente em Node.js. Sem flag explícita, só imprime o estado DRY RUN e não realiza chamadas.
+- O executor deve ser uma máquina/serviço confiável, **fora do GitHub Actions e da Vercel**. Configure `ROTEVO_HOSTED_SUPABASE_URL` exatamente como `https://tqedxahsqbskninjenfg.supabase.co`, `ROTEVO_HOSTED_ANON_KEY` e `ROTEVO_HOSTED_SERVICE_KEY` no ambiente privado do operador, nunca em arquivos versionados ou mensagens.
+- Rode com `ROTEVO_HOSTED_AUTH_SMOKE=I_AUTHORIZE_HOMOLOGATION_ONLY` e `node scripts/security/ui3-hosted-auth-smoke.mjs --execute` **somente após autorização do operador e verificação de backups/controles do laboratório**.
+- Ele cria **uma** conta `@synthetic.invalid` via Auth Admin, faz login Auth real, exige lista v2 vazia, negação de marcação de ID alheio e exclui exclusivamente a conta que acabou de criar via Auth Admin. Em caso de falha de limpeza, interromper o gate e reconciliar manualmente.
+- Esse smoke test é **apenas um subgate**. Ele não cria fixtures de projetos, atribuições ou notificações e **não substitui os 14 casos E2E positivos** descritos abaixo.
+
 ## Critérios preliminares de entrada
 1. CI atual 11/11 SUCCESS para o commit de código alvo.
 2. Inventariar assinatura `public.rotevo_workflow_list_notifications_v2(integer,boolean)` com **11** campos, `mark_notification_read_v2(uuid)`, `rotevo_workflow.can_view_event_v2`, duas tabelas privadas e três triggers.

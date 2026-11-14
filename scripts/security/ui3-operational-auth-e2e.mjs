@@ -1,5 +1,6 @@
 // Integration E2E: REAL local GoTrue/PostgREST and Next.js, exclusively synthetic accounts.
 import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
 import {randomUUID} from "node:crypto";
 import {createClient} from "@supabase/supabase-js";
 const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
@@ -56,11 +57,29 @@ await must(db.from("planning_projects").insert([
  ]),"synthetic projects");
 await must(db.from("team_project_assignments").insert({user_id:staff.id,project_id:projectA}),"staff assignment");
 await request("/api/workflow/client-actions",null,{method:"POST",body:{},status:400}); // Contract rejects invalid request before authorization.
+const recipients="/api/admin/client-users?"+new URLSearchParams({clientId:clientA,linkedOnly:"true"});
+assert.deepEqual((await request(recipients,admin)).users.map(user=>user.id).sort(),[client.id,secondClient.id].sort());
+await request(recipients,other,{status:403});
+execFileSync("psql",["-X","-h","127.0.0.1","-p","54322","-U","postgres","-d","postgres",
+ "-v","ON_ERROR_STOP=1","-c",
+ "insert into rotevo_workflow.notification_pilot_users(user_id,enabled) values "+
+ [admin.id,client.id,secondClient.id,other.id].map(id=>`('${id}',true)`).join(",")
+],{env:{...process.env,PGPASSWORD:"postgres"},stdio:"pipe"});
 const assign={projectId:projectA,resourceType:"content",resourceId:"ops-content-1",resourceVersion:"01",
  clientUserId:client.id,actionType:"record_video",instructions:"Gravar vídeo e compartilhar o URL do Drive",
  dueDate:null,requestKey:"ops-create-"+randomUUID(),expectedAuthorUserId:admin.id};
 const created=await request("/api/workflow/client-actions",admin,{method:"POST",body:assign});
 assert.ok(created.assignment?.id,"assignment RPC must return UUID");
+const notificationList=actor=>must(actor.user.rpc("rotevo_workflow_list_notifications_v2",{p_limit:30,p_unread_only:true}),"notifications v2");
+const actionNotice=(await notificationList(client)).find(notice=>notice.action_id===created.assignment.id);
+assert.ok(actionNotice,"the explicit assignee receives the notification without access to the execution module");
+for(const peer of [secondClient,other]){
+ assert.ok(!(await notificationList(peer)).some(notice=>notice.action_id===created.assignment.id));
+ assert.equal(await must(peer.user.rpc("rotevo_workflow_mark_notification_read_v2",{p_notification_id:actionNotice.notification_id}),"peer mark"),false);
+}
+assert.equal(await must(client.user.rpc("rotevo_workflow_mark_notification_read_v2",{p_notification_id:actionNotice.notification_id}),"recipient mark"),true);
+assert.ok(!(await notificationList(client)).some(notice=>notice.notification_id===actionNotice.notification_id),"read state is persisted");
+console.log("PASS notification v2: explicit recipient, cross-account denial and persisted read state");
 await request("/api/workflow/client-actions",admin,{method:"POST",body:assign});
 await request("/api/workflow/client-actions",other,{method:"POST",body:{...assign,expectedAuthorUserId:other.id},status:403});
 const q=(id,actor)=>"/api/workflow/client-actions?"+new URLSearchParams({projectId:id,expectedAuthorUserId:actor.id});

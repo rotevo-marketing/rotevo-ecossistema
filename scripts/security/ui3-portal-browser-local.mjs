@@ -32,13 +32,18 @@ async function identity(role){
  return {email,password,id:user.id};
 }
 const admin=await identity("strategist"),client=await identity("client");
+const peer=await identity("client"); // Other pilot user in same tenant: cannot read the assignee's notifications.
+
 const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");
 await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"client association");
 await must(db.from("client_users").insert({client_id:clientId,user_id:client.id}),"client account membership for workflow authorization");
+await must(db.from("profiles").update({client_id:clientId}).eq("id",peer.id),"peer profile association");
+await must(db.from("client_users").insert({client_id:clientId,user_id:peer.id}),"peer client membership");
+
 const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visualHtml",props:{label:"Documento publicado sintético",description:"Leitura autorizada",height:300,markup:"<section><p>PLANNING_PUBLIC_CANARY</p></section>",stylesheet:"section{padding:12px}p{color:#344054}"},children:[]}]};
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
-const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+const planData={executionTimeline:[{id:"ui3-personal-task",title:"Synthetic Restricted Task",visibleToClient:true,status:"todo"}],internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
@@ -58,6 +63,53 @@ const assignResult=await fetch(new URL("/api/workflow/client-actions",app),{
 });
 assert.equal(assignResult.status,200,"synthetic assignment must be available before client browser login");
 const assignmentPayload=await assignResult.json();assert.ok(assignmentPayload.assignment?.id);
+const taskAssignment=await fetch(new URL("/api/workflow/client-actions",app),{
+ method:"POST",headers:{Authorization:"Bearer "+adminLogin.session.access_token,"Content-Type":"application/json"},
+ body:JSON.stringify({projectId,resourceType:"task",resourceId:"ui3-personal-task",resourceVersion:null,
+ clientUserId:client.id,actionType:"provide_information",
+ instructions:"Ação pessoal sem acesso geral ao cronograma",
+ dueDate:null,requestKey:"ui3-browser-personal-task-"+randomUUID(),expectedAuthorUserId:admin.id})
+});
+assert.equal(taskAssignment.status,200,"An explicitly shared individual task can be assigned with execution module hidden");
+const taskId=(await taskAssignment.json()).assignment.id;
+assert.match(taskId,/^[0-9a-f-]{36}$/i);
+const notificationPilot=localNotice(`insert into rotevo_workflow.notification_pilot_users(user_id,enabled)
+ values ('${client.id}'::uuid,true),('${admin.id}'::uuid,true),('${peer.id}'::uuid,true)
+ on conflict(user_id) do update set enabled=excluded.enabled
+ returning user_id::text`);
+assert.equal(notificationPilot.split("\n").length,3,"Only three synthetic pilot users were enabled");
+const clientNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const peerNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+await must(clientNotify.auth.signInWithPassword({email:client.email,password:client.password}),"synthetic client notification sign-in");
+await must(peerNotify.auth.signInWithPassword({email:peer.email,password:peer.password}),"synthetic peer notification sign-in");
+const clientInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+ p_limit:30,p_unread_only:true}),"list own private pilot notices");
+assert.equal(clientInbox.length,2,"Two individual assignments must appear only to the intended client");
+assert.ok(clientInbox.some(n=>n.resource_id==="ui3-personal-task"),
+ "Assignment notice must be available without exposing the execution module");
+assert.ok(clientInbox.every(n=>n.event_type==="assignment_changed"));
+const peerInbox=await must(peerNotify.rpc("rotevo_workflow_list_notifications",{
+ p_limit:30,p_unread_only:true}),"read same-tenant non-assignee inbox");
+assert.equal(peerInbox.length,0,"Other client users in the same tenant must not receive private assignments");
+const unauthorizedMark=await must(peerNotify.rpc("rotevo_workflow_mark_notification_read",{
+ p_notification_id:clientInbox[0].notification_id}),"test denial of cross-account mark-read");
+assert.equal(unauthorizedMark,false,"Another client cannot acknowledge someone else's notification");
+const marked=await must(clientNotify.rpc("rotevo_workflow_mark_notification_read",{
+ p_notification_id:clientInbox[0].notification_id}),"acknowledge personal notification");
+assert.equal(marked,true);
+const afterMark=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+ p_limit:30,p_unread_only:true}),"requery unread personal notifications");
+assert.equal(afterMark.length,1,"Mark-read must reduce unread count, not erase the event");
+const disabled=localNotice(`update rotevo_workflow.notification_pilot_users
+ set enabled=false where user_id='${client.id}'::uuid returning user_id::text`);
+assert.equal(disabled,client.id);
+const disabledInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
+ p_limit:30,p_unread_only:false}),"deny private notices after pilot revocation");
+assert.equal(disabledInbox.length,0,"Pilot revocation must immediately hide notifications");
+localNotice(`update rotevo_workflow.notification_pilot_users
+ set enabled=true where user_id='${client.id}'::uuid`);
+console.log("PASS private notification RPCs: two personal assignments incl. task without execution, peer denial, mark-read and pilot revocation");
+
 const assignmentId=assignmentPayload.assignment.id;
 assert.match(assignmentId,/^[a-f0-9-]{36}$/i);
 const assignmentNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
@@ -256,6 +308,13 @@ try {
 assert.equal(submissionNotice,"item_ready:"+admin.id,
  "Client submission must notify the authorized internal owner exactly once");
 console.log("PASS synthetic Drive delivery generates exactly one private review notification");
+const staffNotifications=await must(syntheticAuth.rpc("rotevo_workflow_list_notifications",{
+ p_limit:30,p_unread_only:true}),"authorized team inbox");
+assert.ok(staffNotifications.some(n=>n.event_type==="item_ready"&&n.resource_id==="ui3-drive-demo"),
+ "Authorized internal owner must see a private Drive delivery notice");
+assert.ok(!staffNotifications.some(n=>n.resource_id==="ui3-personal-task"),
+ "Team should not see an assignment notification targeted exclusively to client");
+console.log("PASS internal notification RPC lists delivered material without exposing unrelated client-only notices");
 console.log("PASS browser client Drive URL submission and persisted status after refresh");
  // General viewport assertions intentionally target Overview, not the Tasks panel.
  await customer.getByRole("button",{name:"Menu",exact:true}).click();

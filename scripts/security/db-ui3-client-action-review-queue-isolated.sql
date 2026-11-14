@@ -25,7 +25,10 @@ begin
 end $client$;
 reset role;
 
-select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',false);
+update public.team_members set active=true where user_id='00000000-0000-4000-8000-000000000015';
+insert into public.team_project_assignments(user_id,project_id) values('00000000-0000-4000-8000-000000000015','00000000-0000-4000-8000-000000000011');
+insert into public.team_member_permissions(user_id,permission) values('00000000-0000-4000-8000-000000000015','projects.write');
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000015',false);
 set role authenticated;
 do $tenant$
 declare denied boolean:=false;

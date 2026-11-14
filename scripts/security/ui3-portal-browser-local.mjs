@@ -173,7 +173,7 @@ try {
  await accountButton.waitFor();
  assert.ok((await accountButton.innerText()).trim().length>1,"strategist username should be visible in header");
  await accountButton.click();
- await strategist.getByRole("button",{name:"Sair da conta"}).waitFor();
+ await strategist.getByRole("button",{name:"Sair",exact:true}).waitFor();
  await accountButton.click();
  await strategist.getByRole("button",{name:"Clientes",exact:true}).click();
  await strategist.getByRole("heading",{name:"Cadastro de clientes"}).waitFor();

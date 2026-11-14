@@ -366,6 +366,10 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_action_review_isolated -f scripts/security/db-ui3-client-action-review-isolated.sql
+      - name: Verify private review queue team and tenant isolation in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_queue_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_review_queue_isolated -f scripts/security/db-ui3-client-action-review-queue-isolated.sql
 
 
   typecheck:

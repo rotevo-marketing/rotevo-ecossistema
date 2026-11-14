@@ -140,7 +140,17 @@ try {
  console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
  try { await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000}); } catch(e) { console.log("CLIENT_ASSIGNMENT_PANEL_AFTER_TIMEOUT",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,440),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]")); throw e; }
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
- await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+ // A failure here is after the first assignment rendered, not during the initial load.
+ // Capture only synthetic UI state and URL path; never log customer information or tokens.
+ console.log("CLIENT_RELOAD_PATH",new URL(customer.url()).pathname);
+ await delivery.first().waitFor({state:"visible",timeout:20000}).catch(async e=>{
+  console.log("CLIENT_RELOAD_DOCUMENT",(await customer.locator("body").innerText().catch(()=>"[unavailable]")).slice(0,280));throw e;
+ });
+ try {await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});}
+ catch(e){
+  console.log("CLIENT_RELOAD_PANEL_STATE",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,280),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]"));
+  throw e;
+ }
  await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
  await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});

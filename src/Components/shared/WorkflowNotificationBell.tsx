@@ -7,7 +7,7 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 type Notice={
  notification_id:string;event_id:string;project_id:string;project_title:string;
  resource_id:string;resource_version:string|null;event_type:string;
- event_phase:string|null;occurred_at:string;read_at:string|null;
+ event_phase:string|null;action_id?:string|null;occurred_at:string;read_at:string|null;
 };
 type Result={notifications:Notice[]};
 const label=(n:Notice)=>{
@@ -22,7 +22,7 @@ const label=(n:Notice)=>{
 };
 
 /** Feature-gated workflow inbox; navigations are resolved by the authenticated parent. */
-export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTask}:{userId:string;onOpenContent?:(projectId:string,resourceId:string)=>void;onOpenTask?:(projectId:string,taskId:string)=>void}){
+export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTask,onOpenAssignedAction}:{userId:string;onOpenContent?:(projectId:string,resourceId:string)=>void;onOpenTask?:(projectId:string,taskId:string)=>void;onOpenAssignedAction?:(projectId:string,actionId:string)=>void}){
  const [open,setOpen]=useState(false);
  const [loading,setLoading]=useState(false);
  const [notices,setNotices]=useState<Notice[]>([]);
@@ -101,7 +101,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
      <p className="text-xs font-semibold text-[#344056]">{label(n)}{!n.read_at&&<span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-[#6D35F5]" aria-label="Não lida"/>}</p>
      <p className="mt-1 truncate text-xs text-[#697386]">{n.project_title}</p>
      <p className="mt-1 text-[11px] text-[#8B95A5]">{new Date(n.occurred_at).toLocaleString("pt-BR")}</p>
-     {(n.event_phase==="task"?onOpenTask:onOpenContent)&&n.resource_id&&n.project_id&&<button type="button" onClick={()=>{setOpen(false);if(n.event_phase==="task")onOpenTask?.(n.project_id,n.resource_id);else onOpenContent?.(n.project_id,n.resource_id);}} className="mt-2 mr-3 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] focus-visible:outline-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="external-link" size={14} stroke={1.6}/> {n.event_phase==="task"?"Ver tarefa":"Ver conteúdo"}</button>}
+     {(n.action_id?onOpenAssignedAction:(n.event_phase==="task"?onOpenTask:onOpenContent))&&n.project_id&&(n.action_id||n.resource_id)&&<button type="button" onClick={()=>{setOpen(false);if(n.action_id)onOpenAssignedAction?.(n.project_id,n.action_id);else if(n.event_phase==="task")onOpenTask?.(n.project_id,n.resource_id);else onOpenContent?.(n.project_id,n.resource_id);}} className="mt-2 mr-3 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] focus-visible:outline-2 focus-visible:outline-[#6D35F5]"><RotevoTablerIcon name="external-link" size={14} stroke={1.6}/> {n.action_id?"Ver atribuição":n.event_phase==="task"?"Ver tarefa":"Ver conteúdo"}</button>}
      {!n.read_at&&<button type="button" disabled={loading} onClick={()=>void read(n)} className="mt-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#5949D1] disabled:opacity-50">
       <RotevoTablerIcon name="check" size={14} stroke={1.6}/> Marcar como lida
      </button>}

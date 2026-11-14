@@ -559,3 +559,17 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
 html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-finance-metric-label {
  color:#BAC8DF!important;
 }
+
+/* Four operational dashboard divisions: their corner numbers replace the removed top KPI strip. */
+.rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) .rv-ui3-section-count {
+ display:inline-flex;align-items:center;justify-content:center;
+ min-width:30px;min-height:27px;padding:2px 8px;
+ border:1px solid rgba(73,82,105,.13);border-radius:9px;
+ background:rgba(255,255,255,.72);font-size:13px;font-weight:700;
+ line-height:1.3;font-variant-numeric:tabular-nums;
+ flex-shrink:0;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) .rv-ui3-section-count {
+ background:rgba(255,255,255,.11);border-color:rgba(232,237,248,.28);
+ color:var(--rv3-text)!important;
+}

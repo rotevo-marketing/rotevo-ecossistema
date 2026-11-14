@@ -82,3 +82,16 @@ test("pending review queue remains team-gated and does not use service-role cred
  assert.match(route,/rotevo_client_action_review_queue/);
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+test("internal delivery review UI is disabled by default and does not bypass server authorization",()=>{
+ const tasks=readFileSync(new URL("../../src/Components/admin/CentralTarefas.tsx",import.meta.url),"utf8");
+ const panel=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
+ assert.match(tasks,/NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"/);
+ assert.match(tasks,/ClientActionReviewPanel/);
+ assert.match(panel,/rotevo_client_action_review_queue|review-queue/);
+ assert.match(panel,/supabase\.auth\.getUser\(\)/);
+ assert.match(panel,/expectedAuthorUserId:data\.user\.id/);
+ assert.match(panel,/decision==="correction_requested"&&note\.length<3/);
+ assert.match(panel,/onAuthStateChange/);
+ assert.doesNotMatch(panel,/SUPABASE_SERVICE_ROLE_KEY/);
+});

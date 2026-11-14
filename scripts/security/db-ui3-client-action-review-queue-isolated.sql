@@ -9,6 +9,7 @@ declare queue jsonb;
 begin
  select public.rotevo_client_action_review_queue('00000000-0000-4000-8000-000000000011') into queue;
  if jsonb_array_length(queue)<>1 or queue->0->>'attemptNumber'<>'1'
+ or queue->0->>'driveUrl'<>'https://drive.google.com/file/d/synthetic-test-link/view'
  then raise exception 'Pending review not visible to authorized strategist';end if;
 end $team$;
 reset role;

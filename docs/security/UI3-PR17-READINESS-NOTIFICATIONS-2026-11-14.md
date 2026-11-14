@@ -98,6 +98,17 @@ Arquivo: `docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql`. G
 
 **Não executada.** Antes de qualquer aplicação em produção, verificar backup atual e restaurabilidade, assinatura dos objetos, privacidade dos dados, autorização formal do proprietário e procedimentos de rollback, de acordo com a documentação do Supabase. Ver https://supabase.com/docs/guides/platform/backups e https://supabase.com/docs/guides/database/functions.
 
+## 3.3. Verificações hospedadas adicionais após o CI concluído (14/11/2026)
+
+- A execução final do commit `a871aac26bbc0e29440a9d2f7b7aef6f95b11490` terminou em **11/11 SUCCESS**: https://github.com/rotevo-marketing/rotevo-ecossistema/actions/runs/43638420817.
+- Duas consultas adicionais foram executadas **somente na homologação hospedada**, cada uma em transação revertida: (1) role `authenticated` e JWT sintético sem usuário cadastrado: a listagem v2 retornou **0** e o `mark_notification_read_v2` para ID alheio retornou **false**; (2) role `anon`: a chamada à listagem v2 foi negada pelo banco.
+- Nenhuma conta de autenticação, evento ou notificação foi criada; os testes positivos hospedados de login real seguem pendentes.
+- Método autorizado para gerar contas reais de ensaio: **Supabase Auth Admin `createUser` apenas do lado do servidor, com credenciais de serviço protegidas**, criação delimitada no projeto de homologação, com registro e posterior limpeza controlada. Não inserir linhas diretamente em `auth.users` ou manipular dados da única conta piloto existente. Referência: https://supabase.com/docs/reference/javascript/auth-admin-createuser.
+- `SECURITY DEFINER` das RPCs v2 permanece com `search_path` fechado, grants mínimos e checagem de identidade/destinatário; recomendações oficiais em https://supabase.com/docs/guides/database/functions.
+- As variáveis `NEXT_PUBLIC_` precisam estar definidas **antes do build final**; atualizações posteriores de variáveis não modificam deployments existentes: https://vercel.com/docs/environment-variables.
+
+**Conclusão:** testes locais e negativas hospedadas aprovados; **não** afirmar aprovação de E2E positivo hospedado, nem que backups atuais de produção foram restaurados/validados. Produção permanece NO-GO.
+
 ## 4. Segurança e aceitação
 - `SECURITY DEFINER` não equivale a acesso livre: a RPC pública deve exigir `auth.uid()`; helper privado sem `EXECUTE` para `anon`/`authenticated`; nenhuma leitura direta das tabelas de workflow; `search_path` fechado e objetos qualificados.
 - Confirmação de `app_metadata` para reset de senha; jamais confiar em `user_metadata` para autorização.
@@ -129,4 +140,4 @@ Arquivo: `docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql`. G
 - [ ] Usuários autorizados do piloto e flags de Production aprovados e configurados.
 - [ ] Auditoria final de release e autorização específica de merge/deployment.
 
-**Restrição permanente desta etapa:** não houve merge em `main`, Vercel Preview/Production deployment, DDL/DML hospedado ou alteração dos dados reais dos clientes.
+**Restrição permanente desta etapa:** não houve merge em `main`, Vercel Preview/Production deployment, DDL/DML **no banco de produção** ou alteração de dados reais de clientes. A migração aditiva registrada na seção 3.1 foi aplicada **somente ao Supabase hospedado de homologação**, com verificação posterior.

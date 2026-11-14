@@ -86,11 +86,13 @@ begin
   or v_item ? 'deletedAt' and coalesce(v_item->>'deletedAt','')<>''
   or v_item ? 'archivedAt' and coalesce(v_item->>'archivedAt','')<>''
  then raise exception 'Content unavailable' using errcode='40001';end if;
- v_expected := case p_phase when 'idea' then 'idea_pending' else 'awaiting_client' end;
- if v_item->>'status' is distinct from v_expected then
+ v_expected := case p_phase when 'idea' then 'idea' else 'awaiting_client' end;
+ if not ((p_phase='idea' and v_item->>'status' in ('idea','idea_pending'))
+       or (p_phase='final' and v_item->>'status'='awaiting_client')) then
   raise exception 'Content state unavailable' using errcode='40001';end if;
 
- v_new_status := case when p_decision='changes_requested' then 'changes_requested'
+ v_new_status := case when p_phase='idea' and p_decision='changes_requested' then 'idea_changes'
+                       when p_decision='changes_requested' then 'changes_requested'
                        when p_phase='idea' then 'idea_approved' else 'approved' end;
  v_kind := case when p_phase='idea' then 'editorial_idea_approvals' else 'editorial_approvals' end;
  v_key := 'editorial:' || p_project_id::text || ':' || p_phase || ':' ||
@@ -100,6 +102,10 @@ begin
    and phase=p_phase and resource_version=p_content_version and status='pending'
  for update;
  if v_request_id is null then
+  -- A newly shared idea must have an explicit pending request; only legacy statuses can bridge.
+  if p_phase='idea' and v_item->>'status'='idea' then
+    raise exception 'No pending idea approval request' using errcode='40001';
+  end if;
   -- Bridge old `idea_pending` / `awaiting_client` entries without fabricating
   -- an earlier strategist request or creating a second source of approval.
   insert into rotevo_workflow.approval_requests(

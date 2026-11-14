@@ -59,11 +59,11 @@ export function validGoogleDriveUrl(raw:unknown):raw is string{
   if(url.protocol!=="https:"||url.username||url.password||url.port||url.hash)return false;
   if(url.hostname!=="drive.google.com"&&url.hostname!=="docs.google.com")return false;
   if(url.hostname==="drive.google.com"){
-   if(/^\/(file\/d\/|drive\/folders\/|drive\/u\/\d+\/folders\/)/.test(url.pathname))return true;
+   if(/^\/(file\/d\/|drive\/folders\/|drive\/u\/\d+\/folders\/)[A-Za-z0-9_-]+/.test(url.pathname))return true;
    if(url.pathname==="/open"||url.pathname==="/uc")return Boolean(url.searchParams.get("id"));
    return false;
   }
-  return /^\/(document|spreadsheets|presentation|forms|drawings|videos)\/d\/[^/]+/.test(url.pathname);
+  return /^\/(document|spreadsheets|presentation|forms|drawings|videos)\/d\/[A-Za-z0-9_-]+/.test(url.pathname);
  }catch{return false;}
 }
 export function parseClientActionSubmit(raw:unknown):{

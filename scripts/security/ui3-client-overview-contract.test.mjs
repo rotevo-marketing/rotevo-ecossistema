@@ -29,9 +29,22 @@ test("client dashboard retains module gates and date-based overdue semantics",()
  assert.match(source,/allowed\("execution"\)\?overdue\.length:"—"/);
  assert.match(source,/Tarefas não compartilhadas com esta conta/);
  assert.doesNotMatch(source,/allowed\("execution"\)&&<section/);
- assert.match(source,/allowed\("content"\)&&<section/);
- assert.match(source,/allowed\("meetings"\)&&<section/);
+ assert.doesNotMatch(source,/allowed\("content"\)&&<section/);
+ assert.doesNotMatch(source,/allowed\("meetings"\)&&<section/);
+ assert.match(source,/!allowed\("content"\)\?<p/);
+ assert.match(source,/!allowed\("meetings"\)\?<p/);
  assert.match(source,/t\.dueDate<today/);
  assert.match(source,/t\.dueDate===today/);
  assert.match(source,/onNavigate\("content",item\.projectId,item\.contentId\)/);
+});
+
+test("both overviews have exactly four colored sections with counters inside, no duplicate top KPI row",()=>{
+ const admin=readFileSync(new URL("../../src/Components/admin/AdminOperationsOverview.tsx",import.meta.url),"utf8");
+ for(const text of [source,admin]){
+  assert.equal((text.match(/className="rv-ui3-section-count"/g)??[]).length,4,"Four inline counters required");
+  assert.equal((text.match(/className=\{(?:card|dashboardCard)\+" border-\[#/g)??[]).length,4,"Four lightly tinted sections required");
+  assert.doesNotMatch(text,/rv-ui3-overview-summary/,"Do not reintroduce duplicate top KPI summary");
+ }
+ assert.match(admin,/aria-labelledby="daily-finance"/);
+ assert.match(admin,/aria-labelledby="daily-projects"/);
 });

@@ -55,7 +55,7 @@ await must(db.from("planning_projects").insert([
  {id:projectA,client_id:clientA,title:"Synthetic Operational Project A",slug:"ops-project-a-"+suffix,status:"draft",data:{editorialCalendar:shared,executionTimeline:task}},
  {id:projectB,client_id:clientB,title:"Synthetic Operational Project B",slug:"ops-project-b-"+suffix,status:"draft",data:{editorialCalendar:shared,executionTimeline:task}}
 ]),"synthetic projects");
-await request("/api/workflow/client-actions",null,{method:"POST",body:{},status:401===503?401:400}); // Flagged endpoint rejects invalid params.
+await request("/api/workflow/client-actions",null,{method:"POST",body:{},status:400}); // Contract rejects invalid request before authorization.
 const assign={projectId:projectA,resourceType:"content",resourceId:"ops-content-1",resourceVersion:"01",
  clientUserId:client.id,actionType:"record_video",instructions:"Gravar vídeo e compartilhar o URL do Drive",
  dueDate:null,requestKey:"ops-create-"+randomUUID(),expectedAuthorUserId:admin.id};
@@ -98,6 +98,33 @@ assert.equal((await request(appearanceQuery(client),client)).appearance,"system"
 assert.equal((await request("/api/account/appearance",client,{method:"PATCH",body:{appearance:"dark",expectedAuthorUserId:client.id}})).appearance,"dark");
 assert.equal((await request(appearanceQuery(client),client)).appearance,"dark");
 assert.equal((await request(appearanceQuery(other),other)).appearance,"system");
+// Formal idea approval is separate from validating a delivered material.
+// Two client identities of the same tenant must NOT auto-approve without designation.
+await must(db.from("client_workspaces").insert([
+ {client_id:clientA,data:{modules:["content","planning"],contracts:[],folders:[]}},
+ {client_id:clientB,data:{modules:["content","planning"],contracts:[],folders:[]}}
+]),"authorized client workspaces");
+const designation=await request("/api/workflow/editorial/designate-approver",admin,{method:"POST",body:{
+ projectId:projectA,phase:"idea",approverUserId:secondClient.id,
+ reason:"Aprovador sintético escolhido para a fase de ideia",expectedAuthorUserId:admin.id
+}});
+assert.equal(designation.designation.approverUserId,secondClient.id);
+await request("/api/workflow/editorial/request",admin,{method:"POST",body:{
+ projectId:projectA,contentId:"ops-content-1",contentVersion:"01",phase:"idea",expectedAuthorUserId:admin.id
+}});
+const ideaDecision={projectId:projectA,contentId:"ops-content-1",contentVersion:"01",
+ phase:"idea",decision:"approved",adjustmentBody:null};
+await request("/api/workflow/editorial/decision",client,{method:"POST",body:{
+ ...ideaDecision,expectedAuthorUserId:client.id
+},status:403});
+const ideaApproved=await request("/api/workflow/editorial/decision",secondClient,{method:"POST",body:{
+ ...ideaDecision,expectedAuthorUserId:secondClient.id
+}});
+assert.ok(ideaApproved.result,"designated approver must have an accepted formal decision");
+const finalProject=await must(db.from("planning_projects").select("data").eq("id",projectA).single(),"approved idea");
+assert.equal(finalProject.data.editorialCalendar[0].status,"idea_approved");
+console.log("PASS real local Auth: two client users, designated idea approver, rejected other account and atomic formal decision");
+
 console.log("PASS real local Auth: strategist, staff, client and cross-tenant G2");
 console.log("PASS real local PostgREST: Drive URL submission, retry, correction, validation and editorial status independence");
 console.log("PASS per-account appearance stored for one synthetic user without leaking to other tenant");

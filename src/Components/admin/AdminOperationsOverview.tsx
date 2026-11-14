@@ -38,7 +38,7 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
  const model=useMemo(()=>buildOperationsOverview(projects,userId,decisions.key===key?decisions.rows:[],source,today),[projects,userId,decisions,key,source,today]);
  const ready=state==="ready";
  const dailyTasks=model.routine.filter(item=>item.kind==="task"&&item.due===today);
-  const overduePersonal=model.routine.filter(item=>item.kind==="task"&&!!item.due&&item.due<today);
+  const overdueTasks=model.attention.filter(item=>item.kind==="task"&&!!item.due&&item.due<today);
   const nextPersonal=model.routine.filter(item=>item.kind==="task"&&(!item.due||item.due>today));
   const dayMeetings=model.meetings.filter(item=>item.due===today);
   const upcomingMeetings=model.meetings.filter(item=>item.due!==today);
@@ -72,7 +72,7 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
       <section className={dashboardCard+" border-[#F5E0BD] bg-[#FFF8EB]"} aria-labelledby="daily-overdue">
        <div className="flex items-center justify-between gap-3"><h3 id="daily-overdue" className="text-[15px] font-semibold">Atrasadas</h3><strong className="text-xl tabular-nums">{model.overdueTasks===null?"—":model.overdueTasks}</strong></div>
        <p className="mt-1 text-xs text-[#697386]">Pendências operacionais com prazo vencido.</p>
-       {overduePersonal.length?<ul className="mt-3 divide-y divide-[#F5E0BD]">{overduePersonal.slice(0,5).map(item=><li key={item.key}><Link href={overviewProjectHref(item.project)??"#daily-overdue"} className="block rounded-lg px-2 py-3 text-[13px] hover:bg-white/70"><strong className="block truncate font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title} · {overviewDate(item.due)}</span></Link></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma tarefa pessoal atrasada.</p>}
+       {overdueTasks.length?<ul className="mt-3 divide-y divide-[#F5E0BD]">{overdueTasks.slice(0,5).map(item=><li key={item.key}><Link href={overviewProjectHref(item.project)??"#daily-overdue"} className="block rounded-lg px-2 py-3 text-[13px] hover:bg-white/70"><strong className="block truncate font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title} · {overviewDate(item.due)}</span></Link></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma tarefa atrasada.</p>}
        {onOpenTasks&&<button type="button" onClick={onOpenTasks} className={simpleAction}>Ver todas as tarefas</button>}
       </section>
       <section className={dashboardCard+" border-[#D9ECE1] bg-[#F3FAF6]"} aria-labelledby="daily-approvals">

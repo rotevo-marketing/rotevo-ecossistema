@@ -2,6 +2,7 @@
 // No external network, hosted identities or customer data.
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
+import {execFileSync} from "node:child_process";
 import {createClient} from "@supabase/supabase-js";
 import {chromium} from "playwright";
 import axe from "axe-core";
@@ -9,24 +10,40 @@ const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
 assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,"YES_LOCAL_ONLY");
 assert.equal(api,"http://127.0.0.1:54321");
 assert.equal(app,"http://127.0.0.1:3000/");
+/** Read-only direct PostgreSQL assertion against this disposable local database. */
+function localNotice(sql){
+ assert.equal(process.env.ROTEVO_LOCAL_API_TESTS,"YES_LOCAL_ONLY");
+ assert.equal(api,"http://127.0.0.1:54321");
+ const result=execFileSync("psql",["-X","-A","-t","-v","ON_ERROR_STOP=1","-c",sql],{
+  encoding:"utf8",timeout:10000,env:{...process.env,PGHOST:"127.0.0.1",PGPORT:"54322",
+   PGUSER:"postgres",PGDATABASE:"postgres",PGPASSWORD:"postgres"}
+ });
+ return result.trim();
+}
+
 const db=createClient(api,process.env.SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const suffix=randomUUID();
 async function must(query,label){const r=await query;assert.equal(r.error,null,label+": "+(r.error?.message??""));return r.data;}
-async function identity(role){
- const email="ui3-"+role+"-"+suffix+"@synthetic.invalid",password="Local-Ui3-"+suffix+"!";
+async function identity(role,label=role){
+ const email="ui3-"+label+"-"+suffix+"@synthetic.invalid",password="Local-Ui3-"+suffix+"!";
  const {user}=await must(db.auth.admin.createUser({email,password,email_confirm:true}),"create "+role);
  await must(db.from("profiles").insert({id:user.id,email,role,full_name:"Synthetic "+role}),"create profile "+role);
  if(role==="strategist")await must(db.from("team_members").insert({user_id:user.id,display_name:"Synthetic Administrator",role:"admin",active:true}),"admin membership");
  return {email,password,id:user.id};
 }
 const admin=await identity("strategist"),client=await identity("client");
+const peer=await identity("client","peer"); // Other pilot user in same tenant: cannot read the assignee's notifications.
+
 const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");
 await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"client association");
 await must(db.from("client_users").insert({client_id:clientId,user_id:client.id}),"client account membership for workflow authorization");
+await must(db.from("profiles").update({client_id:clientId}).eq("id",peer.id),"peer profile association");
+await must(db.from("client_users").insert({client_id:clientId,user_id:peer.id}),"peer client membership");
+
 const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visualHtml",props:{label:"Documento publicado sintético",description:"Leitura autorizada",height:300,markup:"<section><p>PLANNING_PUBLIC_CANARY</p></section>",stylesheet:"section{padding:12px}p{color:#344054}"},children:[]}]};
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
-const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+const planData={executionTimeline:[{id:"ui3-personal-task",title:"Synthetic Restricted Task",visibleToClient:true,status:"todo"}],internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
@@ -46,6 +63,68 @@ const assignResult=await fetch(new URL("/api/workflow/client-actions",app),{
 });
 assert.equal(assignResult.status,200,"synthetic assignment must be available before client browser login");
 const assignmentPayload=await assignResult.json();assert.ok(assignmentPayload.assignment?.id);
+const taskAssignment=await fetch(new URL("/api/workflow/client-actions",app),{
+ method:"POST",headers:{Authorization:"Bearer "+adminLogin.session.access_token,"Content-Type":"application/json"},
+ body:JSON.stringify({projectId,resourceType:"task",resourceId:"ui3-personal-task",resourceVersion:null,
+ clientUserId:client.id,actionType:"provide_information",
+ instructions:"Ação pessoal sem acesso geral ao cronograma",
+ dueDate:null,requestKey:"ui3-browser-personal-task-"+randomUUID(),expectedAuthorUserId:admin.id})
+});
+assert.equal(taskAssignment.status,200,"An explicitly shared individual task can be assigned with execution module hidden");
+const taskId=(await taskAssignment.json()).assignment.id;
+assert.match(taskId,/^[0-9a-f-]{36}$/i);
+const notificationPilot=localNotice(`insert into rotevo_workflow.notification_pilot_users(user_id,enabled)
+ values ('${client.id}'::uuid,true),('${admin.id}'::uuid,true),('${peer.id}'::uuid,true)
+ on conflict(user_id) do update set enabled=excluded.enabled
+ returning user_id::text`);
+assert.equal(notificationPilot.split("\n").filter(line=>/^[0-9a-f-]{36}$/i.test(line)).length,3,"Only three synthetic pilot users were enabled");
+const clientNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const peerNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+await must(clientNotify.auth.signInWithPassword({email:client.email,password:client.password}),"synthetic client notification sign-in");
+await must(peerNotify.auth.signInWithPassword({email:peer.email,password:peer.password}),"synthetic peer notification sign-in");
+const clientInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
+ p_limit:30,p_unread_only:true}),"list own private pilot notices");
+assert.equal(clientInbox.length,2,"Two individual assignments must appear only to the intended client");
+assert.ok(clientInbox.some(n=>n.resource_id==="ui3-personal-task"),
+ "Assignment notice must be available without exposing the execution module");
+assert.ok(clientInbox.every(n=>n.event_type==="assignment_changed"));
+const peerInbox=await must(peerNotify.rpc("rotevo_workflow_list_notifications_v2",{
+ p_limit:30,p_unread_only:true}),"read same-tenant non-assignee inbox");
+assert.equal(peerInbox.length,0,"Other client users in the same tenant must not receive private assignments");
+const unauthorizedMark=await must(peerNotify.rpc("rotevo_workflow_mark_notification_read_v2",{
+ p_notification_id:clientInbox[0].notification_id}),"test denial of cross-account mark-read");
+assert.equal(unauthorizedMark,false,"Another client cannot acknowledge someone else's notification");
+const marked=await must(clientNotify.rpc("rotevo_workflow_mark_notification_read_v2",{
+ p_notification_id:clientInbox[0].notification_id}),"acknowledge personal notification");
+assert.equal(marked,true);
+const afterMark=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
+ p_limit:30,p_unread_only:true}),"requery unread personal notifications");
+assert.equal(afterMark.length,1,"Mark-read must reduce unread count, not erase the event");
+const disabled=localNotice(`update rotevo_workflow.notification_pilot_users
+ set enabled=false where user_id='${client.id}'::uuid returning user_id::text`);
+assert.ok(disabled.split("\n").includes(client.id),"Synthetic pilot was revoked");
+const disabledInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications_v2",{
+ p_limit:30,p_unread_only:false}),"deny private notices after pilot revocation");
+assert.equal(disabledInbox.length,0,"Pilot revocation must immediately hide notifications");
+localNotice(`update rotevo_workflow.notification_pilot_users
+ set enabled=true where user_id='${client.id}'::uuid`);
+console.log("PASS private notification RPCs: two personal assignments incl. task without execution, peer denial, mark-read and pilot revocation");
+
+const assignmentId=assignmentPayload.assignment.id;
+assert.match(assignmentId,/^[a-f0-9-]{36}$/i);
+const assignmentNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
+ from rotevo_workflow.operational_events e
+ join rotevo_workflow.user_notifications n on n.event_id=e.id
+ where e.idempotency_key='client-action:assigned:${assignmentId}'`);
+assert.equal(assignmentNotice,"assignment_changed:"+client.id,
+ "A released assignment must create exactly one private notification for its intended client");
+console.log("PASS synthetic assignment generates exactly one private notification for assigned client");
+const deniedNotifications=await fetch(new URL("/api/workflow/notifications?unread=true",app),{
+ headers:{Authorization:"Bearer "+adminLogin.session.access_token}});
+assert.equal(deniedNotifications.status,503,
+ "Notification API must remain unavailable while the server pilot flag is disabled");
+console.log("PASS notification route fails closed outside the explicit pilot");
+
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 async function session(role,account,path,destination){
  const page=await browser.newPage({viewport:{width:1440,height:900},locale:"pt-BR"});
@@ -89,13 +168,49 @@ async function auditAppearance(role,page){
   const report=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"rule",values:["color-contrast"]}}));
   const issues=report.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,190)}))}));
   console.log("APPEARANCE_VISUAL_AUDIT",role,mode,JSON.stringify(issues));
+  if(mode==="dark"&&role==="strategist"){
+   // Axe on a scrolled viewport can miss finance and projects below the fold.
+   // Assert readable foreground/background pairs on these ordinary dashboards.
+   const contrast=await page.evaluate(()=>{
+    const channels=(color)=>((color.match(/[0-9]+(?:[.][0-9]+)?/g)||[]).slice(0,3).map(Number));
+    const lum=(color)=>{
+     const rgb=channels(color).map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});
+     return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+    };
+    const ratio=(text,bg)=>{const a=lum(text),b=lum(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);};
+    return ["daily-finance","daily-projects"].map(id=>{
+     const section=document.querySelector('section[aria-labelledby="'+id+'"]');
+     if(!section)return {id,ratios:[]};
+     const samples=[{foreground:section.querySelector("h3"),background:section}];
+     const inner=section.querySelector(".grid > div");
+     if(inner)samples.push({foreground:inner.querySelector("p"),background:inner});
+     const empty=section.querySelector(":scope > p");
+     if(empty)samples.push({foreground:empty,background:section});
+     return {id,ratios:samples.filter(s=>s.foreground).map(s=>ratio(
+      getComputedStyle(s.foreground).color,getComputedStyle(s.background).backgroundColor))};
+    });
+   });
+   console.log("STRATEGIST_DARK_SUMMARY_CONTRAST",JSON.stringify(contrast));
+   assert.ok(contrast.every(s=>s.ratios.length>0&&s.ratios.every(n=>n>=4.5)),
+    "Strategist dark finance/projects text must keep at least 4.5:1 contrast");
+  }
   if(mode==="dark"&&issues.length)console.log("NO_GO_DARK_VISUAL_AUDIT",role,JSON.stringify(issues));
+  assert.equal(issues.length,0,role+" "+mode+" must not have automated color-contrast failures: "+JSON.stringify(issues));
  }
  await page.evaluate(()=>document.documentElement.removeAttribute("data-rotevo-appearance"));
 }
 
 try {
  const customer=await session("client",client,"/","/cliente");
+ const clientOverview=customer.locator(".rv-ui3-client-daily-dashboard");
+ await clientOverview.waitFor({state:"visible",timeout:20000});
+ for(const selector of ['section[aria-label="Para hoje"]','section[aria-label="Atrasadas"]',
+  'section[aria-labelledby="client-focus-title"]','section[aria-labelledby="client-agenda-title"]']){
+  assert.equal(await clientOverview.locator(selector).count(),1,"Client overview retains all four action cards");
+ }
+ assert.equal(await clientOverview.locator('section[aria-label="Para hoje"] strong').innerText(),"—",
+  "Unshared execution may not be presented as a zero or leak tasks");
+ console.log("PASS four client overview cards with non-disclosing unavailable execution counts");
   await auditAppearance('client',customer);
  // Verify the actual per-account UI preference, media query switching, and persistence (not only forced CSS tokens).
  await customer.setViewportSize({width:390,height:900});
@@ -124,18 +239,87 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
+ // Observe only synthetic local API status while debugging assignment loading, never auth headers.
+ customer.on("request",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_START",req.method(),new URL(req.url()).pathname);});
+ customer.on("response",res=>{if(res.url().includes("/api/workflow/client-actions"))void res.json().then(v=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),new URL(res.url()).pathname,Array.isArray(v?.assignments)?v.assignments.length:"invalid-body")).catch(()=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),"unreadable-body"));});
+ customer.on("requestfailed",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_FAIL",new URL(req.url()).pathname);});
+ customer.on("response",res=>{
+  const path=new URL(res.url()).pathname;
+  if(path==="/api/client/workspace"||path==="/api/client/projects")console.log("CLIENT_PORTAL_API_STATUS",path,res.status());
+ });
+ // Assigned client deliveries belong to Tarefas, not to the overview.
+ // Mobile menu starts collapsed in the synthetic 390px viewport.
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
  const delivery=customer.locator("[data-ui3-client-actions]");
- await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+ const targetDelivery=delivery.locator("li").filter({hasText:"Enviar URL sintética da entrega no Google Drive"});
+ // On failure, report only UI state and HTTP status; never print tokens or customer data.
+ await delivery.first().waitFor({state:"visible",timeout:10000});
+ const diagnostic=await delivery.first().innerText();
+ console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
+ try { await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000}); } catch(e) { console.log("CLIENT_ASSIGNMENT_PANEL_AFTER_TIMEOUT",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,440),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]")); throw e; }
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+ // Portal starts on overview after reload. Reopen the personal Tasks area before
+ // checking that the assignment persisted; do not change the approved navigation.
+ await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ // The heading is server-rendered before client hydration. Wait for workspace
+ // and project loading to finish so a click cannot be swallowed on reload.
+ await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ assert.equal(await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded"),"true","mobile menu opens after portal hydration");
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
+  console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
+   path:new URL(customer.url()).pathname,
+   menuExpanded:await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded").catch(()=>null),
+   loading:await customer.getByText("Carregando seu ambiente...").count(),
+   unavailable:await customer.getByText("Seus serviços não puderam ser carregados. Atualize a página.").count(),
+   sessionBlocked:await customer.getByText("Sessão alterada. Redirecionando...").count(),
+   menuEntries:await customer.getByRole("navigation",{name:"Navegação do portal"}).allTextContents().catch(()=>[])
+  }));throw e;
+ });
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
- await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
- await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ await targetDelivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
+ await targetDelivery.getByRole("button",{name:"Enviar link para validação"}).click();
+ await targetDelivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
- assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
- console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ // The heading is server-rendered before client hydration. Wait for workspace
+ // and project loading to finish so a click cannot be swallowed on reload.
+ await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ assert.equal(await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded"),"true","mobile menu opens after portal hydration");
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
+  console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
+   path:new URL(customer.url()).pathname,
+   menuExpanded:await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded").catch(()=>null),
+   loading:await customer.getByText("Carregando seu ambiente...").count(),
+   unavailable:await customer.getByText("Seus serviços não puderam ser carregados. Atualize a página.").count(),
+   sessionBlocked:await customer.getByText("Sessão alterada. Redirecionando...").count(),
+   menuEntries:await customer.getByRole("navigation",{name:"Navegação do portal"}).allTextContents().catch(()=>[])
+  }));throw e;
+ });
+ await targetDelivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ assert.equal(await targetDelivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+ const submissionNotice=localNotice(`select e.event_type||':'||n.recipient_user_id::text
+ from rotevo_workflow.operational_events e
+ join rotevo_workflow.user_notifications n on n.event_id=e.id
+ where e.idempotency_key like 'client-action:submitted:%'
+ and e.metadata->>'actionId'='${assignmentId}'`);
+assert.equal(submissionNotice,"item_ready:"+admin.id,
+ "Client submission must notify the authorized internal owner exactly once");
+console.log("PASS synthetic Drive delivery generates exactly one private review notification");
+const staffNotifications=await must(syntheticAuth.rpc("rotevo_workflow_list_notifications_v2",{
+ p_limit:30,p_unread_only:true}),"authorized team inbox");
+assert.ok(staffNotifications.some(n=>n.event_type==="item_ready"&&n.resource_id==="ui3-drive-demo"),
+ "Authorized internal owner must see a private Drive delivery notice");
+assert.ok(!staffNotifications.some(n=>n.resource_id==="ui3-personal-task"),
+ "Team should not see an assignment notification targeted exclusively to client");
+console.log("PASS internal notification RPC lists delivered material without exposing unrelated client-only notices");
+console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ // General viewport assertions intentionally target Overview, not the Tasks panel.
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Visão geral",exact:true}).click();
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});

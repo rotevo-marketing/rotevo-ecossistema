@@ -325,59 +325,77 @@
   }
 }
 
-/* UI3 | Straight accent rails in both strategist and client navigation.
-   Keep rounded corners for controls; only vertical status/selection rails are square. */
-.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before,
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
- border-radius:0!important;
+/* UI3 | Client menu mirrors the approved strategist selection rail.
+   One straight 2px pseudo-element; no background-image or competing overrides. */
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar {
+ background:#fff;
+ border-right:1px solid #E3E6ED;
+ box-shadow:none;
 }
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before {
- border-radius:0!important;
-}
-.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-4,
-.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-\[4px\] {
- border-top-left-radius:0!important;
- border-bottom-left-radius:0!important;
-}
-
-/* Client navigation: consistent straight accent rail, matching strategist. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item {
  position:relative;
+ color:#4A5266;
+ background:transparent;
+ border-radius:7px;
+ box-shadow:none;
+ font-size:12px;
+ font-weight:500;
+ min-height:38px;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:hover {
+ background:#F6F7FB;
+ color:#323647;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
  background:#F6F4FC;
  color:#453B75;
  font-weight:600;
+ background-image:none;
 }
 .client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
  content:"";
+ display:block;
  position:absolute;
+ left:0;
  top:9px;
  bottom:9px;
- left:0;
  width:2px;
  background:#8173C8;
  border:0;
- border-radius:0!important;
+ border-radius:0;
  box-shadow:none;
  transform:none;
 }
-
-/* A single square active rail, rendered in the nav component. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before{content:none!important;display:none!important}
-
-/* UI 3.0: rectangular, inset marker drawn as a background layer, not rounded pseudo-content. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"] {
- background-color:#EDEAFF;
- background-image:linear-gradient(#8173C8,#8173C8);
- background-repeat:no-repeat;
- background-position:left center;
- background-size:2px calc(100% - 18px);
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::after {
+ content:none;
+ display:none;
 }
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before,
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::after {
- content:none!important;
- display:none!important;
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item svg {
+ stroke-width:1.55;
 }
-
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:focus-visible {
+ outline:2px solid #6C5CE7;
+ outline-offset:2px;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before,
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+ border-radius:0!important;
+}
+/* On mobile, the client menu also uses the same selected-state rail. */
+.client-portal-v2.rv-ui2.rv-ui3 nav[aria-label="Navegação do portal"] .rv-ui2-nav-item[aria-current="page"] {
+ position:relative;
+}
+.client-portal-v2.rv-ui2.rv-ui3 nav[aria-label="Navegação do portal"] .rv-ui2-nav-item[aria-current="page"]::before {
+ content:"";
+ display:block;
+ position:absolute;
+ left:0;
+ top:9px;
+ bottom:9px;
+ width:2px;
+ background:#8173C8;
+ border-radius:0;
+}
 
 /* UI3 appearance pilot (disabled by default). 
    Only workspaces and standard chrome; rich documents deliberately excluded. */
@@ -423,4 +441,153 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 }
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard)>header p{
  color:var(--rv3-muted)!important;
+}
+
+/* UI3: semantic four-card dashboards, both accounts. These rules are gated by
+   the user's data-rotevo-appearance attribute and never recolor rich documents. */
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) {
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) {
+ border-color:var(--rv3-border)!important;color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-labelledby="daily-today"]
+) {background:#292541!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Atrasadas"],section[aria-labelledby="daily-overdue"]
+) {background:#34291F!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="daily-approvals"]
+) {background:#1D332C!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-agenda-title"],section[aria-labelledby="daily-agenda"]
+) {background:#203249!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(h3,strong,p,span,li,a,button) {
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(a,button):hover {background:rgba(255,255,255,.08)!important;}
+
+/* UI3 account appearance: shared application chrome and ordinary controls.
+   Excludes rich-document canvases and keeps state/status badges untouched. */
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ --rv3-canvas:#101725;
+ --rv3-surface:#172132;
+ --rv3-text:#E6ECF6;
+ --rv3-muted:#ABB9CF;
+ --rv3-border:#62718A;
+ --rv3-accent:#BFB3FF;
+ --rv3-accent-soft:#292546;
+ background:var(--rv3-canvas);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-sidebar,.rv-ui2-topbar,.rv-ui2-workspace,
+ .rv-ui2-client-content,.rv-ui2-workspace-heading,.rv-ui2-client-heading,
+ .rv-ui2-client-identity,.rv-ui2-section
+) {
+ background-color:var(--rv3-surface)!important;
+ border-color:var(--rv3-border)!important;
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-sidebar :is(
+ .rv-ui2-nav-item,.rv-ui2-nav-item:hover
+){
+ background-color:transparent;
+ color:var(--rv3-muted)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]{
+ background-color:var(--rv3-accent-soft)!important;
+ background-image:linear-gradient(var(--rv3-accent),var(--rv3-accent));
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) :is(h1,h2){
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) :is(p,small,span){
+ color:var(--rv3-muted)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select){
+ background-color:var(--rv3-surface);
+ color:var(--rv3-text);
+ border-color:var(--rv3-border);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(input,textarea,select)::placeholder{
+ color:var(--rv3-muted);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
+ background:#fff!important;
+ color:#111827!important;
+}
+/* The document editor's own controls keep their authored colors and layouts. */
+
+/* Preserve Rotevo branding contrast in the dark chrome.
+   The logo defaults to black by component contract in both portals. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-topbar [role="img"][aria-label="Rotevo"] {
+ color:#F4F6FC!important;
+}
+
+/* WCAG small-text contrast correction for the client agenda empty state. */
+html:not([data-rotevo-appearance="dark"]) .rv-ui3 section[aria-labelledby="client-agenda-title"] > .mt-4 {color:#53617A!important;}
+
+
+/* UI3 dark: strategist finance and projects summaries are ordinary dashboard
+   panels, not rich documents. Keep their surfaces and text in the same palette. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+){
+ background:var(--rv3-surface)!important;
+ border-color:var(--rv3-border)!important;
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+) :is(h3,p,span,strong){
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard section[aria-labelledby="daily-finance"] .grid > div,
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard section[aria-labelledby="daily-projects"] li{
+ background:#203049!important;
+ border-color:var(--rv3-border)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+) button {
+ color:var(--rv3-accent)!important;
+}
+/* Strategist finance metrics: readable labels against the dark inset surface. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-finance-metric-label {
+ color:#BAC8DF!important;
+}
+
+/* Four operational dashboard divisions: their corner numbers replace the removed top KPI strip. */
+.rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) .rv-ui3-section-count {
+ display:inline-flex;align-items:center;justify-content:center;
+ min-width:30px;min-height:27px;padding:2px 8px;
+ border:1px solid rgba(73,82,105,.13);border-radius:9px;
+ background:rgba(255,255,255,.72);font-size:13px;font-weight:700;
+ line-height:1.3;font-variant-numeric:tabular-nums;
+ flex-shrink:0;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) .rv-ui3-section-count {
+ background:rgba(255,255,255,.11);border-color:rgba(232,237,248,.28);
+ color:var(--rv3-text)!important;
 }

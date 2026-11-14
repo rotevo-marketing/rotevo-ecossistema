@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {spawnSync} from "node:child_process";
 import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview,validGoogleDriveUrl} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
@@ -130,9 +131,11 @@ test("client action notifications use existing private workflow events with expl
 
 test("client panel accepts Drive URLs without file upload or download",()=>{
  const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
- const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
+ const clientPage=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
- assert.ok(overview.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ assert.ok(clientPage.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ assert.ok(clientPage.includes('item.id==="execution"&&clientActionEnabled'),"Tasks tab must expose assignments when the full execution module is not shared");
+ assert.ok(clientPage.includes('workspace.modules.includes("execution" as never)&&<ProjectTimeline'),"Unshared project task list must remain hidden");
  assert.ok(panel.includes("validGoogleDriveUrl(url)"));
  assert.ok(panel.includes('type="url"'));
  assert.ok(panel.includes("driveUrl:current.url"));
@@ -140,4 +143,84 @@ test("client panel accepts Drive URLs without file upload or download",()=>{
  for(const forbidden of ['type="file"','.storage.','.upload(','.download(','createSignedUrl','getPublicUrl'])
   assert.ok(!panel.includes(forbidden),"Unexpected file transfer in client panel: "+forbidden);
  assert.ok(!review.includes("createSignedUrl"));
+});
+
+test("pilot notification read SQL is private, deny-by-default and allows only personal assignment with G2",()=>{
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-notifications-read-pilot-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ const bell=readFileSync(new URL("../../src/Components/shared/WorkflowNotificationBell.tsx",import.meta.url),"utf8");
+ const clientPage=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
+ const adminPage=readFileSync(new URL("../../src/app/admin/page.tsx",import.meta.url),"utf8");
+ assert.match(sql,/notification_pilot_users/);
+ assert.match(sql,/enabled boolean not null default false/);
+ assert.match(sql,/assignment\.client_user_id=p_user/);
+ assert.match(sql,/assignment\.released_at is not null/);
+ assert.match(sql,/assignment\.status<>'cancelled'/);
+ assert.match(sql,/cu\.user_id=p_user and cu\.client_id=project\.client_id/);
+ assert.match(sql,/public\.team_members m/);
+ assert.match(sql,/public\.team_project_assignments/);
+ assert.match(sql,/public\.team_member_permissions/);
+ assert.match(sql,/n\.recipient_user_id=v_actor/);
+ assert.match(sql,/rotevo_workflow\.can_view_event_v2\(v_actor,e\.id\)/);
+ assert.match(sql,/revoke all on function rotevo_workflow\.can_view_event_v2/);
+ assert.match(sql,/event_phase text,[\s\S]*action_id text/);
+ assert.match(bell,/n\.action_id\?onOpenAssignedAction/);
+ assert.match(bell,/n\.action_id\?"Ver atribuição"/);
+ assert.match(clientPage,/onOpenAssignedAction=\{\(projectId\)=>/);
+ assert.match(clientPage,/openModule\("execution",projectId\)/);
+ assert.match(adminPage,/onOpenAssignedAction=\{\(projectId\)=>/);
+ assert.match(adminPage,/navigateWorkspace\("tasks"\)/);
+});
+
+test("production notification proposal is guarded, additive and never replays existing assignment schema",()=>{
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ const hosted=readFileSync(new URL("../../docs/security/sql/ui3-homologation-notification-v2-MIGRATION-REVIEW.sql",import.meta.url),"utf8");
+ assert.match(sql,/PROPOSAL ONLY, NOT AUTHORIZED FOR EXECUTION/);
+ assert.match(sql,/to_regclass\('rotevo_workflow\.client_action_assignments'\)/);
+ assert.match(sql,/to_regclass\('rotevo_workflow\.client_action_submissions'\)/);
+ assert.match(sql,/Expected three existing production notification triggers/);
+ assert.match(sql,/V2 already installed: stop and inspect, do not overwrite/);
+ assert.match(sql,/create or replace function public\.rotevo_workflow_list_notifications_v2/);
+ assert.match(sql,/create or replace function public\.rotevo_workflow_mark_notification_read_v2/);
+ assert.doesNotMatch(sql,/\bdrop\s+(?:table|function|trigger)\b/i);
+ assert.doesNotMatch(sql,/\bdelete\s+from\b/i);
+ assert.doesNotMatch(sql,/\btruncate\s+\b/i);
+ assert.doesNotMatch(sql,/\bcreate\s+table\s+if\s+not\s+exists\s+rotevo_workflow\.client_action_assignments\b/i);
+ assert.equal((sql.match(/^begin;$/gm)??[]).length,1);
+ assert.equal((sql.match(/^commit;$/gm)??[]).length,1);
+ assert.match(hosted,/Dedicated for project tqedxahsqbskninjenfg/);
+ assert.match(hosted,/Notification v2 already installed: abort rather than overwrite/);
+});
+
+test("hosted Auth smoke is a dry-run without both explicit opt-ins, and CI blocks execution",()=>{
+ const file=new URL("./ui3-hosted-auth-smoke.mjs",import.meta.url);
+ const environment={...process.env,
+  ROTEVO_HOSTED_SUPABASE_URL:"https://tqedxahsqbskninjenfg.supabase.co",
+  ROTEVO_HOSTED_ANON_KEY:"synthetic-public-placeholder",
+  ROTEVO_HOSTED_SERVICE_KEY:"synthetic-admin-placeholder"};
+ delete environment.ROTEVO_HOSTED_AUTH_SMOKE;
+ const dry=spawnSync(process.execPath,[file.pathname],{env:environment,encoding:"utf8",timeout:15000});
+ assert.equal(dry.status,0,dry.stderr);
+ assert.match(dry.stdout,/DRY RUN: no API calls/);
+ const noFlag=spawnSync(process.execPath,[file.pathname,"--execute"],{
+  env:environment,encoding:"utf8",timeout:15000});
+ assert.equal(noFlag.status,0,noFlag.stderr);
+ assert.match(noFlag.stdout,/DRY RUN: no API calls/);
+ const ci=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"true",ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(ci.status,0,"CI must fail before any privileged Auth network request");
+ assert.match(ci.stderr,/Cannot run in CI or Vercel/);
+ const wrongProject=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"",VERCEL:"",
+  ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY",
+  ROTEVO_HOSTED_SUPABASE_URL:"https://kadvzjelkyfwouqmlxaa.supabase.co"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(wrongProject.status,0,"Production Supabase URL must fail before network access");
+ assert.match(wrongProject.stderr,/Homologation-only URL guard/);
+ const vercel=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"",VERCEL:"1",
+  ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(vercel.status,0,"Vercel runtime must fail before network access");
+ assert.match(vercel.stderr,/Cannot run in CI or Vercel/);
 });

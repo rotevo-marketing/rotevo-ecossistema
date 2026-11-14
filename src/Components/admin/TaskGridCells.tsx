@@ -52,7 +52,7 @@ export function TaskDueDateCell({label,value,onChange,disabled=false,overdue=fal
  const trigger=useRef<HTMLButtonElement>(null);
  useEffect(()=>{if(!open)setDraft(value);},[value,open]);
  useEffect(()=>{if(!open)return;const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpen(false);trigger.current?.focus();}};const onScroll=()=>setOpen(false);document.addEventListener("keydown",onKey);window.addEventListener("resize",onScroll);window.addEventListener("scroll",onScroll,true);return()=>{document.removeEventListener("keydown",onKey);window.removeEventListener("resize",onScroll);window.removeEventListener("scroll",onScroll,true);};},[open]);
- const display=(date:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return "Definir data";const [y,m,d]=date.split("-").map(Number);const parsed=new Date(y,m-1,d);return Number.isNaN(parsed.getTime())?"Definir data":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short"}).format(parsed).replace(".","");};
+ const display=(date:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return "Definir data";const [y,m,d]=date.split("-").map(Number);const parsed=new Date(y,m-1,d);return Number.isNaN(parsed.getTime())?"Definir data":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(parsed);};
  function toggle(){if(disabled)return;if(open){setOpen(false);return;}const rect=trigger.current?.getBoundingClientRect();if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-280)),top:Math.max(8,Math.min(rect.bottom+4,window.innerHeight-255))});setDraft(value);setOpen(true);}
  function save(next:string){if(next&&!/^\d{4}-\d{2}-\d{2}$/.test(next))return;setOpen(false);if(next!==value)onChange(next);trigger.current?.focus();}
  return <div className="min-w-0">

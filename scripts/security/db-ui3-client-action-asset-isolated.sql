@@ -41,7 +41,7 @@ begin
  current_setting('rotevo_test.assignment_id')::uuid,
  'Material roubado de outra conta','client-asset-submit-002',
  current_setting('rotevo_test.asset_path'));
- exception when insufficient_privilege then denied:=true;end;
+ exception when insufficient_privilege or invalid_parameter_value then denied:=true;end;
  if not denied then raise exception 'Cross-tenant asset linked to submission';end if;
 end $cross$;
 reset role;

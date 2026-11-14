@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview} from "../../src/lib/workflow/clientActionsContract.ts";
+import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview,parseClientActionSubmitAsset} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
  projectId:"00000000-0000-4000-8000-000000000011",
@@ -96,4 +96,19 @@ test("internal delivery review UI is disabled by default and does not bypass ser
  assert.match(panel,/session\.user\.id!==loadedUserId/);
  assert.match(panel,/alive=false;setItems\(\[\]\)/);
  assert.doesNotMatch(panel,/SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test("private file submissions require immutable assignment and actor-bound object path",()=>{
+ const good={assignmentId:base.projectId,expectedAuthorUserId:base.clientUserId,
+  note:"Arquivo enviado para avaliação",requestKey:"private-asset-request-001",
+  privateStoragePath:base.projectId+"/"+base.clientUserId+"/00000000-0000-4000-8000-000000000021.pdf"};
+ assert.equal(parseClientActionSubmitAsset(good)?.privateStoragePath,good.privateStoragePath);
+ assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:base.projectId+"/"+base.expectedAuthorUserId+"/00000000-0000-4000-8000-000000000021.pdf"}),null);
+ assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:"../private"}),null);
+ assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:good.privateStoragePath.replace(".pdf",".exe")}),null);
+ const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/submit-asset/route.ts",import.meta.url),"utf8");
+ assert.match(route,/ROTEVO_PRIVATE_DELIVERIES_ENABLED!=="true"/);
+ assert.match(route,/client\.auth\.getUser\(token\)/);
+ assert.match(route,/rotevo_client_action_submit_asset/);
+ assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });

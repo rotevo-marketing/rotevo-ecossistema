@@ -555,3 +555,7 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
 ) button {
  color:var(--rv3-accent)!important;
 }
+/* Strategist finance metrics: readable labels against the dark inset surface. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-finance-metric-label {
+ color:#BAC8DF!important;
+}

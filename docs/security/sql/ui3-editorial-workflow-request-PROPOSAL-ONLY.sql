@@ -67,7 +67,8 @@ begin
    or coalesce(v_content->>'deletedAt','')<>''
  then raise exception 'Content unavailable' using errcode='40001';end if;
  v_from_status:=case p_phase when 'idea' then 'idea' else 'review' end;
- v_to_status:=case p_phase when 'idea' then 'idea_pending' else 'awaiting_client' end;
+ -- An idea is approved through a pending request, not a UI status named idea_pending.
+ v_to_status:=case p_phase when 'idea' then 'idea' else 'awaiting_client' end;
  if v_content->>'status' is distinct from v_from_status
  then raise exception 'Not ready for client approval' using errcode='40001';end if;
 

@@ -19,7 +19,7 @@ reset role;
 do $assert$
 begin
  if (select data #>> '{editorialCalendar,0,status}' from public.planning_projects
-     where id='b0000000-0000-4000-8000-000000000002')<>'idea_pending'
+     where id='b0000000-0000-4000-8000-000000000002')<>'idea'
  then raise exception 'Request did not update state';end if;
  if (select count(*) from rotevo_workflow.approval_requests
     where project_id='b0000000-0000-4000-8000-000000000002'

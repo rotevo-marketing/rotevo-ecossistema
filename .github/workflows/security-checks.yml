@@ -122,6 +122,8 @@ jobs:
         run: node --test scripts/security/ui3-client-overview-contract.test.mjs
       - name: Verify client action API parsing and fail-closed authentication
         run: node --experimental-strip-types --test scripts/security/ui3-client-action-contract.test.mjs
+      - name: Verify isolated account theme preference contracts
+        run: node --test scripts/security/ui3-account-appearance-contract.test.mjs
       - name: Verify onboarding link validation contracts
         run: node --test scripts/security/onboarding-link-contract.test.mjs
       - name: Verify administrative editors use authorized project writes

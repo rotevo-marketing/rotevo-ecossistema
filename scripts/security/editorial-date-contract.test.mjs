@@ -61,3 +61,21 @@ test("workflow decision buttons require collaboration while legacy decisions rem
  assert.match(source,/approval=\{clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&/);
  assert.match(source,/NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\)\&\&<EditorialDecision/);
 });
+
+test("publication date and completion deadline stay distinct in editorial editor and details",()=>{
+ const manager=readFileSync(new URL("Components/admin/EditorialManager.tsx",root),"utf8");
+ const calendar=readFileSync(new URL("Components/cliente/EditorialCalendar.tsx",root),"utf8");
+ assert.match(manager,/value=\{editing\.deadlineDate\?\?""\}/);
+ assert.match(manager,/value=\{editing\.publishDate\}/);
+ assert.match(manager,/validateEditorialDates\(\{deadlineDate:editing\.deadlineDate,publishDate:editing\.publishDate\}\)/);
+ assert.match(calendar,/active\.deadlineDate\?fmt\(active\.deadlineDate\):"Não definido"/);
+ assert.match(calendar,/>Publicação<\/span>/);
+ assert.match(calendar,/>Prazo<\/span>/);
+});
+test("server honors deadline and approval version integrity without requiring migration of old records",()=>{
+ const route=readFileSync(new URL("app/api/admin/project/update/route.ts",root),"utf8");
+ assert.match(route,/const oldDeadline=oldEditorialById\.get\(item\.id\)\?\.deadlineDate/);
+ assert.match(route,/deadline!==oldDeadline&&deadline!==undefined/);
+ assert.match(route,/deadline>item\.publishDate/);
+ assert.match(route,/const materialFields=\[[^\n]*"deadlineDate"/);
+});

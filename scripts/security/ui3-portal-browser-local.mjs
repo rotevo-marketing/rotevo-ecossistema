@@ -239,7 +239,7 @@ try {
  await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
  await newEditorial.locator("select").nth(1).selectOption("YouTube");
  const editorialDate=new Date().toISOString().slice(0,7)+"-15";
- await newEditorial.getByLabel("Data prevista *").fill(editorialDate);
+ await newEditorial.getByLabel("Data de publicação *").fill(editorialDate);
  await newEditorial.getByLabel("Resumo da ideia *").fill("Canal novo e visualização contextual do calendário.");
  await newEditorial.getByLabel("Objetivo do conteúdo *").fill("Testar a persistência isolada de conteúdo editorial.");
  await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();

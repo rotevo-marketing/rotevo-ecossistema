@@ -26,7 +26,7 @@ await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"
 await must(db.from("client_users").insert({client_id:clientId,user_id:client.id}),"client account membership for workflow authorization");
 const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visualHtml",props:{label:"Documento publicado sintético",description:"Leitura autorizada",height:300,markup:"<section><p>PLANNING_PUBLIC_CANARY</p></section>",stylesheet:"section{padding:12px}p{color:#344054}"},children:[]}]};
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
-const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
@@ -35,6 +35,17 @@ const sharedContract={id:randomUUID(),title:"Contrato Sintético Visível",statu
 const privateContract={...sharedContract,id:randomUUID(),title:"PRIVATE_CONTRACT_CANARY",visibleToClient:false};
 await must(db.from("client_workspaces").insert({client_id:clientId,data:{modules:["planning","content","meetings","contract","finance"],contracts:[sharedContract,privateContract],folders:[]}}),"workspace");
 
+// Only synthetic tenant and a loopback API: assign a Drive delivery before testing browser reload.
+const syntheticAuth=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const adminLogin=await must(syntheticAuth.auth.signInWithPassword({email:admin.email,password:admin.password}),"login synthetic strategist to assign client deliverable");
+const assignResult=await fetch(new URL("/api/workflow/client-actions",app),{
+ method:"POST",headers:{Authorization:"Bearer "+adminLogin.session.access_token,"Content-Type":"application/json"},
+ body:JSON.stringify({projectId,resourceType:"content",resourceId:"ui3-drive-demo",resourceVersion:"01",
+ clientUserId:client.id,actionType:"send_material",instructions:"Enviar URL sintética da entrega no Google Drive",
+ dueDate:null,requestKey:"ui3-browser-delivery-"+randomUUID(),expectedAuthorUserId:admin.id})
+});
+assert.equal(assignResult.status,200,"synthetic assignment must be available before client browser login");
+const assignmentPayload=await assignResult.json();assert.ok(assignmentPayload.assignment?.id);
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 async function session(role,account,path,destination){
  const page=await browser.newPage({viewport:{width:1440,height:900},locale:"pt-BR"});
@@ -113,6 +124,18 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
+ // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
+ const delivery=customer.locator("[data-ui3-client-actions]");
+ await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+ await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+ await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+ await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
+ await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
+ await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+ await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+ assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+ console.log("PASS browser client Drive URL submission and persisted status after refresh");
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});

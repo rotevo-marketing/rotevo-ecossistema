@@ -81,6 +81,6 @@ test("task and editorial list columns use aligned compact widths and preserve se
  assert.match(task,/visibleColumns\.launch&&<col style=\{\{width:138\}\}\/>/);
  assert.match(editorial,/visibleColumns\.publish&&<col style=\{\{width:138\}\}\/>/);
  assert.match(cells,/day:"2-digit",month:"2-digit",year:"numeric"/,"Task delivery dates should match publication date presentation");
- assert.ok(task.includes('["Entrega","calendar-week","due"]'));
+ assert.ok(task.includes('["Prazo","calendar-week","due"]'));
  assert.ok(editorial.includes('["Conclusão","calendar-week","due"]'));
 });

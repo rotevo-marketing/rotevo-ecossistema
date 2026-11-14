@@ -59,3 +59,30 @@ begin
   end;
   raise notice 'UI3_CLIENT_ACTION_SCHEMA_SYNTHETIC_PASS';
 end $$;
+
+\ir ../../docs/security/sql/ui3-designated-editorial-approvers-PROPOSAL-ONLY.sql
+do $approvers$
+declare
+ p uuid:='00000000-0000-4000-8000-000000000011';
+begin
+ if not (select relrowsecurity from pg_class where oid='rotevo_workflow.editorial_designated_approvers'::regclass)
+ then raise exception 'Designated approver RLS missing';end if;
+ if has_table_privilege('authenticated','rotevo_workflow.editorial_designated_approvers','SELECT')
+ then raise exception 'Approver assignments exposed to authenticated';end if;
+ insert into rotevo_workflow.editorial_designated_approvers(project_id,phase,approver_user_id,designated_by)
+ values(p,'idea','00000000-0000-4000-8000-000000000012','00000000-0000-4000-8000-000000000013');
+ begin
+  insert into rotevo_workflow.editorial_designated_approvers(project_id,phase,approver_user_id,designated_by)
+  values(p,'idea','00000000-0000-4000-8000-000000000014','00000000-0000-4000-8000-000000000013');
+  raise exception 'Two simultaneous active idea approvers accepted';
+ exception when unique_violation then null;end;
+ update rotevo_workflow.editorial_designated_approvers
+ set revoked_at=clock_timestamp(),revocation_reason='Authorized reassignment in synthetic test'
+ where project_id=p and phase='idea' and approver_user_id='00000000-0000-4000-8000-000000000012';
+ insert into rotevo_workflow.editorial_designated_approvers(project_id,phase,approver_user_id,designated_by)
+ values(p,'idea','00000000-0000-4000-8000-000000000014','00000000-0000-4000-8000-000000000013');
+ if (select count(*) from rotevo_workflow.editorial_designated_approvers where project_id=p and phase='idea')<>2
+ or (select count(*) from rotevo_workflow.editorial_designated_approvers where project_id=p and phase='idea' and revoked_at is null)<>1
+ then raise exception 'Approver reassignment lost history or produced extra active users';end if;
+ raise notice 'UI3_APPROVER_DESIGNATION_SYNTHETIC_PASS';
+end $approvers$;

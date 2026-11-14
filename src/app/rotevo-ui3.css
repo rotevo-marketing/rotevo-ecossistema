@@ -400,9 +400,7 @@
 /* UI3 appearance pilot (disabled by default). 
    Only workspaces and standard chrome; rich documents deliberately excluded. */
 html[data-rotevo-appearance="dark"] .rv-ui3{
- --rv3-canvas:#101725;--rv3-surface:#172132;--rv3-text:#E6ECF6;
- --rv3-muted:#ABB9CF;--rv3-border:#62718A;--rv3-accent:#A897ED;
- --rv3-accent-soft:#292546;
+
  color:var(--rv3-text);
 }
 html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-workspace,
@@ -486,13 +484,7 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 /* UI3 account appearance: shared application chrome and ordinary controls.
    Excludes rich-document canvases and keeps state/status badges untouched. */
 html[data-rotevo-appearance="dark"] .rv-ui3 {
- --rv3-canvas:#101725;
- --rv3-surface:#172132;
- --rv3-text:#E6ECF6;
- --rv3-muted:#ABB9CF;
- --rv3-border:#62718A;
- --rv3-accent:#BFB3FF;
- --rv3-accent-soft:#292546;
+
  background:var(--rv3-canvas);
 }
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(
@@ -590,4 +582,70 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-finance-metric-label {
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) .rv-ui3-section-count {
  background:rgba(255,255,255,.11);border-color:rgba(232,237,248,.28);
  color:var(--rv3-text)!important;
+}
+
+/* Apply the account palette to workspace surfaces, including floating controls. */
+html[data-rotevo-appearance="dark"] {
+ color-scheme:dark;
+ --rv3-canvas:#000;
+ --rv3-surface:#171717;
+ --rv3-raised:#222;
+ --rv3-hover:#2d2d2d;
+ --rv3-text:#f2f2f2;
+ --rv3-muted:#bdbdbd;
+ --rv3-border:#575757;
+ --rv3-accent:#bfb3ff;
+ --rv3-accent-soft:#2a233a;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-main {
+ background:var(--rv3-canvas);
+}
+html[data-rotevo-appearance="dark"] :is(.rv-ui3,.rv-ui3-floating) {
+ & :where(.se-paper,.bn-editor,.se-paper *,.bn-editor *) {color-scheme:light;}
+ & :is([role="dialog"],[role="menu"],[role="listbox"],.bg-white,
+ [class~="bg-[#FFFFFF]"],[class~="bg-[#F6F7FB]"],[class~="bg-[#F7F8FC]"],
+ [class~="bg-[#FAF9FE]"],[class~="bg-[#FAFBFD]"],[class~="bg-[#F8FAFC]"]):not(:where(.se-paper,.bn-editor,.se-paper *,.bn-editor *)) {
+  background-color:var(--rv3-surface);
+  color:var(--rv3-text);
+ }
+ & :is([class~="text-[#090D1C]"],[class~="text-[#111827]"],[class~="text-[#252B3A]"],
+ [class~="text-[#26314A]"],[class~="text-[#293144]"],[class~="text-[#323647]"],
+ [class~="text-[#323B4D]"],[class~="text-[#344056]"],.text-slate-900,.text-gray-900):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-text);
+ }
+ & :is([class~="text-[#525B70]"],[class~="text-[#606D82]"],[class~="text-[#687487]"],
+ [class~="text-[#697386]"],[class~="text-[#788398]"],.text-slate-600,.text-gray-600):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-muted);
+ }
+ & :is([class~="text-[#5949D1]"],[class~="text-[#6D35F5]"]):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-accent);
+ }
+ & :is([class~="text-[#A83E3E]"],[class~="text-[#B43D4C]"],.text-red-700) {
+  color:#fca5a5;
+ }
+ & :is([class~="text-[#126837]"],.text-green-700) {color:#86efac;}
+ & :is([class~="border-[#E3E7F0]"],[class~="border-[#E5E9F1]"],[class~="border-[#D8DCE5]"],
+ [class~="border-[#DEE3ED]"],[class~="border-[#E3E6ED]"],[class~="border-[#E8EBF1]"],
+ [class~="border-[#DCE2EC]"],[class~="border-[#DDE2EC]"]):not(:where(.se-paper *,.bn-editor *)) {
+  border-color:var(--rv3-border);
+ }
+ & :is(input:not([type="checkbox"],[type="radio"]),textarea,select):not(:where(.se-paper *,.bn-editor *)) {
+  background-color:var(--rv3-raised);
+  color:var(--rv3-text);
+  border-color:var(--rv3-border);
+ }
+ & :is(input,textarea)::placeholder {color:var(--rv3-muted);}
+ & :is(input,textarea,select)[aria-invalid="true"] {border-color:#fca5a5;}
+ & :is(button,a,input,textarea,select):focus-visible {outline:2px solid var(--rv3-accent);outline-offset:2px;}
+ & :is(button,a,tr):is([class~="hover:bg-white"],[class~="hover:bg-[#F6F7FB]"],
+ [class~="hover:bg-[#F5F2FF]"],[class~="hover:bg-[#F4F0FF]"],[class~="hover:bg-[#FBFAFF]"],
+ [class~="hover:bg-[#F2EEFF]"],[class~="hover:bg-[#F7F7FB]"],[class~="hover:bg-[#F2F6FC]"]):hover {
+  background-color:var(--rv3-hover);
+ }
+ & :is([role="option"][aria-selected="true"],[class~="bg-[#F3F0FF]"]) {background-color:var(--rv3-accent-soft);}
+}
+html[data-rotevo-appearance="dark"] .rv-ui3-floating {
+ background-color:var(--rv3-surface);
+ color:var(--rv3-text);
+ border-color:var(--rv3-border);
 }

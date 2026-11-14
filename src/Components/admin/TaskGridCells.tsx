@@ -34,7 +34,7 @@ export function TaskDropdown<T extends string>({label,value,options,onChange,dis
   </button>
   {open&&typeof document!=="undefined"&&createPortal(<>
    <button type="button" aria-label="Fechar opções" onClick={()=>setOpen(false)} className="fixed inset-0 z-[140] cursor-default"/>
-   <div role="listbox" aria-label={label} className="fixed z-[141] max-h-64 w-[216px] overflow-y-auto rounded-xl border border-[#DDE2EC] bg-white p-1.5 shadow-xl"
+   <div role="listbox" aria-label={label} className="rv-ui3-floating fixed z-[141] max-h-64 w-[216px] overflow-y-auto rounded-xl border border-[#DDE2EC] bg-white p-1.5 shadow-xl"
     style={{left:position.left,top:Math.max(8,position.top),minWidth:Math.min(216,Math.max(position.width,160))}}>
     {options.map(opt=><button type="button" role="option" aria-selected={opt.value===value} key={opt.value} onClick={()=>{setOpen(false);if(opt.value!==value)onChange(opt.value);}}
      className={"flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs focus-visible:outline-2 focus-visible:outline-[#6C5CE7] "+(kind==="people"?"hover:bg-[#F4F0FF] ":"hover:bg-[#F6F7FA] ")+(opt.value===value?"bg-[#F4F0FF] font-semibold":"")}>
@@ -52,7 +52,7 @@ export function TaskDueDateCell({label,value,onChange,disabled=false,overdue=fal
  const trigger=useRef<HTMLButtonElement>(null);
  useEffect(()=>{if(!open)setDraft(value);},[value,open]);
  useEffect(()=>{if(!open)return;const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpen(false);trigger.current?.focus();}};const onScroll=()=>setOpen(false);document.addEventListener("keydown",onKey);window.addEventListener("resize",onScroll);window.addEventListener("scroll",onScroll,true);return()=>{document.removeEventListener("keydown",onKey);window.removeEventListener("resize",onScroll);window.removeEventListener("scroll",onScroll,true);};},[open]);
- const display=(date:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return "Definir data";const [y,m,d]=date.split("-").map(Number);const parsed=new Date(y,m-1,d);return Number.isNaN(parsed.getTime())?"Definir data":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short"}).format(parsed).replace(".","");};
+ const display=(date:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return "Definir data";const [y,m,d]=date.split("-").map(Number);const parsed=new Date(y,m-1,d);return Number.isNaN(parsed.getTime())?"Definir data":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(parsed);};
  function toggle(){if(disabled)return;if(open){setOpen(false);return;}const rect=trigger.current?.getBoundingClientRect();if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-280)),top:Math.max(8,Math.min(rect.bottom+4,window.innerHeight-255))});setDraft(value);setOpen(true);}
  function save(next:string){if(next&&!/^\d{4}-\d{2}-\d{2}$/.test(next))return;setOpen(false);if(next!==value)onChange(next);trigger.current?.focus();}
  return <div className="min-w-0">
@@ -61,7 +61,7 @@ export function TaskDueDateCell({label,value,onChange,disabled=false,overdue=fal
   </button>
   {open&&typeof document!=="undefined"&&createPortal(<>
    <button type="button" aria-label="Fechar calendário" className="fixed inset-0 z-[140] cursor-default" onClick={()=>{setOpen(false);trigger.current?.focus();}}/>
-   <div role="dialog" aria-label={`Editar prazo: ${label}`} className="fixed z-[141] w-[270px] rounded-lg border border-[#DCE2EC] bg-white p-3 shadow-2xl" style={position}>
+   <div role="dialog" aria-label={`Editar prazo: ${label}`} className="rv-ui3-floating fixed z-[141] w-[270px] rounded-lg border border-[#DCE2EC] bg-white p-3 shadow-2xl" style={position}>
     <p className="mb-2 text-xs font-semibold text-[#323647]">Definir prazo</p>
     <label className="block text-[11px] text-[#697386]">Data da tarefa<input autoFocus type="date" value={draft} onChange={e=>setDraft(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-[#CDD6E6] bg-white px-2 text-sm text-[#323647] outline-none focus:border-[#6C5CE7]"/></label>
     <div className="mt-3 flex items-center justify-between gap-2"><button type="button" onClick={()=>save("")} className="cursor-pointer rounded-md px-2 py-2 text-xs text-[#697386] hover:bg-[#F6F7FB]">Limpar data</button><button type="button" onClick={()=>save(draft)} className="cursor-pointer rounded-md bg-[#6C5CE7] px-3 py-2 text-xs font-semibold text-white">Aplicar</button></div>

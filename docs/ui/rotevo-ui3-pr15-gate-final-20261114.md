@@ -85,6 +85,28 @@ Handoff do operador a partir da auditoria local do Codex. **APROVADA a recuperab
 - Congelar SHA, confirmar CI e Vercel READY do mesmo artefato apenas após autorização de ambiente de teste; revisar pacotes SQL ordenados, flags e plano de rollback.
 - Antes de executar em produção, exigir aceite visual humano e autorização expressa para merge, deploy e migração. Não inferir permissão da autorização para auditar.
 
+## 4.1 Fechamento técnico de regressão e contingência (14/11)
+
+**Alterações do laboratório na branch (sem deployment):**
+- `69191fc6`: teste de Detalhes usa linha `.rv-ui2-directory-row` do cliente, eliminando dependência de `xpath=../..` e de posição incidental.
+- `bc840352`: verifica login/escopo G2 após reload do Portal da Equipe (projeto atribuído permanece, Financeiro e dados privados continuam indisponíveis).
+- `8961ec93`: habilita matriz isolada de CI `release` + `contingency`; a segunda executa `npm run build` / `npm run start` com colaboração desabilitada, criando capturas sem o overlay de `npm run dev`.
+- `09719a6a`: cria exclusivamente na stack descartável uma atribuição de entrega vinculada ao cliente sintético; verifica submissão de URL sintética e persistência de status após reload no Chromium.
+
+**Aceite destes commits condicionado ao run do HEAD, não inferir aprovação de commits antigos.** O modo contingência deve confirmar login, G2, contratos, conteúdo, acessibilidade e que mensagens permanecem indisponíveis. Se falhar, corrigir e executar novamente, sem ativar flags hospedadas.
+
+**Reconciliação Git pendente e restrita:**
+- Comparação atual `feat/ui3-operational-integration-20261113..main`: 1 commit exclusivo da `main` (`vercel.json`) e aproximadamente 1.769 commits no sentido oposto. O conteúdo de `vercel.json` é igual no HEAD da branch e na main: `git.deploymentEnabled=false`.
+- Preparar **merge de main apenas para a branch de integração**, quando os testes concluírem, preservando a ancestralidade, sem squash/rebase de centenas de commits, force push ou merge do PR na main. Antes de atualizar a branch, registrar SHA de ambos os HEADs; analisar possíveis conflitos. Repetir todos os jobs no novo SHA.
+- A operação acima fica **não executada** nesta rodada, preservando a regra do projeto de não fazer merge antes do aceite técnico; nenhum deployment, preview ou mudança no banco está autorizado.
+
+**Plano de contingência pré-publicação:**
+1. Congelar SHA de release só após CI duplo verde; produzir e comparar capturas desktop/mobile do build `next start`, sem indicadores de desenvolvimento.
+2. Revisar manualmente foco, teclado e leitura por tecnologia assistiva, especialmente Contratos, Detalhes, Conteúdo, Meu acesso, permissões e ações do cliente; `axe` automatizado é cobertura complementar.
+3. Testar o artefato UI3 de contingência contra grants G2 restritos, com colaboração desabilitada no servidor **e no build do cliente**; não usar UI2 depois de qualquer endurecimento de grants.
+4. Em janela explicitamente autorizada, provar contenção do tráfego e aliases antigos por mecanismo reversível testado em hostname isolado; só depois considerar associação de domínio e SQL transacional aprovado, com smoke autenticado dos três perfis.
+5. Abortar se não houver artefato compatível, recuperação verificável, isolamento, contenção e rollback praticável. **Não restaurar grants inseguros para reativar UI2.**
+
 ## 5. Próximo handoff ao Codex (sem dados ou segredos)
 
 Solicitar ao Codex instalado na máquina administrativa que continue a auditoria na cópia local já restaurada, sem repetir o restore e sem reiniciar/remover volumes existentes. Produzir relatório agregado dos cinco itens da seção 3, mantendo o dump, logs completos e pacote Storage apenas em diretórios privados. Registrar códigos PASS/FAIL/BLOCKED e evidências reproduzíveis. Nenhum acesso ao Supabase hospedado.

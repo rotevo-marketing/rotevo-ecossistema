@@ -42,10 +42,10 @@ select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012'
 set role authenticated;
 select public.rotevo_client_action_submit(
  current_setting('rotevo_test.notice_assignment')::uuid,
- 'Relatório pronto para revisão','notice-submit-001');
+ 'Relatório pronto para revisão','notice-submit-001','https://drive.google.com/file/d/synthetic-test-link/view');
 select public.rotevo_client_action_submit(
  current_setting('rotevo_test.notice_assignment')::uuid,
- 'Relatório pronto para revisão','notice-submit-001');
+ 'Relatório pronto para revisão','notice-submit-001','https://drive.google.com/file/d/synthetic-test-link/view');
 reset role;
 select id as notice_submission from rotevo_workflow.client_action_submissions
  where request_key='notice-submit-001' \gset

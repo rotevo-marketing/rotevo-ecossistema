@@ -130,6 +130,10 @@ try {
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
  const delivery=customer.locator("[data-ui3-client-actions]");
+ // On failure, report only UI state and HTTP status; never print tokens or customer data.
+ await delivery.first().waitFor({state:"visible",timeout:10000});
+ const diagnostic=await delivery.first().innerText();
+ console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.replace(/https?:\\/\\/\\S+/g,"[redacted]").slice(0,420));
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});

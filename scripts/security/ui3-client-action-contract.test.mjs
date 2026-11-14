@@ -93,5 +93,7 @@ test("internal delivery review UI is disabled by default and does not bypass ser
  assert.match(panel,/expectedAuthorUserId:data\.user\.id/);
  assert.match(panel,/decision==="correction_requested"&&note\.length<3/);
  assert.match(panel,/onAuthStateChange/);
+ assert.match(panel,/session\.user\.id!==loadedUserId/);
+ assert.match(panel,/alive=false;setItems\(\[\]\)/);
  assert.doesNotMatch(panel,/SUPABASE_SERVICE_ROLE_KEY/);
 });

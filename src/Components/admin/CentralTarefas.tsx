@@ -12,6 +12,7 @@ import {validateTaskDates} from "@/lib/workflow/ui3OperationalContracts";
 import DialogFocus from "@/Components/ui/DialogFocus";
 import {request} from "@/lib/operations/api";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
+import ClientActionReviewPanel from "@/Components/admin/ClientActionReviewPanel";
 type Client={id:string;name:string;slug:string;cover_image_url?:string|null};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[];editorialCalendar?:EditorialItem[]}|null;clients:Client|Client[]|null};
 type Status="planned"|"in_progress"|"blocked"|"completed"|"cancelled";
@@ -287,6 +288,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
     <span className="inline-flex items-center gap-2 rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.9}/> Reuniões hoje: {todayAppointments.length}</span>
    </div>
   </section>
+  {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<ClientActionReviewPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/>}
   {todayAppointments.length>0&&<section className="rounded-xl border bg-white p-4"><h3 className="text-sm font-semibold">Agenda de hoje</h3><div className="mt-2 flex flex-wrap gap-2">{todayAppointments.map(({appointment,project})=><Link key={project.id+":"+appointment.id} href={projectLink(project)} className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-xs">{appointment.time??"Sem horário"} · {appointment.title} · {project.title}</Link>)}</div></section>}
   <section data-ui2-surface className="relative rounded-xl border border-[#E3E7F0] bg-white p-4">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold text-[#323647]">Central de tarefas</h2><p className="mt-1 text-xs text-[#697386]">Todos os clientes · {filtered.length} tarefas</p></div></div>

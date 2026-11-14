@@ -133,3 +133,16 @@ test("client action notifications use existing private workflow events with expl
  assert.match(bell,/n\.event_type==="assignment_changed"/);
  assert.match(bell,/n\.event_phase==="task"\?onOpenTask:onOpenContent/);
 });
+
+test("client delivery UI is hidden by default and uses immutable private RLS uploads",()=>{
+ const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
+ const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
+ assert.match(overview,/NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"/);
+ assert.match(panel,/NEXT_PUBLIC_ROTEVO_PRIVATE_DELIVERIES_ENABLED==="true"/);
+ assert.match(panel,/supabase\.auth\.getUser\(\)/);
+ assert.match(panel,/upsert:false/);
+ assert.match(panel,/rotevo-client-deliveries/);
+ assert.match(panel,/crypto\.randomUUID\(\)/);
+ assert.match(panel,/file\.size>25\*1024\*1024/);
+ assert.doesNotMatch(panel,/getPublicUrl|createSignedUrl|SUPABASE_SERVICE_ROLE_KEY/);
+});

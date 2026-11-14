@@ -28,7 +28,7 @@ export async function GET(req:NextRequest){
  if(raw!==null&&!/^[1-9][0-9]?$/.test(raw))return respond({error:"Limite inválido."},400);
  const limit=raw?Number(raw):30;
  if(limit>50||limit<1||only!==null&&only!=="true"&&only!=="false")return respond({error:"Filtro inválido."},400);
- const {data,error}=await session.client.rpc("rotevo_workflow_list_notifications",{p_limit:limit,p_unread_only:only==="true"});
+ const {data,error}=await session.client.rpc("rotevo_workflow_list_notifications_v2",{p_limit:limit,p_unread_only:only==="true"});
  if(error)return respond({error:"Não foi possível consultar notificações."},503);
  return respond({notifications:data??[]},200);
 }
@@ -40,7 +40,7 @@ export async function PATCH(req:NextRequest){
  const id=(raw as Record<string,unknown>).notificationId;
  const author=(raw as Record<string,unknown>).expectedAuthorUserId;
  if(!isUuid(id)||author!==undefined&&(!isUuid(author)||author!==session.userId))return respond({error:"Sessão alterada ou identificador inválido."},409);
- const {data,error}=await session.client.rpc("rotevo_workflow_mark_notification_read",{p_notification_id:id});
+ const {data,error}=await session.client.rpc("rotevo_workflow_mark_notification_read_v2",{p_notification_id:id});
  if(error)return respond({error:"Não foi possível atualizar a notificação."},503);
  if(data!==true)return respond({error:"Notificação indisponível."},404);
  return respond({read:true},200);

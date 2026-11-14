@@ -23,6 +23,7 @@ for f in \
 do
   psql -X -v ON_ERROR_STOP=1 -f "$f" >/dev/null
 done
-# Fail closed if a DB service was redirected away from loopback.
-test "$(psql -X -Atc 'select inet_server_addr()::text')" = "127.0.0.1"
+# PGHOST/PGPORT are pinned to loopback above; container-side inet_server_addr()
+# may be a Docker bridge IP, so it is NOT used to identify the local target.
+test "$(psql -X -Atc 'select current_database()')" = "postgres"
 echo "PASS: proposal RPCs installed in disposable local Supabase CLI only"

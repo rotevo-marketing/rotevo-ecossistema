@@ -1,6 +1,5 @@
 "use client";
 import {useEffect,useState} from "react";
-import ClientEditorialMiniCalendar from "./ClientEditorialMiniCalendar";
 import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
@@ -49,7 +48,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   return()=>{active=false};
  },[decisionKey,projects,workspace]);
 
- const publishedContent=allowed("content")?projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectId:p.id}))):[];
+ const publishedContent=allowed("content")?projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>i.visibleToClient===true&&!i.archivedAt&&!i.deletedAt).map(i=>({...i,projectId:p.id}))):[];
  const monthContent=publishedContent.filter(i=>i.publishDate?.slice(0,7)===month);
  const hasDecision=(rows:Decision[],item:(typeof publishedContent)[number],type?:"approved"|"changes_requested")=>rows.some(d=>d.project_id===item.projectId&&d.content_id===item.id&&d.content_version===(item.version??"")&&(!type||d.decision===type));
  const pendingIdeas=publishedContent.filter(i=>i.status==="idea_pending"&&!hasDecision(ideas,i));
@@ -61,11 +60,11 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const invoices=finance?.invoices.filter(i=>!i.cancelled&&balance(i)>0)??[];
  const financeAttention:Attention[]=allowed("finance")?invoices.filter(i=>i.due_date<todayInBrazil()).map(i=>({title:"Mensalidade vencida: "+i.title,meta:brl(balance(i))+" · pagamento pendente",kind:"finance" as const,module:"finance" as const})):[];
  const attention=[...contentAttention,...financeAttention];
- const tasks=allowed("execution")?projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t.visibleToClient===true).map(t=>({...t,projectId:p.id}))):[];
+ const tasks=allowed("execution")?projects.flatMap(p=>(p.data?.executionTimeline??[]).filter(t=>t.visibleToClient===true&&!t.archivedAt&&!t.deletedAt).map(t=>({...t,projectId:p.id}))):[];
  const completed=tasks.filter(t=>t.status==="completed").length;
  const today=todayInBrazil();
  const nextTask=[...tasks].filter(t=>!["completed","cancelled"].includes(t.status??"planned")&&t.dueDate).sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??""))[0];
- const campaigns=allowed("campaigns")?projects.flatMap(p=>(p.data?.marketingCampaigns??[]).filter(i=>i.visibleToClient===true).map(i=>({...i,projectId:p.id}))):[];
+ const campaigns=allowed("campaigns")?projects.flatMap(p=>(p.data?.marketingCampaigns??[]).filter(i=>i.visibleToClient===true&&!i.archivedAt&&!i.deletedAt).map(i=>({...i,projectId:p.id}))):[];
  const activeCampaigns=campaigns.filter(c=>c.status==="active");
  const nextMeetings=allowed("meetings")?projects.flatMap(p=>(p.data?.operationalAgenda??[]).filter(m=>m.visibleToClient===true&&m.status==="planned"&&m.date>=today).map(m=>({...m,projectId:p.id}))).sort((a,b)=>(a.date+"T"+(a.time||"23:59")).localeCompare(b.date+"T"+(b.time||"23:59"))):[];
 
@@ -133,10 +132,22 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
      <span className="mt-1 block text-[11px] text-[#697386]">{item.detail}</span>
     </button>)}
   </section>
-  <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)]">
+  <div className="grid items-start gap-4 xl:grid-cols-2">
+   {allowed("execution")&&<section className={card} aria-label="Para hoje">
+    <h3 className="text-[15px] font-semibold">Para hoje <span className="text-xs text-[#697386]">({dueToday.length})</span></h3>
+    <p className="mt-1 text-xs text-[#697386]">Entregas compartilhadas com prazo hoje.</p>
+    {dueToday.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{dueToday.slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId)} className="w-full px-2 py-3 text-left text-xs hover:bg-[#F8F7FC]">{t.title}</button></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma entrega com prazo hoje.</p>}
+    {dueToday.length>5&&<button type="button" onClick={()=>onNavigate("execution")} className={linkClass}>Ver todas as {dueToday.length} entregas</button>}
+   </section>}
+   {allowed("execution")&&<section className={card} aria-label="Atrasadas">
+    <h3 className="text-[15px] font-semibold">Atrasadas <span className="text-xs text-[#697386]">({overdue.length})</span></h3>
+    <p className="mt-1 text-xs text-[#697386]">Entregas abertas com prazo vencido.</p>
+    {overdue.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{[...overdue].sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??"")).slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId)} className="flex w-full justify-between gap-2 px-2 py-3 text-left text-xs hover:bg-[#FFF8EB]"><span className="min-w-0 truncate">{t.title}</span><span className="shrink-0">{displayDate(t.dueDate??"")}</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma entrega atrasada.</p>}
+    {overdue.length>5&&<button type="button" onClick={()=>onNavigate("execution")} className={linkClass}>Ver todas as {overdue.length} entregas</button>}
+   </section>}
    {allowed("content")&&<section className={card} aria-labelledby="client-focus-title">
-    <div className="flex items-center justify-between gap-3"><div><h3 id="client-focus-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("list-check",18)} Meu foco</h3><p className="mt-1 text-xs text-[#697386]">Aprovações e decisões que precisam da sua resposta.</p></div><span className="rounded-lg bg-[#F4F1FC] px-2.5 py-1 text-xs font-medium text-[#6034B7]">{approvalsLoading||approvalsFailed?"—":focusApprovals.length}</span></div>
-    {approvalsLoading?<p role="status" className="mt-4 text-xs text-[#697386]">Consultando aprovações…</p>:approvalsFailed?<p role="status" className="mt-4 text-xs text-[#697386]">Não foi possível consultar as aprovações.</p>:focusApprovals.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{focusApprovals.slice(0,6).map((item,index)=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-[#F8F7FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-[#263146]">{item.title}</span><span className="mt-1 block truncate text-[11px] text-[#697386]">{item.meta}</span></span><span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#B66C21]">{icon("flag",14)} Aprovar</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma aprovação pendente.</p>}
+    <div className="flex items-center justify-between gap-3"><div><h3 id="client-focus-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("list-check",18)} Aprovações</h3><p className="mt-1 text-xs text-[#697386]">Aprovações e decisões que precisam da sua resposta.</p></div><span className="rounded-lg bg-[#F4F1FC] px-2.5 py-1 text-xs font-medium text-[#6034B7]">{approvalsLoading||approvalsFailed?"—":focusApprovals.length}</span></div>
+    {approvalsLoading?<p role="status" className="mt-4 text-xs text-[#697386]">Consultando aprovações…</p>:approvalsFailed?<p role="status" className="mt-4 text-xs text-[#697386]">Não foi possível consultar as aprovações.</p>:focusApprovals.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{focusApprovals.slice(0,5).map((item,index)=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-[#F8F7FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-[#263146]">{item.title}</span><span className="mt-1 block truncate text-[11px] text-[#697386]">{item.meta}</span></span><span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#B66C21]">{icon("flag",14)} Aprovar</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma aprovação pendente.</p>}
    </section>}
    {allowed("meetings")&&<section className={card} aria-labelledby="client-agenda-title">
     <div className="flex items-center justify-between gap-3"><h3 id="client-agenda-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("calendar-week",18)} Agenda</h3><span className="text-[11px] text-[#697386]">{displayDate(today)}</span></div>
@@ -144,6 +155,5 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     {upcoming.length>0&&<div className="mt-4 border-t border-[#EDF0F6] pt-3"><p className="text-xs font-semibold text-[#697386]">Próximos compromissos</p>{upcoming.map(m=><button type="button" key={m.projectId+":"+m.id} onClick={()=>onNavigate("meetings",m.projectId)} className="mt-2 block w-full text-left text-xs text-[#525B70] hover:text-[#5949D1]">{displayDate(m.date)} · {m.time??"Hora a definir"} · {m.title}</button>)}</div>}
    </section>}
   </div>
-  {allowed("content")&&<ClientEditorialMiniCalendar items={publishedContent} onSelect={(projectId,contentId)=>onNavigate("content",projectId,contentId)}/>}
  </main>;
 }

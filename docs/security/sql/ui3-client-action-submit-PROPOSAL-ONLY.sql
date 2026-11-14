@@ -9,6 +9,7 @@ declare
  v_project public.planning_projects%rowtype;
  v_resource jsonb;
  v_number integer;
+ v_match_count integer;
  v_id uuid;
  v_existing rotevo_workflow.client_action_submissions%rowtype;
 begin
@@ -27,11 +28,11 @@ begin
   where u.user_id=v_actor and u.client_id=v_project.client_id
    and p.role='client' and p.client_id=v_project.client_id
  ) then raise exception 'Project or account access revoked' using errcode='42501';end if;
- select e.value into v_resource from jsonb_array_elements(
+ select count(*),(jsonb_agg(e.value)->0) into v_match_count,v_resource from jsonb_array_elements(
  case when jsonb_typeof(v_project.data->(case when v_assignment.resource_type='content' then 'editorialCalendar' else 'executionTimeline' end))='array'
  then v_project.data->(case when v_assignment.resource_type='content' then 'editorialCalendar' else 'executionTimeline' end)
  else '[]'::jsonb end) e(value) where value->>'id'=v_assignment.resource_id limit 1;
- if v_resource is null or v_resource->>'visibleToClient' is distinct from 'true'
+ if v_match_count<>1 or v_resource is null or v_resource->>'visibleToClient' is distinct from 'true'
  or coalesce(v_resource->>'archivedAt','')<>'' or coalesce(v_resource->>'deletedAt','')<>''
  or (v_assignment.resource_type='content' and coalesce(v_resource->>'version','')<>v_assignment.resource_version)
  then raise exception 'Resource revoked or version changed' using errcode='40001';end if;

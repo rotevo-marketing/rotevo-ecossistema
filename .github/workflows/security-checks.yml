@@ -376,6 +376,10 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_approver_rpc_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_approver_rpc_isolated -f scripts/security/db-ui3-designated-approver-rpc-isolated.sql
+      - name: Verify end to end named approver and multiuser decision in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_named_approval_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_named_approval_isolated -f scripts/security/db-ui3-designated-editorial-flow-isolated.sql
       - name: Verify reviewer authorization, correction and final validation in disposable PostgreSQL
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_isolated'

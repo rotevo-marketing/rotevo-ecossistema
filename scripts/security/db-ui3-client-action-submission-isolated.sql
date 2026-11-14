@@ -25,6 +25,39 @@ begin
  then raise exception 'Assignment not marked submitted';end if;
 end $check$;
 
+-- Reject external domains, text-only submissions and changed Drive URL replays.
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012',false);
+set role authenticated;
+do $reject_drive$
+declare blocked boolean;
+begin
+ blocked:=false;
+ begin perform public.rotevo_client_action_submit(
+  current_setting('rotevo_test.assignment_id')::uuid,'','drive-invalid-001',
+  'https://evil.example/file/d/steal');
+ exception when invalid_parameter_value then blocked:=true;end;
+ if not blocked then raise exception 'External URL accepted';end if;
+ blocked:=false;
+ begin perform public.rotevo_client_action_submit(
+  current_setting('rotevo_test.assignment_id')::uuid,'','drive-invalid-002',null);
+ exception when invalid_parameter_value then blocked:=true;end;
+ if not blocked then raise exception 'Missing Drive URL accepted';end if;
+ blocked:=false;
+ begin perform public.rotevo_client_action_submit(
+  current_setting('rotevo_test.assignment_id')::uuid,
+  'Vídeo gravado e entregue para análise','submission-test-001',
+  'https://drive.google.com/file/d/different-file/view');
+ exception when unique_violation then blocked:=true;end;
+ if not blocked then raise exception 'Replayed request changed the Drive link';end if;
+end $reject_drive$;
+reset role;
+do $schema_check$
+begin
+ if exists(select 1 from information_schema.columns where table_schema='rotevo_workflow'
+  and table_name='client_action_submissions' and column_name='private_storage_path')
+ then raise exception 'Unexpected binary storage path exists';end if;
+end $schema_check$;
+
 -- Other tenant cannot submit even with known assignment UUID.
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000014',false);
 set role authenticated;

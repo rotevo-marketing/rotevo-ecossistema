@@ -249,7 +249,7 @@ try {
  await strategist.getByRole("button",{name:/^Synthetic Other YouTube Editorial ·/}).click();
  const editorialDetails=strategist.getByRole("dialog",{name:"Detalhes do conteúdo"});
  await editorialDetails.waitFor();
- await editorialDetails.getByRole("heading",{name:"Atualizações e aprovações"}).waitFor();
+ await editorialDetails.getByRole("heading",{name:"Conversa e atividade"}).waitFor();
  const otherEditorial=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic editorial");
  assert.equal(otherEditorial.data.editorialCalendar.filter(x=>x.title==="Synthetic Other YouTube Editorial"&&x.channel==="YouTube").length,1,"YouTube entry persisted for second client only");
  await editorialDetails.getByRole("button",{name:"Fechar"}).click();

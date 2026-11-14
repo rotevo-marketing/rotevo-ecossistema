@@ -128,6 +128,10 @@ try {
  customer.on("request",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_START",req.method(),new URL(req.url()).pathname);});
  customer.on("response",res=>{if(res.url().includes("/api/workflow/client-actions"))void res.json().then(v=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),new URL(res.url()).pathname,Array.isArray(v?.assignments)?v.assignments.length:"invalid-body")).catch(()=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),"unreadable-body"));});
  customer.on("requestfailed",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_FAIL",new URL(req.url()).pathname);});
+ customer.on("response",res=>{
+  const path=new URL(res.url()).pathname;
+  if(path==="/api/client/workspace"||path==="/api/client/projects")console.log("CLIENT_PORTAL_API_STATUS",path,res.status());
+ });
  // Assigned client deliveries belong to Tarefas, not to the overview.
  // Mobile menu starts collapsed in the synthetic 390px viewport.
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
@@ -144,7 +148,16 @@ try {
  // checking that the assignment persisted; do not change the approved navigation.
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
- await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
+  console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
+   path:new URL(customer.url()).pathname,
+   menuExpanded:await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded").catch(()=>null),
+   loading:await customer.getByText("Carregando seu ambiente...").count(),
+   unavailable:await customer.getByText("Seus serviços não puderam ser carregados. Atualize a página.").count(),
+   sessionBlocked:await customer.getByText("Sessão alterada. Redirecionando...").count(),
+   menuEntries:await customer.getByRole("navigation",{name:"Navegação do portal"}).allTextContents().catch(()=>[])
+  }));throw e;
+ });
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
  await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
@@ -152,7 +165,16 @@ try {
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
  await customer.getByRole("button",{name:"Menu",exact:true}).click();
- await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click({timeout:20000}).catch(async e=>{
+  console.log("CLIENT_RELOAD_NAV_STATE",JSON.stringify({
+   path:new URL(customer.url()).pathname,
+   menuExpanded:await customer.getByRole("button",{name:"Menu",exact:true}).getAttribute("aria-expanded").catch(()=>null),
+   loading:await customer.getByText("Carregando seu ambiente...").count(),
+   unavailable:await customer.getByText("Seus serviços não puderam ser carregados. Atualize a página.").count(),
+   sessionBlocked:await customer.getByText("Sessão alterada. Redirecionando...").count(),
+   menuEntries:await customer.getByRole("navigation",{name:"Navegação do portal"}).allTextContents().catch(()=>[])
+  }));throw e;
+ });
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
  console.log("PASS browser client Drive URL submission and persisted status after refresh");

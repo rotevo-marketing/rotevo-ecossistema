@@ -95,14 +95,18 @@ Nenhum deploy, Preview, merge, alteração de plano, execução de migração em
 - `ui3-client-action-review-queue-PROPOSAL-ONLY.sql`: fila privada com checagem por projeto e G2, somente registros pendentes, limite de 100, versionamento e visibilidade revalidados. `/api/workflow/client-actions/review-queue` exige identidade e flag desligada por padrão.
 - SQL descartável `db-ui3-client-action-review-isolated.sql` e `db-ui3-client-action-review-queue-isolated.sql`: verificações de revogação, correção/reenvio, decisão validada, tenant, G2 e retenção do histórico.
 - **Preferência por usuário**: `docs/security/sql/ui3-account-appearance-PROPOSAL-ONLY.sql` cria coluna `appearance` em `user_preferences`, limitada a `light`, `dark`, `system`, e RPCs de leitura/gravação usando `auth.uid()` sem alterar nome/avatar. Rota `/api/account/appearance` fica inativa por `ROTEVO_APPEARANCE_ENABLED`, sem UI de escolha e sem CSS de modo escuro ativado. Testes em PostgreSQL descartável e contratos HTTP.
-- **NO-GO**: nenhuma proposta SQL foi aplicada em Supabase hospedado; nenhuma flag foi ativada; sem deploy, Preview, merge ou alterações em clientes. Ainda faltam uploads privados, notificações transacionais, configuração visual integral Claro/Escuro/Sistema, E2E autenticado e recuperação de backup.
+- **NO-GO**: nenhuma proposta SQL foi aplicada em Supabase hospedado; nenhuma flag foi ativada; sem deploy, Preview, merge ou alterações em clientes. Ainda faltam testes de acesso aos links externos, notificações transacionais, configuração visual integral Claro/Escuro/Sistema, E2E autenticado e recuperação de backup.
 
 
 ## Bloco integrado — armazenamento, notificações, aprovadores e aparência (13/11)
-### Privacidade de anexos
-- `ui3-client-action-storage-PROPOSAL-ONLY.sql`: bucket privado `rotevo-client-deliveries`, limites de 25 MiB/MIME, upload autenticado imutável por caminho `assignmentId/userId/assetUUID.ext`, revalidação de vínculo cliente, projeto, versão, recurso visível e revogação. Sem URL pública, upload assinado ou permissão de atualizar/deletar o objeto.
-- `ui3-client-action-submit-asset-PROPOSAL-ONLY.sql`: associa arquivo existente à submissão transacional, respeitando a validação do RPC de entrega textual, o dono do arquivo e idempotência. Arquivo não substitui aprovação editorial.
-- Endpoint `/api/workflow/client-actions/submit-asset`, protegido por `ROTEVO_CLIENT_ACTIONS_ENABLED` e `ROTEVO_PRIVATE_DELIVERIES_ENABLED`. A interface `ClientActionDeliveryPanel` no dashboard utiliza upload autenticado, `upsert:false`, nome aleatório, validação de tamanho/MIME e nunca solicita service-role; fica oculta por flags públicas. Anexos podem ficar órfãos se a submissão falhar após o upload, portanto ainda será necessário procedimento seguro de limpeza/retenção.
+### Entrega de materiais via links do Google Drive
+- **Correção de escopo confirmada em 14/11/2026:** não existe upload/download de arquivos na plataforma Rotevo. O cliente armazena arquivos no próprio Google Drive e informa somente o link HTTPS na atividade.
+- As propostas `ui3-client-action-storage-PROPOSAL-ONLY.sql`, `ui3-client-action-submit-asset-PROPOSAL-ONLY.sql`, a rota `/api/workflow/client-actions/submit-asset` e as fixtures de Storage foram **excluídas do PR**.
+- `rotevo_client_action_submit` recebe `p_drive_url` obrigatório e observação opcional. Apenas Google Drive/Docs HTTPS é aceito, com validação no frontend, rota e banco; a submissão não publica nem aprova automaticamente o conteúdo.
+- `client_action_submissions.submission_url` preserva o link e o histórico das tentativas; `private_storage_path` foi retirado do schema proposto.
+- `ClientActionDeliveryPanel` exibe campo de URL e observação opcional, sem input de arquivo; `ClientActionReviewPanel` abre o link externo em uma nova aba sem manipular bytes do documento.
+- A Rotevo **não muda nem garante as permissões do Google Drive**: o cliente deve liberar acesso à equipe autorizada, idealmente por destinatários específicos, sem exigir acesso público. Testar validade e acesso usando contas sintéticas; não copiar arquivos.
+- Testes rejeitam links inválidos, domínios falsos, URL ausente e reaproveitamento de chave de idempotência com link alterado.
 
 ### Notificações operacionais
 - `ui3-client-action-notifications-PROPOSAL-ONLY.sql`: extensão dos eventos/notificações privados já existentes, por gatilhos transacionais de atribuição, submissão e revisão. Destinatário é a identidade designada e/ou responsável interno autorizado, sem enviar ao autor; eventos idempotentes. O read RPC existente deve continuar revalidando acesso ao projeto e recurso.
@@ -120,4 +124,7 @@ Nenhum deploy, Preview, merge, alteração de plano, execução de migração em
 
 ### Evidências e liberação
 - Todas as alterações permanecem no PR #15 Draft, sem merge, Preview ou deploy. Os novos SQLs continuam propostas e foram exercitados exclusivamente em PostgreSQL descartável; nem produção nem projeto Supabase hospedado de homologação receberam migração.
-- Gate de saída: CI 9/9 do último commit, E2E autenticado com usuários e arquivos sintéticos, UX/acessibilidade no navegador, teste de Storage privado real em homologação, revisão de retenção/limpeza, registro do backup e prova de restauração isolada, só então autorização específica.
+- Gate de saída: CI 9/9 do último commit, E2E autenticado com contas e URLs de teste do Google Drive, revisão de permissões compartilhadas no Drive, UX/acessibilidade, prova de restauração isolada do backup e autorização específica para publicação.
+
+## Decisão operacional vigente (14/11/2026)
+A arquitetura do fluxo de entregas é **URL-only / Google Drive**. É proibido incluir upload, download, armazenamento de arquivos, bucket de material de clientes ou signed URLs como parte desse recurso. Qualquer referência histórica a upload neste documento está **revogada** por esta decisão posterior. As flags de funcionalidades permanecem desativadas até homologação autenticada e aprovação específica de release.

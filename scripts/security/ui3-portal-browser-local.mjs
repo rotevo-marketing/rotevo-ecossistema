@@ -116,6 +116,7 @@ async function auditAppearance(role,page){
     "Strategist dark finance/projects text must keep at least 4.5:1 contrast");
   }
   if(mode==="dark"&&issues.length)console.log("NO_GO_DARK_VISUAL_AUDIT",role,JSON.stringify(issues));
+  assert.equal(issues.length,0,role+" "+mode+" must not have automated color-contrast failures: "+JSON.stringify(issues));
  }
  await page.evaluate(()=>document.documentElement.removeAttribute("data-rotevo-appearance"));
 }

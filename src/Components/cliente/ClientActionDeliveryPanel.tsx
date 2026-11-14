@@ -17,12 +17,10 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
  const [drafts,setDrafts]=useState<Record<string,Draft>>({});
  const [busy,setBusy]=useState(""),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const [revision,setRevision]=useState(0);
- const [loadPhase,setLoadPhase]=useState("initial");
  const ids=projects.map(p=>p.id).sort().join("|");
  useEffect(()=>{
   let active=true;
-  console.info("UI3_ACTIONS_TRACE", "effect-start", projects.length);
-  setItems([]);setLoading(true);setError("");setLoadPhase("requesting");
+  setItems([]);setLoading(true);setError("");
   // Session changes are handled by useSessionBoundary in the parent portal.
   // Do not subscribe a second listener inside the fetch lifecycle: auth events
   // can invalidate an in-flight response and strand this panel in loading state.
@@ -33,19 +31,16 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
     const results=await Promise.allSettled(projects.map(async p=>{
      const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
      const r=await request<{assignments:Omit<Action,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
-     if(active)setLoadPhase("response-parsed");
      return (r.assignments??[]).map(a=>({...a,projectTitle:p.title}));
     }));
     if(!active)return;
-    setLoadPhase("settled");
     const valid=results.filter((r):r is PromiseFulfilledResult<Action[]>=>r.status==="fulfilled");
-    console.info("UI3_ACTIONS_TRACE", "commit-items", valid.reduce((n,r)=>n+r.value.length,0));
     setItems(valid.flatMap(r=>r.value));
     if(valid.length!==results.length)setError("Alguns projetos não puderam ser consultados.");
-   }catch(e){if(active){setLoadPhase("failed");setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}}
-   finally{if(active){setLoadPhase("complete");setLoading(false);}}
+   }catch(e){if(active)setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}
+   finally{if(active)setLoading(false);}
   })();
-  return()=>{console.info("UI3_ACTIONS_TRACE", "cleanup");active=false;};
+  return()=>{active=false;};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[ids,userId,revision]);
  async function submit(item:Action){
@@ -78,7 +73,7 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar o link da entrega.");}
   finally{setBusy("");}
  }
- return <section data-ui3-client-actions data-ui3-load-phase={loadPhase} aria-label="Minhas entregas atribuídas" className="rounded-xl border border-[#E3E6ED] bg-white p-4">
+ return <section data-ui3-client-actions aria-label="Minhas entregas atribuídas" className="rounded-xl border border-[#E3E6ED] bg-white p-4">
   <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Atribuídas a mim</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
   <p className="mt-1 text-xs text-[#697386]">Grave ou prepare o material no Google Drive e cole o link aqui. A Rotevo não armazena arquivos.</p>
   {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}

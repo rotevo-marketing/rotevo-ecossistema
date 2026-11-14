@@ -109,6 +109,25 @@ Arquivo: `docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql`. G
 
 **Conclusão:** testes locais e negativas hospedadas aprovados; **não** afirmar aprovação de E2E positivo hospedado, nem que backups atuais de produção foram restaurados/validados. Produção permanece NO-GO.
 
+## 3.4. Inventário de recuperação de produção, somente leitura (14/11/2026)
+
+**Banco Rotevo produção `kadvzjelkyfwouqmlxaa`**, consultado apenas com agregações em catálogos e tabelas de metadados: **3 buckets de Storage, 50 objetos de Storage, 18 contas Auth, 5 projetos de planejamento, 32 tabelas nos schemas principais e 23 funções nos schemas públicos/operacionais**. Homologação `tqedxahsqbskninjenfg`: **1 bucket, 0 objetos, 1 conta Auth, 2 projetos, 32 tabelas e 22 funções**. Os totais são uma fotografia da consulta e podem mudar; não são indicadores de integridade ou equivalência entre projetos. Não foram lidos arquivos nem dados pessoais.
+
+**Consequência operacional:** o backup do PostgreSQL não inclui os bytes dos objetos do Storage; o clone/restauração do banco sozinho tampouco restaura as configurações externas e arquivos do Storage. Documentação atual:
+- https://supabase.com/docs/guides/platform/backups
+- https://supabase.com/docs/guides/platform/clone-project
+- https://supabase.com/docs/guides/deployment/going-into-prod
+
+**Checklist obrigatório antes de qualquer migração de produção:**
+1. Determinar, sem presumir a assinatura do plano, se o projeto de produção tem backups diários/PITR disponíveis; registrar hora do último ponto e janela de retenção. Projetos Free não têm backup automático do Supabase.
+2. Produzir/verificar backup atualizado, protegido e com checksum, e executar **restauração de teste fora da produção**. Um backup listado ou exportado sem restore ensaiado não fecha o gate.
+3. Inventariar os 3 buckets e confirmar cópia íntegra dos **50 objetos atuais** ou quantidade atualizada na hora do cutover, com controles de acesso e integridade. Não copiar dados reais a um ambiente de teste aberto ou vincular dados reais à homologação sem aprovação separada.
+4. Conferir Auth, roles, grants, RLS, migrações, funções, triggers, Edge Functions, segredos e integrações externas; um clone de banco não restaura automaticamente as configurações do serviço.
+5. Registrar snapshots antes/depois, hash da versão do código, janela e responsável por rollback, e validar o protocolo de resposta a falha e restauração de Storage.
+6. Não executar operação de restore no projeto produtivo para ensaiar recuperação; usar destino isolado autorizado e considerar custos/plano.
+
+**Estado desta etapa:** inventário e plano conferidos, mas a existência de backup recente e seu **teste de restauração continuam não comprovados**. Não autorizar migração/merge/deployment com esse gate aberto.
+
 ## 4. Segurança e aceitação
 - `SECURITY DEFINER` não equivale a acesso livre: a RPC pública deve exigir `auth.uid()`; helper privado sem `EXECUTE` para `anon`/`authenticated`; nenhuma leitura direta das tabelas de workflow; `search_path` fechado e objetos qualificados.
 - Confirmação de `app_metadata` para reset de senha; jamais confiar em `user_metadata` para autorização.
@@ -138,6 +157,8 @@ Arquivo: `docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql`. G
 - [ ] Testes positivos autenticados de piloto/G2 com usuários sintéticos em homologação hospedada.
 - [x] Nomes e escopos das flags Vercel inventariados, sem revelar valores sensíveis.
 - [ ] Usuários autorizados do piloto e flags de Production aprovados e configurados.
+- [x] Inventário de produção read-only de banco, Auth, projetos e objetos de Storage documentado.
+- [ ] Backup atual + Storage recuperável + ensaio de restauração isolado comprovados.
 - [ ] Auditoria final de release e autorização específica de merge/deployment.
 
 **Restrição permanente desta etapa:** não houve merge em `main`, Vercel Preview/Production deployment, DDL/DML **no banco de produção** ou alteração de dados reais de clientes. A migração aditiva registrada na seção 3.1 foi aplicada **somente ao Supabase hospedado de homologação**, com verificação posterior.

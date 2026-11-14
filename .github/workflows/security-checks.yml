@@ -433,8 +433,8 @@ jobs:
           version: 2.121.0
       - name: Install app dependencies without running application
         run: npm ci --no-audit --no-fund
-      - name: Verify recovered visual contracts
-        run: node --test scripts/security/ui3-task-*.test.mjs scripts/security/ui3-editorial-ux-round.test.mjs scripts/security/ui3-visual-round-20261110.test.mjs scripts/security/ui3-contrast.test.mjs scripts/security/team-my-access-api-behavior.test.mjs
+      - name: Verify current operational and appearance contracts (historical snapshots excluded)
+        run: node --experimental-strip-types --test scripts/security/ui3-client-action-contract.test.mjs scripts/security/ui3-account-appearance-contract.test.mjs scripts/security/ui3-client-overview-contract.test.mjs scripts/security/team-my-access-api-behavior.test.mjs
       - name: Prepare Playwright before Next.js starts
         shell: bash
         run: |

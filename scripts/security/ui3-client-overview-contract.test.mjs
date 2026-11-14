@@ -21,6 +21,7 @@ test("dashboard never invents client ownership or approver designation",()=>{
  assert.doesNotMatch(source,/pendingIdeas=publishedContent\.filter\(i=>i\.status==="idea"/);
  assert.match(source,/approvalsFailed/);
  assert.match(source,/approvalsLoading/);
+ assert.match(source,/marketingCampaigns\?\?\[\]\)\.filter\(i=>i\.visibleToClient===true\)/);
 });
 test("client dashboard retains module gates and date-based overdue semantics",()=>{
  assert.match(source,/allowed\("execution"\)&&<section/);

@@ -526,3 +526,6 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
 html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-topbar [role="img"][aria-label="Rotevo"] {
  color:#F4F6FC!important;
 }
+
+/* WCAG small-text contrast correction for the client agenda empty state. */
+html:not([data-rotevo-appearance="dark"]) .rv-ui3 section[aria-labelledby="client-agenda-title"] > .mt-4 {color:#53617A!important;}

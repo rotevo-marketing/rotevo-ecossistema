@@ -2,6 +2,8 @@
 \set ON_ERROR_STOP on
 \ir db-ui3-client-action-rpc-isolated.sql
 \ir ../../docs/security/sql/ui3-editorial-designate-approver-rpc-PROPOSAL-ONLY.sql
+-- Reset only the synthetic designation seed so this lifecycle is measured independently.
+delete from rotevo_workflow.editorial_designated_approvers;
 insert into public.profiles(id,client_id,role) values
 ('00000000-0000-4000-8000-000000000016','10000000-0000-4000-8000-000000000001','client');
 insert into public.client_users(client_id,user_id) values

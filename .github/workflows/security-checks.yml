@@ -352,6 +352,10 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_client_actions_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_client_actions_isolated -f scripts/security/db-ui3-client-action-schema-isolated.sql
+      - name: Verify authorized client-action RPCs in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_rpc_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_rpc_isolated -f scripts/security/db-ui3-client-action-rpc-isolated.sql
 
 
   typecheck:

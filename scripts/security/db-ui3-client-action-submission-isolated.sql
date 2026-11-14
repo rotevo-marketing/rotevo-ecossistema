@@ -11,9 +11,9 @@ select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012'
 select set_config('request.jwt.claims','{"app_metadata":{}}',false);
 set role authenticated;
 select public.rotevo_client_action_submit(
- current_setting('rotevo_test.assignment_id')::uuid,'Vídeo gravado e entregue para análise','submission-test-001');
+ current_setting('rotevo_test.assignment_id')::uuid,'Vídeo gravado e entregue para análise','submission-test-001','https://drive.google.com/file/d/synthetic-test-link/view');
 select public.rotevo_client_action_submit(
- current_setting('rotevo_test.assignment_id')::uuid,'Vídeo gravado e entregue para análise','submission-test-001');
+ current_setting('rotevo_test.assignment_id')::uuid,'Vídeo gravado e entregue para análise','submission-test-001','https://drive.google.com/file/d/synthetic-test-link/view');
 reset role;
 do $check$
 begin
@@ -33,7 +33,7 @@ declare blocked boolean:=false;
 begin
  begin
  perform public.rotevo_client_action_submit(
- current_setting('rotevo_test.assignment_id')::uuid,'Tentativa de outro cliente','submission-test-002');
+ current_setting('rotevo_test.assignment_id')::uuid,'Tentativa de outro cliente','submission-test-002','https://drive.google.com/file/d/synthetic-test-link/view');
  exception when insufficient_privilege then blocked:=true;end;
  if not blocked then raise exception 'Other client submitted assigned work';end if;
 end $denied$;
@@ -46,7 +46,7 @@ declare blocked boolean:=false;
 begin
  begin
  perform public.rotevo_client_action_submit(
- current_setting('rotevo_test.assignment_id')::uuid,'Uma segunda entrega sem revisão','submission-test-003');
+ current_setting('rotevo_test.assignment_id')::uuid,'Uma segunda entrega sem revisão','submission-test-003','https://drive.google.com/file/d/synthetic-test-link/view');
  exception when serialization_failure then blocked:=true;end;
  if not blocked then raise exception 'Unreviewed submission overwritten';end if;
 end $pending$;

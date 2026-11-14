@@ -41,13 +41,7 @@ begin
  end if;
  select client_id into v_client from public.profiles where id=v_actor and role='client';
  if v_client is null then raise exception 'Client authorization required' using errcode='42501';end if;
- -- A client may have multiple accounts; until a named approver is supported,
- -- no user can authorize a formal decision on behalf of such a client.
- select count(*) into v_client_approver_count from public.profiles
- where client_id=v_client and role='client';
- if v_client_approver_count<>1 then
-  raise exception 'Explicit approver designation required' using errcode='42501';
- end if;
+ -- Designation is checked only after the intended project is locked.
  if p_content_id is null or p_content_id !~ '^[A-Za-z0-9_-]{1,80}$'
   or p_content_version is null or length(btrim(p_content_version)) not between 1 and 30
   or p_phase not in ('idea','final') or p_decision not in ('approved','changes_requested')
@@ -62,6 +56,25 @@ begin
  select * into v_project from public.planning_projects
  where id=p_project_id and client_id=v_client for update;
  if not found then raise exception 'Project unavailable' using errcode='42501';end if;
+ -- Only a currently linked client account may decide. A named project/phase
+ -- approver supersedes sole-account fallback; multiple users without one fail closed.
+ if not exists(select 1 from public.client_users cu join public.profiles p on p.id=cu.user_id
+  where cu.user_id=v_actor and cu.client_id=v_client and p.client_id=v_client and p.role='client')
+ then raise exception 'Client account link required' using errcode='42501';end if;
+ if exists(select 1 from rotevo_workflow.editorial_designated_approvers d
+  where d.project_id=p_project_id and d.phase=p_phase and d.revoked_at is null)
+ then
+  if not exists(select 1 from rotevo_workflow.editorial_designated_approvers d
+   where d.project_id=p_project_id and d.phase=p_phase and d.revoked_at is null
+    and d.approver_user_id=v_actor)
+  then raise exception 'Decision reserved for designated approver' using errcode='42501';end if;
+ else
+  select count(*) into v_client_approver_count
+  from public.client_users cu join public.profiles p on p.id=cu.user_id
+  where cu.client_id=v_client and p.client_id=v_client and p.role='client';
+  if v_client_approver_count<>1
+  then raise exception 'Explicit approver designation required' using errcode='42501';end if;
+ end if;
  if (jsonb_typeof(v_project.data->'portalModules')='array'
      and not (v_project.data->'portalModules' ? 'content'))
   or not exists (

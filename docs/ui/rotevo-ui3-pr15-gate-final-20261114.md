@@ -16,6 +16,17 @@
 | Condição `realtime.messages.messages_payload_exclusive` | Catálogo read-only Supabase produção e homologação, 14/11 | `NOT VALID` em ambos. Não executar `VALIDATE CONSTRAINT` no hosted; avaliar em clone e distinguir condição histórica |
 | Configuração de deploy | `vercel.json`: `git.deploymentEnabled=false`, consulta de deployment | Produção permanece no SHA `8cd22a88`; não houve promoção |
 
+## 1.1 Conferência atualizada de grants (somente leitura, 14/11)
+
+Consultas com `has_column_privilege` à produção e homologação hospedadas indicaram **o mesmo estado**:
+
+- `anon`: sem `SELECT` em `planning_projects.id` e sem `SELECT` em `planning_projects.data`;
+- `authenticated`: `SELECT` em `id` e `title`, mas **sem** `SELECT` ou `UPDATE` em `data`;
+- `service_role`: `SELECT` e `UPDATE` em `data`;
+- `planning_projects` tem RLS ativado.
+
+**Divergência histórica relevante:** o runbook de 10/11 relata grants antigos de JSON direto. A condição atual observada já é restritiva, embora a implantação do novo workflow siga incompleta. Não aplicar o REVOKE do runbook automaticamente, nem presumir que o deployment atualmente servido foi homologado contra as permissões atuais. Investigar quando e como ocorreu a mudança e validar a operação autenticada antes de qualquer release. Estes testes por catálogo não substituem RLS efetiva por identidade.
+
 ## 2. Diagnóstico de isolamento Git
 
 A comparação `feat/ui3-operational-integration-20261113..main` está `diverged`: 1 commit exclusivo da `main` e 1761 commits exclusivos da branch na consulta deste gate. Arquivo afetado pelo commit exclusivo da main: `vercel.json`. O conteúdo de `git.deploymentEnabled=false` já consta da branch.

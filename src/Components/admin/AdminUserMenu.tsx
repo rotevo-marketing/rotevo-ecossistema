@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from "react";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import AccountAppearancePreference from "@/Components/operations/AccountAppearancePreference";
 type Props={email:string;name:string;avatarUrl?:string|null;onLogout:()=>Promise<void>};
 export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
  const account=useAccountProfile();
@@ -54,6 +55,7 @@ export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
      <div className="flex gap-2"><button type="button" disabled={busy} onClick={()=>void updatePassword()} className="rounded-lg bg-[#0B142A] px-3 py-2 text-xs text-white disabled:opacity-50">Salvar senha</button><button type="button" disabled={busy} onClick={()=>{setChanging(false);setPassword("");setConfirm("");}} className="rounded-lg border px-3 py-2 text-xs">Cancelar</button></div>
    </div>:<div className="mt-2 space-y-1"><AccountProfileButton/>
     <button type="button" onClick={()=>{setChanging(true);setFeedback("");}} className="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#323647] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="key" size={18} stroke={1.7}/><span>Alterar senha</span></button>
+    {process.env.NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearancePreference/>}
     <div className="my-1 border-t border-[#E3E7F0]"/><button type="button" onClick={()=>void onLogout()} className="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#B33A4D] hover:bg-[#FFF4F5] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><RotevoTablerIcon name="logout" size={18} stroke={1.7}/><span>Sair</span></button>
    </div>}
   </div>}

@@ -63,3 +63,21 @@ export function parseClientActionSubmit(raw:unknown):{
  ||typeof x.requestKey!=="string"||!/^[a-zA-Z0-9:_-]{8,250}$/.test(x.requestKey))return null;
  return {assignmentId:x.assignmentId,note:x.note.trim(),requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId};
 }
+
+export type ClientReviewDecision="validated"|"correction_requested";
+export function parseClientActionReview(raw:unknown):{
+ assignmentId:string;submissionId:string;decision:ClientReviewDecision;
+ feedback:string;expectedAuthorUserId:string
+}|null{
+ if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
+ const x=raw as Record<string,unknown>;
+ if(Object.keys(x).some(k=>!["assignmentId","submissionId","decision","feedback","expectedAuthorUserId"].includes(k)))return null;
+ if(typeof x.assignmentId!=="string"||!uuid.test(x.assignmentId)
+ ||typeof x.submissionId!=="string"||!uuid.test(x.submissionId)
+ ||typeof x.expectedAuthorUserId!=="string"||!uuid.test(x.expectedAuthorUserId)
+ ||(x.decision!=="validated"&&x.decision!=="correction_requested")
+ ||typeof x.feedback!=="string"||x.feedback.length>4000
+ ||(x.decision==="correction_requested"&&x.feedback.trim().length<3))return null;
+ return {assignmentId:x.assignmentId,submissionId:x.submissionId,
+   decision:x.decision,feedback:x.feedback.trim(),expectedAuthorUserId:x.expectedAuthorUserId};
+}

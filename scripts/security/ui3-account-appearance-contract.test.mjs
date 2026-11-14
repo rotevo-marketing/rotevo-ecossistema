@@ -43,3 +43,18 @@ test("appearance menu is shared by strategist and client but remains disabled wi
  assert.match(boot,/document\.documentElement\.removeAttribute\("data-rotevo-appearance"\)/);
  assert.match(preference,/new CustomEvent\("rotevo-appearance-updated"/);
 });
+
+const luminance=(hex)=>[0,2,4].map(n=>Number.parseInt(hex.slice(n,n+2),16)/255)
+ .map(x=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4)
+ .reduce((sum,x,i)=>sum+x*[0.2126,0.7152,0.0722][i],0);
+const ratio=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+test("UI3 dark token contrast meets minimum WCAG 2.2 AA for visible text and controls",()=>{
+ const css=readFileSync(new URL("../../src/app/rotevo-ui3.css",import.meta.url),"utf8");
+ const scope=css.slice(css.lastIndexOf('/* UI3 appearance pilot'));
+ const token=(name)=>{const m=scope.match(new RegExp('--rv3-'+name+':#([0-9a-fA-F]{6})'));assert.ok(m,name+" token missing");return m[1];};
+ const surface=token('surface'),text=token('text'),muted=token('muted'),border=token('border'),accent=token('accent');
+ assert.ok(ratio(text,surface)>=4.5,"dark normal text must meet AA");
+ assert.ok(ratio(muted,surface)>=4.5,"dark metadata must meet AA");
+ assert.ok(ratio(accent,surface)>=4.5,"dark links must meet AA");
+ assert.ok(ratio(border,surface)>=3,"dark control borders must reach non-text 3:1");
+});

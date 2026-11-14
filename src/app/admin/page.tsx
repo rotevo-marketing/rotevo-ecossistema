@@ -1,4 +1,5 @@
 "use client";
+import AccountAppearanceBootstrap from "@/Components/operations/AccountAppearanceBootstrap";
 import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 import "./rotevo-ui2.css";
 
@@ -380,6 +381,7 @@ export default function AdminPage() {
   if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
   return (
     <main className="admin-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+      {process.env.NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearanceBootstrap/>}
       <style jsx global>{`
         .admin-v2,
         .admin-v2 h1,

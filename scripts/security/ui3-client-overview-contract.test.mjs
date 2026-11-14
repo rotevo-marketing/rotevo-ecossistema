@@ -48,3 +48,17 @@ test("both overviews have exactly four colored sections with counters inside, no
  assert.match(admin,/aria-labelledby="daily-finance"/);
  assert.match(admin,/aria-labelledby="daily-projects"/);
 });
+
+test("client and strategist navigation share a straight active accent rail",()=>{
+ const css=readFileSync(new URL("../../src/app/rotevo-ui3.css",import.meta.url),"utf8");
+ const clientStart=css.indexOf("/* UI3 | Client menu mirrors the approved strategist selection rail.");
+ const clientEnd=css.indexOf("/* UI3 appearance pilot",clientStart);
+ assert.ok(clientStart>=0&&clientEnd>clientStart);
+ const client=css.slice(clientStart,clientEnd);
+ assert.match(client,/\.client-portal-v2\.rv-ui2\.rv-ui3 \.rv-ui2-sidebar \.rv-ui2-nav-item\[aria-current="page"\]::before/);
+ assert.match(client,/width:2px/);
+ assert.match(client,/border-radius:0/);
+ assert.match(client,/background-image:none/);
+ assert.doesNotMatch(client,/content:none!important/);
+ assert.match(css,/\.admin-v2\.rv-ui2\.rv-ui3 \.rv-ui2-sidebar \.rv-ui2-nav-item\[aria-current="page"\]::before/);
+});

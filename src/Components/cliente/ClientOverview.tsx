@@ -142,6 +142,5 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     {nextMeetings.length>3&&<button type="button" onClick={()=>onNavigate("meetings")} className={linkClass}>Ver todos os {nextMeetings.length} compromissos</button>}
    </section>}
   </div>
-  {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/>}
  </main>;
 }

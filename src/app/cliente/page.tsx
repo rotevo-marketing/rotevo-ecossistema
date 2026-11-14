@@ -12,6 +12,7 @@ import WorkflowNotificationBell from "@/Components/shared/WorkflowNotificationBe
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
+import ClientActionDeliveryPanel from "@/Components/cliente/ClientActionDeliveryPanel";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import ClientContent from "@/Components/cliente/ClientContent";
 import ClientCampaigns from "@/Components/cliente/ClientCampaigns";
@@ -155,7 +156,7 @@ export default function ClientAreaPage(){
        tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/>:
+       tab==="execution"?<div className="space-y-4">{process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<section aria-label="Atribuídas a mim"><ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/></section>}<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/></div>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

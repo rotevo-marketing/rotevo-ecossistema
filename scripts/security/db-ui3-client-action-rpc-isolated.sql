@@ -140,3 +140,8 @@ begin
  if jsonb_array_length(rows)<>0 then raise exception 'Revoked resource leaked via assignment listing';end if;
 end $revoked$;
 reset role;
+
+-- Restore fixture so chained submission tests can exercise valid deliveries.
+update public.planning_projects
+set data=jsonb_set(data,'{editorialCalendar,0,visibleToClient}','true'::jsonb,false)
+where id='00000000-0000-4000-8000-000000000011';

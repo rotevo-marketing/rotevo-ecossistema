@@ -165,6 +165,10 @@ jobs:
             ${{ runner.temp }}/ui3-synthetic-shared-contract-390.png
             ${{ runner.temp }}/ui3-synthetic-published-planning-390.png
             ${{ runner.temp }}/ui3-synthetic-strategist-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-dark-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-dark-390.png
           if-no-files-found: ignore
           retention-days: 5
       - name: Stop isolated local stack

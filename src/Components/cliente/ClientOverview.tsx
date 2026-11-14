@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
+import ClientActionDeliveryPanel from "@/Components/cliente/ClientActionDeliveryPanel";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
 import {supabase} from "@/lib/supabase";
@@ -156,5 +157,6 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     {nextMeetings.length>3&&<button type="button" onClick={()=>onNavigate("meetings")} className={linkClass}>Ver todos os {nextMeetings.length} compromissos</button>}
    </section>}
   </div>
+  {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/>}
  </main>;
 }

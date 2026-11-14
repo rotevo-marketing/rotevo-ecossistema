@@ -20,7 +20,7 @@ export async function POST(req:NextRequest){
  if(identity.user.app_metadata?.rotevo_password_reset_required===true)return reply(403,"Atualize sua senha inicial.");
  if(identity.user.id!==args.expectedAuthorUserId)return reply(409,"A sessão mudou. Reabra o painel.");
  const {data,error}=await client.rpc("rotevo_client_action_submit",{
-  p_assignment_id:args.assignmentId,p_note:args.note,p_request_key:args.requestKey
+  p_assignment_id:args.assignmentId,p_note:args.note,p_request_key:args.requestKey,p_drive_url:args.driveUrl
  });
  if(error){
   if(error.code==="42501")return reply(403,"Entrega não autorizada.");

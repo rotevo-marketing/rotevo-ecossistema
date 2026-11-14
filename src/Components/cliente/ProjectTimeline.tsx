@@ -19,6 +19,7 @@ export type ExecutionItem = {
   ownerUserId?:string;
   startDate?:string;
   dueDate?:string;
+  launchDate?:string;
   completedAt?:string;
   archivedAt?:string;
   deletedAt?:string;

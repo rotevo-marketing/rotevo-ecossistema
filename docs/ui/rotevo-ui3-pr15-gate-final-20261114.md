@@ -41,6 +41,27 @@ A comparação `feat/ui3-operational-integration-20261113..main` está `diverged
 4. **Constraint NÃO VALIDADA:** obter definição no clone, verificar em leitura se existem linhas antigas não conformes usando consulta que não modifique dados; `VALIDATE CONSTRAINT` somente em cópia descartável e com registro de erros, nunca em hosted sem autorização.
 5. **Recuperação operacional:** demonstrar inicialização da stack local, mecanismos de restabelecimento de perfil administrador sintético e dependências externas (Auth config, Storage bytes, chaves não expostas, Edge Functions, Realtime). O ensaio do dump isolado não comprova todos esses itens.
 
+## 3.1 Handoff do Codex: complementação em clone de 14/11/2026 (08:23, informado pelo operador)
+
+**Classificação final desta rodada: RECUPERAÇÃO OPERACIONAL NÃO COMPROVADA.** Evidência transcrita pelo operador de relatório privado `complementacao-recuperacao-rotevo-20261114.md`. O relatório integral continua inacessível por esta conexão; não classificar os testes descritos como homologação independente do ambiente hospedado.
+
+| Controle | Resultado do Codex no clone | Ressalva/impedimento |
+|---|---|---|
+| Storage criptografado | **NÃO COMPROVADO** | Pacote AES-256-GCM não localizado nas pastas privadas conhecidas; só há registro anterior de validação dos bytes |
+| Metadados Storage | **APROVADO COM RESSALVAS** | 3 buckets, 50 objetos e 27.151.977 bytes coincidem com o runbook; sem correspondência individual path/tamanho/SHA256 |
+| Auth, roles e grants | **NÃO COMPROVADO** | 18 registros Auth com hash, mas sem login real; roles substitutos NOLOGIN, ausência de `authenticator` e de `BYPASSRLS` para `service_role` no cluster descartável |
+| Isolamento de projetos por SQL | **APROVADO COM RESSALVAS** | Estrategista: 2 projetos sintéticos; cada cliente: 1 próprio e 0 do outro; G2 com `projects.read`: 0 por SELECT direto; API/RPC G2 ainda não verificada |
+| Upgrade SQL PR #15 | **APROVADO COM RESSALVAS** | 15 propostas SQL aplicadas ao clone `audit_completion_20261114`, SHA local de referência `b99303c6`; retirou SELECT direto de JSON e criou `public.rotevo_collaboration_messages`; sem regressão end-to-end nesse clone |
+| `realtime.messages.messages_payload_exclusive` | **APROVADO NO CLONE** | Expressão `payload IS NULL OR binary_payload IS NULL`; 0 linhas, 0 violações; `VALIDATE CONSTRAINT` somente no clone. Não altera a condição NOT VALID hospedada |
+
+Os dois bancos anteriormente restaurados continuam preservados. Nesta rodada, o Codex utilizou clone adicional e reverteu dados sintéticos. Nenhum acesso ao Supabase hospedado, merge ou deployment foi relatado.
+
+**Prioridade 1 — Storage:** localizar o pacote e sua chave armazenada separadamente no computador administrativo (informar somente caminhos locais, jamais segredo), verificar integridade e o inventário objeto a objeto, e testar recuperação via **API de Storage** em stack isolada. **Não** copiar/alterar linhas `storage.objects` diretamente para simular upload.
+
+**Prioridade 2 — Auth e G2:** iniciar stack isolada com Auth/PostgREST/Roles compatíveis; criar identidades totalmente sintéticas, emitir JWT através do serviço Auth e testar APIs do PR #15. A leitura direta de projetos igual a zero para G2 pode ser intencional no modelo de grants restritos; não classificá-la como bug sem testar as APIs/RPCs autorizadas.
+
+**Prioridade 3 — E2E e aceite:** validar a aplicação no mesmo SHA do clone, com casos permitidos e negados e comparativo de schema/policies/grants. Registrar evidências locais agregadas, sem dados reais em logs. Não repetir restauração original nem fazer novas migrações hospedadas.
+
 ## 4. Gate de proteção e plano de implantação ainda não executados
 
 - Preservar acesso dos dois estrategistas; não alterar identidade de clientes e nem executar reset de senha principal.

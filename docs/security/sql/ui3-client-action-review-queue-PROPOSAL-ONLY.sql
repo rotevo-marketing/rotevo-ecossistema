@@ -29,14 +29,14 @@ begin
   'resourceType',q.resource_type,'resourceId',q.resource_id,
   'resourceVersion',q.resource_version,'clientUserId',q.client_user_id,
   'actionType',q.action_type,'instructions',q.instructions,
-  'submittedAt',q.submitted_at,'note',q.note,
+  'submittedAt',q.submitted_at,'note',q.note,'driveUrl',q.submission_url,
   'attemptNumber',q.attempt_number,'dueDate',q.due_date
  ) order by q.submitted_at,q.assignment_id), '[]'::jsonb) into v_rows
  from (
  select a.id assignment_id,s.id submission_id,
  a.resource_type,a.resource_id,a.resource_version,a.client_user_id,
  a.action_type,a.instructions,s.created_at submitted_at,s.note,
- s.attempt_number,a.due_date
+ s.attempt_number,a.due_date,s.submission_url
  from rotevo_workflow.client_action_assignments a
  join rotevo_workflow.client_action_submissions s on s.assignment_id=a.id
  where a.project_id=p_project_id and a.status='submitted' and s.review_status='submitted'

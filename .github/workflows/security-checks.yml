@@ -346,6 +346,11 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_collaboration_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_collaboration_isolated -f scripts/security/db-collaboration-isolated.sql
+      - name: Test client action proposal RLS and uniqueness in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_client_actions_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_client_actions_isolated -f scripts/security/db-ui3-client-action-schema-isolated.sql
+
 
   typecheck:
     name: TypeScript verification

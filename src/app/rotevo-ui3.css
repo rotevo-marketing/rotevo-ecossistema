@@ -414,3 +414,13 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(button,input,select,textarea):fo
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
  color:initial;background:#fff;
 }
+
+
+/* UI3 dark appearance: semantic overview headings and introductory copy.
+   Do not recolor rich documents or duplicate light-mode card treatment. */
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard)>header h2{
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard)>header p{
+ color:var(--rv3-muted)!important;
+}

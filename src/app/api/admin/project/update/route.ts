@@ -291,7 +291,8 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   const task=entry as Record<string,unknown>;
   if(typeof task.id!=="string")continue;
   const prior=previousTaskById.get(task.id);
-  if(task.launchDate===prior?.launchDate||task.launchDate===undefined||task.launchDate===null||task.launchDate==="")continue;
+  if(task.launchDate===prior?.launchDate&&task.dueDate===prior?.dueDate)continue;
+  if(task.launchDate===undefined||task.launchDate===null||task.launchDate==="")continue;
   if(typeof task.launchDate!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(task.launchDate))return fail(400);
   const [year,month,day]=task.launchDate.split("-").map(Number);
   const d=new Date(Date.UTC(year,month-1,day));

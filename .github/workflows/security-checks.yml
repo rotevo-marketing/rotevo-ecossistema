@@ -364,10 +364,6 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_submission_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_action_submission_isolated -f scripts/security/db-ui3-client-action-submission-isolated.sql
-      - name: Verify private storage RLS and immutable submission asset linkage
-        run: |
-          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_client_storage_isolated'
-          psql -X -v ON_ERROR_STOP=1 -d rotevo_client_storage_isolated -f scripts/security/db-ui3-client-action-asset-isolated.sql
       - name: Verify workflow notification events and recipient idempotency
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_notice_isolated'

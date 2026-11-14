@@ -140,21 +140,19 @@ try {
  console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
  try { await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000}); } catch(e) { console.log("CLIENT_ASSIGNMENT_PANEL_AFTER_TIMEOUT",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,440),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]")); throw e; }
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
- // A failure here is after the first assignment rendered, not during the initial load.
- // Capture only synthetic UI state and URL path; never log customer information or tokens.
- console.log("CLIENT_RELOAD_PATH",new URL(customer.url()).pathname);
- await delivery.first().waitFor({state:"visible",timeout:20000}).catch(async e=>{
-  console.log("CLIENT_RELOAD_DOCUMENT",(await customer.locator("body").innerText().catch(()=>"[unavailable]")).slice(0,280));throw e;
- });
- try {await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});}
- catch(e){
-  console.log("CLIENT_RELOAD_PANEL_STATE",(await delivery.innerText().catch(()=>"[unmounted]")).slice(0,280),"PHASE",await delivery.getAttribute("data-ui3-load-phase").catch(()=>"[unmounted]"));
-  throw e;
- }
+ // Portal starts on overview after reload. Reopen the personal Tasks area before
+ // checking that the assignment persisted; do not change the approved navigation.
+ await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
+ await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
  await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+ await customer.getByRole("heading",{name:"Visão geral",exact:true}).first().waitFor({timeout:20000});
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
  console.log("PASS browser client Drive URL submission and persisted status after refresh");

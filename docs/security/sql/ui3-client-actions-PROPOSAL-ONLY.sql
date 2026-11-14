@@ -38,7 +38,6 @@ create table if not exists rotevo_workflow.client_action_submissions (
  assignment_id uuid not null references rotevo_workflow.client_action_assignments(id) on delete restrict,
  submitted_by uuid not null,
  submission_url text,
- private_storage_path text,
  note text not null default '' check(length(note)<=4000),
  attempt_number integer not null check(attempt_number between 1 and 1000),
  review_status text not null default 'submitted' check(review_status in ('submitted','validated','correction_requested')),
@@ -48,9 +47,8 @@ create table if not exists rotevo_workflow.client_action_submissions (
  created_at timestamptz not null default now(),
  request_key text not null unique check(length(request_key) between 8 and 250),
  unique(assignment_id,attempt_number),
- check(submission_url is not null or private_storage_path is not null or length(trim(note))>0),
- check(submission_url is null or length(submission_url)<=2048),
- check(private_storage_path is null or length(private_storage_path)<=1024),
+ check(submission_url is not null and length(trim(submission_url))>0),
+ check(submission_url ~ '^https://(drive|docs)\\.google\\.com/' and length(submission_url)<=2048),
  check(reviewed_at is null or reviewed_by is not null)
 );
 create index if not exists idx_ui3_client_submissions_assignment
@@ -67,7 +65,7 @@ commit;
 --    assigned client_user_id, resource visibility, resource version, project/team/G2.
 -- 2. Approved target users are explicit; client user names cannot authorize actions.
 -- 3. Add server-side state transition, retry + optimistic concurrency, auditable events.
--- 4. File storage must use a private bucket and signed per-action authorization.
+-- 4. No file storage: submissions contain only a validated Google Drive URL and optional note.
 -- 5. A client submission cannot mutate editorial approval or publish status.
 -- 6. No asynchronous reminders or notifications until recipient authorization is tested.
 -- 7. If only SQL is applied, these tables remain unreachable: that is intentional.

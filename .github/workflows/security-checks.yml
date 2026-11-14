@@ -480,6 +480,13 @@ jobs:
           export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
           export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
           export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
+          export ROTEVO_CLIENT_ACTIONS_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED="true"
+          export ROTEVO_APPEARANCE_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED="true"
+          export ROTEVO_DESIGNATED_APPROVAL_ENABLED="true"
+          export ROTEVO_WORKFLOW_APPROVALS_ENABLED="true"
+          bash scripts/security/ui3-operational-local-install.sh
           export ROTEVO_FINANCE_ENABLED="true"
           export ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
           export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
@@ -502,6 +509,7 @@ jobs:
             exit 1
           fi
           node scripts/security/ui3-integrated-local-http.mjs
+          node scripts/security/ui3-operational-auth-e2e.mjs
           if [ "$LAB_MODE" = "contingency" ]; then
             node --test scripts/security/ui3-collaboration-http-negative.test.mjs
           else

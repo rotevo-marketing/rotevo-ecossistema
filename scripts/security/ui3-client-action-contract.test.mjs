@@ -210,4 +210,17 @@ test("hosted Auth smoke is a dry-run without both explicit opt-ins, and CI block
  },encoding:"utf8",timeout:15000});
  assert.notEqual(ci.status,0,"CI must fail before any privileged Auth network request");
  assert.match(ci.stderr,/Cannot run in CI or Vercel/);
+ const wrongProject=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"",VERCEL:"",
+  ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY",
+  ROTEVO_HOSTED_SUPABASE_URL:"https://kadvzjelkyfwouqmlxaa.supabase.co"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(wrongProject.status,0,"Production Supabase URL must fail before network access");
+ assert.match(wrongProject.stderr,/Homologation-only URL guard/);
+ const vercel=spawnSync(process.execPath,[file.pathname,"--execute"],{env:{
+  ...environment,CI:"",VERCEL:"1",
+  ROTEVO_HOSTED_AUTH_SMOKE:"I_AUTHORIZE_HOMOLOGATION_ONLY"
+ },encoding:"utf8",timeout:15000});
+ assert.notEqual(vercel.status,0,"Vercel runtime must fail before network access");
+ assert.match(vercel.stderr,/Cannot run in CI or Vercel/);
 });

@@ -118,6 +118,8 @@ jobs:
         run: node --test scripts/security/editorial-date-contract.test.mjs
       - name: Verify UI3 operational contract transitions and date isolation
         run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs
+      - name: Verify client overview delivery, approval and meeting focus
+        run: node --test scripts/security/ui3-client-overview-contract.test.mjs
       - name: Verify onboarding link validation contracts
         run: node --test scripts/security/onboarding-link-contract.test.mjs
       - name: Verify administrative editors use authorized project writes

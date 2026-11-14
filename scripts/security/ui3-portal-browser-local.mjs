@@ -124,6 +124,10 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
+ // Observe only synthetic local API status while debugging assignment loading, never auth headers.
+ customer.on("request",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_START",req.method(),new URL(req.url()).pathname);});
+ customer.on("response",res=>{if(res.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),new URL(res.url()).pathname);});
+ customer.on("requestfailed",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_FAIL",new URL(req.url()).pathname);});
  // Assigned client deliveries belong to Tarefas, not to the overview.
  // Mobile menu starts collapsed in the synthetic 390px viewport.
  await customer.getByRole("button",{name:"Menu",exact:true}).click();

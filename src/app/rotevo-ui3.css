@@ -164,7 +164,8 @@
 
 /* UI3 editorial workspaces: one content base, channel-specific filtered views. */
 .rv-ui3 .rv-ui3-editorial-calendar{min-width:0}
-.rv-ui3 .rv-ui3-editorial-surface{padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-surface:not(.rv-ui3-task-surface){padding:10px 0;border:0;border-radius:0;box-shadow:none}
+.rv-ui3 .rv-ui3-editorial-surface.rv-ui3-task-surface{padding:16px;border:1px solid #E3E7F0;border-radius:12px;box-shadow:none}
 .rv-ui3 .rv-ui3-editorial-calendar :is(button,select,input):focus-visible,
 .rv-ui3 .rv-ui3-client-editorial :is(button,select):focus-visible{outline:2px solid #6C5CE7;outline-offset:2px}
 .rv-ui3 .rv-ui3-editorial-calendar .grid.grid-cols-7>div{border-color:#E3E6ED;border-radius:4px;background:#fff}
@@ -262,4 +263,63 @@
   background: #F6F4FC;
   color: #453B75;
   font-weight: 600;
+}
+
+/* UI2 rebrands text-[#5123C5] to #6C5CE7 in interactive elements.
+   On #F0EBFF that drops small-label contrast below WCAG AA. Override only
+   selected execution controls, preserving the surrounding design system. */
+.rv-ui3 .rv-ui2-client-execution button[aria-pressed="true"] {
+  color:#5123C5;
+}
+
+/* Keep the execution table header readable under the shared module rules. */
+.rv-ui3 .rv-ui2-client-execution table thead th {
+  color: #606D82;
+}
+
+
+/* UI3 client portal — apply reviewed demo card hierarchy to the real
+   authenticated overview, without copying synthetic demo data or changing
+   any authorization, status or workflow behavior. */
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-overview-panel {
+  background: #fff;
+  border: 1px solid #E3E7F0 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  padding: 20px !important;
+  margin: 0;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel > div:first-child h2 {
+  color: #090D1C;
+  font-size: 16px;
+  font-weight: 650;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel .grid {
+  gap: 12px;
+}
+.client-portal-v2.rv-ui3 .rv-ui2-client-overview .rv-ui3-client-overview-panel button:focus-visible,
+.client-portal-v2.rv-ui3 .rv-ui2-client-content button:focus-visible {
+  outline: 2px solid #6C5CE7;
+  outline-offset: 2px;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-editorial .rv-ui3-editorial-task-list,
+.admin-v2.rv-ui3 .rv-ui3-editorial-task-list {
+  border-radius: 9px;
+  border-color: #E3E7F0;
+  box-shadow: none;
+}
+.client-portal-v2.rv-ui3 .rv-ui3-client-editorial .rv-ui3-editorial-task-list tbody tr:hover,
+.admin-v2.rv-ui3 .rv-ui3-editorial-task-list tbody tr:hover {
+  background: #FBFAFF;
+}
+@media (max-width: 767px) {
+  .client-portal-v2.rv-ui3 .rv-ui3-client-overview-panel {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
 }

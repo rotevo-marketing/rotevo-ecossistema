@@ -1,13 +1,13 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
-import {canAccessConversation,parseMessageBody,parseResource,requiredModule} from "@/lib/collaboration/guards";
+import {canAccessConversation,parseMessageBody,parseResource,requiredModule,sharedContentVersion} from "@/lib/collaboration/guards";
 import {workspaceForClient} from "@/lib/operations/model";
 
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:status===429?"Limite de mensagens atingido. Tente novamente em um minuto.":"Conversa indisponível ou acesso não autorizado."},{status,headers:{"Cache-Control":"no-store"}});
 const safe=(payload:unknown,status=200)=>NextResponse.json(payload,{status,headers:{"Cache-Control":"no-store"}});
 type Params={projectId:string;resourceId:string;resourceType:"task"|"content"};
-type Message={id:string;project_id:string;resource_type:string;resource_id:string;author_user_id:string;author_role:string;body:string;created_at:string};
+type Message={id:string;project_id:string;resource_type:string;resource_id:string;content_version:string|null;author_role:string;body:string;created_at:string};
 const PAGE_SIZE=30;
 function decodeCursor(raw:string|null):{created_at:string;id:string}|null|false{
  if(raw===null)return null;
@@ -76,7 +76,7 @@ async function authorize(req:NextRequest,params:Params,write:boolean){
  }
  if(!canAccessConversation({role:profile.role,userClientId:profile.client_id,projectClientId:project.client_id,workspaceModules:modules,projectData:project.data,resourceType:params.resourceType,resourceId:params.resourceId,teamActive,assigned,permissions}))
   return {status:403 as const};
- return {admin,userId:identity.user.id,role:profile.role as string};
+ return {admin,userId:identity.user.id,role:profile.role as string,contentVersion:params.resourceType==="content"?sharedContentVersion(project.data,params.resourceId):null};
 }
 
 export async function GET(req:NextRequest){
@@ -87,7 +87,7 @@ export async function GET(req:NextRequest){
  const cursor=decodeCursor(req.nextUrl.searchParams.get("cursor"));
  if(cursor===false)return fail(400);
  let query=session.admin.from("rotevo_collaboration_messages")
-  .select("id,project_id,resource_type,resource_id,author_user_id,author_role,body,created_at")
+  .select("id,project_id,resource_type,resource_id,content_version,author_role,body,created_at")
   .eq("project_id",params.projectId).eq("resource_type",params.resourceType).eq("resource_id",params.resourceId)
   .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(PAGE_SIZE+1);
  if(cursor)query=query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);
@@ -109,8 +109,8 @@ export async function POST(req:NextRequest){
  if("status" in session && typeof session.status==="number")return fail(session.status);
  const {data,error}=await session.admin.from("rotevo_collaboration_messages").insert({
   project_id:params.projectId,resource_type:params.resourceType,resource_id:params.resourceId,
-  author_user_id:session.userId,author_role:session.role,body
- }).select("id,project_id,resource_type,resource_id,author_user_id,author_role,body,created_at").single();
+  author_user_id:session.userId,author_role:session.role,content_version:session.contentVersion,body
+ }).select("id,project_id,resource_type,resource_id,content_version,author_role,body,created_at").single();
  if(error){
   if(error.code==="P0001"&&error.message==="rotevo_collaboration_rate_limited")return fail(429);
   return fail(503);

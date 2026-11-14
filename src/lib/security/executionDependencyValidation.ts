@@ -56,6 +56,17 @@ export function validExecutionDependencies(data:unknown):boolean{
 
   }
  }
+ // Editorial metadata is optional for legacy content; new operational cells are bounded.
+ const editorial=root.editorialCalendar;
+ if(editorial!==undefined&&editorial!==null){
+  if(!Array.isArray(editorial)||editorial.length>2000)return false;
+  for(const entry of editorial){
+   const item=object(entry);
+   if(!item)continue;
+   if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
+   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
+  }
+ }
  const timeline=root.executionTimeline;
  if(timeline===undefined||timeline===null)return true;
  if(!Array.isArray(timeline)||timeline.length>2000)return false;
@@ -70,7 +81,8 @@ export function validExecutionDependencies(data:unknown):boolean{
   if(item.kind!==undefined&&!["deliverable","milestone","task"].includes(String(item.kind)))return false;
   if(item.documentCode!==undefined&&item.documentCode!==""&&(typeof item.documentCode!=="string"||!/^\d{2}\.\d{2}$/.test(item.documentCode)))return false;
   if(item.ownerUserId!==undefined&&item.ownerUserId!==""&&(typeof item.ownerUserId!=="string"||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).test(item.ownerUserId)))return false;
-  if(item.archivedAt!==undefined&&item.archivedAt!==null){if(typeof item.archivedAt!=="string"||item.archivedAt.length>40||Number.isNaN(Date.parse(item.archivedAt))||!["completed","cancelled"].includes(String(item.status)))return false;}
+  if(item.archivedAt!==undefined&&item.archivedAt!==null){if(typeof item.archivedAt!=="string"||item.archivedAt.length>40||Number.isNaN(Date.parse(item.archivedAt)))return false;}
+  if(item.deletedAt!==undefined&&item.deletedAt!==null){if(typeof item.deletedAt!=="string"||item.deletedAt.length>40||Number.isNaN(Date.parse(item.deletedAt)))return false;}
   if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   if(item.referenceUrl!==undefined&&item.referenceUrl!==""){if(typeof item.referenceUrl!=="string"||item.referenceUrl.length>2048)return false;try{const u=new URL(item.referenceUrl);if(u.protocol!=="https:"||u.username||u.password)return false;}catch{return false;}}
   if(item.checklist!==undefined){if(!Array.isArray(item.checklist)||item.checklist.length>50)return false;const listIds=new Set<string>();for(const rawCheck of item.checklist){const check=object(rawCheck);if(!check||typeof check.id!=="string"||check.id.length>128||!check.id||listIds.has(check.id)||typeof check.text!=="string"||!check.text.trim()||check.text.length>240||typeof check.done!=="boolean")return false;listIds.add(check.id);}}

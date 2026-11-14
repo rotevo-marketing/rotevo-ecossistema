@@ -16,6 +16,7 @@ create table public.rotevo_collaboration_messages (
  project_id uuid not null references public.planning_projects(id) on delete restrict,
  resource_type text not null check(resource_type in ('task','content')),
  resource_id text not null check(length(resource_id) between 1 and 100 and resource_id ~ '^[A-Za-z0-9_-]+$'),
+ content_version text check (content_version is null or (resource_type='content' and length(content_version) between 1 and 80)),
  author_user_id uuid not null references auth.users(id) on delete restrict,
  author_role text not null check(author_role in ('client','staff','strategist')),
  body text not null check (length(btrim(body)) between 1 and 3000 and length(body)<=3000),

@@ -3,6 +3,7 @@ name: Security checks (development)
 on:
   push:
     branches:
+      - integration/rotevo-ui3-rebranding-20261111
       - feature/admin-v2-redesign
     paths:
       - "src/**"

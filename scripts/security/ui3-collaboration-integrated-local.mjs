@@ -71,7 +71,9 @@ await request("/api/collaboration/messages",reset,"POST",msg(pA,"task","task-sha
 await request("/api/collaboration/messages",reader,"POST",msg(pA,"task","task-shared","No write permission"),403);
 const created=await request("/api/collaboration/messages",a,"POST",msg(pA,"task","task-shared","  Olá equipe  "),201);
 assert.equal(created.message.body,"Olá equipe");
-assert.equal(created.message.author_user_id,a.id);
+assert.ok(!("author_user_id" in created.message),"API response must not expose Auth IDs");
+const author=await must(service.from("rotevo_collaboration_messages").select("author_user_id").eq("id",created.message.id).single(),"stored author");
+assert.equal(author.author_user_id,a.id);
 assert.equal(created.message.author_role,"client");
 const reply=await request("/api/collaboration/messages",admin,"POST",msg(pA,"task","task-shared","Retorno da equipe"),201);
 assert.equal(reply.message.author_role,"strategist");
@@ -82,8 +84,14 @@ const other=await request(path(pB,"task","task-shared"),b);
 assert.equal(other.messages.length,0);
 const contentMessage=await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Revisar este conteúdo"),201);
 assert.equal(contentMessage.message.resource_type,"content");
+assert.equal(contentMessage.message.content_version,"01");
+await must(service.from("team_member_permissions").insert({user_id:reader.id,permission:"projects.write"}),"authorized staff write");
+const contentReply=await request("/api/collaboration/messages",reader,"POST",{...msg(pA,"content","content-shared","Retorno autorizado"),content_version:"forged"},201);
+assert.equal(contentReply.message.author_role,"staff");
+assert.equal(contentReply.message.content_version,"01");
+assert.ok(!("author_user_id" in contentReply.message));
 assert.equal((await request(path(pA,"task","task-shared"),a)).messages.length,2);
-assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,1);
+assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,2);
 // Older items deliberately share a timestamp to verify keyset pagination has no gaps.
 const historical=Array.from({length:65},(_,i)=>({
  project_id:pA,resource_type:"task",resource_id:"task-shared",
@@ -126,8 +134,11 @@ assert.equal(burstRows.length,10,"database must persist exactly ten messages");
 console.log("PASS concurrent collaboration rate limiting: 10 accepted and 6 rejected");
 await must(service.from("client_workspaces").update({data:{modules:["content"],contracts:[],folders:[]}}).eq("client_id",cA),"disable execution");
 await request(path(pA,"task","task-shared"),a,"GET",undefined,403);
-assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,9);
+assert.equal((await request(path(pA,"content","content-shared"),a)).messages.length,10);
 await must(service.from("planning_projects").update({data:{executionTimeline:base.executionTimeline,editorialCalendar:base.editorialCalendar.map(x=>({...x,visibleToClient:false}))}}).eq("id",pA),"unshare content");
 await request(path(pA,"content","content-shared"),a,"GET",undefined,403);
+await must(service.from("planning_projects").update({data:{...base,editorialCalendar:base.editorialCalendar.map(x=>({...x,archivedAt:new Date().toISOString()}))}}).eq("id",pA),"archive content");
+await request(path(pA,"content","content-shared"),a,"GET",undefined,403);
+await request(path(pA,"content","content-shared"),reader,"GET",undefined,403);
 await request("/api/collaboration/messages",a,"POST",msg(pA,"content","content-shared","Hidden now"),403);
 console.log("PASS integrated collaboration: real Auth, tenant isolation, reset/role/module/visibility gates, server-only grants, writes, reload, thread separation, and de-sharing");

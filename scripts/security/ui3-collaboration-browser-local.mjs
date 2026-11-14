@@ -20,7 +20,7 @@ await must(service.from("profiles").insert({id:user.user.id,role:"client",client
 await must(service.from("client_workspaces").insert({client_id:clientId,data:{modules:["execution","content"],folders:[],contracts:[]}}),"workspace");
 await must(service.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Shared Task",slug:"collab-ui-"+suffix,status:"draft",
  data:{executionTimeline:[{id:"browser-task",title:"Tarefa acessível",visibleToClient:true,status:"in_progress",dueDate:"2026-11-20"}],
- editorialCalendar:[]}}),"project");
+ editorialCalendar:[{id:"browser-content",title:"Conteúdo acessível",channel:"YouTube",format:"Vídeo",status:"production",publishDate:new Date().toISOString().slice(0,7)+"-15",version:"02",visibleToClient:true}]}}),"project");
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},locale:"pt-BR"});
@@ -32,10 +32,10 @@ try{
  // Use the actual portal navigation rather than mounting a synthetic component.
  await page.getByRole("button",{name:"Menu",exact:true}).click();
  const menu=page.getByRole("navigation",{name:"Navegação do portal"});
- await menu.getByRole("button",{name:"Tarefas e entregas"}).click();
- await page.getByText("Tarefa acessível").waitFor({timeout:20000});
- await page.getByText("Conversa sobre esta tarefa").click();
- const section=page.getByRole("region",{name:"Conversa sobre este item"});
+ await menu.getByRole("button",{name:"Tarefas",exact:true}).click();
+ await page.getByRole("button",{name:"Tarefa acessível",exact:true}).click({timeout:20000});
+ const detail=page.getByRole("dialog",{name:"Detalhes da tarefa Tarefa acessível",exact:true});
+ const section=detail.getByRole("region",{name:"Conversa sobre este item"});
  await section.getByRole("heading",{name:"Conversa sobre este item"}).waitFor();
  const input=section.getByRole("textbox",{name:"Nova mensagem"});
  await input.fill("Mensagem de teste acessível");
@@ -58,4 +58,17 @@ try{
  assert.ok(overflow<=1,"Collaboration mobile horizontal overflow: "+overflow);
  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-collaboration-390.png",fullPage:true});
  console.log("PASS browser collaboration: client login, task access, message send/reload, focus, axe WCAG 2.1 A/AA, mobile 390px");
+ await detail.getByRole("button",{name:"Fechar",exact:true}).click();
+ await page.getByRole("button",{name:"Menu",exact:true}).click();
+ await menu.getByRole("button",{name:"Conteúdo",exact:true}).click();
+ await page.getByRole("group",{name:"Visualização de conteúdos"}).getByRole("button",{name:"Lista",exact:true}).click();
+ await page.getByRole("button",{name:"Conteúdo acessível",exact:true}).click();
+ const editorial=page.getByRole("dialog");
+ const editorialThread=editorial.getByRole("region",{name:"Conversa sobre este item"});
+ await editorialThread.getByRole("textbox",{name:"Nova mensagem"}).fill("Comentário editorial sintético");
+ await editorialThread.getByRole("button",{name:"Enviar mensagem"}).click();
+ await editorialThread.getByText("Comentário editorial sintético",{exact:true}).waitFor();
+ await editorialThread.getByText(/Versão 02/).waitFor();
+ assert.equal(await editorialThread.getByText("Mensagem de teste acessível",{exact:true}).count(),0);
+ console.log("PASS browser editorial conversation in client detail with version and thread isolation");
 }finally{await browser.close();}

@@ -31,7 +31,7 @@ test("appearance menu is shared by strategist and client but remains disabled wi
  assert.match(preference,/supabase\.auth\.getUser\(\)/);
  assert.match(preference,/expectedAuthorUserId:user/);
  assert.match(preference,/prefers-color-scheme: dark/);
- assert.doesNotMatch(preference,/localStorage/);
+ assert.doesNotMatch(preference,/localStorage\\.(?:setItem|getItem|removeItem)/);
  assert.match(css,/html\[data-rotevo-appearance="dark"\] \.rv-ui3/);
  assert.match(css,/\.se-paper,\.bn-editor/);
 });

@@ -84,3 +84,20 @@ test("task and editorial list columns use aligned compact widths and preserve se
  assert.ok(task.includes('["Prazo","calendar-week","due"]'));
  assert.ok(editorial.includes('["Conclusão","calendar-week","due"]'));
 });
+
+test("campaign creation and editing use the approved centered modal without replacing its fields",()=>{
+ const campaigns=readFileSync(new URL("../../src/Components/admin/CampaignsHub.tsx",import.meta.url),"utf8");
+ const start=campaigns.indexOf('{editing&&<div className="fixed inset-0 z-[120]');
+ assert.ok(start>=0,"Campaign editor must exist");
+ const editor=campaigns.slice(start);
+ assert.match(editor,/flex items-center justify-center p-2 sm:p-5/,"Campaign modal must be centered");
+ assert.match(editor,/role="dialog" aria-modal="true"/);
+ assert.match(editor,/max-w-\[960px\] flex-col overflow-hidden rounded-2xl/);
+ assert.match(editor,/min-h-0 flex-1 overflow-y-auto overscroll-contain/);
+ assert.match(editor,/shrink-0 justify-end gap-2 border-t/,"Save and cancel remain visible below scrollable body");
+ assert.doesNotMatch(editor,/flex justify-end/,"Do not reintroduce right-side campaign drawer");
+ for(const label of ["Projeto","Campanha *","Tipo de campanha","Canais e parceiros","Resultados e aprendizados","Próximo passo","Ações da campanha","Plataforma","Situação","Objetivo","Início","Fim","Orçamento planejado","Tipo de resultado principal","Link externo da campanha","Observações","Salvar campanha"]){
+  assert.ok(editor.includes(label),label+" field must be preserved");
+ }
+ assert.match(campaigns,/if\(!editing\|\|saving\)return/,"Existing save lifecycle is unchanged");
+});

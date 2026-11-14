@@ -21,13 +21,10 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
  useEffect(()=>{
   let active=true;
   setItems([]);setLoading(true);setError("");
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
-   // INITIAL_SESSION may temporarily be null during hydration. Do not permanently
-   // disable the query before getUser() resolves; only actual sign-out/account switch invalidates it.
-   if(event==="SIGNED_OUT"||(userId&&session?.user&&session.user.id!==userId)){
-    active=false;setItems([]);setUrls({});setNotes({});setDrafts({});setBusy("");setError("Sessão alterada.");setLoading(false);
-   }
-  });
+  // Session changes are handled by useSessionBoundary in the parent portal.
+  // Do not subscribe a second listener inside the fetch lifecycle: auth events
+  // can invalidate an in-flight response and strand this panel in loading state.
+  // The effect cleanup still discards results on project/user changes or unmount.
   void (async()=>{
    try{
     if(!userId)throw Error("Sessão expirada.");
@@ -43,7 +40,7 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
    }catch(e){if(active)setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}
    finally{if(active)setLoading(false);}
   })();
-  return()=>{active=false;subscription.unsubscribe();};
+  return()=>{active=false;};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[ids,userId,revision]);
  async function submit(item:Action){

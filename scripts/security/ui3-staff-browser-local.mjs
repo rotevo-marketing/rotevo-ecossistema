@@ -87,6 +87,14 @@ try {
  }else{
   assert.equal(await page.getByRole("button",{name:/Conversas de/}).count(),0);
  }
+ // A fresh browser load must not lose the G2 scope, or disclose the hidden tenant JSON.
+ await page.reload({waitUntil:"domcontentloaded",timeout:45000});
+ await page.getByRole("heading",{name:"Área da equipe ROTEVO"}).waitFor({timeout:25000});
+ await page.getByRole("listitem").filter({hasText:"Synthetic Assigned Project"}).waitFor({timeout:20000});
+ assert.equal(await page.getByText("Projetos atribuídos: 1").count(),1,"G2 project scope must persist after reload");
+ assert.equal(await page.getByText("PRIVATE_SYNTHETIC").count(),0,"no private project data after reload");
+ assert.equal(await page.getByRole("link",{name:"Acessar Financeiro"}).count(),0,"no finance permission after reload");
+ console.log("PASS staff G2 project assignment, restrictions and session persist after reload");
  const exitButton=page.getByRole("button",{name:"Sair"});
  await exitButton.focus();
  assert.equal(await exitButton.evaluate(node=>node===document.activeElement),true,"logout control must receive programmatic keyboard focus");

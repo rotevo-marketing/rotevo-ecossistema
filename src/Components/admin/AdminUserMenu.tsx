@@ -42,8 +42,7 @@ export default function AdminUserMenu({email,name,avatarUrl,onLogout}:Props){
   <button ref={triggerRef} type="button" aria-label={`Abrir menu de ${display}`} aria-expanded={open} aria-haspopup="true" onClick={()=>setOpen(v=>!v)}
     className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-xl border border-[#E3E7F0] bg-white px-2.5 py-1 text-[#323647] transition-colors hover:border-[#CEC9EA] hover:bg-[#F6F7FB] focus-visible:outline-2 focus-visible:outline-[#6C5CE7] sm:px-3">
    <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E3E7F0] bg-[#EEE8FF] text-xs font-bold text-[#6034B7]">{profileAvatar?<img src={profileAvatar} alt="" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover"/>:initials||"U"}</span>
-   <span className="hidden max-w-44 min-w-0 truncate text-left text-sm font-semibold sm:inline">{display}</span>
-   <RotevoTablerIcon name="chevron-down" size={16} stroke={1.7} className="hidden text-[#697386] sm:block"/>
+   <RotevoTablerIcon name={open?"chevron-up":"chevron-down"} size={16} stroke={1.7} className="text-[#697386]"/>
   </button>
   {open&&<div className="absolute right-0 z-[90] mt-2 w-[min(320px,calc(100vw-24px))] rounded-xl border border-[#E3E7F0] bg-white p-3 text-[#090D1C] shadow-xl">
    <div className="border-b border-[#E3E7F0] px-1 pb-3 pt-1"><p className="truncate text-sm font-semibold">{display}</p><p className="mt-1 truncate text-xs text-[#697386]">{account.profile?.email||email}</p></div>

@@ -51,17 +51,34 @@ export function parseClientActionList(raw:unknown):{projectId:string;expectedAut
  ?{projectId:x.projectId,expectedAuthorUserId:x.expectedAuthorUserId}:null;
 }
 
+/** A shared Google Drive/Docs URL, not a file upload or an access token. */
+export function validGoogleDriveUrl(raw:unknown):raw is string{
+ if(typeof raw!=="string"||raw.length>2048||!raw.trim()||raw!==raw.trim())return false;
+ try{
+  const url=new URL(raw);
+  if(url.protocol!=="https:"||url.username||url.password||url.port||url.hash)return false;
+  if(url.hostname!=="drive.google.com"&&url.hostname!=="docs.google.com")return false;
+  if(url.hostname==="drive.google.com"){
+   if(/^\\/(file\\/d\\/|drive\\/folders\\/|drive\\/u\\/\\d+\\/folders\\/)/.test(url.pathname))return true;
+   if(url.pathname==="/open"||url.pathname==="/uc")return Boolean(url.searchParams.get("id"));
+   return false;
+  }
+  return /^\\/(document|spreadsheets|presentation|forms|drawings|videos)\\/d\\/[^/]+/.test(url.pathname);
+ }catch{return false;}
+}
 export function parseClientActionSubmit(raw:unknown):{
- assignmentId:string;note:string;requestKey:string;expectedAuthorUserId:string
+ assignmentId:string;note:string;driveUrl:string;requestKey:string;expectedAuthorUserId:string
 }|null{
  if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
  const x=raw as Record<string,unknown>;
- if(Object.keys(x).some(k=>!["assignmentId","note","requestKey","expectedAuthorUserId"].includes(k)))return null;
+ if(Object.keys(x).some(k=>!["assignmentId","note","driveUrl","requestKey","expectedAuthorUserId"].includes(k)))return null;
  if(typeof x.assignmentId!=="string"||!uuid.test(x.assignmentId)
  ||typeof x.expectedAuthorUserId!=="string"||!uuid.test(x.expectedAuthorUserId)
- ||typeof x.note!=="string"||x.note.trim().length<3||x.note.length>4000
+ ||(x.note!==undefined&&(typeof x.note!=="string"||x.note.length>4000))
+ ||!validGoogleDriveUrl(x.driveUrl)
  ||typeof x.requestKey!=="string"||!/^[a-zA-Z0-9:_-]{8,250}$/.test(x.requestKey))return null;
- return {assignmentId:x.assignmentId,note:x.note.trim(),requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId};
+ return {assignmentId:x.assignmentId,note:typeof x.note==="string"?x.note.trim():"",
+  driveUrl:x.driveUrl,requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId};
 }
 
 export type ClientReviewDecision="validated"|"correction_requested";
@@ -82,17 +99,3 @@ export function parseClientActionReview(raw:unknown):{
    decision:x.decision,feedback:x.feedback.trim(),expectedAuthorUserId:x.expectedAuthorUserId};
 }
 
-/** Immutable RLS-uploaded private asset; the original name never enters Storage paths. */
-export function parseClientActionSubmitAsset(raw:unknown):{
- assignmentId:string;note:string;requestKey:string;expectedAuthorUserId:string;privateStoragePath:string
-}|null{
- if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
- const x=raw as Record<string,unknown>;
- if(Object.keys(x).some(k=>!["assignmentId","note","requestKey","expectedAuthorUserId","privateStoragePath"].includes(k)))return null;
- const base=parseClientActionSubmit({assignmentId:x.assignmentId,note:x.note,requestKey:x.requestKey,expectedAuthorUserId:x.expectedAuthorUserId});
- if(!base||typeof x.privateStoragePath!=="string")return null;
- if(!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(pdf|png|jpe?g|webp|mp4|mov)$/.test(x.privateStoragePath))return null;
- const [assignmentId,userId]=x.privateStoragePath.split("/");
- if(assignmentId!==base.assignmentId||userId!==base.expectedAuthorUserId)return null;
- return {...base,privateStoragePath:x.privateStoragePath};
-}

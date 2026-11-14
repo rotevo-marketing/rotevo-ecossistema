@@ -245,7 +245,7 @@ try {
  await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();
  await newEditorial.waitFor({state:"hidden"});
  await strategist.getByRole("button",{name:"YouTube",exact:true}).waitFor({timeout:15000});
- await strategist.getByRole("button",{name:"Synthetic Other YouTube Editorial",exact:true}).click();
+ await strategist.getByRole("button",{name:/^Synthetic Other YouTube Editorial ·/}).click();
  const editorialDetails=strategist.getByRole("dialog",{name:"Detalhes do conteúdo"});
  await editorialDetails.waitFor();
  await editorialDetails.getByRole("heading",{name:"Atualizações e aprovações"}).waitFor();

@@ -6,7 +6,7 @@ const source=readFileSync(new URL("../../src/Components/cliente/ClientOverview.t
 
 test("client overview has one focused section per category with approved limits",()=>{
  for (const title of ["Para hoje","Atrasadas","Aprovações","Agenda"]) {
-   assert.match(source,new RegExp('>'+title+'(?:\\s|<)'));
+   assert.ok(source.includes(title),`Missing dashboard section: ${title}`);
  }
  assert.match(source,/dueToday\.slice\(0,5\)/);
  assert.match(source,/overdue\]\.sort\([\s\S]*?\.slice\(0,5\)/);

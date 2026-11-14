@@ -64,8 +64,27 @@ async function checkWidths(role,page){
  assert.equal(serious.length,0,role+" critical/serious automated WCAG violations: "+JSON.stringify(serious.map(v=>({id:v.id,nodes:v.nodes.length}))));
 
 }
+/** Synthetic-only visual audit; no feature flags enabled, no backend mutations. */
+async function auditAppearance(role,page){
+ for(const mode of ["light","dark"]){
+  await page.setViewportSize({width:390,height:900});
+  await page.evaluate(value=>{document.documentElement.dataset.rotevoAppearance=value;},mode);
+  await page.waitForTimeout(180);
+  const dimensions=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
+  assert.ok(dimensions.scroll<=dimensions.viewport+1,role+" "+mode+" horizontal overflow");
+  await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-"+role+"-"+mode+"-390.png",fullPage:true});
+  await page.addScriptTag({content:axe.source});
+  const report=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"rule",values:["color-contrast"]}}));
+  const issues=report.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}));
+  console.log("APPEARANCE_VISUAL_AUDIT",role,mode,JSON.stringify(issues));
+  if(mode==="dark"&&issues.length)console.log("NO_GO_DARK_VISUAL_AUDIT",role,JSON.stringify(issues));
+ }
+ await page.evaluate(()=>document.documentElement.removeAttribute("data-rotevo-appearance"));
+}
+
 try {
  const customer=await session("client",client,"/","/cliente");
+  await auditAppearance('client',customer);
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});
@@ -148,6 +167,7 @@ try {
  await customer.close();
  const strategist=await session("strategist",admin,"/estrategista/login","/admin");
  await checkWidths("strategist",strategist);
+  await auditAppearance('strategist',strategist);
  await strategist.setViewportSize({width:1440,height:900});
  const accountButton=strategist.getByRole("button",{name:/Abrir menu de/});
  await accountButton.waitFor();

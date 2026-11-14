@@ -156,6 +156,9 @@ try {
  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
  assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
  console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ // General viewport assertions intentionally target Overview, not the Tasks panel.
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Visão geral",exact:true}).click();
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});

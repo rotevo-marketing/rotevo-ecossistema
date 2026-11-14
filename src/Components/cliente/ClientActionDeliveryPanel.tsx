@@ -10,7 +10,7 @@ type Draft={url:string;note:string;requestKey:string};
 const editable=(status:string)=>["pending","in_progress","correction_requested"].includes(status);
 
 /** Never accepts a binary file. Client uploads directly to Google Drive and pastes a URL. */
-export default function ClientActionDeliveryPanel({projects}:{projects:Project[]}){
+export default function ClientActionDeliveryPanel({projects,userId}:{projects:Project[];userId:string}){
  const [items,setItems]=useState<Action[]>([]);
  const [urls,setUrls]=useState<Record<string,string>>({});
  const [notes,setNotes]=useState<Record<string,string>>({});
@@ -19,17 +19,18 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
  const [revision,setRevision]=useState(0);
  const ids=projects.map(p=>p.id).sort().join("|");
  useEffect(()=>{
-  let active=true;let userId="";
+  let active=true;
   setItems([]);setLoading(true);setError("");
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
-   if(!session?.user||(userId&&session.user.id!==userId)){
-    active=false;setItems([]);setUrls({});setNotes({});setDrafts({});setBusy("");setError("");
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+   // INITIAL_SESSION may temporarily be null during hydration. Do not permanently
+   // disable the query before getUser() resolves; only actual sign-out/account switch invalidates it.
+   if(event==="SIGNED_OUT"||(userId&&session?.user&&session.user.id!==userId)){
+    active=false;setItems([]);setUrls({});setNotes({});setDrafts({});setBusy("");setError("Sessão alterada.");setLoading(false);
    }
   });
   void (async()=>{
    try{
-    const {data,error:authError}=await supabase.auth.getUser();
-    if(authError||!data.user)throw Error("Sessão expirada.");userId=data.user.id;
+    if(!userId)throw Error("Sessão expirada.");
     const results=await Promise.allSettled(projects.map(async p=>{
      const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
      const r=await request<{assignments:Omit<Action,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
@@ -44,7 +45,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
   })();
   return()=>{active=false;subscription.unsubscribe();};
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[ids,revision]);
+ },[ids,userId,revision]);
  async function submit(item:Action){
   if(busy||!editable(item.status))return;
   const url=(urls[item.id]??"").trim(),note=(notes[item.id]??"").trim();
@@ -76,7 +77,7 @@ export default function ClientActionDeliveryPanel({projects}:{projects:Project[]
   finally{setBusy("");}
  }
  return <section data-ui3-client-actions aria-label="Minhas entregas atribuídas" className="rounded-xl border border-[#E3E6ED] bg-white p-4">
-  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Minhas entregas</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
+  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Atribuídas a mim</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
   <p className="mt-1 text-xs text-[#697386]">Grave ou prepare o material no Google Drive e cole o link aqui. A Rotevo não armazena arquivos.</p>
   {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}
   {loading?<p role="status" className="mt-3 text-xs">Consultando entregas…</p>

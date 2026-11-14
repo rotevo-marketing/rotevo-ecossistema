@@ -424,3 +424,108 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard)>header p{
  color:var(--rv3-muted)!important;
 }
+
+/* UI3: semantic four-card dashboards, both accounts. These rules are gated by
+   the user's data-rotevo-appearance attribute and never recolor rich documents. */
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) {
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) {
+ border-color:var(--rv3-border)!important;color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-labelledby="daily-today"]
+) {background:#292541!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Atrasadas"],section[aria-labelledby="daily-overdue"]
+) {background:#34291F!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="daily-approvals"]
+) {background:#1D332C!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-agenda-title"],section[aria-labelledby="daily-agenda"]
+) {background:#203249!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(h3,strong,p,span,li,a,button) {
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(a,button):hover {background:rgba(255,255,255,.08)!important;}
+
+/* UI3 account appearance: shared application chrome and ordinary controls.
+   Excludes rich-document canvases and keeps state/status badges untouched. */
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ --rv3-canvas:#101725;
+ --rv3-surface:#172132;
+ --rv3-text:#E6ECF6;
+ --rv3-muted:#ABB9CF;
+ --rv3-border:#62718A;
+ --rv3-accent:#BFB3FF;
+ --rv3-accent-soft:#292546;
+ background:var(--rv3-canvas);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-sidebar,.rv-ui2-topbar,.rv-ui2-workspace,
+ .rv-ui2-client-content,.rv-ui2-workspace-heading,.rv-ui2-client-heading,
+ .rv-ui2-client-identity,.rv-ui2-section
+) {
+ background-color:var(--rv3-surface)!important;
+ border-color:var(--rv3-border)!important;
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-sidebar :is(
+ .rv-ui2-nav-item,.rv-ui2-nav-item:hover
+){
+ background-color:transparent;
+ color:var(--rv3-muted)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]{
+ background-color:var(--rv3-accent-soft)!important;
+ background-image:linear-gradient(var(--rv3-accent),var(--rv3-accent));
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) :is(h1,h2){
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) :is(p,small,span){
+ color:var(--rv3-muted)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select){
+ background-color:var(--rv3-surface);
+ color:var(--rv3-text);
+ border-color:var(--rv3-border);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(input,textarea,select)::placeholder{
+ color:var(--rv3-muted);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
+ background:#fff!important;
+ color:#111827!important;
+}
+/* The document editor's own controls keep their authored colors and layouts. */
+
+/* Preserve Rotevo branding contrast in the dark chrome.
+   The logo defaults to black by component contract in both portals. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-topbar [role="img"][aria-label="Rotevo"] {
+ color:#F4F6FC!important;
+}
+
+/* WCAG small-text contrast correction for the client agenda empty state. */
+html:not([data-rotevo-appearance="dark"]) .rv-ui3 section[aria-labelledby="client-agenda-title"] > .mt-4 {color:#53617A!important;}

@@ -124,8 +124,16 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
+ // Assigned client deliveries belong to Tarefas, not to the overview.
+ // Mobile menu starts collapsed in the synthetic 390px viewport.
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
  const delivery=customer.locator("[data-ui3-client-actions]");
+ // On failure, report only UI state and HTTP status; never print tokens or customer data.
+ await delivery.first().waitFor({state:"visible",timeout:10000});
+ const diagnostic=await delivery.first().innerText();
+ console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});

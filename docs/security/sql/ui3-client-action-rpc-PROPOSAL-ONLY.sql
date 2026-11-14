@@ -44,7 +44,7 @@ begin
    and p.client_id=v_project.client_id and p.role='client'
  ) then raise exception 'Client user not linked to project tenant' using errcode='42501';end if;
 
- select count(*),max(e.value) into v_found,v_resource
+ select count(*),(jsonb_agg(e.value)->0) into v_found,v_resource
  from jsonb_array_elements(
   case when jsonb_typeof(v_project.data->(case when p_resource_type='content' then 'editorialCalendar' else 'executionTimeline' end))='array'
    then v_project.data->(case when p_resource_type='content' then 'editorialCalendar' else 'executionTimeline' end)

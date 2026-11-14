@@ -1,7 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
 import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
-import ClientActionDeliveryPanel from "@/Components/cliente/ClientActionDeliveryPanel";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
 import {supabase} from "@/lib/supabase";

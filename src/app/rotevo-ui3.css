@@ -424,3 +424,43 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard)>header p{
  color:var(--rv3-muted)!important;
 }
+
+/* UI3: semantic four-card dashboards, both accounts. These rules are gated by
+   the user's data-rotevo-appearance attribute and never recolor rich documents. */
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) {
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) {
+ border-color:var(--rv3-border)!important;color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-labelledby="daily-today"]
+) {background:#292541!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Atrasadas"],section[aria-labelledby="daily-overdue"]
+) {background:#34291F!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="daily-approvals"]
+) {background:#1D332C!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-labelledby="client-agenda-title"],section[aria-labelledby="daily-agenda"]
+) {background:#203249!important;}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(h3,strong,p,span,li,a,button) {
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(
+ section[aria-label="Para hoje"],section[aria-label="Atrasadas"],
+ section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
+ section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
+ section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
+) :is(a,button):hover {background:rgba(255,255,255,.08)!important;}

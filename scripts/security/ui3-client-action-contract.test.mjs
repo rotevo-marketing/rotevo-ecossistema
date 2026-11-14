@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview,parseClientActionSubmitAsset} from "../../src/lib/workflow/clientActionsContract.ts";
+import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview,validGoogleDriveUrl} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
  projectId:"00000000-0000-4000-8000-000000000011",
@@ -41,18 +41,27 @@ test("API fails closed by default and relies on SQL authorization, not service r
  assert.doesNotMatch(source,/SUPABASE_SERVICE_ROLE_KEY/);
 });
 
-test("submissions bind UUID, idempotency key and note to account identity",()=>{
+test("client submission requires Google Drive URL, not a file upload",()=>{
  const good={assignmentId:base.projectId,expectedAuthorUserId:base.expectedAuthorUserId,
-  requestKey:"submission-request-001",note:"Vídeo enviado para revisão"};
- assert.equal(parseClientActionSubmit(good)?.assignmentId,base.projectId);
- assert.equal(parseClientActionSubmit({...good,note:""}),null);
- assert.equal(parseClientActionSubmit({...good,assignmentId:"invalid"}),null);
- assert.equal(parseClientActionSubmit({...good,storagePath:"tenant-secret"}),null);
+  requestKey:"submission-request-001",note:"",driveUrl:"https://drive.google.com/file/d/synthetic-file/view"};
+ assert.equal(parseClientActionSubmit(good)?.driveUrl,good.driveUrl);
+ assert.equal(parseClientActionSubmit({...good,driveUrl:"https://docs.google.com/document/d/synthetic-file/edit"})?.note,"");
+ for(const bad of [
+  {...good,driveUrl:"http://drive.google.com/file/d/synthetic-file/view"},
+  {...good,driveUrl:"https://drive.google.com.evil.com/file/d/synthetic-file/view"},
+  {...good,driveUrl:"https://example.com/test"},
+  {...good,driveUrl:"javascript:alert(1)"},
+  {...good,driveUrl:"https://drive.google.com/"},
+  {...good,driveUrl:"https://drive.google.com/file/d/synthetic-file/view#fragment"},
+  {...good,driveUrl:"https://user:secret@drive.google.com/file/d/synthetic-file/view"},
+  {...good,driveUrl:"https://drive.google.com:8443/file/d/synthetic-file/view"},
+  {...good,privateStoragePath:"file.pdf"}
+ ]) assert.equal(parseClientActionSubmit(bad),null);
+ assert.equal(validGoogleDriveUrl("https://drive.google.com/drive/folders/synthetic-folder"),true);
  const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/submit/route.ts",import.meta.url),"utf8");
+ assert.match(route,/p_drive_url:args.driveUrl/);
  assert.match(route,/ROTEVO_CLIENT_ACTIONS_ENABLED!=="true"/);
- assert.match(route,/client\.auth\.getUser\(token\)/);
- assert.match(route,/identity\.user\.id!==args\.expectedAuthorUserId/);
- assert.match(route,/rotevo_client_action_submit/);
+ assert.match(route,/client\\.auth\\.getUser\\(token\\)/);
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });
 
@@ -98,21 +107,6 @@ test("internal delivery review UI is disabled by default and does not bypass ser
  assert.doesNotMatch(panel,/SUPABASE_SERVICE_ROLE_KEY/);
 });
 
-test("private file submissions require immutable assignment and actor-bound object path",()=>{
- const good={assignmentId:base.projectId,expectedAuthorUserId:base.clientUserId,
-  note:"Arquivo enviado para avaliação",requestKey:"private-asset-request-001",
-  privateStoragePath:base.projectId+"/"+base.clientUserId+"/00000000-0000-4000-8000-000000000021.pdf"};
- assert.equal(parseClientActionSubmitAsset(good)?.privateStoragePath,good.privateStoragePath);
- assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:base.projectId+"/"+base.expectedAuthorUserId+"/00000000-0000-4000-8000-000000000021.pdf"}),null);
- assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:"../private"}),null);
- assert.equal(parseClientActionSubmitAsset({...good,privateStoragePath:good.privateStoragePath.replace(".pdf",".exe")}),null);
- const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/submit-asset/route.ts",import.meta.url),"utf8");
- assert.match(route,/ROTEVO_PRIVATE_DELIVERIES_ENABLED!=="true"/);
- assert.match(route,/client\.auth\.getUser\(token\)/);
- assert.match(route,/rotevo_client_action_submit_asset/);
- assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
-});
-
 test("approver designation cannot run without G2-protected RPC and server flag",()=>{
  const api=readFileSync(new URL("../../src/app/api/workflow/editorial/designate-approver/route.ts",import.meta.url),"utf8");
  const sql=readFileSync(new URL("../../docs/security/sql/ui3-editorial-designate-approver-rpc-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
@@ -134,15 +128,15 @@ test("client action notifications use existing private workflow events with expl
  assert.match(bell,/n\.event_phase==="task"\?onOpenTask:onOpenContent/);
 });
 
-test("client delivery UI is hidden by default and uses immutable private RLS uploads",()=>{
+test("client panel accepts Drive URL and does not upload or download files",()=>{
  const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
  const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
+ const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
  assert.match(overview,/NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"/);
- assert.match(panel,/NEXT_PUBLIC_ROTEVO_PRIVATE_DELIVERIES_ENABLED==="true"/);
- assert.match(panel,/supabase\.auth\.getUser\(\)/);
- assert.match(panel,/upsert:false/);
- assert.match(panel,/rotevo-client-deliveries/);
- assert.match(panel,/crypto\.randomUUID\(\)/);
- assert.match(panel,/file\.size>25\*1024\*1024/);
- assert.doesNotMatch(panel,/getPublicUrl|createSignedUrl|SUPABASE_SERVICE_ROLE_KEY/);
+ assert.match(panel,/validGoogleDriveUrl\\(url\\)/);
+ assert.match(panel,/type="url"/);
+ assert.match(panel,/driveUrl:current.url/);
+ assert.match(review,/validGoogleDriveUrl\\(item.driveUrl\\)/);
+ assert.doesNotMatch(panel,/type="file"|\\.storage\\.|\\.upload\\(|\\.download\\(/);
+ assert.doesNotMatch(review,/createSignedUrl|download\\(/);
 });

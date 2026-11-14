@@ -93,7 +93,7 @@ async function auditAppearance(role,page){
    // Axe on a scrolled viewport can miss finance and projects below the fold.
    // Assert readable foreground/background pairs on these ordinary dashboards.
    const contrast=await page.evaluate(()=>{
-    const channels=(color)=>((color.match(/\\d+(?:\\.\\d+)?/g)||[]).slice(0,3).map(Number));
+    const channels=(color)=>((color.match(/[0-9]+(?:[.][0-9]+)?/g)||[]).slice(0,3).map(Number));
     const lum=(color)=>{
      const rgb=channels(color).map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});
      return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;

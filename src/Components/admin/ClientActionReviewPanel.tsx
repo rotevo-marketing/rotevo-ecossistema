@@ -33,15 +33,22 @@ export default function ClientActionReviewPanel({projects}:{projects:Project[]})
  const projectKey=useMemo(()=>projects.map(p=>p.id).sort().join("|"),[projects]);
  useEffect(()=>{
   let alive=true;
+  let loadedUserId="";
   const ids=projects.map(p=>({id:p.id,title:p.title}));
   setItems([]);setError("");setLoading(true);
   const authChange=supabase.auth.onAuthStateChange((_event,session)=>{
-   if(!session?.user){setItems([]);setError("");}
+   if(!session?.user){
+    alive=false;setItems([]);setError("");setLoading(false);
+   }else if(loadedUserId&&session.user.id!==loadedUserId){
+    alive=false;setItems([]);setError("");setRevision(v=>v+1);
+   }
   });
   void (async()=>{
    try{
     const {data,error:authError}=await supabase.auth.getUser();
     if(authError||!data.user)throw new Error("Sessão expirada. Entre novamente.");
+    loadedUserId=data.user.id;
+    if(!alive)return;
     const responses=await Promise.allSettled(ids.map(async p=>{
      const params=new URLSearchParams({projectId:p.id,expectedAuthorUserId:data.user!.id});
      const res=await request<ReviewResponse>("/api/workflow/client-actions/review-queue?"+params.toString());

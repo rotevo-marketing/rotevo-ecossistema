@@ -3,13 +3,14 @@ import {useEffect,useMemo,useState} from "react";
 import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import {validGoogleDriveUrl} from "@/lib/workflow/clientActionsContract";
 
 type Project={id:string;title:string};
 type Review={
  assignmentId:string;submissionId:string;
  resourceType:"content"|"task";resourceId:string;resourceVersion:string|null;
  clientUserId:string;actionType:string;instructions:string;
- submittedAt:string;note:string;attemptNumber:number;dueDate:string|null;
+ submittedAt:string;note:string;driveUrl:string;attemptNumber:number;dueDate:string|null;
  projectId:string;projectTitle:string;
 };
 type ReviewResponse={reviews:Omit<Review,"projectId"|"projectTitle">[]};
@@ -105,7 +106,8 @@ export default function ClientActionReviewPanel({projects}:{projects:Project[]})
      <p className="mt-1 text-xs text-[#697386]">{item.instructions}</p></div>
     <span className="text-xs text-[#697386]">Tentativa {item.attemptNumber}</span>
    </div>
-   <p className="rounded-md bg-[#F7F8FB] p-3 text-xs leading-5 text-[#4A5368]">{item.note}</p>
+   {item.note&&<p className="rounded-md bg-[#F7F8FB] p-3 text-xs leading-5 text-[#4A5368]">{item.note}</p>}
+   {validGoogleDriveUrl(item.driveUrl)&&<a href={item.driveUrl} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-md px-1 py-1 text-xs font-semibold text-[#5949D1] hover:underline">Abrir material no Google Drive</a>}
    <label className="block text-xs font-medium text-[#525B70]">Justificativa para solicitar ajustes
     <textarea rows={2} maxLength={4000} value={feedback[item.submissionId]??""}
      onChange={e=>setFeedback(v=>({...v,[item.submissionId]:e.target.value}))}

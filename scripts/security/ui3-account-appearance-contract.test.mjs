@@ -34,4 +34,12 @@ test("appearance menu is shared by strategist and client but remains disabled wi
  assert.doesNotMatch(preference,/localStorage\\.(?:setItem|getItem|removeItem)/);
  assert.match(css,/html\[data-rotevo-appearance="dark"\] \.rv-ui3/);
  assert.match(css,/\.se-paper,\.bn-editor/);
+ const boot=readFileSync(new URL("../../src/Components/operations/AccountAppearanceBootstrap.tsx",import.meta.url),"utf8");
+ const admin=readFileSync(new URL("../../src/app/admin/page.tsx",import.meta.url),"utf8");
+ assert.match(admin,/NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearanceBootstrap/);
+ assert.match(client,/NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearanceBootstrap/);
+ assert.match(boot,/onAuthStateChange/);
+ assert.match(boot,/rotevo-appearance-updated/);
+ assert.match(boot,/document\.documentElement\.removeAttribute\("data-rotevo-appearance"\)/);
+ assert.match(preference,/new CustomEvent\("rotevo-appearance-updated"/);
 });

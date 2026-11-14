@@ -78,7 +78,7 @@ select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012'
 set role authenticated;
 select public.rotevo_client_action_submit(
  current_setting('rotevo_test.assignment_id')::uuid,
- 'Novo vídeo com iluminação corrigida','submission-test-004');
+ 'Novo vídeo com iluminação corrigida','submission-test-004','https://drive.google.com/file/d/synthetic-test-link/view');
 reset role;
 select id as resubmission_id from rotevo_workflow.client_action_submissions
  where request_key='submission-test-004' \gset

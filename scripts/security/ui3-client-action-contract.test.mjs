@@ -169,3 +169,23 @@ test("pilot notification read SQL is private, deny-by-default and allows only pe
  assert.match(adminPage,/onOpenAssignedAction=\{\(projectId\)=>/);
  assert.match(adminPage,/navigateWorkspace\("tasks"\)/);
 });
+
+test("production notification proposal is guarded, additive and never replays existing assignment schema",()=>{
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-production-notification-v2-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ const hosted=readFileSync(new URL("../../docs/security/sql/ui3-homologation-notification-v2-MIGRATION-REVIEW.sql",import.meta.url),"utf8");
+ assert.match(sql,/PROPOSAL ONLY, NOT AUTHORIZED FOR EXECUTION/);
+ assert.match(sql,/to_regclass\('rotevo_workflow\.client_action_assignments'\)/);
+ assert.match(sql,/to_regclass\('rotevo_workflow\.client_action_submissions'\)/);
+ assert.match(sql,/Expected three existing production notification triggers/);
+ assert.match(sql,/V2 already installed: stop and inspect, do not overwrite/);
+ assert.match(sql,/create or replace function public\.rotevo_workflow_list_notifications_v2/);
+ assert.match(sql,/create or replace function public\.rotevo_workflow_mark_notification_read_v2/);
+ assert.doesNotMatch(sql,/\bdrop\s+(?:table|function|trigger)\b/i);
+ assert.doesNotMatch(sql,/\bdelete\s+from\b/i);
+ assert.doesNotMatch(sql,/\btruncate\s+\b/i);
+ assert.doesNotMatch(sql,/\bcreate\s+table\s+if\s+not\s+exists\s+rotevo_workflow\.client_action_assignments\b/i);
+ assert.equal((sql.match(/^begin;$/gm)??[]).length,1);
+ assert.equal((sql.match(/^commit;$/gm)??[]).length,1);
+ assert.match(hosted,/Dedicated for project tqedxahsqbskninjenfg/);
+ assert.match(hosted,/Notification v2 already installed: abort rather than overwrite/);
+});

@@ -129,9 +129,9 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
   <section aria-label="Indicadores do projeto" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
    {kpis.map(item=><button type="button" key={item.title} disabled={!allowed(item.mod)} onClick={()=>onNavigate(item.mod)}
     className={"rounded-xl border p-4 text-left transition-[border-color,box-shadow] hover:border-[#C5B9F5] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7] disabled:cursor-default "+item.style}>
-     <span className="flex items-center justify-between gap-2 text-xs font-medium text-[#697386]"><span>{item.title}</span>{icon(item.ico,18)}</span>
+     <span className="flex items-center justify-between gap-2 text-xs font-medium text-[#606D82]"><span>{item.title}</span>{icon(item.ico,18)}</span>
      <strong className={"mt-3 block text-[28px] font-semibold tabular-nums "+(item.title==="Atrasadas"?"text-[#B66C21]":"text-[#111827]")}>{item.value}</strong>
-     <span className="mt-1 block text-[11px] text-[#697386]">{item.detail}</span>
+     <span className="mt-1 block text-[11px] text-[#606D82]">{item.detail}</span>
     </button>)}
   </section>
   <div className="grid items-start gap-4 xl:grid-cols-2">

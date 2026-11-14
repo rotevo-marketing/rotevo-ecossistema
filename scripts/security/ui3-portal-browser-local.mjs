@@ -205,7 +205,9 @@ try {
  await accountButton.click();
  await strategist.getByRole("button",{name:"Clientes",exact:true}).click();
  await strategist.getByRole("heading",{name:"Cadastro de clientes"}).waitFor();
- await strategist.getByText("Synthetic Portal Client",{exact:true}).locator("xpath=../..").getByRole("button",{name:"Detalhes",exact:true}).click();
+ const clientDirectoryRow=strategist.locator(".rv-ui2-directory-row").filter({hasText:"Synthetic Portal Client"});
+  await clientDirectoryRow.waitFor({state:"visible",timeout:20000});
+  await clientDirectoryRow.getByRole("button",{name:"Detalhes",exact:true}).click();
  const details=strategist.getByRole("dialog",{name:"Synthetic Portal Client"});
  await details.waitFor();
  assert.equal(await details.locator('button[aria-label="Fechar detalhes do cliente"]').count(),1,"client modal needs accessible close button");

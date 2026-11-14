@@ -91,7 +91,7 @@ begin
  select data into v_data from public.planning_projects where id='b0000000-0000-4000-8000-000000000003';
  if v_data #>> '{editorialCalendar,0,status}' <> 'idea_approved'
  or v_data #>> '{editorialCalendar,1,status}' <> 'approved'
- or v_data #>> '{editorialCalendar,2,status}' <> 'changes_requested'
+ or v_data #>> '{editorialCalendar,2,status}' <> 'idea_changes'
  then raise exception 'Editorial state transition failed';end if;
  if (select count(*) from public.editorial_idea_approvals where project_id='b0000000-0000-4000-8000-000000000003')<>2
  or (select count(*) from public.editorial_approvals where project_id='b0000000-0000-4000-8000-000000000003')<>1

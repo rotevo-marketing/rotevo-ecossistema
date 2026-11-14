@@ -119,9 +119,10 @@ export default function ClientAreaPage(){
  }load();return()=>{mounted=false};},[router]);
  async function logout(){await supabase.auth.signOut();router.replace("/");}
  function openModule(module:MenuId,projectId?:string,contentId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setFocusedContent(module==="content"?(contentId??null):null);setTab(module);setMobileMenu(false);}
+ const clientActionEnabled=process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true";
  const selected=menu.find(item=>item.id===tab)??menu[0];
  const nav=<nav aria-label="Navegação do portal" className="space-y-0.5">
-   {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
+   {menu.filter(item=>item.id==="overview"||workspace?.modules.includes(item.id as never)||(item.id==="execution"&&clientActionEnabled)).map(item=><button type="button" key={item.id} aria-current={tab===item.id?"page":undefined} aria-label={item.name} title={item.name}
        onClick={()=>{setTab(item.id);setMobileMenu(false)}} className={`rv-ui2-nav-item relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors ${collapsed?"lg:justify-center lg:px-2":""} ${tab===item.id?"bg-[#EDEAFF] text-[#6251CA]":"text-[#4A5266] hover:bg-[#F6F7FB]"}`}>
        <Icon name={item.icon} size={19}/><span className={collapsed?"lg:hidden":""}>{item.name}</span>
      </button>)}
@@ -153,10 +154,10 @@ export default function ClientAreaPage(){
        {error&&<div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}<button type="button" onClick={()=>window.location.reload()} className="ml-3 rounded-lg border border-red-200 px-3 py-2 font-semibold">Tentar novamente</button></div>}
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
        !workspace?<p className="rounded-xl bg-white p-6 text-sm">Seus serviços não puderam ser carregados. Atualize a página.</p>:
-       tab!=="overview"&&!workspace.modules.includes(tab as never)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
+       tab!=="overview"&&!workspace.modules.includes(tab as never)&&!(tab==="execution"&&clientActionEnabled)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<div className="space-y-4">{process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<section aria-label="Atribuídas a mim"><ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/></section>}<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/></div>:
+       tab==="execution"?<div className="space-y-4">{clientActionEnabled&&<section aria-label="Atribuídas a mim"><ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/></section>}{workspace.modules.includes("execution" as never)&&<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/>}</div>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

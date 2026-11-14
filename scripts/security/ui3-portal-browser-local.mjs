@@ -159,6 +159,12 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
+ // Diagnostic lifecycle events from the synthetic-only client action component.
+ customer.on("console",message=>{
+  if(message.type()==="info"&&message.text().startsWith("UI3_ACTIONS_TRACE"))
+   console.log("CLIENT_ACTION_EFFECT",message.text().slice(0,220));
+ });
+ customer.on("pageerror",error=>console.log("CLIENT_ACTION_PAGE_ERROR",error.name,error.message.slice(0,180)));
  // Observe only synthetic local API status while debugging assignment loading, never auth headers.
  customer.on("request",req=>{if(req.url().includes("/api/workflow/client-actions"))console.log("ASSIGNMENT_NETWORK_START",req.method(),new URL(req.url()).pathname);});
  customer.on("response",res=>{if(res.url().includes("/api/workflow/client-actions"))void res.json().then(v=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),new URL(res.url()).pathname,Array.isArray(v?.assignments)?v.assignments.length:"invalid-body")).catch(()=>console.log("ASSIGNMENT_NETWORK_STATUS",res.status(),"unreadable-body"));});

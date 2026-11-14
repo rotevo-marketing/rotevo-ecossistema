@@ -1,4 +1,5 @@
 "use client";
+import AccountAppearanceBootstrap from "@/Components/operations/AccountAppearanceBootstrap";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -126,6 +127,7 @@ export default function ClientAreaPage(){
  </nav>;
  if(sessionBlocked)return <main role="status" className="flex min-h-screen items-center justify-center bg-white p-6 text-sm">Sessão alterada. Redirecionando...</main>;
  return <main className="client-portal-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+   {process.env.NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearanceBootstrap/>}
    <style jsx global>{` .client-portal-v2,.client-portal-v2 h1,.client-portal-v2 h2,.client-portal-v2 h3{font-family:var(--font-body),Arial,Helvetica,sans-serif!important} `}</style>
    <header className="rv-ui2-topbar sticky top-0 z-40 border-b border-[#E5E8EF] bg-white text-[#303648]"><div className="flex w-full items-center justify-between gap-3 px-5 py-3">
       <div className="flex items-center gap-3"><RotevoLogo variant="black" size={27}/><span className="hidden border-l border-[#E5E8EF] pl-3 text-xs font-medium text-[#697386] sm:inline">Portal do Cliente</span></div>

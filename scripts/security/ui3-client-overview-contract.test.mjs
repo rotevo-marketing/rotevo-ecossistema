@@ -62,3 +62,25 @@ test("client and strategist navigation share a straight active accent rail",()=>
  assert.doesNotMatch(client,/content:none!important/);
  assert.match(css,/\.admin-v2\.rv-ui2\.rv-ui3 \.rv-ui2-sidebar \.rv-ui2-nav-item\[aria-current="page"\]::before/);
 });
+
+test("task and editorial list columns use aligned compact widths and preserve separate dates",()=>{
+ const task=readFileSync(new URL("../../src/Components/admin/CentralTarefas.tsx",import.meta.url),"utf8");
+ const editorial=readFileSync(new URL("../../src/Components/cliente/EditorialCalendar.tsx",import.meta.url),"utf8");
+ const cells=readFileSync(new URL("../../src/Components/admin/TaskGridCells.tsx",import.meta.url),"utf8");
+ for(const source of [task,editorial]){
+  assert.match(source,/table-fixed min-w-\[1120px\]/,"Tables should allocate remaining space to the title");
+  assert.match(source,/<colgroup>/);
+  for(const pair of ["project","owner","status","priority","due"]){
+   assert.ok(source.includes("visibleColumns."+pair+"&&<col style={{width:"),"Missing aligned column "+pair);
+  }
+  assert.ok(source.includes("width:130"),"Status column is compact");
+  assert.ok(source.includes("width:114"),"Priority column is compact");
+  assert.equal((source.match(/width:138/g)??[]).length,2,"Both date columns must have the same width");
+  assert.match(source,/key==="project"\|\|key==="owner"\?<span className="sr-only">\{name\}<\/span>/,"Photo column headings should remain accessible");
+ }
+ assert.match(task,/visibleColumns\.launch&&<col style=\{\{width:138\}\}\/>/);
+ assert.match(editorial,/visibleColumns\.publish&&<col style=\{\{width:138\}\}\/>/);
+ assert.match(cells,/day:"2-digit",month:"2-digit",year:"numeric"/,"Task delivery dates should match publication date presentation");
+ assert.ok(task.includes('["Entrega","calendar-week","due"]'));
+ assert.ok(editorial.includes('["Conclusão","calendar-week","due"]'));
+});

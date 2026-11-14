@@ -325,59 +325,77 @@
   }
 }
 
-/* UI3 | Straight accent rails in both strategist and client navigation.
-   Keep rounded corners for controls; only vertical status/selection rails are square. */
-.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before,
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
- border-radius:0!important;
+/* UI3 | Client menu mirrors the approved strategist selection rail.
+   One straight 2px pseudo-element; no background-image or competing overrides. */
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar {
+ background:#fff;
+ border-right:1px solid #E3E6ED;
+ box-shadow:none;
 }
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before {
- border-radius:0!important;
-}
-.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-4,
-.rv-ui3 .rv-ui3-editorial-task-list tr>td.border-l-\[4px\] {
- border-top-left-radius:0!important;
- border-bottom-left-radius:0!important;
-}
-
-/* Client navigation: consistent straight accent rail, matching strategist. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item {
  position:relative;
+ color:#4A5266;
+ background:transparent;
+ border-radius:7px;
+ box-shadow:none;
+ font-size:12px;
+ font-weight:500;
+ min-height:38px;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:hover {
+ background:#F6F7FB;
+ color:#323647;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"] {
  background:#F6F4FC;
  color:#453B75;
  font-weight:600;
+ background-image:none;
 }
 .client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
  content:"";
+ display:block;
  position:absolute;
+ left:0;
  top:9px;
  bottom:9px;
- left:0;
  width:2px;
  background:#8173C8;
  border:0;
- border-radius:0!important;
+ border-radius:0;
  box-shadow:none;
  transform:none;
 }
-
-/* A single square active rail, rendered in the nav component. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before{content:none!important;display:none!important}
-
-/* UI 3.0: rectangular, inset marker drawn as a background layer, not rounded pseudo-content. */
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"] {
- background-color:#EDEAFF;
- background-image:linear-gradient(#8173C8,#8173C8);
- background-repeat:no-repeat;
- background-position:left center;
- background-size:2px calc(100% - 18px);
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::after {
+ content:none;
+ display:none;
 }
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::before,
-.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-nav-item[aria-current="page"]::after {
- content:none!important;
- display:none!important;
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item svg {
+ stroke-width:1.55;
 }
-
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item:focus-visible {
+ outline:2px solid #6C5CE7;
+ outline-offset:2px;
+}
+.client-portal-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before,
+.admin-v2.rv-ui2.rv-ui3 .rv-ui2-sidebar .rv-ui2-nav-item[aria-current="page"]::before {
+ border-radius:0!important;
+}
+/* On mobile, the client menu also uses the same selected-state rail. */
+.client-portal-v2.rv-ui2.rv-ui3 nav[aria-label="Navegação do portal"] .rv-ui2-nav-item[aria-current="page"] {
+ position:relative;
+}
+.client-portal-v2.rv-ui2.rv-ui3 nav[aria-label="Navegação do portal"] .rv-ui2-nav-item[aria-current="page"]::before {
+ content:"";
+ display:block;
+ position:absolute;
+ left:0;
+ top:9px;
+ bottom:9px;
+ width:2px;
+ background:#8173C8;
+ border-radius:0;
+}
 
 /* UI3 appearance pilot (disabled by default). 
    Only workspaces and standard chrome; rich documents deliberately excluded. */

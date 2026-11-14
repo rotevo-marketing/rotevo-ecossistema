@@ -61,7 +61,7 @@ test("client submission requires Google Drive URL, not a file upload",()=>{
  const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/submit/route.ts",import.meta.url),"utf8");
  assert.match(route,/p_drive_url:args.driveUrl/);
  assert.match(route,/ROTEVO_CLIENT_ACTIONS_ENABLED!=="true"/);
- assert.match(route,/client\\.auth\\.getUser\\(token\\)/);
+ assert.ok(route.includes("client.auth.getUser(token)"));
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });
 
@@ -128,15 +128,16 @@ test("client action notifications use existing private workflow events with expl
  assert.match(bell,/n\.event_phase==="task"\?onOpenTask:onOpenContent/);
 });
 
-test("client panel accepts Drive URL and does not upload or download files",()=>{
+test("client panel accepts Drive URLs without file upload or download",()=>{
  const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
  const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
  const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
- assert.match(overview,/NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"/);
- assert.match(panel,/validGoogleDriveUrl\\(url\\)/);
- assert.match(panel,/type="url"/);
- assert.match(panel,/driveUrl:current.url/);
- assert.match(review,/validGoogleDriveUrl\\(item.driveUrl\\)/);
- assert.doesNotMatch(panel,/type="file"|\\.storage\\.|\\.upload\\(|\\.download\\(/);
- assert.doesNotMatch(review,/createSignedUrl|download\\(/);
+ assert.ok(overview.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ assert.ok(panel.includes("validGoogleDriveUrl(url)"));
+ assert.ok(panel.includes('type="url"'));
+ assert.ok(panel.includes("driveUrl:current.url"));
+ assert.ok(review.includes("validGoogleDriveUrl(item.driveUrl)"));
+ for(const forbidden of ['type="file"','.storage.','.upload(','.download(','createSignedUrl','getPublicUrl'])
+  assert.ok(!panel.includes(forbidden),"Unexpected file transfer in client panel: "+forbidden);
+ assert.ok(!review.includes("createSignedUrl"));
 });

@@ -122,6 +122,15 @@ async function auditAppearance(role,page){
 
 try {
  const customer=await session("client",client,"/","/cliente");
+ const clientOverview=customer.locator(".rv-ui3-client-daily-dashboard");
+ await clientOverview.waitFor({state:"visible",timeout:20000});
+ for(const selector of ['section[aria-label="Para hoje"]','section[aria-label="Atrasadas"]',
+  'section[aria-labelledby="client-focus-title"]','section[aria-labelledby="client-agenda-title"]']){
+  assert.equal(await clientOverview.locator(selector).count(),1,"Client overview retains all four action cards");
+ }
+ assert.equal(await clientOverview.locator('section[aria-label="Para hoje"] strong').innerText(),"—",
+  "Unshared execution may not be presented as a zero or leak tasks");
+ console.log("PASS four client overview cards with non-disclosing unavailable execution counts");
   await auditAppearance('client',customer);
  // Verify the actual per-account UI preference, media query switching, and persistence (not only forced CSS tokens).
  await customer.setViewportSize({width:390,height:900});

@@ -73,3 +73,12 @@ test("review contract permits only formal validation or reasoned correction",()=
  assert.match(route,/rotevo_client_action_review/);
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+test("pending review queue remains team-gated and does not use service-role credentials",()=>{
+ const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/review-queue/route.ts",import.meta.url),"utf8");
+ assert.match(route,/ROTEVO_CLIENT_ACTIONS_ENABLED!=="true"/);
+ assert.match(route,/client\.auth\.getUser\(token\)/);
+ assert.match(route,/identity\.user\.id!==args\.expectedAuthorUserId/);
+ assert.match(route,/rotevo_client_action_review_queue/);
+ assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
+});

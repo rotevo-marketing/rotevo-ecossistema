@@ -520,3 +520,9 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
  color:#111827!important;
 }
 /* The document editor's own controls keep their authored colors and layouts. */
+
+/* Preserve Rotevo branding contrast in the dark chrome.
+   The logo defaults to black by component contract in both portals. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-topbar [role="img"][aria-label="Rotevo"] {
+ color:#F4F6FC!important;
+}

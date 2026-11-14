@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { moduleCategories, planningModules } from "@/data/modules";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027";
 
@@ -13,6 +12,7 @@ const selectableAreas = ecosystemDocumentAreas.filter((area) => !area.startsWith
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
+  clientId?: string;
   clientName: string;
   clientSlug: string;
   projectTitle: string;
@@ -53,7 +53,24 @@ function getStoredDraft(): NewPlanningDraft | null {
   if (!storedDraft) return null;
 
   try {
-    return JSON.parse(storedDraft) as NewPlanningDraft;
+    const value: unknown = JSON.parse(storedDraft);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const fields = value as Record<string, unknown>;
+    const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (typeof fields.clientName !== "string" || !fields.clientName.trim() ||
+        typeof fields.projectTitle !== "string" || !fields.projectTitle.trim() ||
+        typeof fields.clientSlug !== "string" || !slugPattern.test(fields.clientSlug) ||
+        typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
+        typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
+    return {
+      clientId:typeof fields.clientId==="string"&&/^[0-9a-f-]{36}$/i.test(fields.clientId)?fields.clientId:undefined,
+      clientName: fields.clientName,
+      clientSlug: fields.clientSlug,
+      projectTitle: fields.projectTitle,
+      projectSlug: fields.projectSlug,
+      description: fields.description,
+      coverImageUrl: fields.coverImageUrl,
+    } as NewPlanningDraft;
   } catch {
     return null;
   }
@@ -63,7 +80,6 @@ export default function SelecionarModulosPage() {
   const router = useRouter();
 
   const [draft, setDraft] = useState<NewPlanningDraft | null>(null);
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule>(EMPTY_SCHEDULE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,11 +91,10 @@ export default function SelecionarModulosPage() {
   const [expandedAreas, setExpandedAreas] = useState<string[]>([selectableAreas[0]]);
   const [search, setSearch] = useState("");
 
-  const selectedCount = selectedModules.length;
 
   const finalProjectSlug = useMemo(() => {
     if (!draft) return "";
-    if (draft.projectSlug.startsWith(draft.clientSlug)) return draft.projectSlug;
+    if (draft.projectSlug === draft.clientSlug || draft.projectSlug.startsWith(`${draft.clientSlug}-`)) return draft.projectSlug;
     return `${draft.clientSlug}-${draft.projectSlug}`;
   }, [draft]);
 
@@ -119,9 +134,6 @@ export default function SelecionarModulosPage() {
 
       setUserEmail(userData.user.email ?? "");
       setDraft(storedDraft);
-      setSelectedModules(
-        planningModules.filter((m) => m.presentation).map((m) => m.slug)
-      );
       setIsLoading(false);
     }
 
@@ -152,24 +164,6 @@ export default function SelecionarModulosPage() {
     setExpandedAreas((prev) => prev.includes(area) ? prev.filter((item) => item !== area) : [...prev, area]);
   }
 
-  function toggleModule(moduleSlug: string) {
-    setSelectedModules((current) =>
-      current.includes(moduleSlug)
-        ? current.filter((s) => s !== moduleSlug)
-        : [...current, moduleSlug]
-    );
-  }
-
-  function selectAllModules() {
-    setSelectedModules(
-      planningModules.filter((m) => m.presentation).map((m) => m.slug)
-    );
-  }
-
-  function clearModules() {
-    setSelectedModules([]);
-  }
-
   function updateScheduleDate(key: ScheduleKey, value: string) {
     setDeliverySchedule((prev) => ({ ...prev, [key]: value }));
   }
@@ -191,22 +185,28 @@ export default function SelecionarModulosPage() {
       return;
     }
 
-    if (selectedModules.length === 0) {
-      setErrorMessage("Selecione pelo menos um módulo para o planejamento.");
-      return;
-    }
-
     setIsSaving(true);
     setErrorMessage("");
 
-    const { data: client, error: clientError } = await supabase
-      .from("clients")
-      .upsert(
-        { name: draft.clientName, slug: draft.clientSlug },
-        { onConflict: "slug" }
-      )
-      .select("id, name, slug")
-      .single();
+    // Reuse an existing customer without overwriting their registered name or contact details.
+    const query=supabase.from("clients").select("id,name,slug");
+    const existing=await (draft.clientId?query.eq("id",draft.clientId):query.eq("slug",draft.clientSlug)).maybeSingle();
+    let client = existing.data;
+    let clientError = existing.error;
+    if (!client && !clientError && !draft.clientId) {
+      const inserted = await supabase.from("clients")
+        .insert({name:draft.clientName,slug:draft.clientSlug})
+        .select("id,name,slug").single();
+      client=inserted.data;
+      clientError=inserted.error;
+      // Two concurrent creations may race; reuse the customer created first.
+      if (clientError?.code==="23505") {
+        const raced = await supabase.from("clients")
+          .select("id,name,slug").eq("slug",draft.clientSlug).maybeSingle();
+        client=raced.data;
+        clientError=raced.error;
+      }
+    }
 
     if (clientError || !client) {
       setErrorMessage(
@@ -216,51 +216,50 @@ export default function SelecionarModulosPage() {
       return;
     }
 
-    const selectedModuleRecords = planningModules
-      .filter((m) => selectedModules.includes(m.slug))
-      .map((m) => ({
-        title: m.title,
-        slug: m.slug,
-        category: m.category,
-        description: m.description,
-      }));
-
     // Only save schedule keys that have a date filled
     const filledSchedule = Object.fromEntries(
       Object.entries(deliverySchedule).filter(([, v]) => v !== "")
     );
 
-    const { error: projectError } = await supabase
-      .from("planning_projects")
-      .insert({
-        client_id: client.id,
-        title: draft.projectTitle,
-        slug: finalProjectSlug,
-        description: draft.description || null,
-        status: "draft",
-        data: {
-          coverImageUrl: draft.coverImageUrl || null,
-          selectedModules,
-          modules: selectedModuleRecords,
-          ecosystem2027: {
-            version: 1,
-            selectedDocumentCodes: selectableDocuments.filter((doc) => taskExecution.includes(doc.code)).map((doc) => doc.code),
-            presentedDocumentCodes: selectableDocuments.filter((doc) => taskPresentation.includes(doc.code)).map((doc) => doc.code),
-          },
-          deliverySchedule: Object.keys(filledSchedule).length > 0 ? filledSchedule : null,
-        },
+    let createdProjectId="";
+    try {
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      const token=session.session?.access_token;
+      if(sessionError||!token)throw new Error("Sessão expirada. Entre novamente.");
+      const response=await fetch("/api/admin/project/create",{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+        body:JSON.stringify({
+          client_id:client.id,
+          title:draft.projectTitle,
+          slug:finalProjectSlug,
+          description:draft.description||null,
+          status:"draft",
+          data:{
+            coverImageUrl:draft.coverImageUrl||null,
+            ecosystem2027:{
+              version:1,
+              selectedDocumentCodes:selectableDocuments.filter(doc=>taskExecution.includes(doc.code)).map(doc=>doc.code),
+              presentedDocumentCodes:selectableDocuments.filter(doc=>taskPresentation.includes(doc.code)).map(doc=>doc.code)
+            },
+            deliverySchedule:Object.keys(filledSchedule).length>0?filledSchedule:null
+          }
+        }),cache:"no-store"
       });
-
-    if (projectError) {
-      setErrorMessage(
-        projectError.message || "Não foi possível criar o planejamento."
-      );
+      if(response.status===409)throw new Error("Já existe um planejamento com esses identificadores.");
+      if(!response.ok)throw new Error("Não foi possível criar o planejamento autorizado.");
+      const result=await response.json();
+      if(typeof result?.project?.id!=="string")throw new Error("Não foi possível confirmar a criação do planejamento.");
+      createdProjectId=result.project.id;
+    }catch(error){
+      setErrorMessage(error instanceof Error?error.message:"Não foi possível criar o planejamento.");
       setIsSaving(false);
       return;
     }
+    setIsSaving(false);
 
     window.localStorage.removeItem("metodo-epc-new-planning-draft");
-    router.push("/admin");
+    router.push(`/admin/planejamentos/${encodeURIComponent(client.slug)}?projectId=${encodeURIComponent(createdProjectId)}`);
   }
 
 
@@ -271,7 +270,7 @@ export default function SelecionarModulosPage() {
   });
 
   return (
-    <main className="admin-modules-v2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#090D1C]">
+    <main className="admin-modules-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]">
       <style jsx global>{`
         .admin-modules-v2, .admin-modules-v2 h1, .admin-modules-v2 h2, .admin-modules-v2 h3 {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
@@ -358,12 +357,12 @@ export default function SelecionarModulosPage() {
             <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir um documento, marque primeiro “Executar”. Os títulos seguem a base Docs do Notion. A seleção para execução e exibição é configurada por documento.</div>
             <div className="mt-7 flex flex-col gap-3 border-t border-[#E3E7F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-center text-sm font-medium">Voltar aos dados</Link>
-              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-xl bg-[#0B142A] px-7 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
+              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
             </div>
           </form>
         </>}
       </div>
-      <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
+      <footer className="border-t border-[#E3E6ED] bg-white text-[#687487]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );
 }

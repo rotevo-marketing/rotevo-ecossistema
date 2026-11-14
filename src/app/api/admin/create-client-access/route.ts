@@ -1,3 +1,4 @@
+import { compensateNewClientAccount } from "@/lib/security/compensateNewClientAccount";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -101,6 +102,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED === "true") {
+    const { data: member, error: memberError } = await supabaseAdmin.from("team_members")
+      .select("role,active").eq("user_id", callerId).maybeSingle();
+    if (memberError) return NextResponse.json({ success:false,error:"Permissões indisponíveis." },{status:503});
+    if (!member || member.active !== true || member.role !== "admin")
+      return NextResponse.json({ success:false,error:"Apenas administradores ativos podem criar acessos de clientes." },{status:403});
+  }
+
+  // Verify that the target client exists before performing any privileged Auth write.
+  // Avoid creating orphaned accounts for invalid or missing client records.
+  const { data: targetClient, error: targetClientError } = await supabaseAdmin
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  if (targetClientError || !targetClient) {
+    return NextResponse.json(
+      { success: false, error: "Cliente não encontrado ou indisponível para criar acesso." },
+      { status: targetClientError ? 503 : 404 }
+    );
+  }
+
   // ── 8. Create auth user for the client ────────────────────────────────────
   const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -140,7 +164,8 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error:
-          "Usuário criado no Auth mas o UID não foi retornado. Verifique o painel do Supabase e crie o profile manualmente.",
+          "O serviço de autenticação não retornou o identificador da conta. Interrompa novas tentativas e solicite reconciliação administrativa antes de continuar.",
+        reconciliationRequired: true,
       },
       { status: 500 }
     );
@@ -160,11 +185,27 @@ export async function POST(request: NextRequest) {
   );
 
   if (upsertError) {
+    // Compensate only the account created in this request, never a pre-existing user.
+    // Auth and public tables do not share an atomic transaction here.
+    const rollback = await compensateNewClientAccount(supabaseAdmin, userId);
+    if (rollback.reconciliationRequired) {
+      console.error("Falha ao reverter criação de acesso após erro no profile.", {
+        userId,
+        profileError: upsertError.message,
+        rollbackError: rollback.error,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Não foi possível concluir o acesso e a reversão automática falhou. Solicite revisão administrativa antes de tentar novamente.",
+          reconciliationRequired: true,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      {
-        success: false,
-        error: `Usuário criado no Auth (UID: ${userId}), mas houve erro ao criar o profile: ${upsertError.message}. Crie o profile manualmente usando o UID informado.`,
-      },
+      { success: false, error: "Não foi possível concluir o cadastro. A criação da conta foi revertida; tente novamente após revisar os dados." },
       { status: 500 }
     );
   }

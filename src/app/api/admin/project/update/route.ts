@@ -1,0 +1,337 @@
+import {validPlanningStages} from "@/lib/planning/stages";
+import {validPlanningAreaSchedule} from "@/lib/planning/areaSchedule";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
+import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
+import {validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
+import {ecosystemDocuments} from "@/data/ecosystem2027";
+
+export const runtime = "nodejs";
+const fail=(status:number)=>NextResponse.json({error:"Não foi possível atualizar o projeto autorizado."},{status,headers:{"Cache-Control":"no-store"}});
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Dedicated strategist-only write path, with compare-and-swap protection.
+export async function PATCH(req:NextRequest){
+ const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+ const anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+ const secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ if(!url||!anon||!secret)return fail(503);
+ const header=req.headers.get("authorization");
+ if(!header?.startsWith("Bearer ")||!header.slice(7).trim())return fail(401);
+ let body:unknown;
+ try{body=await req.json();}catch{return fail(400);}
+ if(!body||typeof body!=="object"||Array.isArray(body))return fail(400);
+ const b=body as Record<string,unknown>;
+ if(typeof b.projectId!=="string"||!uuid.test(b.projectId)||
+    typeof b.expectedUpdatedAt!=="string"||!Number.isFinite(Date.parse(b.expectedUpdatedAt))||
+    !b.data||typeof b.data!=="object"||Array.isArray(b.data))return fail(400);
+ const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:identity,error:identityError}=await auth.auth.getUser(header.slice(7));
+ if(identityError||!identity.user)return fail(401);
+ if(identity.user.app_metadata?.rotevo_password_reset_required===true)return fail(403);
+ const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:profile,error:profileError}=await admin.from("profiles")
+   .select("role").eq("id",identity.user.id).maybeSingle();
+ if(profileError)return fail(503);
+ if(profile?.role!=="strategist")return fail(403);
+ // Rollout gate: old strategist sessions remain compatible until the new policies are approved.
+ // When enabled, an inactive staff account or a team member lacking project access fails closed.
+ if(process.env.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"){
+  const {data:member,error:memberError}=await admin.from("team_members")
+   .select("role,active").eq("user_id",identity.user.id).maybeSingle();
+  if(memberError)return fail(503);
+  if(!member||member.active!==true)return fail(403);
+  if(member.role!=="admin"){
+   const {data:assignment,error:assignmentError}=await admin.from("team_project_assignments")
+    .select("project_id").eq("user_id",identity.user.id).eq("project_id",b.projectId).maybeSingle();
+   if(assignmentError)return fail(503);
+   if(!assignment)return fail(403);
+   const {data:permission,error:permissionError}=await admin.from("team_member_permissions")
+    .select("permission").eq("user_id",identity.user.id).eq("permission","projects.write").maybeSingle();
+   if(permissionError)return fail(503);
+   if(!permission)return fail(403);
+  }
+ }
+ const {data:existing,error:existingError}=await admin.from("planning_projects")
+   .select("data,updated_at").eq("id",b.projectId).maybeSingle();
+ if(existingError)return fail(503);
+ if(!existing||existing.updated_at!==b.expectedUpdatedAt)return fail(409);
+const previousStages=(existing.data as Record<string,unknown>|null)?.planningStages;
+ const nextStages=(b.data as Record<string,unknown>).planningStages;
+ if(JSON.stringify(previousStages)!==JSON.stringify(nextStages)&&!validPlanningStages(nextStages))return fail(400);
+ const prevAreaSchedule=(existing.data as Record<string,unknown>|null)?.planningAreaSchedule;
+ const nextAreaSchedule=(b.data as Record<string,unknown>).planningAreaSchedule;
+ if(JSON.stringify(prevAreaSchedule)!==JSON.stringify(nextAreaSchedule)&&!validPlanningAreaSchedule(nextAreaSchedule))return fail(400);
+ const oldAccess=(existing.data as Record<string,unknown>|null)?.planningClientAccessEnabled;
+ const nextAccess=(b.data as Record<string,unknown>).planningClientAccessEnabled;
+ if(oldAccess!==nextAccess&&typeof nextAccess!=="boolean")return fail(400);
+  if(!validEcosystemDocumentTransition(existing.data,b.data)||!validExecutionDependencies(b.data))return fail(400);
+ // Only newly assigned or reassigned identities require an active team membership.
+ // Historical assignments are preserved without retroactive data migration.
+ const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
+ const nextRoot=b.data as Record<string,unknown>;
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
+ // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
+ if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
+  const agenda=nextRoot.operationalAgenda;
+  if(!Array.isArray(agenda)||agenda.length>500)return fail(400);
+  // Completed meetings and meetings with a recorded minute are retained to preserve accountability.
+  const nextIds=new Set(agenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]));
+  if(Array.isArray(oldRoot.operationalAgenda)&&oldRoot.operationalAgenda.some(row=>{
+   if(!row||typeof row!=="object"||Array.isArray(row))return false;
+   const old=row as Record<string,unknown>;
+   return typeof old.id==="string"&&!nextIds.has(old.id)&&(old.status==="completed"||(typeof old.minutes==="string"&&old.minutes.trim()!==""));
+  }))return fail(400);
+  const legacyIds=new Set(Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]):[]);
+  const ids=new Set<string>();
+  const validHttps=(value:unknown)=>{if(value===undefined||value==="")return true;if(typeof value!=="string"||value.length>2048)return false;try{return new URL(value).protocol==="https:";}catch{return false;}};
+  for(const value of agenda){
+   if(!value||typeof value!=="object"||Array.isArray(value))return fail(400);
+   const item=value as Record<string,unknown>;
+   if(typeof item.id!=="string"||(!uuid.test(item.id)&&!legacyIds.has(item.id))||ids.has(item.id))return fail(400);
+   ids.add(item.id);
+   const oldItem=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.find(row=>row&&typeof row==="object"&&!Array.isArray(row)&&(row as Record<string,unknown>).id===item.id):undefined;
+   if(oldItem&&JSON.stringify(oldItem)===JSON.stringify(item))continue; // Preserve untouched legacy meetings.
+   if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
+   if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
+   if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
+   for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
+   if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);
+   if(item.actionItems!==undefined){
+    if(!Array.isArray(item.actionItems)||item.actionItems.length>25)return fail(400);
+    const actionIds=new Set<string>();
+    const taskIds=new Set(Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id]:[]):[]);
+    for(const raw of item.actionItems){
+     if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+     const action=raw as Record<string,unknown>;
+     if(typeof action.id!=="string"||!uuid.test(action.id)||actionIds.has(action.id))return fail(400);
+     actionIds.add(action.id);
+     if(typeof action.title!=="string"||action.title.trim().length<3||action.title.length>240)return fail(400);
+     if(typeof action.owner!=="string"||action.owner.length>120||typeof action.dueDate!=="string")return fail(400);
+     if(action.dueDate!==""&&(!/^\d{4}-\d{2}-\d{2}$/.test(action.dueDate)||!Number.isFinite(Date.parse(action.dueDate))))return fail(400);
+     if(action.relatedTaskId!==undefined&&action.relatedTaskId!==""&&(typeof action.relatedTaskId!=="string"||!taskIds.has(action.relatedTaskId)))return fail(400);
+    }
+   }
+
+   if(item.visibleToClient!==undefined&&typeof item.visibleToClient!=="boolean")return fail(400);
+   if(!validHttps(item.materialUrl)||!validHttps(item.meetingUrl))return fail(400);
+  }
+ }
+
+ // Validate new scope selections, but preserve historical scope during unrelated edits.
+ const previousEco=oldRoot.ecosystem2027;
+ const nextEco=nextRoot.ecosystem2027;
+ if(nextEco&&typeof nextEco==="object"&&!Array.isArray(nextEco)){
+  const before=previousEco&&typeof previousEco==="object"&&!Array.isArray(previousEco)?previousEco as Record<string,unknown>:{};
+  const after=nextEco as Record<string,unknown>;
+  const scopeChanged=JSON.stringify(before.selectedDocumentCodes)!==JSON.stringify(after.selectedDocumentCodes)||
+   JSON.stringify(before.presentedDocumentCodes)!==JSON.stringify(after.presentedDocumentCodes);
+  if(scopeChanged){
+   const selected=after.selectedDocumentCodes,presented=after.presentedDocumentCodes;
+   const allowedCodes=new Set(ecosystemDocuments.filter(doc=>!doc.area.startsWith("00 ")).map(doc=>doc.code));
+   if(!Array.isArray(selected)||selected.length===0||selected.length>100||
+    !selected.every(code=>typeof code==="string"&&allowedCodes.has(code))||
+    new Set(selected).size!==selected.length||
+    !Array.isArray(presented)||presented.length>100||
+    !presented.every(code=>typeof code==="string"&&selected.includes(code))||
+    new Set(presented).size!==presented.length)return fail(400);
+  }
+ }
+ // Customer editorial decisions apply to a specific content version. Once a
+ // decision exists, changing its material without a new version is forbidden.
+ const oldEditorial=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
+ const newEditorial=Array.isArray(nextRoot.editorialCalendar)?nextRoot.editorialCalendar:[];
+ const oldEditorialById=new Map(oldEditorial.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v]));
+ const materialFields=["title","channel","format","publishDate","deadlineDate","caption","driveUrl","briefUrl","ideaSummary","objective","audience","funnelStage","keyMessage","cta"];
+ const ideaFields=["title","channel","format","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl"];
+ const referencesChanged=(before:Record<string,unknown>,after:Record<string,unknown>)=>JSON.stringify(before.references??[])!==JSON.stringify(after.references??[]);
+ const changedIdeaVersions=new Map<string,string>();
+ const changedEditorialVersions=new Map<string,string>();
+ for(const entry of newEditorial){
+  if(!entry||typeof entry!=="object"||Array.isArray(entry))continue;
+  const item=entry as Record<string,unknown>;
+  if(typeof item.id!=="string")continue;
+  const before=oldEditorialById.get(item.id);
+  if(!before||String(before.version??"")!==String(item.version??""))continue;
+  if(referencesChanged(before,item)||materialFields.some(field=>(before[field]??"")!==(item[field]??""))){
+   changedEditorialVersions.set(item.id,String(item.version??""));
+  }
+  if(referencesChanged(before,item)||ideaFields.some(field=>(before[field]??"")!==(item[field]??""))){
+   changedIdeaVersions.set(item.id,String(item.version??""));
+  }
+ }
+ if(changedEditorialVersions.size){
+  const {data:approvals,error:approvalError}=await admin.from("editorial_approvals")
+   .select("content_id,content_version").eq("project_id",b.projectId)
+   .in("content_id",[...changedEditorialVersions.keys()]);
+  if(approvalError)return fail(503);
+  if((approvals??[]).some(approval=>changedEditorialVersions.get(approval.content_id)===approval.content_version))return fail(409);
+ }
+ if(changedIdeaVersions.size){
+  const {data:approvals,error:ideaError}=await admin.from("editorial_idea_approvals")
+   .select("content_id,content_version").eq("project_id",b.projectId)
+   .in("content_id",[...changedIdeaVersions.keys()]);
+  if(ideaError)return fail(503);
+  if((approvals??[]).some(a=>changedIdeaVersions.get(a.content_id)===a.content_version))return fail(409);
+ }
+ if(JSON.stringify(oldRoot.editorialCalendar)!==JSON.stringify(nextRoot.editorialCalendar)){
+  if(!Array.isArray(nextRoot.editorialCalendar)||nextRoot.editorialCalendar.length>300)return fail(400);
+  // Preserve original entries and formal approval history: only reversible lifecycle markers are allowed.
+  const ids=new Set(nextRoot.editorialCalendar.map(v=>v&&typeof v==="object"&&!Array.isArray(v)?(v as Record<string,unknown>).id:null));
+  if([...oldEditorialById.keys()].some(id=>!ids.has(id))||ids.size!==nextRoot.editorialCalendar.length)return fail(400);
+  for(const raw of nextRoot.editorialCalendar){
+   if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+   const item=raw as Record<string,unknown>;
+   if(typeof item.id!=="string"||(!uuid.test(item.id)&&!oldEditorialById.has(item.id)))return fail(400);
+   for(const key of ["archivedAt","deletedAt"]){const value=item[key];if(value!==undefined&&(typeof value!=="string"||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))return fail(400);}
+   if(item.archivedAt&&item.deletedAt)return fail(400);
+   // Backwards-compatible deadline: existing content without this field is valid.
+   // Validate only when the deadline is introduced or changed; do not rewrite legacy dates.
+   const oldDeadline=oldEditorialById.get(item.id)?.deadlineDate;
+   const deadline=item.deadlineDate;
+   if(deadline!==oldDeadline&&deadline!==undefined&&deadline!==null&&deadline!==""){
+    if(typeof deadline!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(deadline))return fail(400);
+    const [year,month,day]=deadline.split("-").map(Number);
+    const parsed=new Date(Date.UTC(year,month-1,day));
+    if(parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day)return fail(400);
+    if(typeof item.publishDate==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(item.publishDate)&&deadline>item.publishDate)return fail(400);
+   }
+
+   for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){
+    if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
+   }
+   if(item.references!==undefined){
+    if(!Array.isArray(item.references)||item.references.length>10)return fail(400);
+    for(const ref of item.references){
+     if(!ref||typeof ref!=="object"||Array.isArray(ref))return fail(400);
+     const entry=ref as Record<string,unknown>;
+     if(typeof entry.url!=="string"||entry.url.length>2048||typeof entry.note!=="string"||entry.note.length>400)return fail(400);
+     try{const u=new URL(entry.url);if(u.protocol!=="https:"||u.username||u.password)return fail(400);}catch{return fail(400);}
+    }
+   }
+   for(const key of ["briefUrl","driveUrl"]){
+    const url=item[key];
+    if(url===undefined||url===null||url==="")continue;
+    if(typeof url!=="string"||url.length>2048)return fail(400);
+    try{if(new URL(url).protocol!=="https:")return fail(400);}catch{return fail(400);}
+   }
+  }
+ }
+ // New editorial assignees must be active team identities, not arbitrary client-supplied names.
+ if(JSON.stringify(oldRoot.editorialCalendar)!==JSON.stringify(nextRoot.editorialCalendar)){
+  const prior=Array.isArray(oldRoot.editorialCalendar)?oldRoot.editorialCalendar:[];
+  const oldById=new Map(prior.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v.ownerUserId]));
+  const newOwners=[...new Set((nextRoot.editorialCalendar as Record<string,unknown>[]).filter(v=>typeof v.ownerUserId==="string"&&v.ownerUserId!==""&&v.ownerUserId!==oldById.get(v.id)).map(v=>v.ownerUserId as string))];
+  if(newOwners.length){
+   if(newOwners.some(id=>!uuid.test(id)))return fail(400);
+   const {data:allowed,error:allowedError}=await admin.from("team_members").select("user_id,display_name").eq("active",true).in("user_id",newOwners);
+   if(allowedError)return fail(503);
+   if(new Set((allowed??[]).map(row=>row.user_id)).size!==newOwners.length)return fail(400);
+   const names=new Map((allowed??[]).map(row=>[row.user_id,row.display_name]));
+   if((nextRoot.editorialCalendar as Record<string,unknown>[]).some(v=>newOwners.includes(v.ownerUserId as string)&&v.owner!==names.get(v.ownerUserId as string)))return fail(400);
+  }
+ }
+ // Validate onboarding links on the server as well as in the editor.
+ const checklist=nextRoot.onboardingChecklist;
+ if(checklist!==undefined){
+  if(!Array.isArray(checklist))return fail(400);
+  for(const item of checklist){
+   if(!item||typeof item!=="object"||Array.isArray(item))return fail(400);
+   const entry=item as Record<string,unknown>;
+   if(typeof entry.title!=="string"||entry.title.trim().length<3||entry.title.trim().length>140)return fail(400);
+   const link=entry.link;
+   if(link===undefined||link===null||link==="")continue;
+   if(typeof link!=="string")return fail(400);
+   try{
+    const parsed=new URL(link);
+    if(parsed.protocol!=="https:"||!parsed.hostname)return fail(400);
+   }catch{return fail(400);}
+  }
+ }
+ // Campaigns are stored per project. Reject malformed manual figures and unsafe links.
+ const campaigns=nextRoot.marketingCampaigns;
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(campaigns)){
+  if(!Array.isArray(campaigns)||campaigns.length>200)return fail(400);
+  const seenCampaignIds=new Set<string>();
+  const approvedStatuses=new Set(["draft","active","paused","finished"]);
+  const approvedPlatforms=new Set(["Google Ads","Meta Ads","Outro"]);
+  for(const raw of campaigns){
+   if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
+   const row=raw as Record<string,unknown>;
+   if(typeof row.id!=="string"||!uuid.test(row.id)||seenCampaignIds.has(row.id))return fail(400);
+   seenCampaignIds.add(row.id);
+   if(typeof row.title!=="string"||row.title.trim().length<3||row.title.length>140||
+      typeof row.objective!=="string"||row.objective.length>220||
+      typeof row.resultLabel!=="string"||row.resultLabel.length>60||
+      typeof row.notes!=="string"||row.notes.length>1200||
+      !approvedStatuses.has(String(row.status))||!approvedPlatforms.has(String(row.platform)))return fail(400);
+   for(const field of ["budget","spent","results"]){
+    const n=row[field];
+    if(n!==null&&(typeof n!=="number"||!Number.isFinite(n)||n<0||n>1e12))return fail(400);
+   }
+   if(row.results!==null&&!Number.isInteger(row.results))return fail(400);
+   for(const key of ["startDate","endDate"]){
+    const value=row[key];
+    if(typeof value!=="string")return fail(400);
+    if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value))||
+     new Date(value+"T12:00:00").toISOString().slice(0,10)!==value))return fail(400);
+   }
+   if(row.startDate&&row.endDate&&(row.endDate as string)<(row.startDate as string))return fail(400);
+   if(typeof row.dashboardUrl!=="string"||row.dashboardUrl.length>2048)return fail(400);
+   if(row.dashboardUrl){try{if(new URL(row.dashboardUrl).protocol!=="https:")return fail(400);}catch{return fail(400);}}
+  }
+ }
+ const previousItems=Array.isArray(oldRoot.executionTimeline)?oldRoot.executionTimeline:[];
+ const nextItems=Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline:[];
+ // Launch date is independent of the task due date; historical items need no migration.
+ const previousTaskById=new Map(previousItems.filter((row):row is Record<string,unknown>=>!!row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string").map(row=>[row.id,row]));
+ for(const entry of nextItems){
+  if(!entry||typeof entry!=="object"||Array.isArray(entry))continue;
+  const task=entry as Record<string,unknown>;
+  if(typeof task.id!=="string")continue;
+  const prior=previousTaskById.get(task.id);
+  if(task.launchDate===prior?.launchDate&&task.dueDate===prior?.dueDate)continue;
+  if(task.launchDate===undefined||task.launchDate===null||task.launchDate==="")continue;
+  if(typeof task.launchDate!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(task.launchDate))return fail(400);
+  const [year,month,day]=task.launchDate.split("-").map(Number);
+  const d=new Date(Date.UTC(year,month-1,day));
+  if(d.getUTCFullYear()!==year||d.getUTCMonth()!==month-1||d.getUTCDate()!==day)return fail(400);
+  if(typeof task.dueDate==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)&&task.dueDate>task.launchDate)return fail(400);
+ }
+
+ const previousOwners=new Map(previousItems.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").map(v=>[v.id,v.ownerUserId]));
+ const changedOwners=[...new Set(nextItems.filter((v):v is Record<string,unknown>=>!!v&&typeof v==="object"&&!Array.isArray(v)&&typeof (v as Record<string,unknown>).id==="string").filter(v=>typeof v.ownerUserId==="string"&&v.ownerUserId!==""&&v.ownerUserId!==previousOwners.get(v.id)).map(v=>v.ownerUserId as string))];
+ if(changedOwners.length){
+  if(changedOwners.some(id=>!uuid.test(id)))return fail(400);
+  const {data:members,error:memberError}=await admin.from("team_members").select("user_id").eq("active",true).in("user_id",changedOwners);
+  if(memberError)return fail(503);
+  if(new Set((members??[]).map(m=>m.user_id)).size!==changedOwners.length)return fail(400);
+ }
+
+ // Append-only audit trail for edited minutes. Attribution and timestamp come from
+ // the authenticated server identity, never from browser-supplied history.
+ if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)&&Array.isArray(nextRoot.operationalAgenda)){
+  const originals=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda:[];
+  const originalById=new Map(originals.filter((value):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value)&&typeof (value as Record<string,unknown>).id==="string").map(value=>[value.id as string,value]));
+  nextRoot.operationalAgenda=nextRoot.operationalAgenda.map(value=>{
+   const current=value as Record<string,unknown>;
+   const previous=originalById.get(current.id as string);
+   const historical=previous&&Array.isArray(previous.minutesHistory)?previous.minutesHistory.slice(-99):[];
+   const before=typeof previous?.minutes==="string"?previous.minutes:"";
+   const after=typeof current.minutes==="string"?current.minutes:"";
+   const changed=before!==after;
+   const history=changed?[...historical,{version:historical.length+1,text:after,changedAt:new Date().toISOString(),changedBy:identity.user.id}]:historical;
+   const {minutesHistory:_ignored,...safeCurrent}=current;
+   return history.length?{...safeCurrent,minutesHistory:history}:safeCurrent;
+  });
+ }
+ const nextAt=new Date().toISOString();
+ const {data:updated,error:updateError}=await admin.from("planning_projects")
+   .update({data:b.data,updated_at:nextAt}).eq("id",b.projectId)
+   .eq("updated_at",b.expectedUpdatedAt)
+   .select("id,updated_at,data").maybeSingle();
+ if(updateError)return fail(503);
+ if(!updated)return fail(409);
+ return NextResponse.json({project:updated},{headers:{"Cache-Control":"no-store"}});
+}

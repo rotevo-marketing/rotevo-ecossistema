@@ -1,0 +1,8 @@
+"use client";
+import {useState} from "react";
+const targets=[{path:"/admin",label:"Painel do estrategista"},{path:"/cliente",label:"Portal do cliente"},{path:"/previa/planejamento",label:"Editor com dados fictícios"}];
+/** Preview-only frame: same-origin authentication, no copied session or bypass. */
+export default function ResponsiveReview(){
+ const [path,setPath]=useState("/admin"),[width,setWidth]=useState(390);
+ return <main className="min-h-screen p-4"><header className="mx-auto mb-4 flex max-w-6xl flex-wrap items-end gap-4"><div className="mr-auto"><h1 className="text-xl font-bold">Conferência da prévia</h1><p className="mt-1 text-sm text-[#525B70]">As áreas internas exigem o acesso normal. O editor fictício mantém alterações apenas nesta sessão.</p></div><label className="text-sm">Área<select aria-label="Área da conferência" value={path} onChange={e=>setPath(e.target.value)} className="ml-2 rounded-lg border bg-white p-2">{targets.map(t=><option key={t.path} value={t.path}>{t.label}</option>)}</select></label><label className="text-sm">Largura<select aria-label="Largura da conferência" value={width} onChange={e=>setWidth(Number(e.target.value))} className="ml-2 rounded-lg border bg-white p-2">{[360,390,768,1280].map(w=><option key={w} value={w}>{w} px</option>)}</select></label><a href={path} className="rounded-lg border bg-white p-2 text-sm">Abrir em tela inteira</a></header><div className="overflow-auto"><iframe key={path} src={path} title="Plataforma na largura selecionada" style={{width,maxWidth:"none",height:850,display:"block",margin:"0 auto",border:"1px solid #E3E7F0",borderRadius:16,background:"white"}}/></div></main>;
+}

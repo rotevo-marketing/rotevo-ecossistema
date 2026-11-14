@@ -1,0 +1,76 @@
+name: UI3 disposable Postgres JSON grant lab
+on:
+  push:
+    branches:
+      - feat/rotevo-ui2-pilot-20261109
+    paths:
+      - 'scripts/security/pg-planning-json-lab.sql'
+      - 'scripts/security/pg-planning-proposal-validation.sql'
+      - 'scripts/security/pg-planning-proposal-negative-schema.sql'
+      - 'scripts/security/pg-planning-postrelease-safe-rollback.sql'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - '.github/workflows/ui3-disposable-postgres-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grant-lab:
+    name: Synthetic RLS and column grants (isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-lab-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: disposable-lab-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client >/dev/null
+      - name: Verify isolated test target
+        run: |
+          test "$PGHOST" = "127.0.0.1"
+          test "$PGDATABASE" = "postgres"
+          psql -Atqc "select current_database(), inet_server_addr(), version()"
+      - name: Simulate tenant RLS and JSON column privilege restriction
+        run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-json-lab.sql
+      - name: Verify exact release proposal SQL on disposable PostgreSQL
+        run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-proposal-validation.sql
+      - name: Assert postrelease application rollback never restores direct JSON privileges
+        run: psql -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-postrelease-safe-rollback.sql
+      - name: Reject schema drift transactionally with no partial privilege changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A separate disposable database shares only the synthetic roles in this runner.
+          createdb ui3_negative
+          psql -d ui3_negative -v ON_ERROR_STOP=1 -f scripts/security/pg-planning-proposal-negative-schema.sql
+          if psql -d ui3_negative -v ON_ERROR_STOP=1 -f docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql > "$RUNNER_TEMP/ui3-negative-preflight.log" 2>&1; then
+            echo "::error::Release proposal unexpectedly accepted incompatible schema"
+            exit 1
+          fi
+          # Match the intended guard rather than accepting arbitrary SQL or connection errors.
+          grep -F "Project metadata schema drift" "$RUNNER_TEMP/ui3-negative-preflight.log"
+          value="$(psql -d ui3_negative -Atqc "select has_column_privilege('authenticated','public.planning_projects','data','SELECT') and has_column_privilege('authenticated','public.planning_projects','data','UPDATE')")"
+          test "$value" = "t"
+          echo "PASS: schema-drift preflight aborted transaction and left previously granted privileges untouched"
+          dropdb ui3_negative

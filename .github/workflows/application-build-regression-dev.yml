@@ -1,0 +1,35 @@
+name: Application production build regression (development)
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/application-build-regression-dev.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: offline-build-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: offline-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript regression
+        run: npx tsc --noEmit
+      - name: Build Next.js with offline placeholders
+        run: npm run build
+      - name: Enforce production audit
+        run: npm audit --omit=dev --audit-level=moderate

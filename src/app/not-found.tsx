@@ -1,0 +1,3 @@
+import Link from "next/link";
+import {RotevoLogo} from "@/Components/RotevoLogo";
+export default function NotFound(){return <main className="grid min-h-[80svh] place-items-center px-5 py-12"><section className="w-full max-w-lg rounded-2xl border border-[#E3E7F0] bg-white p-7"><RotevoLogo size={28}/><p className="rv-page-kicker mt-8">Página não encontrada</p><h1 className="text-2xl font-bold">Este endereço não está disponível.</h1><p className="mt-4 text-sm leading-7 text-[#525B70]">Confira o link ou volte ao acesso da Rotevo para encontrar seu ambiente.</p><Link href="/" className="mt-7 inline-flex rounded-xl bg-[#6D35F5] px-5 py-3 text-sm font-semibold text-white">Voltar ao acesso</Link></section></main>;}

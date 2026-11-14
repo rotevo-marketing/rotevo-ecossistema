@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
+import {isUuid,sharedConversationItems} from "@/lib/collaboration/guards";
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Acesso indisponível."},{status,headers:{"Cache-Control":"no-store"}});
 export async function GET(req:NextRequest){
@@ -23,6 +24,16 @@ export async function GET(req:NextRequest){
  if(permissionError)return fail(503);
  const permitted=(permissions??[]).map(p=>p.permission as string);
  const ids=(assignments??[]).map(p=>p.project_id as string);
+ const conversationProject=req.nextUrl.searchParams.get("conversationProject");
+ if(conversationProject!==null){
+  if(process.env.ROTEVO_COLLABORATION_ENABLED!=="true")return fail(503);
+  if(!isUuid(conversationProject))return fail(400);
+  if(!permitted.includes("projects.read")||!ids.includes(conversationProject))return fail(403);
+  const {data:project,error}=await admin.from("planning_projects").select("data").eq("id",conversationProject).maybeSingle();
+  if(error)return fail(503);
+  if(!project)return fail(404);
+  return NextResponse.json({items:sharedConversationItems(project.data),canWrite:permitted.includes("projects.write")},{headers:{"Cache-Control":"no-store"}});
+ }
  // Project titles are metadata, never documents or client details, and are returned only with explicit read permission.
  let projects:{id:string;title:string}[]=[];
  if(permitted.includes("projects.read")&&ids.length>0){

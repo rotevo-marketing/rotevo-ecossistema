@@ -1,15 +1,20 @@
 "use client";
+import {clientDocumentCode} from "@/lib/ui/planningSnapshot";
+import ExecutivePlanningSummary,{type PublishedStrategicDocument} from "@/Components/cliente/ExecutivePlanningSummary";
+import DynamicDocumentReader from "@/Components/strategic-editor/DynamicDocumentReader";
+import type {RichContent} from "@/lib/planning/richContent";
 import { useState } from "react";
 import Link from "next/link";
+import {planningHref} from "@/lib/ui/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { RotevoTablerIcon, type RotevoIconName } from "@/Components/RotevoTablerIcon";
 const iconNames: RotevoIconName[] = ["layout-dashboard","report","shopping-bag","filter-2-search","user","shape","target-arrow","brand-instagram","speakerphone","chart-funnel","bolt","chart-pie","chart-dots-3","device-analytics","alert-square-rounded","timeline-event-text","calendar-heart"];
 function AreaIcon({index}:{index:number}) { return <RotevoTablerIcon name={iconNames[index] ?? "layout-dashboard"} size={26} stroke={2.3} className="h-[26px] w-[26px] shrink-0"/>; }
 
-type Props = { clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; selectedCodes:string[]; presentedCodes:string[] };
-export default function EcosystemPresentationOverview({clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,selectedCodes,presentedCodes}:Props) {
-  const docs = ecosystemDocuments.filter(d=>!d.area.startsWith("00 ") && d.code!=="01.01" && selectedCodes.includes(d.code) && presentedCodes.includes(d.code));
+type Props = { projectId?:string; clientName:string; projectTitle:string; coverImageUrl:string|null; projectSlug:string; clientSlug:string; isStrategist:boolean; returnToProjects?:boolean; selectedCodes:string[]; presentedCodes:string[]; documents?:Record<string,{content:string;richContent?:RichContent}>;executiveDocuments?:Record<string,PublishedStrategicDocument> };
+export default function EcosystemPresentationOverview({projectId,clientName,projectTitle,coverImageUrl,clientSlug,isStrategist,returnToProjects=false,selectedCodes,presentedCodes,documents,executiveDocuments={}}:Props) {
+  const docs = ecosystemDocuments.filter(d=>clientDocumentCode(d.code) && selectedCodes.includes(d.code) && presentedCodes.includes(d.code)&&Boolean(documents?.[d.code]?.content.trim()));
   const areas = Array.from(new Set(docs.map(d=>d.area)));
   const [active,setActive] = useState("dashboard");
   const [menuOpen,setMenuOpen] = useState(false);
@@ -35,7 +40,7 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B142A] text-white">
       <div className="flex w-full items-center justify-between gap-3 px-5 py-5"><RotevoLogo variant="white" size={27}/>
         <div className="flex items-center gap-2"><button onClick={()=>setMenuOpen(v=>!v)} type="button" aria-expanded={menuOpen} className="cursor-pointer rounded-xl border border-white/20 px-3 py-2.5 text-sm font-medium text-white lg:hidden">Menu</button>
-        <Link href={isStrategist?`/admin/planejamentos/${clientSlug}`:"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?"Voltar ao planejamento":"Voltar à minha área"}</Link></div>
+        <Link href={isStrategist?(returnToProjects?"/admin?section=projects":planningHref(clientSlug,projectId)):"/cliente"} className="cursor-pointer rounded-xl border border-white/20 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10">{isStrategist?(returnToProjects?"Fechar apresentação":"Voltar ao planejamento"):"Voltar à minha área"}</Link></div>
       </div>
     </header>
     <div className="flex w-full flex-1 items-stretch">
@@ -51,15 +56,10 @@ export default function EcosystemPresentationOverview({clientName,projectTitle,c
         </div>}
         {active==="dashboard"&&<div className="space-y-6">
           <div><p className="text-xs font-semibold text-[#697386]">Painel Executivo</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Visão geral estratégica</h1><p className="mt-2 text-sm text-[#525B70]">Consolidação dos objetivos, prioridades, iniciativas e acompanhamento do planejamento.</p></div>
-          <div className="space-y-4">
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={13}/></span>Evolução dos resultados</h2><p className="mt-2 text-sm text-[#697386]">Os gráficos serão apresentados quando houver indicadores e séries históricas verificáveis.</p><div className="mt-5 flex h-52 items-center justify-center rounded-lg border border-dashed border-[#DDE2EC] bg-[#F9FAFD] text-xs text-[#697386]">Aguardando dados de resultados</div></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={14}/></span>Prioridades e decisões</h2><p className="mt-3 text-sm text-[#697386]">As prioridades, decisões registradas, pendências e riscos serão consolidados aqui.</p><div className="mt-5 rounded-lg bg-[#F6F7FB] p-4 text-sm text-[#525B70]">Nenhuma informação consolidada ainda.</div></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={15}/></span>Iniciativas e campanhas</h2><p className="mt-3 text-sm text-[#697386]">Situação das iniciativas previstas no planejamento.</p><p className="mt-4 text-sm font-medium">Aguardando integração</p></section>
-            <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="flex items-center gap-3 text-lg font-bold"><span className="text-[#6D35F5]"><AreaIcon index={16}/></span>Próximos marcos</h2><p className="mt-3 text-sm text-[#697386]">Plano de execução e próximas entregas.</p><p className="mt-4 text-sm font-medium">A definir</p></section>
-          </div>
+          <section className="rounded-xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-bold">Síntese do planejamento</h2><ExecutivePlanningSummary documents={executiveDocuments}/><p className="mt-5 text-xs text-[#697386]">{docs.length} documento(s) disponibilizado(s) nas áreas estratégicas.</p></section>
 
         </div>}
-        {chosen&&<article className="rounded-xl border border-[#E3E7F0] bg-white p-6 sm:p-9"><p className="text-xs text-[#697386]">{chosen.area}</p><h1 className="mt-2 text-3xl font-bold">{chosen.title}</h1><div className="mt-7 rounded-xl bg-[#F6F7FB] p-6 text-sm leading-6 text-[#525B70]">O conteúdo deste documento ainda não está integrado à apresentação. Quando sua produção estiver disponível, ele será apresentado aqui.</div><button type="button" onClick={()=>setActive("dashboard")} className="mt-6 cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm">Voltar ao Painel Executivo</button></article>}
+        {chosen&&<article className="rounded-xl border border-[#E3E7F0] bg-white p-6 sm:p-9"><p className="text-xs text-[#697386]">{chosen.area}</p><h1 className="mt-2 text-3xl font-bold">{chosen.title}</h1>{documents?.[chosen.code]?.richContent?<DynamicDocumentReader content={documents[chosen.code].richContent!}/>:<div className="mt-7 whitespace-pre-wrap break-words rounded-xl bg-[#F6F7FB] p-6 text-sm leading-7 text-[#525B70]">{documents?.[chosen.code]?.content?.trim()||"Este documento ainda não possui conteúdo disponibilizado para apresentação."}</div>}<button type="button" onClick={()=>setActive("dashboard")} className="mt-6 cursor-pointer rounded-xl border border-[#E3E7F0] px-4 py-2.5 text-sm">Voltar ao Painel Executivo</button></article>}
       </div>
     </div>
     <footer className="bg-[#A7E000]"><div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>

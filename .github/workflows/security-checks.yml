@@ -1,0 +1,550 @@
+name: Security checks (development)
+
+on:
+  push:
+    branches:
+      - integration/rotevo-ui3-rebranding-20261111
+      - feature/admin-v2-redesign
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/security/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/security-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cross-tab-session-guard:
+    name: Cross-tab session regression (isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify stale portal and message sender identity protection
+        run: node --test scripts/security/ui3-session-boundary.test.mjs
+  dependencies:
+    name: Audit dependencies (report)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Enforce production dependency audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit-production-ci.json
+          result=$?
+          set -e
+          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync("npm-audit-production-ci.json","utf8")); const v=a.metadata?.vulnerabilities || {}; console.log("Production dependency findings:",JSON.stringify(v)); if(a.error)console.log("Audit returned an error:",a.error.code || "unknown");'
+          if [ "$result" -ne 0 ]; then
+            echo "Blocking deployment candidate: production dependency audit failed"
+            exit 1
+          fi
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-production
+          path: npm-audit-production-ci.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  local-test-guards:
+    name: Test API runner isolation guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install locked dependencies for ESM-importing security tests
+        run: npm ci --no-audit --no-fund
+      - name: Check authorization schema readiness without a database
+        run: node --test scripts/security/auth-schema-preflight.test.mjs
+      - name: Simulate Auth rollback outcomes without database
+        run: node --test scripts/security/client-account-rollback.test.mjs
+      - name: Verify API authorization order contracts
+        run: node --test scripts/security/admin-route-contract.test.mjs
+      - name: Verify project authorization decisions with isolated fixtures
+        run: node --test scripts/security/team-project-access-behavior.test.mjs
+      - name: Verify client-project JSON projection is allowlisted
+        run: node --test scripts/security/client-project-projection.test.mjs
+      - name: Verify conversation tenant isolation and resource visibility
+        run: node --test scripts/security/ui3-collaboration-guards.test.mjs
+      - name: Verify profile menu and task status palettes
+        run: node --test scripts/security/admin-profile-task-colors.test.mjs
+      - name: Verify operational agenda form validations
+        run: node --test scripts/security/agenda-form-contract.test.mjs
+      - name: Verify editorial calendar date validation
+        run: node --test scripts/security/editorial-date-contract.test.mjs
+      - name: Verify UI3 operational contract transitions and date isolation
+        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs
+      - name: Verify client overview delivery, approval and meeting focus
+        run: node --test scripts/security/ui3-client-overview-contract.test.mjs
+      - name: Verify client action API parsing and fail-closed authentication
+        run: node --experimental-strip-types --test scripts/security/ui3-client-action-contract.test.mjs
+      - name: Verify isolated account theme preference contracts
+        run: node --test scripts/security/ui3-account-appearance-contract.test.mjs
+      - name: Verify onboarding link validation contracts
+        run: node --test scripts/security/onboarding-link-contract.test.mjs
+      - name: Verify administrative editors use authorized project writes
+        run: node --test scripts/security/admin-project-editor-contract.test.mjs
+      - name: Verify restricted staff access boundaries
+        run: node --test scripts/security/staff-access-boundary.test.mjs
+      - name: Verify corporate owner bootstrap guards
+        run: node --test scripts/security/owner-bootstrap-contract.test.mjs
+      - name: Verify release readiness security contracts
+        run: node --test scripts/security/release-readiness-contract.test.mjs
+      - name: Prevent legacy UI2 rollback after JSON grant restriction
+        run: node --test scripts/security/ui3-rollback-compatibility.test.mjs
+      - name: Syntax-check private archive audit without handling a real dump
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $issues=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('scripts/security/audit-private-backup-archive.ps1',[ref]$tokens,[ref]$issues) | Out-Null
+          if ($issues.Count -gt 0) { $issues | ForEach-Object { Write-Host ('Line '+$_.Extent.StartLineNumber+': '+$_.Message) }; throw 'PowerShell archive audit syntax errors.' }
+          # O teste de preflight exige um workspace Windows privado; nao executar o script aqui.
+      - name: Enforce Ecossistema 2027 as the only presentation
+        run: node --test scripts/security/only-ecosystem-2027.test.mjs
+      - name: Validate operational dependency graphs
+        run: node --test scripts/security/execution-dependencies.test.mjs
+      - name: Exercise synthetic client and two-project operational journey
+        run: node --test scripts/security/isolated-client-journey.test.mjs
+      - name: Validate strategic document approval and publication workflow
+        run: node --test scripts/security/ecosystem-document-workflow.test.mjs
+      - name: Verify operational data, private publication and portal visibility
+        run: node --test scripts/security/operational-integration.test.mjs
+      - name: Verify financial publication gates
+        run: node --test scripts/security/finance-publication.test.mjs
+      - name: Reject orphaned legacy components
+        run: node scripts/security/legacy-dependency-inventory.mjs --fail-on-orphans
+      - name: Prevent deprecated legacy runtime entry points
+        run: node scripts/security/legacy-entrypoint-inventory.mjs --fail-on-live-legacy
+      - name: Inventory remaining direct planning project consumers
+        run: node scripts/security/planning-project-consumer-inventory.mjs
+      - name: Verify remote targets are blocked
+        run: node --test scripts/security/local-admin-api-guard.test.mjs
+
+  http-negative:
+    name: Anonymous HTTP rejection (isolated Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+      ROTEVO_LOCAL_APP_URL: http://127.0.0.1:3000/
+      ROTEVO_LOCAL_API_TESTS: YES_LOCAL_ONLY
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Start Next.js on loopback only
+        shell: bash
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > /tmp/rotevo-next-test.log 2>&1 &
+          echo $! > /tmp/rotevo-next-test.pid
+          for i in $(seq 1 60); do
+            status="$(curl -sS --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/admin/projects || true)"
+            if [ "$status" = "401" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -n 80 /tmp/rotevo-next-test.log
+          exit 1
+      - name: Reject unauthenticated HTTP operations
+        run: node --test scripts/security/local-admin-api-negative.test.mjs
+      - name: Verify collaboration endpoints are closed by default
+        run: node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+      - name: Ensure next-generation editorial approval stays off by default
+        run: node --test scripts/security/ui3-editorial-workflow-http-negative.test.mjs
+      - name: Stop isolated server
+        if: always()
+        run: |
+          if test -f /tmp/rotevo-next-test.pid; then
+            kill "$(cat /tmp/rotevo-next-test.pid)" || true
+          fi
+
+  build:
+    name: Production build verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-no-real-access
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-no-real-access
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify production build with isolated configuration
+        run: npm run build
+
+  gate-b-workflow-isolated:
+    name: Gate B workflow schema and transaction tests (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: gate-b-local-only
+          POSTGRES_DB: rotevo_gate_b_isolated
+        ports:
+          - 127.0.0.1:55433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_gate_b_isolated"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55433"
+      PGUSER: postgres
+      PGPASSWORD: gate-b-local-only
+      PGDATABASE: rotevo_gate_b_isolated
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test Gate B SQL with synthetic users and projects
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-gate-b-workflow-isolated.sql
+      - name: Verify Gate B remains fail-closed and outside migrations
+        run: node --test scripts/security/ui3-gate-b-contract.test.mjs
+      - name: Guard notification state against cross-tab session responses
+        run: node --test scripts/security/ui3-notification-session-isolation.test.mjs
+      - name: Verify notification bell remains disabled and session-bound by default
+        run: node --test scripts/security/ui3-notification-mount.test.mjs
+
+  editorial-workflow-isolated:
+    name: Editorial approval and adjustment (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: workflow-fixture-only
+          POSTGRES_DB: rotevo_workflow_fixture
+        ports:
+          - 127.0.0.1:55434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_workflow_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55434"
+      PGUSER: postgres
+      PGPASSWORD: workflow-fixture-only
+      PGDATABASE: rotevo_workflow_fixture
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test client approvals, atomic status changes and notification routing
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-ui3-notifications-isolated.sql
+
+  profile-grants-isolated:
+    name: Profile privilege isolation (synthetic PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: rotevo_security_test
+        ports:
+          - 127.0.0.1:55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rotevo_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "55432"
+      PGUSER: postgres
+      PGPASSWORD: isolated-test-only
+      PGDATABASE: rotevo_security_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated profile column grants
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-profile-grants-isolated.sql
+      - name: Verify proposed team RLS schema and grants in isolation
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/security/db-team-schema-isolated.sql
+      - name: Verify activation grants and staff/client isolation with hosted default grants
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_activation_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_activation_isolated -f scripts/security/activation-boundary-isolated.sql
+      - name: Test private collaboration table grants in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_collaboration_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_collaboration_isolated -f scripts/security/db-collaboration-isolated.sql
+      - name: Test client action proposal RLS and uniqueness in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_client_actions_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_client_actions_isolated -f scripts/security/db-ui3-client-action-schema-isolated.sql
+      - name: Verify authorized client-action RPCs in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_rpc_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_rpc_isolated -f scripts/security/db-ui3-client-action-rpc-isolated.sql
+      - name: Verify client note submissions in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_submission_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_submission_isolated -f scripts/security/db-ui3-client-action-submission-isolated.sql
+      - name: Verify disaster recovery against synthetic PostgreSQL 17 backup
+        run: bash scripts/security/ui3-synthetic-restore-drill.sh
+      - name: Verify workflow notification events and recipient idempotency
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_notice_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_notice_isolated -f scripts/security/db-ui3-client-action-notifications-isolated.sql
+      - name: Verify G2 designated approver lifecycle and tenant isolation
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_approver_rpc_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_approver_rpc_isolated -f scripts/security/db-ui3-designated-approver-rpc-isolated.sql
+      - name: Verify end to end named approver and multiuser decision in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_named_approval_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_named_approval_isolated -f scripts/security/db-ui3-designated-editorial-flow-isolated.sql
+      - name: Verify reviewer authorization, correction and final validation in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_review_isolated -f scripts/security/db-ui3-client-action-review-isolated.sql
+      - name: Verify private review queue team and tenant isolation in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_queue_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_action_review_queue_isolated -f scripts/security/db-ui3-client-action-review-queue-isolated.sql
+      - name: Verify account appearance is private and preserves profile in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_appearance_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_appearance_isolated -f scripts/security/db-ui3-appearance-isolated.sql
+
+
+  typecheck:
+    name: TypeScript verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify TypeScript
+        run: npx tsc --noEmit
+
+  isolated-auth-visual-e2e:
+    name: Real local Auth + Playwright (synthetic ${{ matrix.mode }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: release
+            collaboration: 'true'
+          - mode: contingency
+            collaboration: 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - name: Install app dependencies without running application
+        run: npm ci --no-audit --no-fund
+      - name: Verify current operational and appearance contracts (historical snapshots excluded)
+        run: node --experimental-strip-types --test scripts/security/ui3-client-action-contract.test.mjs scripts/security/ui3-account-appearance-contract.test.mjs scripts/security/ui3-client-overview-contract.test.mjs scripts/security/team-my-access-api-behavior.test.mjs
+      - name: Prepare Playwright before Next.js starts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.65.0 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+      - name: Prepare temporary unlinked Supabase project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rotevo-ui3-local"
+          cd "$RUNNER_TEMP/rotevo-ui3-local"
+          supabase init --yes
+          cd "$GITHUB_WORKSPACE"
+          node scripts/security/ui3-integrated-local-prepare.mjs "$RUNNER_TEMP/rotevo-ui3-local"
+      - name: Start ephemeral Supabase Auth and REST services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rotevo-ui3-local"
+          supabase start --exclude studio,mailpit,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor
+          supabase status -o env > "$RUNNER_TEMP/ui3-local-supabase.env"
+      - name: Verify integrated flows against the restricted database
+        env:
+          LAB_MODE: ${{ matrix.mode }}
+          LAB_COLLABORATION: ${{ matrix.collaboration }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          . "$RUNNER_TEMP/ui3-local-supabase.env"
+          set +a
+          test "$API_URL" != ""
+          case "$API_URL" in
+            http://127.0.0.1:*|http://localhost:*) ;;
+            *) echo "::error::Not an isolated local Supabase URL"; exit 1;;
+          esac
+          cd "$GITHUB_WORKSPACE"
+          test "$API_URL" = "http://127.0.0.1:54321"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
+          export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
+          export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
+          export ROTEVO_CLIENT_ACTIONS_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED="true"
+          export ROTEVO_APPEARANCE_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED="true"
+          export ROTEVO_DESIGNATED_APPROVAL_ENABLED="true"
+          export ROTEVO_WORKFLOW_APPROVALS_ENABLED="true"
+          bash scripts/security/ui3-operational-local-install.sh
+          export ROTEVO_FINANCE_ENABLED="true"
+          export ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
+          export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
+          unset VERCEL_ENV
+          if [ "$LAB_MODE" = "contingency" ]; then
+            npm run build
+            npm run start -- --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          else
+            npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          fi
+          next_pid=$!
+          trap 'kill "$next_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 40 "$RUNNER_TEMP/ui3-integrated-next.log"
+            exit 1
+          fi
+          node scripts/security/ui3-integrated-local-http.mjs
+          node scripts/security/ui3-operational-auth-e2e.mjs
+          if [ "$LAB_MODE" = "contingency" ]; then
+            node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+          else
+            node scripts/security/ui3-collaboration-integrated-local.mjs
+            node scripts/security/ui3-collaboration-browser-local.mjs
+          fi
+          # Only the local synthetic stack is reachable from the browser test.
+          node scripts/security/ui3-staff-browser-local.mjs
+          node scripts/security/ui3-portal-browser-local.mjs
+      - name: Upload synthetic-only staff viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui3-synthetic-staff-viewport-${{ matrix.mode }}
+          path: |
+            ${{ runner.temp }}/ui3-synthetic-staff-390.png
+            ${{ runner.temp }}/ui3-synthetic-collaboration-390.png
+            ${{ runner.temp }}/ui3-synthetic-staff-login-error.png
+            ${{ runner.temp }}/ui3-synthetic-client-390.png
+            ${{ runner.temp }}/ui3-synthetic-shared-contract-390.png
+            ${{ runner.temp }}/ui3-synthetic-published-planning-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-dark-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-dark-390.png
+          if-no-files-found: ignore
+          retention-days: 5
+      - name: Stop isolated local stack
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$RUNNER_TEMP/rotevo-ui3-local/supabase" ]; then
+            cd "$RUNNER_TEMP/rotevo-ui3-local"
+            supabase stop --no-backup || true
+          fi

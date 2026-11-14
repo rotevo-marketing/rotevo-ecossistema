@@ -1,0 +1,72 @@
+name: Next.js patch candidate (no deployment)
+
+on:
+  push:
+    branches:
+      - feature/admin-v2-redesign
+    paths:
+      - ".github/workflows/nextjs-patch-candidate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  nextjs-patch:
+    name: Prepare and validate candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Generate a matching Next.js package and lock file
+        run: npm install next@16.4.2 --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Verify lockfile supports a clean install
+        run: npm ci --no-audit --no-fund
+      - name: Confirm candidate version
+        run: npm ls next --depth=0
+      - name: Verify TypeScript
+        run: npx tsc --noEmit
+      - name: Build app without production credentials
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-not-a-real-token
+        run: npm run build
+      - name: Commit validated dependency files on the development branch only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/admin-v2-redesign'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "No dependency changes"
+          else
+            git commit -m "fix(deps): update validated Next.js to 16.4.2"
+            git push origin HEAD:feature/admin-v2-redesign
+          fi
+      - name: Generate production dependency report
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit-production-candidate.json
+          echo "Audit report generated; report-only mode"
+          exit 0
+      - name: Publish candidate files for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-16-4-2-candidate
+          path: |
+            package.json
+            package-lock.json
+            npm-audit-production-candidate.json
+          retention-days: 7
+          if-no-files-found: error

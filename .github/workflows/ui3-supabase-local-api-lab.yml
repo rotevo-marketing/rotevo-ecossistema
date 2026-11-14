@@ -1,0 +1,174 @@
+name: UI3 isolated integrated Auth API Storage and Finance lab
+on:
+  push:
+    branches:
+      - integration/rotevo-ui3-rebranding-20261111
+      - feat/rotevo-ui2-pilot-20261109
+      - release/rotevo-ui3-rc-20261110
+    paths:
+      - 'scripts/security/ui3-integrated-local-prepare.mjs'
+      - 'scripts/security/ui3-integrated-local-http.mjs'
+      - 'scripts/security/ui3-collaboration-integrated-local.mjs'
+      - 'scripts/security/ui3-collaboration-browser-local.mjs'
+      - 'src/app/api/collaboration/messages/route.ts'
+      - 'src/lib/collaboration/guards.ts'
+      - 'docs/security/sql/ui3-collaboration-messages-PROPOSAL-ONLY.sql'
+      - 'scripts/security/ui3-staff-browser-local.mjs'
+      - 'scripts/security/ui3-portal-browser-local.mjs'
+      - 'src/Components/cliente/ClientContracts.tsx'
+      - 'src/Components/cliente/ClientPlanning.tsx'
+      - 'src/Components/cliente/ClientOverview.tsx'
+      - 'src/Components/cliente/ProjectTimeline.tsx'
+      - 'src/Components/shared/ProjectConversation.tsx'
+      - 'src/app/api/team/my-access/route.ts'
+      - 'src/app/equipe/meu-acesso/page.tsx'
+      - 'src/app/rotevo-ui3.css'
+      - 'scripts/security/team-my-access-api-behavior.test.mjs'
+      - 'src/app/admin/equipe/page.tsx'
+      - 'src/Components/strategic-editor/StrategicDocumentReader.tsx'
+      - 'src/Components/strategic-editor/editor.css'
+      - 'src/Components/admin/AdminWorkConsole.tsx'
+      - 'src/Components/admin/AdminOperationsOverview.tsx'
+      - 'scripts/security/ui3-contrast.test.mjs'
+      - 'scripts/security/ui3-sql-baseline.mjs'
+      - 'docs/security/sql/ui3-private-planning-json-grants-PROPOSAL-ONLY.sql'
+      - 'scripts/security/pg-planning-postrelease-safe-rollback.sql'
+      - 'scripts/security/ui3-rollback-compatibility.test.mjs'
+      - 'docs/security/sql/ui3-editorial-rpc-hardening-PROPOSAL-ONLY.sql'
+      - 'src/app/api/presentation/project/route.ts'
+      - '.github/workflows/ui3-supabase-local-api-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-auth-rest:
+    name: Isolated Auth, HTTP, Storage and Finance (${{ matrix.mode }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: release
+            collaboration: 'true'
+          - mode: contingency
+            collaboration: 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - name: Install app dependencies without running application
+        run: npm ci --no-audit --no-fund
+      - name: Verify recovered visual contracts
+        run: node --test scripts/security/ui3-task-*.test.mjs scripts/security/ui3-editorial-ux-round.test.mjs scripts/security/ui3-visual-round-20261110.test.mjs scripts/security/ui3-contrast.test.mjs scripts/security/team-my-access-api-behavior.test.mjs
+      - name: Prepare Playwright before Next.js starts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.65.0 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+      - name: Prepare temporary unlinked Supabase project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rotevo-ui3-local"
+          cd "$RUNNER_TEMP/rotevo-ui3-local"
+          supabase init --yes
+          cd "$GITHUB_WORKSPACE"
+          node scripts/security/ui3-integrated-local-prepare.mjs "$RUNNER_TEMP/rotevo-ui3-local"
+      - name: Start ephemeral Supabase Auth and REST services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/rotevo-ui3-local"
+          supabase start --exclude studio,mailpit,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor
+          supabase status -o env > "$RUNNER_TEMP/ui3-local-supabase.env"
+      - name: Verify integrated flows against the restricted database
+        env:
+          LAB_MODE: ${{ matrix.mode }}
+          LAB_COLLABORATION: ${{ matrix.collaboration }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          . "$RUNNER_TEMP/ui3-local-supabase.env"
+          set +a
+          test "$API_URL" != ""
+          case "$API_URL" in
+            http://127.0.0.1:*|http://localhost:*) ;;
+            *) echo "::error::Not an isolated local Supabase URL"; exit 1;;
+          esac
+          cd "$GITHUB_WORKSPACE"
+          test "$API_URL" = "http://127.0.0.1:54321"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL="http://127.0.0.1:3000/"
+          export ROTEVO_LOCAL_API_TESTS="YES_LOCAL_ONLY"
+          export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
+          export ROTEVO_FINANCE_ENABLED="true"
+          export ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
+          export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"
+          unset VERCEL_ENV
+          if [ "$LAB_MODE" = "contingency" ]; then
+            npm run build
+            npm run start -- --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          else
+            npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/ui3-integrated-next.log" 2>&1 &
+          fi
+          next_pid=$!
+          trap 'kill "$next_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 40 "$RUNNER_TEMP/ui3-integrated-next.log"
+            exit 1
+          fi
+          node scripts/security/ui3-integrated-local-http.mjs
+          if [ "$LAB_MODE" = "contingency" ]; then
+            node --test scripts/security/ui3-collaboration-http-negative.test.mjs
+          else
+            node scripts/security/ui3-collaboration-integrated-local.mjs
+            node scripts/security/ui3-collaboration-browser-local.mjs
+          fi
+          # Only the local synthetic stack is reachable from the browser test.
+          node scripts/security/ui3-staff-browser-local.mjs
+          node scripts/security/ui3-portal-browser-local.mjs
+      - name: Upload synthetic-only staff viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui3-synthetic-staff-viewport-${{ matrix.mode }}
+          path: |
+            ${{ runner.temp }}/ui3-synthetic-staff-390.png
+            ${{ runner.temp }}/ui3-synthetic-collaboration-390.png
+            ${{ runner.temp }}/ui3-synthetic-staff-login-error.png
+            ${{ runner.temp }}/ui3-synthetic-client-390.png
+            ${{ runner.temp }}/ui3-synthetic-shared-contract-390.png
+            ${{ runner.temp }}/ui3-synthetic-published-planning-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-client-dark-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-light-390.png
+            ${{ runner.temp }}/ui3-synthetic-strategist-dark-390.png
+          if-no-files-found: ignore
+          retention-days: 5
+      - name: Stop isolated local stack
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$RUNNER_TEMP/rotevo-ui3-local/supabase" ]; then
+            cd "$RUNNER_TEMP/rotevo-ui3-local"
+            supabase stop --no-backup || true
+          fi

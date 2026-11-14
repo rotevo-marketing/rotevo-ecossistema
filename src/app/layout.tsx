@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { Lora, Inter } from "next/font/google";
 import "./globals.css";
+import "./product-theme.css";
+import "./rotevo-ui2-shared.css";
+import "./rotevo-ui3.css";
 
 const lora = Lora({
   variable: "--font-heading",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 const inter = Inter({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -31,7 +32,7 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${lora.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="rv-product min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,46 @@
+"use client";
+import {useEffect,useRef,useState,type FormEvent} from "react";
+import {parseCents,todayInBrazil,type FinanceState} from "@/lib/finance/model";
+export type LifecycleForm={kind:"supplier"|"supplierStatus"|"subscription"|"subscriptionStatus"|"invoiceEdit"|"accountEdit";id?:string;status?:string;active?:boolean};
+const control="mt-1.5 w-full rounded-xl border border-[#DDE2ED] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#6D35F5]";
+export default function FinanceLifecycleDialog({form,state,onClose,onSubmit}:{form:LifecycleForm;state:FinanceState;onClose:()=>void;onSubmit:(action:string,input:Record<string,unknown>,requestId:string)=>Promise<void>}){
+ const ref=useRef<HTMLDialogElement>(null),[pending,setPending]=useState(false),[error,setError]=useState("");
+ const [requestId]=useState(()=>crypto.randomUUID());
+ const supplier=state.suppliers.find(x=>x.id===form.id),subscription=state.subscriptions.find(x=>x.id===form.id),invoice=state.invoices.find(x=>x.id===form.id),account=state.accounts.find(x=>x.id===form.id);
+ useEffect(()=>{const dialog=ref.current;dialog?.showModal();return()=>dialog?.close();},[]);
+ const field=(label:string,name:string,value:string|number="",type="text",required=true,min?:number,max?:number)=><label className="block text-xs font-semibold text-[#525B70]">{label}<input name={name} defaultValue={value} type={type} required={required} min={min} max={max} maxLength={name==="document"?30:name==="phone"?40:name==="name"?180:180} className={control}/></label>;
+ const amount=(value=0)=>field("Valor (R$)","amount",value?(value/100).toFixed(2).replace(".",","):"");
+ const notes=(value="")=><label className="block text-xs font-semibold text-[#525B70]">Observações internas (opcional)<textarea name="notes" defaultValue={value} maxLength={1000} rows={3} className={control}/></label>;
+ const categories=(value="")=><label className="block text-xs font-semibold text-[#525B70]">Categoria<select name="category" defaultValue={value} required className={control}><option value="">Selecione</option>{state.categories.filter(x=>(form.kind!=="subscription"&&invoice?.direction!=="out")||x!=="Mensalidade").map(x=><option key={x}>{x}</option>)}</select></label>;
+ async function submit(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();if(pending)return;setError("");const data=new FormData(event.currentTarget),get=(key:string)=>String(data.get(key)??"").trim();
+  try{
+   let action="",input:Record<string,unknown>={};const money=()=>{const value=parseCents(get("amount"));if(!Number.isSafeInteger(value)||value<=0)throw Error("Informe um valor válido maior que zero.");return value;};
+   if(form.kind==="supplier"){action="supplier.save";input={...(supplier?{id:supplier.id,version:supplier.version}:{}),name:get("name"),document:get("document"),email:get("email"),phone:get("phone"),notes:get("notes")};}
+   else if(form.kind==="supplierStatus"){action="supplier.status";input={id:supplier!.id,version:supplier!.version,active:form.active};}
+   else if(form.kind==="subscription"){action="subscription.save";input={...(subscription?{id:subscription.id,version:subscription.version}:{}),title:get("title"),supplier_id:get("supplier_id"),category:get("category"),amount_cents:money(),start_date:get("start_date"),end_date:get("end_date"),due_day:Number(get("due_day"))};}
+   else if(form.kind==="subscriptionStatus"){action="subscription.status";input={id:subscription!.id,version:subscription!.version,status:form.status};}
+   else if(form.kind==="invoiceEdit"){action="invoice.update";input={id:invoice!.id,version:invoice!.version,title:get("title"),counterparty:get("counterparty"),category:get("category"),amount_cents:money(),due_date:get("due_date"),document_reference:get("document_reference"),notes:get("notes")};}
+   else {action="account.update";input={id:account!.id,name:get("name"),active:get("active")==="true"};}
+   setPending(true);await onSubmit(action,input,requestId);onClose();
+  }catch(cause){setError(cause instanceof Error?cause.message:"Não foi possível salvar.");}finally{setPending(false);}
+ }
+ const title=form.kind==="supplier"?(supplier?"Editar fornecedor":"Novo fornecedor"):form.kind==="supplierStatus"?(form.active?"Reativar fornecedor":"Arquivar fornecedor"):form.kind==="subscription"?(subscription?"Editar assinatura / reajustar":"Nova assinatura"):form.kind==="subscriptionStatus"?"Alterar assinatura":form.kind==="invoiceEdit"?"Editar lançamento em aberto":"Editar conta financeira";
+ return <dialog ref={ref} aria-labelledby="lifecycle-dialog-title" onCancel={e=>{if(pending)e.preventDefault();else onClose();}} className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border-0 bg-white p-0 text-[#090D1C] shadow-2xl backdrop:bg-[#0B142A]/55"><form onSubmit={submit}>
+  <header className="flex items-center justify-between border-b border-[#E3E7F0] px-6 py-5"><h2 id="lifecycle-dialog-title" className="font-sans text-lg font-bold">{title}</h2><button type="button" disabled={pending} aria-label="Fechar formulário" onClick={onClose} className="px-3 text-2xl">×</button></header>
+  <div className="space-y-4 p-6">
+   {form.kind==="supplier"&&<>{field("Nome / razão social","name",supplier?.name)}<div className="grid gap-4 sm:grid-cols-2">{field("CPF / CNPJ (opcional)","document",supplier?.document,"text",false)}{field("E-mail (opcional)","email",supplier?.email,"email",false)}{field("Telefone (opcional)","phone",supplier?.phone,"tel",false)}</div>{notes(supplier?.notes)}</>}
+   {form.kind==="supplierStatus"&&<p className="text-sm leading-6">{supplier?.name}. {form.active?"O fornecedor voltará a ficar disponível para novos lançamentos.":"O histórico será preservado. Pause ou encerre suas assinaturas ativas antes de arquivar."}</p>}
+   {form.kind==="subscription"&&<>
+    {field("Descrição da assinatura","title",subscription?.title)}
+    <label className="block text-xs font-semibold text-[#525B70]">Fornecedor{subscription?<><input type="hidden" name="supplier_id" value={subscription.supplier_id}/><p className="mt-2 text-sm">{state.suppliers.find(x=>x.id===subscription.supplier_id)?.name}</p></>:<select name="supplier_id" required className={control}><option value="">Selecione</option>{state.suppliers.filter(x=>x.active).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>}</label>
+    <div className="grid gap-4 sm:grid-cols-2">{amount(subscription?.amount_cents)}{categories(subscription?.category)}{field("Início da vigência","start_date",subscription?.start_date??todayInBrazil(),"date")}{field("Fim da vigência (opcional)","end_date",subscription?.end_date??"","date",false)}{field("Dia de vencimento","due_day",subscription?.due_day??10,"number",true,1,31)}</div>
+    <p className="rounded-xl bg-[#F6F7FB] p-3 text-xs leading-5 text-[#697386]">Emita as contas da competência na aba Assinaturas. Reajustes valem somente para novas emissões; contas anteriores mantêm seus valores. Cadastrar uma assinatura não gera pagamento.</p>
+   </>}
+   {form.kind==="subscriptionStatus"&&<p className="text-sm leading-6">{form.status==="closed"?"Encerrar é definitivo e impede novas emissões.":form.status==="paused"?"Pausar interrompe novas emissões até a reativação.":"Reativar permite emitir novamente dentro da vigência."} Contas já emitidas e pagamentos permanecem no histórico. {form.status!=="active"&&"Se uma conta anterior não for mais devida, cancele-a individualmente em A pagar."}</p>}
+   {form.kind==="invoiceEdit"&&invoice&&<><p className="text-xs leading-5 text-[#697386]">Correção somente deste lançamento. Cliente, projeto, competência e vínculo contratual são preservados. Lançamentos com pagamento exigem estorno antes de editar.</p>{field("Descrição","title",invoice.title)}{field(invoice.direction==="out"?"Fornecedor / favorecido":"Cliente / pagador","counterparty",invoice.counterparty)}<div className="grid gap-4 sm:grid-cols-2">{amount(invoice.amount_cents)}{categories(invoice.category)}{field("Vencimento","due_date",invoice.due_date,"date")}{field("Referência / número da fatura (opcional)","document_reference",invoice.document_reference,"text",false)}</div>{notes(invoice.notes)}</>}
+   {form.kind==="accountEdit"&&<>{field("Nome da conta","name",account?.name)}<label className="block text-xs font-semibold">Situação<select name="active" defaultValue={String(account?.active)} className={control}><option value="true">Ativa</option><option value="false">Arquivada</option></select></label><p className="text-xs leading-5 text-[#697386]">O saldo e o histórico permanecem preservados. Contas arquivadas deixam de aceitar novos pagamentos e transferências. O saldo inicial não é alterado.</p></>}
+   {error&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+  </div><footer className="flex justify-end gap-3 border-t border-[#E3E7F0] px-6 py-4"><button type="button" disabled={pending} onClick={onClose} className="rounded-xl border border-[#DDE2ED] px-4 py-2.5 text-sm">Voltar</button><button disabled={pending} className="rounded-xl bg-[#6D35F5] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{pending?"Salvando…":"Salvar"}</button></footer>
+ </form></dialog>;
+}

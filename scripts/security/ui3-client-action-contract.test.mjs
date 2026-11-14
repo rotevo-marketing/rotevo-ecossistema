@@ -130,9 +130,9 @@ test("client action notifications use existing private workflow events with expl
 
 test("client panel accepts Drive URLs without file upload or download",()=>{
  const panel=readFileSync(new URL("../../src/Components/cliente/ClientActionDeliveryPanel.tsx",import.meta.url),"utf8");
- const overview=readFileSync(new URL("../../src/Components/cliente/ClientOverview.tsx",import.meta.url),"utf8");
+ const clientPage=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
- assert.ok(overview.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ assert.ok(clientPage.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
  assert.ok(panel.includes("validGoogleDriveUrl(url)"));
  assert.ok(panel.includes('type="url"'));
  assert.ok(panel.includes("driveUrl:current.url"));

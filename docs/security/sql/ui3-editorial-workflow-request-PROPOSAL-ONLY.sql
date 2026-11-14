@@ -72,15 +72,26 @@ begin
  if v_content->>'status' is distinct from v_from_status
  then raise exception 'Not ready for client approval' using errcode='40001';end if;
 
- -- No principal approver field exists in client_users yet. Do not designate
- -- a recipient arbitrarily when multiple client accounts exist.
- select count(*) into v_recipients
- from public.profiles
- where client_id=v_project.client_id and role='client';
- select id into v_recipient from public.profiles
- where client_id=v_project.client_id and role='client' limit 1;
- if v_recipients<>1 then
-  raise exception 'Explicit approver designation required' using errcode='42501';end if;
+ -- Explicit named approver wins. Sole-account fallback is allowed only
+ -- while no designation exists. Multiple linked clients fail closed.
+ select approver_user_id into v_recipient
+ from rotevo_workflow.editorial_designated_approvers
+ where project_id=p_project_id and phase=p_phase and revoked_at is null;
+ if v_recipient is not null then
+  if not exists(select 1 from public.client_users cu join public.profiles p on p.id=cu.user_id
+    where cu.user_id=v_recipient and cu.client_id=v_project.client_id
+      and p.client_id=v_project.client_id and p.role='client')
+  then raise exception 'Designated account was revoked' using errcode='42501';end if;
+ else
+  select count(*) into v_recipients
+  from public.client_users cu join public.profiles p on p.id=cu.user_id
+  where cu.client_id=v_project.client_id and p.client_id=v_project.client_id and p.role='client';
+  if v_recipients<>1 then
+   raise exception 'Explicit approver designation required' using errcode='42501';end if;
+  select cu.user_id into v_recipient
+  from public.client_users cu join public.profiles p on p.id=cu.user_id
+  where cu.client_id=v_project.client_id and p.client_id=v_project.client_id and p.role='client';
+ end if;
 
  v_key:='editorial:'||p_project_id::text||':'||p_phase||':'||p_content_id||':'||p_content_version;
  insert into rotevo_workflow.approval_requests(

@@ -125,6 +125,8 @@ try {
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
  // Assigned client deliveries belong to Tarefas, not to the overview.
+ // Mobile menu starts collapsed in the synthetic 390px viewport.
+ await customer.getByRole("button",{name:"Menu",exact:true}).click();
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();
  // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
  const delivery=customer.locator("[data-ui3-client-actions]");

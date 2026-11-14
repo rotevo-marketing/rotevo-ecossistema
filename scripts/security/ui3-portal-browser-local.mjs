@@ -24,15 +24,15 @@ function localNotice(sql){
 const db=createClient(api,process.env.SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const suffix=randomUUID();
 async function must(query,label){const r=await query;assert.equal(r.error,null,label+": "+(r.error?.message??""));return r.data;}
-async function identity(role){
- const email="ui3-"+role+"-"+suffix+"@synthetic.invalid",password="Local-Ui3-"+suffix+"!";
+async function identity(role,label=role){
+ const email="ui3-"+label+"-"+suffix+"@synthetic.invalid",password="Local-Ui3-"+suffix+"!";
  const {user}=await must(db.auth.admin.createUser({email,password,email_confirm:true}),"create "+role);
  await must(db.from("profiles").insert({id:user.id,email,role,full_name:"Synthetic "+role}),"create profile "+role);
  if(role==="strategist")await must(db.from("team_members").insert({user_id:user.id,display_name:"Synthetic Administrator",role:"admin",active:true}),"admin membership");
  return {email,password,id:user.id};
 }
 const admin=await identity("strategist"),client=await identity("client");
-const peer=await identity("client"); // Other pilot user in same tenant: cannot read the assignee's notifications.
+const peer=await identity("client","peer"); // Other pilot user in same tenant: cannot read the assignee's notifications.
 
 const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");

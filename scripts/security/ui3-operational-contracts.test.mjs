@@ -57,5 +57,8 @@ test("task launch is optional, stored independently and never drives overdue ale
  assert.match(tasks,/launchDate:detailDraft\.launchDate\|\|undefined/);
  assert.match(tasks,/validateTaskDates\(\{dueDate:draft\.dueDate,launchDate:draft\.launchDate\}\)/);
  assert.match(tasks,/task\.dueDate<today\(\)/);
+ assert.match(tasks,/visibleColumns\.launch/);
+ assert.match(tasks,/Lançamento de \$\{task\.title\}/);
  assert.match(api,/task\.dueDate>task\.launchDate/);
+ assert.match(api,/task\.launchDate===prior\?\.launchDate&&task\.dueDate===prior\?\.dueDate/);
 });

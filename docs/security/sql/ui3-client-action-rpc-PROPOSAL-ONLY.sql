@@ -102,7 +102,17 @@ begin
  into v_results
  from rotevo_workflow.client_action_assignments a
  where a.project_id=p_project_id and a.client_user_id=v_actor
-  and a.released_at is not null and a.status<>'cancelled';
+  and a.released_at is not null and a.status<>'cancelled'
+  and exists (
+   select 1 from jsonb_array_elements(
+    case when jsonb_typeof(v_project.data->(case when a.resource_type='content' then 'editorialCalendar' else 'executionTimeline' end))='array'
+    then v_project.data->(case when a.resource_type='content' then 'editorialCalendar' else 'executionTimeline' end)
+    else '[]'::jsonb end
+   ) e(value)
+   where e.value->>'id'=a.resource_id and e.value->>'visibleToClient'='true'
+    and coalesce(e.value->>'archivedAt','')='' and coalesce(e.value->>'deletedAt','')=''
+    and (a.resource_type<>'content' or coalesce(e.value->>'version','')=a.resource_version)
+  );
  return v_results;
 end;
 $fn$;

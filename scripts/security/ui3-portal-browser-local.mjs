@@ -89,6 +89,32 @@ async function auditAppearance(role,page){
   const report=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"rule",values:["color-contrast"]}}));
   const issues=report.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,190)}))}));
   console.log("APPEARANCE_VISUAL_AUDIT",role,mode,JSON.stringify(issues));
+  if(mode==="dark"&&role==="strategist"){
+   // Axe on a scrolled viewport can miss finance and projects below the fold.
+   // Assert readable foreground/background pairs on these ordinary dashboards.
+   const contrast=await page.evaluate(()=>{
+    const channels=(color)=>((color.match(/\\d+(?:\\.\\d+)?/g)||[]).slice(0,3).map(Number));
+    const lum=(color)=>{
+     const rgb=channels(color).map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});
+     return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+    };
+    const ratio=(text,bg)=>{const a=lum(text),b=lum(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);};
+    return ["daily-finance","daily-projects"].map(id=>{
+     const section=document.querySelector('section[aria-labelledby="'+id+'"]');
+     if(!section)return {id,ratios:[]};
+     const samples=[{foreground:section.querySelector("h3"),background:section}];
+     const inner=section.querySelector(".grid > div");
+     if(inner)samples.push({foreground:inner.querySelector("p"),background:inner});
+     const empty=section.querySelector(":scope > p");
+     if(empty)samples.push({foreground:empty,background:section});
+     return {id,ratios:samples.filter(s=>s.foreground).map(s=>ratio(
+      getComputedStyle(s.foreground).color,getComputedStyle(s.background).backgroundColor))};
+    });
+   });
+   console.log("STRATEGIST_DARK_SUMMARY_CONTRAST",JSON.stringify(contrast));
+   assert.ok(contrast.every(s=>s.ratios.length>0&&s.ratios.every(n=>n>=4.5)),
+    "Strategist dark finance/projects text must keep at least 4.5:1 contrast");
+  }
   if(mode==="dark"&&issues.length)console.log("NO_GO_DARK_VISUAL_AUDIT",role,JSON.stringify(issues));
  }
  await page.evaluate(()=>document.documentElement.removeAttribute("data-rotevo-appearance"));

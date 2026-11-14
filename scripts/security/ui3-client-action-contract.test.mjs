@@ -159,8 +159,8 @@ test("pilot notification read SQL is private, deny-by-default and allows only pe
  assert.match(sql,/public\.team_project_assignments/);
  assert.match(sql,/public\.team_member_permissions/);
  assert.match(sql,/n\.recipient_user_id=v_actor/);
- assert.match(sql,/rotevo_workflow\.can_view_event\(v_actor,e\.id\)/);
- assert.match(sql,/revoke all on function rotevo_workflow\.can_view_event/);
+ assert.match(sql,/rotevo_workflow\.can_view_event_v2\(v_actor,e\.id\)/);
+ assert.match(sql,/revoke all on function rotevo_workflow\.can_view_event_v2/);
  assert.match(sql,/event_phase text,[\s\S]*action_id text/);
  assert.match(bell,/n\.action_id\?onOpenAssignedAction/);
  assert.match(bell,/n\.action_id\?"Ver atribuição"/);

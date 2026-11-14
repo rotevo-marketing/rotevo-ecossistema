@@ -67,9 +67,9 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
     {!ready?<section role={state==="loading"?"status":"alert"} className={surface}><p className="text-sm font-semibold">{state==="loading"?"Preparando a visão geral":state==="forbidden"?"Acesso não autorizado":"Não foi possível carregar a visão geral"}</p><p className="mt-2 text-xs text-[#697386]">Os indicadores só aparecem quando as fontes autorizadas estiverem disponíveis.</p></section>:<>
      <section aria-label="Indicadores do dia" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
        {metrics.map((metric,index)=><button key={metric.title} type="button" onClick={metric.onClick} disabled={!metric.onClick} className={"group rounded-xl border p-4 text-left transition-[border-color,box-shadow] hover:border-[#C5B9F5] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7] "+(index===0?"border-[#E1D8FB] bg-[#F7F4FF]":index===1?"border-[#F5E0BD] bg-[#FFF8EB]":index===2?"border-[#D8E8FA] bg-[#F3F8FE]":"border-[#D9ECE1] bg-[#F3FAF6]")+" "+(!metric.onClick?"cursor-default":"cursor-pointer")}>
-       <div className="flex items-center justify-between"><span className="text-xs font-medium text-[#697386]">{metric.title}</span><RotevoTablerIcon name={metric.icon} size={18} stroke={1.6}/></div>
+       <div className="flex items-center justify-between"><span className="text-xs font-medium text-[#606D82]">{metric.title}</span><RotevoTablerIcon name={metric.icon} size={18} stroke={1.6}/></div>
        <div className={"mt-3 text-[28px] font-semibold tabular-nums "+(metric.warning?"text-[#B73C4D]":"text-[#111827]")}>{metric.value}</div>
-       <p className="mt-1 text-[11px] text-[#697386]">{metric.detail}</p>
+       <p className="mt-1 text-[11px] text-[#606D82]">{metric.detail}</p>
       </button>)}
      </section>
      {(model.executionUnavailable||model.agendaUnavailable||model.editorialUnavailable||source==="unavailable"||source==="forbidden")&&<p role="status" className="rounded-lg border border-[#F4DBA6] bg-[#FFFAEF] p-3 text-xs text-[#826321]">Há informações operacionais indisponíveis. Totais desconhecidos foram apresentados como “—”, sem presumir valores.</p>}

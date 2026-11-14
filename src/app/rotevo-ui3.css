@@ -529,3 +529,29 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-topbar [role="img"][aria-lab
 
 /* WCAG small-text contrast correction for the client agenda empty state. */
 html:not([data-rotevo-appearance="dark"]) .rv-ui3 section[aria-labelledby="client-agenda-title"] > .mt-4 {color:#53617A!important;}
+
+
+/* UI3 dark: strategist finance and projects summaries are ordinary dashboard
+   panels, not rich documents. Keep their surfaces and text in the same palette. */
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+){
+ background:var(--rv3-surface)!important;
+ border-color:var(--rv3-border)!important;
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+) :is(h3,p,span,strong){
+ color:var(--rv3-text)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard section[aria-labelledby="daily-finance"] .grid > div,
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard section[aria-labelledby="daily-projects"] li{
+ background:#203049!important;
+ border-color:var(--rv3-border)!important;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-daily-dashboard :is(
+ section[aria-labelledby="daily-finance"],section[aria-labelledby="daily-projects"]
+) button {
+ color:var(--rv3-accent)!important;
+}

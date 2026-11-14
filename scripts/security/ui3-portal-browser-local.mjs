@@ -2,6 +2,7 @@
 // No external network, hosted identities or customer data.
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
+import {readFileSync} from "node:fs";
 import {createClient} from "@supabase/supabase-js";
 import {chromium} from "playwright";
 import axe from "axe-core";
@@ -124,18 +125,24 @@ try {
  assert.equal(await savedChoice.getAttribute("aria-pressed"),"true","system preference persists across reload");
  await customer.getByRole("button",{name:"Fechar menu da conta"}).click();
  console.log("PASS client appearance UI: system dark/light, explicit override, saved account preference and reload");
- // Verify an actual assigned delivery survives refresh, submits a URL and persists the submitted status.
+ // Full UI tests the assigned Drive delivery. Minimal release must prove the pilot is NOT mounted.
+ const clientPortalSource=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const delivery=customer.locator("[data-ui3-client-actions]");
- await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
- await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
- await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
- await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
- await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
- await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
- await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
- assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
- console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ if(clientPortalSource.includes("ClientActionDeliveryPanel")){
+  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+  await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
+  await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
+  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
+  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+  assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+  console.log("PASS browser client Drive URL submission and persisted status after refresh");
+ }else{
+  assert.equal(await delivery.count(),0,"client action pilot must stay hidden in minimal release");
+  console.log("PASS browser client actions pilot remains unmounted in minimal release");
+ }
  await checkWidths("client",customer);
  // Inspect an explicitly shared contract in the real portal (desktop nav, all four tabs).
  await customer.setViewportSize({width:1440,height:900});

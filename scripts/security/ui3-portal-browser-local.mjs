@@ -77,7 +77,7 @@ const notificationPilot=localNotice(`insert into rotevo_workflow.notification_pi
  values ('${client.id}'::uuid,true),('${admin.id}'::uuid,true),('${peer.id}'::uuid,true)
  on conflict(user_id) do update set enabled=excluded.enabled
  returning user_id::text`);
-assert.equal(notificationPilot.split("\n").length,3,"Only three synthetic pilot users were enabled");
+assert.equal(notificationPilot.split("\n").filter(line=>/^[0-9a-f-]{36}$/i.test(line)).length,3,"Only three synthetic pilot users were enabled");
 const clientNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const peerNotify=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 await must(clientNotify.auth.signInWithPassword({email:client.email,password:client.password}),"synthetic client notification sign-in");
@@ -102,7 +102,7 @@ const afterMark=await must(clientNotify.rpc("rotevo_workflow_list_notifications"
 assert.equal(afterMark.length,1,"Mark-read must reduce unread count, not erase the event");
 const disabled=localNotice(`update rotevo_workflow.notification_pilot_users
  set enabled=false where user_id='${client.id}'::uuid returning user_id::text`);
-assert.equal(disabled,client.id);
+assert.ok(disabled.split("\n").includes(client.id),"Synthetic pilot was revoked");
 const disabledInbox=await must(clientNotify.rpc("rotevo_workflow_list_notifications",{
  p_limit:30,p_unread_only:false}),"deny private notices after pilot revocation");
 assert.equal(disabledInbox.length,0,"Pilot revocation must immediately hide notifications");

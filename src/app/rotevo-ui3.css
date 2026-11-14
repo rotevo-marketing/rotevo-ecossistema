@@ -488,8 +488,8 @@ html[data-rotevo-appearance="dark"] .rv-ui3 {
  background:var(--rv3-canvas);
 }
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(
- .rv-ui2-sidebar,.rv-ui2-topbar,.rv-ui2-workspace,
- .rv-ui2-client-content,.rv-ui2-workspace-heading,.rv-ui2-client-heading,
+ .rv-ui2-sidebar,.rv-ui2-topbar,
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading,
  .rv-ui2-client-identity,.rv-ui2-section
 ) {
  background-color:var(--rv3-surface)!important;
@@ -585,7 +585,8 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
 }
 
 /* Apply the account palette to workspace surfaces, including floating controls. */
-html[data-rotevo-appearance="dark"] {
+html[data-rotevo-appearance="dark"],
+html[data-rotevo-appearance="dark"] .rv-ui3 {
  color-scheme:dark;
  --rv3-canvas:#000000;
  --rv3-surface:#171717;
@@ -597,7 +598,7 @@ html[data-rotevo-appearance="dark"] {
  --rv3-accent:#bfb3ff;
  --rv3-accent-soft:#2a233a;
 }
-html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-main {
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui2-workspace,.rv-ui2-client-content) {
  background:var(--rv3-canvas);
 }
 html[data-rotevo-appearance="dark"] :is(.rv-ui3,.rv-ui3-floating) {

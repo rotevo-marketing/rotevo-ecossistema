@@ -85,6 +85,10 @@ async function auditAppearance(role,page){
   await page.waitForTimeout(180);
   const dimensions=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
   assert.ok(dimensions.scroll<=dimensions.viewport+1,role+" "+mode+" horizontal overflow");
+  if(mode==="dark"){
+   const shell=page.locator("main.rv-ui3");
+   assert.equal(await shell.evaluate(element=>getComputedStyle(element).backgroundColor),"rgb(0, 0, 0)",role+" dark workspace canvas");
+  }
   await page.screenshot({path:process.env.RUNNER_TEMP+"/ui3-synthetic-"+role+"-"+mode+"-390.png",fullPage:true});
   await page.addScriptTag({content:axe.source});
   const report=await page.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"rule",values:["color-contrast"]}}));

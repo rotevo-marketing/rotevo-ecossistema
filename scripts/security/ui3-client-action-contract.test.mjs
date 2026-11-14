@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit} from "../../src/lib/workflow/clientActionsContract.ts";
+import {parseClientActionCreate,parseClientActionList,parseClientActionSubmit,parseClientActionReview} from "../../src/lib/workflow/clientActionsContract.ts";
 
 const base={
  projectId:"00000000-0000-4000-8000-000000000011",
@@ -53,5 +53,23 @@ test("submissions bind UUID, idempotency key and note to account identity",()=>{
  assert.match(route,/client\.auth\.getUser\(token\)/);
  assert.match(route,/identity\.user\.id!==args\.expectedAuthorUserId/);
  assert.match(route,/rotevo_client_action_submit/);
+ assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test("review contract permits only formal validation or reasoned correction",()=>{
+ const valid={assignmentId:base.projectId,submissionId:base.clientUserId,
+  expectedAuthorUserId:base.expectedAuthorUserId,decision:"correction_requested",
+  feedback:"Solicitar uma versão com áudio mais claro"};
+ assert.equal(parseClientActionReview(valid)?.decision,"correction_requested");
+ assert.equal(parseClientActionReview({...valid,feedback:""}),null);
+ assert.equal(parseClientActionReview({...valid,decision:"publish"}),null);
+ assert.equal(parseClientActionReview({...valid,submissionId:"not-uuid"}),null);
+ assert.equal(parseClientActionReview({...valid,reviewedBy:"someone"}),null);
+ assert.equal(parseClientActionReview({...valid,decision:"validated",feedback:""})?.decision,"validated");
+ const route=readFileSync(new URL("../../src/app/api/workflow/client-actions/review/route.ts",import.meta.url),"utf8");
+ assert.match(route,/ROTEVO_CLIENT_ACTIONS_ENABLED!=="true"/);
+ assert.match(route,/client\.auth\.getUser\(token\)/);
+ assert.match(route,/identity\.user\.id!==args\.expectedAuthorUserId/);
+ assert.match(route,/rotevo_client_action_review/);
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });

@@ -64,9 +64,9 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
      <div className="grid items-start gap-4 xl:grid-cols-2">
       <section className={dashboardCard+" border-[#E1D8FB] bg-[#F7F4FF]"} aria-labelledby="daily-today">
        <div className="flex items-center justify-between gap-3"><h3 id="daily-today" className="text-[15px] font-semibold">Para hoje</h3><strong className="text-xl tabular-nums">{dailyTasks.length}</strong></div>
-       <p className="mt-1 text-xs text-[#697386]">Tarefas atribuídas à sua conta com prazo hoje.</p>
-       {model.unlinkedOwners>0&&<p className="mt-2 text-xs text-[#697386]">Existem atribuições somente por nome, que não foram associadas automaticamente à sua conta.</p>}
-       {dailyTasks.length?<ul className="mt-3 divide-y divide-[#E1D8FB]">{dailyTasks.slice(0,5).map(item=><li key={item.key}><Link href={overviewProjectHref(item.project)??"#daily-today"} className="block rounded-lg px-2 py-3 text-[13px] hover:bg-white/70"><strong className="block truncate font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title}</span></Link></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma tarefa com prazo hoje.</p>}
+       <p className="mt-1 text-xs text-[#5A6273]">Tarefas atribuídas à sua conta com prazo hoje.</p>
+       {model.unlinkedOwners>0&&<p className="mt-2 text-xs text-[#5A6273]">Existem atribuições somente por nome, que não foram associadas automaticamente à sua conta.</p>}
+       {dailyTasks.length?<ul className="mt-3 divide-y divide-[#E1D8FB]">{dailyTasks.slice(0,5).map(item=><li key={item.key}><Link href={overviewProjectHref(item.project)??"#daily-today"} className="block rounded-lg px-2 py-3 text-[13px] hover:bg-white/70"><strong className="block truncate font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#5A6273]">{overviewClient(item.project)?.name??item.project.title}</span></Link></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma tarefa com prazo hoje.</p>}
        {dailyTasks.length>5&&onOpenTasks&&<button type="button" onClick={onOpenTasks} className={simpleAction}>Ver todas</button>}
       </section>
       <section className={dashboardCard+" border-[#F5E0BD] bg-[#FFF8EB]"} aria-labelledby="daily-overdue">
@@ -84,9 +84,9 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
       </section>
       <section className={dashboardCard+" border-[#D8E8FA] bg-[#F3F8FE]"} aria-labelledby="daily-agenda">
        <div className="flex items-center justify-between gap-3"><h3 id="daily-agenda" className="text-[15px] font-semibold">Agenda</h3><strong className="text-xl tabular-nums">{model.agendaUnavailable?"—":dayMeetings.length}</strong></div>
-       <p className="mt-1 text-xs text-[#697386]">Compromissos de hoje e próximos encontros.</p>
-       {dayMeetings.length?<ul className="mt-3 divide-y divide-[#D8E8FA]">{dayMeetings.slice(0,3).map(item=><li key={item.key} className="py-3 text-[13px]"><strong className="block font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#697386]">{item.time??"Sem horário"} · {overviewClient(item.project)?.name??item.project.title}</span></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma reunião agendada para hoje.</p>}
-       {upcomingMeetings.length>0&&<div className="mt-3 border-t border-[#D8E8FA] pt-3"><p className="text-xs font-semibold">Próximos compromissos</p>{upcomingMeetings.slice(0,3).map(item=><p key={item.key} className="mt-2 text-xs text-[#697386]">{overviewDate(item.due)} · {item.title}</p>)}</div>}
+       <p className="mt-1 text-xs text-[#5A6273]">Compromissos de hoje e próximos encontros.</p>
+       {dayMeetings.length?<ul className="mt-3 divide-y divide-[#D8E8FA]">{dayMeetings.slice(0,3).map(item=><li key={item.key} className="py-3 text-[13px]"><strong className="block font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#5A6273]">{item.time??"Sem horário"} · {overviewClient(item.project)?.name??item.project.title}</span></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma reunião agendada para hoje.</p>}
+       {upcomingMeetings.length>0&&<div className="mt-3 border-t border-[#D8E8FA] pt-3"><p className="text-xs font-semibold">Próximos compromissos</p>{upcomingMeetings.slice(0,3).map(item=><p key={item.key} className="mt-2 text-xs text-[#5A6273]">{overviewDate(item.due)} · {item.title}</p>)}</div>}
        {onOpenMeetings&&<button type="button" onClick={onOpenMeetings} className={simpleAction}>Ver agenda</button>}
       </section>
      </div>

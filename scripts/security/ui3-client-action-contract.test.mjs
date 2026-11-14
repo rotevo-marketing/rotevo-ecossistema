@@ -112,3 +112,24 @@ test("private file submissions require immutable assignment and actor-bound obje
  assert.match(route,/rotevo_client_action_submit_asset/);
  assert.doesNotMatch(route,/SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+test("approver designation cannot run without G2-protected RPC and server flag",()=>{
+ const api=readFileSync(new URL("../../src/app/api/workflow/editorial/designate-approver/route.ts",import.meta.url),"utf8");
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-editorial-designate-approver-rpc-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ assert.match(api,/ROTEVO_DESIGNATED_APPROVAL_ENABLED!=="true"/);
+ assert.match(api,/db\.auth\.getUser\(token\)/);
+ assert.match(api,/identity\.user\.id!==data\.expectedAuthorUserId/);
+ assert.match(sql,/p\.role='strategist' and m\.active and m\.role='admin'/);
+ assert.match(sql,/public\.client_users cu join public\.profiles p/);
+ assert.match(sql,/revoked_at=clock_timestamp\(\),revocation_reason/);
+ assert.doesNotMatch(api,/SUPABASE_SERVICE_ROLE_KEY/);
+});
+test("client action notifications use existing private workflow events with explicit recipient",()=>{
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-client-action-notifications-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ const bell=readFileSync(new URL("../../src/Components/shared/WorkflowNotificationBell.tsx",import.meta.url),"utf8");
+ assert.match(sql,/if p_actor is null or p_recipient is null or p_actor=p_recipient then return/);
+ assert.match(sql,/on conflict\(event_id,recipient_user_id\) do nothing/);
+ assert.match(sql,/client_action_review_notice/);
+ assert.match(bell,/n\.event_type==="assignment_changed"/);
+ assert.match(bell,/n\.event_phase==="task"\?onOpenTask:onOpenContent/);
+});

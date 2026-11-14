@@ -157,7 +157,7 @@ export default function ClientAreaPage(){
        tab!=="overview"&&!workspace.modules.includes(tab as never)&&!(tab==="execution"&&clientActionEnabled)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
        tab==="overview"?<ClientOverview projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
-       tab==="execution"?<div className="space-y-4">{clientActionEnabled&&<section aria-label="Atribuídas a mim"><ClientActionDeliveryPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/></section>}{workspace.modules.includes("execution" as never)&&<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/>}</div>:
+       tab==="execution"?<div className="space-y-4">{clientActionEnabled&&<section aria-label="Atribuídas a mim"><ClientActionDeliveryPanel userId={authenticatedUserId} projects={projects.map(p=>({id:p.id,title:p.title}))}/></section>}{workspace.modules.includes("execution" as never)&&<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}/>}</div>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

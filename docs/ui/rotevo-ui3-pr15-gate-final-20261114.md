@@ -62,6 +62,21 @@ Os dois bancos anteriormente restaurados continuam preservados. Nesta rodada, o 
 
 **Prioridade 3 — E2E e aceite:** validar a aplicação no mesmo SHA do clone, com casos permitidos e negados e comparativo de schema/policies/grants. Registrar evidências locais agregadas, sem dados reais em logs. Não repetir restauração original nem fazer novas migrações hospedadas.
 
+## 3.3 Backup atual do Storage — restauração isolada aprovada em 14/11 às 09:00
+
+Handoff do operador a partir da auditoria local do Codex. **APROVADA a recuperabilidade do Storage atual**, sem alterar produção e com documentação completa permanecendo privada. Esta evidência supera a pendência anterior de indisponibilidade do pacote antigo, sem apagá-la do histórico.
+
+- Intervalo: 08:55:54.891–08:57:36.381, horário de Brasília, 14/11.
+- Projeto de produção verificado por leitura da Storage API (HTTP 200).
+- Inventário estabilizado após download: **3 buckets, 50 objetos, 27.151.977 bytes**, 50 downloads bem-sucedidos, nenhuma falha.
+- Pacote AES-256-GCM: `rotevo-private-backups/storage-20261114T115553560Z/storage.aesgcm`; SHA-256 do pacote criptografado `7fc0b2459d6802190b3bf53f257d4f314fe4bb5fcd39c67ba12d648d481849b6`. Chave guardada em arquivo privado distinto; nenhum segredo em GitHub.
+- Descriptografia autenticada e **50/50 SHA-256 de objetos** conferidos.
+- Comparação com metadados do dump de 10/11: 50 objetos coincidentes em bucket, caminho, tamanho, ID, ETag e updated_at; 0 novos e 0 ausentes. **Limite:** dump histórico não tem hashes binários individuais para prova direta da equivalência criptográfica dos bytes de 10/11.
+- Em Storage isolado na rede Docker sem portas expostas: **3 buckets privados e 50/50 objetos importados via API, relidos e validados por SHA-256 e tamanho**. Não houve mutação no Storage hospedado.
+- Parecer: **PASS recuperabilidade atual de Storage**, com limite de equivalência histórica e sem prova de recuperação integral de todas as configurações externas. A restauração lógica DB e os testes Auth/G2 continuam documentados separadamente.
+
+**Bloqueios independentes de Storage para GO:** corrigir/verificar timeout na regressão ampla do portal em Detalhes; refresh de G2 e entrega, acessibilidade manual e capturas limpas; integrar e congelar SHA com Git e revisar cutover/contingência compatível com grants; autorização expressa de publicação.
+
 ## 4. Gate de proteção e plano de implantação ainda não executados
 
 - Preservar acesso dos dois estrategistas; não alterar identidade de clientes e nem executar reset de senha principal.

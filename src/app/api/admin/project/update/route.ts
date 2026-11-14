@@ -191,11 +191,11 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    const oldDeadline=oldEditorialById.get(item.id)?.deadlineDate;
    const deadline=item.deadlineDate;
    if(deadline!==oldDeadline&&deadline!==undefined&&deadline!==null&&deadline!==""){
-    if(typeof deadline!=="string"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(deadline))return fail(400);
+    if(typeof deadline!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(deadline))return fail(400);
     const [year,month,day]=deadline.split("-").map(Number);
     const parsed=new Date(Date.UTC(year,month-1,day));
     if(parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day)return fail(400);
-    if(typeof item.publishDate==="string"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(item.publishDate)&&deadline>item.publishDate)return fail(400);
+    if(typeof item.publishDate==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(item.publishDate)&&deadline>item.publishDate)return fail(400);
    }
 
    for(const [key,max] of [["ideaSummary",1200],["objective",300],["audience",300],["funnelStage",100],["keyMessage",500],["cta",300]] as const){

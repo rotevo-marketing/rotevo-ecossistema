@@ -6,6 +6,7 @@ create schema if not exists rotevo_workflow;
 revoke all on schema rotevo_workflow from public, anon, authenticated;
 
 create table if not exists rotevo_workflow.editorial_designated_approvers (
+  id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.planning_projects(id) on delete restrict,
   phase text not null check(phase in ('idea','final')),
   approver_user_id uuid not null,
@@ -13,7 +14,6 @@ create table if not exists rotevo_workflow.editorial_designated_approvers (
   designated_at timestamptz not null default clock_timestamp(),
   revoked_at timestamptz,
   revocation_reason text,
-  constraint editorial_designated_approvers_pk primary key(project_id,phase,approver_user_id),
   constraint editorial_designation_revocation_note check(
     revoked_at is null or (revocation_reason is not null and length(trim(revocation_reason)) between 3 and 500)
   )

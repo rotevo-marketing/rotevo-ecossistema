@@ -133,7 +133,7 @@ try {
  // On failure, report only UI state and HTTP status; never print tokens or customer data.
  await delivery.first().waitFor({state:"visible",timeout:10000});
  const diagnostic=await delivery.first().innerText();
- console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.replace(/https?:\\/\\/\\S+/g,"[redacted]").slice(0,420));
+ console.log("CLIENT_ASSIGNMENT_PANEL_STATE",diagnostic.split("\n").slice(0,5).join(" | ").slice(0,360));
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});
  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});

@@ -143,3 +143,29 @@ test("client panel accepts Drive URLs without file upload or download",()=>{
   assert.ok(!panel.includes(forbidden),"Unexpected file transfer in client panel: "+forbidden);
  assert.ok(!review.includes("createSignedUrl"));
 });
+
+test("pilot notification read SQL is private, deny-by-default and allows only personal assignment with G2",()=>{
+ const sql=readFileSync(new URL("../../docs/security/sql/ui3-notifications-read-pilot-PROPOSAL-ONLY.sql",import.meta.url),"utf8");
+ const bell=readFileSync(new URL("../../src/Components/shared/WorkflowNotificationBell.tsx",import.meta.url),"utf8");
+ const clientPage=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
+ const adminPage=readFileSync(new URL("../../src/app/admin/page.tsx",import.meta.url),"utf8");
+ assert.match(sql,/notification_pilot_users/);
+ assert.match(sql,/enabled boolean not null default false/);
+ assert.match(sql,/assignment\.client_user_id=p_user/);
+ assert.match(sql,/assignment\.released_at is not null/);
+ assert.match(sql,/assignment\.status<>'cancelled'/);
+ assert.match(sql,/cu\.user_id=p_user and cu\.client_id=project\.client_id/);
+ assert.match(sql,/public\.team_members m/);
+ assert.match(sql,/public\.team_project_assignments/);
+ assert.match(sql,/public\.team_member_permissions/);
+ assert.match(sql,/n\.recipient_user_id=v_actor/);
+ assert.match(sql,/rotevo_workflow\.can_view_event\(v_actor,e\.id\)/);
+ assert.match(sql,/revoke all on function rotevo_workflow\.can_view_event/);
+ assert.match(sql,/event_phase text,[\s\S]*action_id text/);
+ assert.match(bell,/n\.action_id\?onOpenAssignedAction/);
+ assert.match(bell,/n\.action_id\?"Ver atribuição"/);
+ assert.match(clientPage,/onOpenAssignedAction=\{\(projectId\)=>/);
+ assert.match(clientPage,/openModule\("execution",projectId\)/);
+ assert.match(adminPage,/onOpenAssignedAction=\{\(projectId\)=>/);
+ assert.match(adminPage,/navigateWorkspace\("tasks"\)/);
+});

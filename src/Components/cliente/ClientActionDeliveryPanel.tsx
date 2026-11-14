@@ -21,6 +21,7 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
  const ids=projects.map(p=>p.id).sort().join("|");
  useEffect(()=>{
   let active=true;
+  console.info("UI3_ACTIONS_TRACE", "effect-start", projects.length);
   setItems([]);setLoading(true);setError("");setLoadPhase("requesting");
   // Session changes are handled by useSessionBoundary in the parent portal.
   // Do not subscribe a second listener inside the fetch lifecycle: auth events
@@ -38,12 +39,13 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
     if(!active)return;
     setLoadPhase("settled");
     const valid=results.filter((r):r is PromiseFulfilledResult<Action[]>=>r.status==="fulfilled");
+    console.info("UI3_ACTIONS_TRACE", "commit-items", valid.reduce((n,r)=>n+r.value.length,0));
     setItems(valid.flatMap(r=>r.value));
     if(valid.length!==results.length)setError("Alguns projetos não puderam ser consultados.");
    }catch(e){if(active){setLoadPhase("failed");setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}}
    finally{if(active){setLoadPhase("complete");setLoading(false);}}
   })();
-  return()=>{active=false;};
+  return()=>{console.info("UI3_ACTIONS_TRACE", "cleanup");active=false;};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[ids,userId,revision]);
  async function submit(item:Action){

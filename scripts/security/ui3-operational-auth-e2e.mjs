@@ -47,14 +47,14 @@ await must(db.from("team_members").insert([
  {user_id:admin.id,display_name:"Synthetic Strategist",role:"admin",active:true},
  {user_id:staff.id,display_name:"Synthetic Worker",role:"producer",active:true}
 ]),"synthetic staff");
-await must(db.from("team_project_assignments").insert({user_id:staff.id,project_id:projectA}),"staff assignment");
 await must(db.from("team_member_permissions").insert({user_id:staff.id,permission:"projects.write"}),"staff scoped G2");
 const shared=[{id:"ops-content-1",title:"Synthetic video task",version:"01",visibleToClient:true,status:"idea"}];
 const task=[{id:"ops-task-1",title:"Synthetic task",visibleToClient:true,status:"planned"}];
 await must(db.from("planning_projects").insert([
  {id:projectA,client_id:clientA,title:"Synthetic Operational Project A",slug:"ops-project-a-"+suffix,status:"draft",data:{editorialCalendar:shared,executionTimeline:task}},
  {id:projectB,client_id:clientB,title:"Synthetic Operational Project B",slug:"ops-project-b-"+suffix,status:"draft",data:{editorialCalendar:shared,executionTimeline:task}}
-]),"synthetic projects");
+ ]),"synthetic projects");
+await must(db.from("team_project_assignments").insert({user_id:staff.id,project_id:projectA}),"staff assignment");
 await request("/api/workflow/client-actions",null,{method:"POST",body:{},status:400}); // Contract rejects invalid request before authorization.
 const assign={projectId:projectA,resourceType:"content",resourceId:"ops-content-1",resourceVersion:"01",
  clientUserId:client.id,actionType:"record_video",instructions:"Gravar vídeo e compartilhar o URL do Drive",

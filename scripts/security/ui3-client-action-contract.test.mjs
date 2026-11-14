@@ -133,6 +133,8 @@ test("client panel accepts Drive URLs without file upload or download",()=>{
  const clientPage=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const review=readFileSync(new URL("../../src/Components/admin/ClientActionReviewPanel.tsx",import.meta.url),"utf8");
  assert.ok(clientPage.includes('NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"'));
+ assert.ok(clientPage.includes('item.id==="execution"&&clientActionEnabled'),"Tasks tab must expose assignments when the full execution module is not shared");
+ assert.ok(clientPage.includes('workspace.modules.includes("execution" as never)&&<ProjectTimeline'),"Unshared project task list must remain hidden");
  assert.ok(panel.includes("validGoogleDriveUrl(url)"));
  assert.ok(panel.includes('type="url"'));
  assert.ok(panel.includes("driveUrl:current.url"));

@@ -40,12 +40,12 @@ begin
   exception when unique_violation then null;
   end;
   insert into rotevo_workflow.client_action_submissions
-    (assignment_id,submitted_by,note,attempt_number,request_key)
-   values(a,'00000000-0000-4000-8000-000000000012','Material entregue para validação',1,'submit-demo-0001');
+    (assignment_id,submitted_by,note,submission_url,attempt_number,request_key)
+   values(a,'00000000-0000-4000-8000-000000000012','Material entregue para validação','https://drive.google.com/file/d/synthetic-first/view',1,'submit-demo-0001');
   begin
     insert into rotevo_workflow.client_action_submissions
-      (assignment_id,submitted_by,note,attempt_number,request_key)
-    values(a,'00000000-0000-4000-8000-000000000012','Duas submissões no mesmo envio',1,'submit-demo-0002');
+      (assignment_id,submitted_by,note,submission_url,attempt_number,request_key)
+    values(a,'00000000-0000-4000-8000-000000000012','Duas submissões no mesmo envio','https://drive.google.com/file/d/synthetic-second/view',1,'submit-demo-0002');
     raise exception 'submission version uniqueness failed';
   exception when unique_violation then null;
   end;

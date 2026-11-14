@@ -9,7 +9,9 @@ test("notification bell is gated by public feature flag and current authenticate
  ]){
   const source=read(page);
   assert.match(source,/import WorkflowNotificationBell from "@\/Components\/shared\/WorkflowNotificationBell"/);
-  assert.ok(source.includes('process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&'+actor+'&&!sessionBlocked&&<WorkflowNotificationBell userId={'+actor+'} onOpenContent='));
+  assert.ok(source.includes('process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&'+actor+'&&!sessionBlocked&&<WorkflowNotificationBell userId={'+actor+'}')); 
+  assert.ok(source.includes("onOpenAssignedAction="));
+  assert.ok(source.includes("onOpenContent="));
   assert.ok(source.includes("useSessionBoundary("));
  }
 });

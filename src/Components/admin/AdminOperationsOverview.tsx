@@ -65,6 +65,7 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
       <section className={dashboardCard+" border-[#E1D8FB] bg-[#F7F4FF]"} aria-labelledby="daily-today">
        <div className="flex items-center justify-between gap-3"><h3 id="daily-today" className="text-[15px] font-semibold">Para hoje</h3><strong className="text-xl tabular-nums">{dailyTasks.length}</strong></div>
        <p className="mt-1 text-xs text-[#697386]">Tarefas atribuídas à sua conta com prazo hoje.</p>
+       {model.unlinkedOwners>0&&<p className="mt-2 text-xs text-[#697386]">Existem atribuições somente por nome, que não foram associadas automaticamente à sua conta.</p>}
        {dailyTasks.length?<ul className="mt-3 divide-y divide-[#E1D8FB]">{dailyTasks.slice(0,5).map(item=><li key={item.key}><Link href={overviewProjectHref(item.project)??"#daily-today"} className="block rounded-lg px-2 py-3 text-[13px] hover:bg-white/70"><strong className="block truncate font-medium">{item.title}</strong><span className="mt-1 block text-xs text-[#697386]">{overviewClient(item.project)?.name??item.project.title}</span></Link></li>)}</ul>:<p className="mt-4 text-xs text-[#697386]">Nenhuma tarefa com prazo hoje.</p>}
        {dailyTasks.length>5&&onOpenTasks&&<button type="button" onClick={onOpenTasks} className={simpleAction}>Ver todas</button>}
       </section>

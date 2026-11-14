@@ -372,6 +372,10 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_notice_isolated'
           psql -X -v ON_ERROR_STOP=1 -d rotevo_action_notice_isolated -f scripts/security/db-ui3-client-action-notifications-isolated.sql
+      - name: Verify G2 designated approver lifecycle and tenant isolation
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_approver_rpc_isolated'
+          psql -X -v ON_ERROR_STOP=1 -d rotevo_approver_rpc_isolated -f scripts/security/db-ui3-designated-approver-rpc-isolated.sql
       - name: Verify reviewer authorization, correction and final validation in disposable PostgreSQL
         run: |
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE DATABASE rotevo_action_review_isolated'

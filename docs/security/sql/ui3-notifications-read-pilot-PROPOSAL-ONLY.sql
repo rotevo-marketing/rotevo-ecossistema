@@ -137,7 +137,7 @@ create or replace function public.rotevo_workflow_list_notifications(
 returns table(
  notification_id uuid,event_id uuid,project_id uuid,project_title text,
  resource_id text,resource_version text,event_type text,event_phase text,
- occurred_at timestamptz,read_at timestamptz
+ action_id text,occurred_at timestamptz,read_at timestamptz
 ) language plpgsql stable security definer set search_path='' as $fn$
 declare v_actor uuid:=auth.uid();
 begin
@@ -148,7 +148,7 @@ begin
  then raise exception 'Invalid notification limit' using errcode='22023';end if;
  return query
  select n.id,e.id,e.project_id,project.title,e.resource_id,e.resource_version,
-        e.event_type,e.metadata->>'phase',e.occurred_at,n.read_at
+        e.event_type,e.metadata->>'phase',e.metadata->>'actionId',e.occurred_at,n.read_at
  from rotevo_workflow.user_notifications n
  join rotevo_workflow.operational_events e on e.id=n.event_id
  join public.planning_projects project on project.id=e.project_id

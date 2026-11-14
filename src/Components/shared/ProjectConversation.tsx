@@ -82,8 +82,8 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
      <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
        <span className="text-xs font-semibold text-[#293144]">{message.author_name}</span>
-       <time dateTime={message.created_at} className="text-[11px] font-normal text-[#7B8496]">{new Date(message.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</time>
-       {message.content_version&&<span className="text-[11px] font-normal text-[#7B8496]">Versão {message.content_version}</span>}
+       <time dateTime={message.created_at} className="text-[11px] font-normal text-[#606D82]">{new Date(message.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</time>
+       {message.content_version&&<span className="text-[11px] font-normal text-[#606D82]">Versão {message.content_version}</span>}
       </div>
       <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#344056]">{message.body}</p>
      </div>

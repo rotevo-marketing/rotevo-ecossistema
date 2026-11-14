@@ -377,3 +377,40 @@
  content:none!important;
  display:none!important;
 }
+
+
+/* UI3 appearance pilot (disabled by default). 
+   Only workspaces and standard chrome; rich documents deliberately excluded. */
+html[data-rotevo-appearance="dark"] .rv-ui3{
+ --rv3-canvas:#101725;--rv3-surface:#172132;--rv3-text:#E6ECF6;
+ --rv3-muted:#ABB9CF;--rv3-border:#394759;--rv3-accent:#A897ED;
+ --rv3-accent-soft:#292546;
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-workspace,
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-client-content{
+ background:var(--rv3-surface);color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3.admin-v2.rv-ui2 .rv-ui2-workspace-heading,
+html[data-rotevo-appearance="dark"] .rv-ui3.client-portal-v2.rv-ui2 .rv-ui2-client-heading{
+ background:var(--rv3-surface);border-color:var(--rv3-border);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading,.rv-ui2-sidebar,
+ .rv-ui2-section,.rv-ui2-client-identity
+){
+ border-color:var(--rv3-border);color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) h1{color:var(--rv3-text);}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(
+ .rv-ui2-workspace-heading,.rv-ui2-client-heading
+) p{color:var(--rv3-muted);}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(button,input,select,textarea):focus-visible{
+ outline:2px solid #BFB3FF;outline-offset:2px;
+}
+/* Force white document canvases: dark mode must not invert editor documents. */
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(.se-paper,.bn-editor){
+ color:initial;background:#fff;
+}

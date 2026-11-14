@@ -383,7 +383,7 @@
    Only workspaces and standard chrome; rich documents deliberately excluded. */
 html[data-rotevo-appearance="dark"] .rv-ui3{
  --rv3-canvas:#101725;--rv3-surface:#172132;--rv3-text:#E6ECF6;
- --rv3-muted:#ABB9CF;--rv3-border:#394759;--rv3-accent:#A897ED;
+ --rv3-muted:#ABB9CF;--rv3-border:#62718A;--rv3-accent:#A897ED;
  --rv3-accent-soft:#292546;
  color:var(--rv3-text);
 }

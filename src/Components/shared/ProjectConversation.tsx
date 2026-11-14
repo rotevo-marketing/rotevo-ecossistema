@@ -8,7 +8,7 @@ import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 
 type Message={id:string;author_role:"client"|"staff"|"strategist";author_name:string;author_avatar_url:string|null;content_version?:string|null;body:string;created_at:string};
 type Response={messages:Message[];nextCursor:string|null};
-type Approval={phase:"idea"|"final";version:string;onDecision:(decision:"approved"|"changes_requested")=>void};
+type Approval={phase:"idea"|"final";version:string;onDecision:(decision:"approved"|"changes_requested",comment:string|null)=>void};
 
 export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false,approval}:{
  projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;approval?:Approval;
@@ -21,11 +21,12 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
  const [olderLoading,setOlderLoading]=useState(false);
  const [nextCursor,setNextCursor]=useState<string|null>(null);
  const [error,setError]=useState("");
- const [approvalDone,setApprovalDone]=useState(false);
+ const [approvalDone,setApprovalDone]=useState<"approved"|"changes_requested"|null>(null);
+ const pendingDecision=useRef(false);
  const [adjusting,setAdjusting]=useState(false);
  const [adjustment,setAdjustment]=useState("");
  const mountedAuthor=useRef<string|null>(null);
- useEffect(()=>{let active=true;setApprovalDone(false);mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
+ useEffect(()=>{let active=true;setApprovalDone(null);mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
  const path="/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});
  const reload=useCallback(async()=>{
   try{const response=await request<Response>(path);setMessages(response.messages);setNextCursor(response.nextCursor);setError("");}
@@ -59,20 +60,24 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   finally{setSaving(false);}
  }
  async function decide(decision:"approved"|"changes_requested"){
-  if(!approval||saving||approvalDone||readOnly)return;
+  if(!approval||saving||pendingDecision.current||approvalDone||readOnly)return;
   if(decision==="changes_requested"&&adjustment.trim().length<3){setError("Descreva o ajuste na conversa com pelo menos 3 caracteres.");return;}
+  const comment=decision==="changes_requested"?adjustment.trim():null;
+  pendingDecision.current=true;
   setSaving(true);setError("");
   try{
    const {data:actor,error:authError}=await supabase.auth.getUser();
    if(authError||!mountedAuthor.current||actor.user?.id!==mountedAuthor.current)throw Error("A conta ativa mudou. Reabra a conversa para continuar.");
    await request("/api/workflow/editorial/decision","POST",{
     projectId,contentId:resourceId,contentVersion:approval.version,phase:approval.phase,
-    decision,adjustmentBody:decision==="changes_requested"?adjustment.trim():null,
+    decision,adjustmentBody:comment,
     expectedAuthorUserId:mountedAuthor.current
    });
-   setApprovalDone(true);setAdjusting(false);setAdjustment("");await reload();approval.onDecision(decision);
+   setApprovalDone(decision);setAdjusting(false);setAdjustment("");
+   approval.onDecision(decision,comment);
+   void reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar a decisão.");}
-  finally{setSaving(false);}
+  finally{pendingDecision.current=false;setSaving(false);}
  }
  return <section aria-label="Conversa sobre este item" className="rounded-xl border border-[#E3E7F0] p-4">
   <h3 className="text-sm font-bold">Conversa sobre este item</h3>
@@ -116,10 +121,10 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
     </label>
     <button type="button" disabled={saving||adjustment.trim().length<3} onClick={()=>void decide("changes_requested")}
      className="mt-2 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
-     Enviar solicitação de ajustes
+     {pendingDecision.current?"Registrando solicitação…":"Enviar solicitação de ajustes"}
     </button>
    </div>}
-   {approvalDone&&<p role="status" className="text-xs text-[#126837]">Decisão registrada. A situação foi atualizada.</p>}
+   {approvalDone&&<p role="status" className="text-xs text-[#126837]">{approvalDone==="changes_requested"?"Solicitação de ajustes registrada.":"Aprovação registrada."}</p>}
   </form>}
  </section>;
 }

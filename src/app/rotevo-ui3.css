@@ -654,3 +654,63 @@ html[data-rotevo-appearance="dark"] .rv-ui3-floating {
 html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-footer > div {
  color:var(--rv3-muted);
 }
+
+.rv-ui3-appearance-option:is(:hover,:focus-visible) {background-color:#f6f7fb;}
+.rv-ui3-appearance-option[aria-pressed="true"] {
+ border-color:#6c5ce7;
+ background-color:#f0ebff;
+ color:#6034b7;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3-appearance-option:is(:hover,:focus-visible) {
+ background-color:var(--rv3-hover);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3-appearance-option[aria-pressed="true"] {
+ background-color:var(--rv3-accent-soft);
+ border-color:var(--rv3-accent);
+ color:var(--rv3-accent);
+}
+
+html[data-rotevo-appearance="dark"] :is(.rv-ui3,.rv-ui3-floating) {
+ & :is([class~="bg-[#F3F4F8]"],[class~="bg-[#F6F7FA]"],[class~="bg-[#F7F8FB]"],
+ [class~="bg-[#F8F9FB]"],[class~="bg-[#F9FAFC]"],[class~="bg-[#F1F5F9]"],
+ .bg-gray-50,.bg-slate-50,.bg-white\/70,.bg-white\/80):not(:where(.se-paper,.bn-editor,.se-paper *,.bn-editor *)) {
+  background-color:var(--rv3-surface);
+ }
+ & :is([class~="bg-[#EDE8FF]"],[class~="bg-[#EDEAFF]"],[class~="bg-[#F0EBFF]"],
+ [class~="bg-[#F4F0FF]"],[class~="bg-[#F4F2FA]"],[class~="bg-[#F3EFFF]"]):not(:where(.se-paper *,.bn-editor *)) {
+  background-color:var(--rv3-accent-soft);
+ }
+ & :is([class~="text-[#718096]"],[class~="text-[#78849A]"],[class~="text-[#8B95A5]"],
+ [class~="text-[#485368]"],[class~="text-[#596579]"],[class~="text-[#687285]"]):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-muted);
+ }
+ & :is([class~="text-[#6034B7]"],[class~="text-[#6738BC]"]):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-accent);
+ }
+ & :is([class~="bg-[#DFF6E7]"],[class~="bg-[#E0F2E9]"]){background-color:#173828;color:#a7f3cd;}
+ & :is([class~="bg-[#FFF1D4]"],[class~="bg-[#FFEBD7]"]){background-color:#402c18;color:#ffddaa;}
+ & :is([class~="bg-[#FFE4E6]"],[class~="bg-[#F3E8EA]"]){background-color:#3d2229;color:#ffb8c6;}
+ & :is([class~="bg-[#DCEBFF]"],[class~="bg-[#E7F1FF]"]){background-color:#1d314b;color:#bfdbfe;}
+ & [class~="bg-[#EDF0F6]"]{background-color:var(--rv3-raised);color:var(--rv3-muted);}
+ & :is(button,a,tr):is([class~="hover:bg-[#F3F4F8]"],[class~="hover:bg-[#F7F8FB]"],
+ [class~="hover:bg-[#F6F7FA]"],[class~="hover:bg-[#F3EFFF]"],[class~="hover:bg-[#EDEAFF]"],
+ [class~="hover:bg-[#EEEAFB]"],[class~="hover:bg-[#FFF0F2]"],[class~="hover:bg-[#F8F7FF]"]):hover {
+  background-color:var(--rv3-hover);
+ }
+ & :is(button,a):is([class~="hover:text-[#5949D1]"],[class~="hover:text-[#6034B7]"]):hover {
+  color:var(--rv3-accent);
+ }
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-module table thead {
+ background-color:var(--rv3-raised);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-module table tbody tr:hover,
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui2-project-row:hover {
+ background-color:var(--rv3-hover);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-calendar-entry {
+ background-color:color-mix(in srgb,var(--rv3-calendar-entry-color) 20%,var(--rv3-surface));
+ color:var(--rv3-text);
+}
+
+.rv-ui3-calendar-entry {background-color:var(--rv3-calendar-entry-color);}

@@ -246,12 +246,22 @@ try {
  const currentTheme=()=>strategist.locator("html").getAttribute("data-rotevo-appearance");
  await strategist.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="dark");
  await accountButton.click();
- for(let attempt=0;attempt<2;attempt++){
-  await strategist.getByRole("link",{name:"Novo planejamento",exact:true}).first().click();
+ for(const moduleName of ["Visão geral","Projetos"]){
+  await strategist.getByRole("button",{name:moduleName,exact:true}).click();
+  const launcher=strategist.getByRole("button",{name:"Novo planejamento",exact:true}).first();
+  const workspaceUrl=strategist.url();
+  await launcher.click();
   const planning=strategist.getByRole("dialog",{name:"Novo planejamento",exact:true});
   await planning.waitFor();
   assert.equal(await currentTheme(),"dark","planning modal must inherit dark account appearance");
-  const headerBackground=await planning.locator("div.sticky").evaluate(element=>getComputedStyle(element).backgroundColor);
+  assert.equal(strategist.url(),workspaceUrl,"opening the dialog must keep the original module URL");
+  assert.ok(await launcher.isVisible(),"the original module remains mounted behind the dialog");
+  const backdrop=await planning.evaluate(element=>{
+   const wrapper=element.parentElement;
+   return [getComputedStyle(wrapper).backgroundColor,getComputedStyle(wrapper.firstElementChild).backgroundColor];
+  });
+  assert.deepEqual(backdrop,["rgba(0, 0, 0, 0)","rgba(0, 0, 0, 0.55)"],"only the translucent backdrop covers the workspace");
+  const headerBackground=await planning.locator("header").first().evaluate(element=>getComputedStyle(element).backgroundColor);
   assert.equal(headerBackground,"rgb(23, 23, 23)","planning dialog header must be graphite");
   await planning.getByRole("button",{name:"Fechar cadastro",exact:true}).click();
   await planning.waitFor({state:"hidden"});
@@ -286,7 +296,7 @@ try {
  assert.equal(await strategist.getByRole("dialog",{name:"Gerenciar onboarding"}).count(),0);
  console.log("PASS admin onboarding avatar/action and central modal with close; no checklist mutations");
  async function prepareResponsibility(editor){
-  await editor.getByRole("button",{name:"Preparar responsabilidade do cliente"}).click();
+  await editor.getByRole("region",{name:"Responsabilidade do cliente"}).getByRole("button",{name:"Preparar responsabilidade do cliente"}).click();
   await editor.getByLabel("Conta do cliente").selectOption(secondAccount.id);
   await editor.getByLabel("Instruções").fill("Instrução sintética preparada para liberação posterior.");
   await editor.getByLabel("Prazo",{exact:true}).fill("2027-01-12");
@@ -332,7 +342,11 @@ try {
  await strategist.getByRole("button",{name:/Novo conteúdo/}).click();
  const newEditorial=strategist.getByRole("dialog",{name:"Editor de conteúdo"});
  await newEditorial.waitFor();
+ await newEditorial.locator("select").first().selectOption(projectId);
+ await newEditorial.getByRole("button",{name:"Preparar responsabilidade do cliente"}).click();
+ await newEditorial.getByLabel("Conta do cliente").selectOption(client.id);
  await newEditorial.locator("select").first().selectOption(secondProjectId);
+ assert.equal(await newEditorial.getByLabel("Conta do cliente").count(),0,"changing project resets the open recipient picker");
  await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
  await newEditorial.locator("select").nth(1).selectOption("YouTube");
  const editorialDate=new Date().toISOString().slice(0,7)+"-15";

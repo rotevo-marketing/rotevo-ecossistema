@@ -106,7 +106,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
      className="rounded-lg border border-[#D8DCE5] bg-white px-4 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Enviar mensagem</button>
     {approval&&!approvalDone&&<button type="button" disabled={saving||loading} onClick={()=>void decide("approved")}
      className="inline-flex items-center gap-1 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
-     <RotevoTablerIcon name="check" size={16} stroke={1.7}/> {approval.phase==="idea"?"Aprovar ideia":"Aprovar versão"}
+     <RotevoTablerIcon name="check" size={16} stroke={1.7}/> {approval.phase==="idea"?"Aprovar ideia":"Aprovar conteúdo"}
     </button>}
    </div>
   </form>}

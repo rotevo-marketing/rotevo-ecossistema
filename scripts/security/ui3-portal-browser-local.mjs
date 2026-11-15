@@ -342,13 +342,13 @@ try {
  await strategist.getByRole("button",{name:/Novo conteúdo/}).click();
  const newEditorial=strategist.getByRole("dialog",{name:"Editor de conteúdo"});
  await newEditorial.waitFor();
- await newEditorial.getByLabel("Projeto",{exact:true}).selectOption(projectId);
+ await newEditorial.locator("select").first().selectOption(projectId);
  await newEditorial.getByRole("button",{name:"Preparar responsabilidade do cliente"}).click();
  await newEditorial.getByLabel("Conta do cliente").selectOption(client.id);
- await newEditorial.getByLabel("Projeto",{exact:true}).selectOption(secondProjectId);
+ await newEditorial.locator("select").first().selectOption(secondProjectId);
  assert.equal(await newEditorial.getByLabel("Conta do cliente").count(),0,"changing project resets the open recipient picker");
  await newEditorial.getByLabel("Título *").fill("Synthetic Other YouTube Editorial");
- await newEditorial.getByLabel("Canal *").selectOption("YouTube");
+ await newEditorial.locator("select").nth(1).selectOption("YouTube");
  const editorialDate=new Date().toISOString().slice(0,7)+"-15";
  await newEditorial.getByLabel("Data de publicação *").fill(editorialDate);
  await newEditorial.getByLabel("Resumo da ideia *").fill("Canal novo e visualização contextual do calendário.");

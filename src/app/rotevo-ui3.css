@@ -833,3 +833,44 @@ html[data-rotevo-appearance="dark"] .rv-ui3 {
   border-color:var(--rv3-tone);
  }
 }
+
+/* Keep the intercepted planning form and the admin page on the same account theme. */
+html[data-rotevo-appearance="dark"] .rv-ui3-planning-modal,
+html[data-rotevo-appearance="dark"] .rv-ui3-planning-modal > header,
+html[data-rotevo-appearance="dark"] .rv3-modal-new-planning .admin-new-project-v2 {
+ background:#171717;
+ color:var(--rv3-text);
+ border-color:var(--rv3-divider);
+}
+html[data-rotevo-appearance="dark"] .rv3-modal-new-planning .admin-new-project-v2 h1 {color:var(--rv3-text);}
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ & :is([class~="hover:bg-[#FAFAFE]"],[class~="hover:bg-[#FAFBFE]"],
+ [class~="hover:bg-[#F8F9FD]"],[class~="hover:bg-[#F9FAFC]"]):hover {
+  background-color:var(--rv3-hover);
+ }
+ & :is([class~="border-[#E5E9F1]"],[class~="border-[#E1E5EE]"],
+ [class~="border-[#DEE3ED]"],[class~="border-[#DDE2ED]"],[class~="border-[#E8EBF1]"],
+ [class~="border-[#E0E4EC]"],[class~="border-[#EFF1F5]"]) {border-color:var(--rv3-divider);}
+ & [data-ui3-checklist] :is([class~="bg-[#FBFCFE]"],[class~="bg-[#F8FAFC]"],.bg-white) {
+  background-color:var(--rv3-surface);
+ }
+ & [data-ui3-checklist] [data-checklist-done="true"] {
+  background-color:#182b22;
+  color:var(--rv3-green);
+ }
+ & [data-ui3-checklist] [data-checklist-done]:hover {background-color:var(--rv3-hover);}
+ & [data-ui3-checklist] [data-checklist-done]:focus-within {outline:1px solid var(--rv3-accent);}
+ & .rv-ui3-editorial-calendar .rv-ui3-editorial-month > .rv-ui3-editorial-day {
+  background:#151515;
+  border-color:var(--rv3-divider);
+ }
+ & .rv-ui3-editorial-calendar .rv-ui3-editorial-month > .rv-ui3-editorial-day:hover {background:#202020;}
+ & .rv-ui3-editorial-calendar .rv-ui3-editorial-month > .rv-ui3-editorial-day[aria-current="date"] {border-color:var(--rv3-violet);}
+ & .rv-ui3-meetings-calendar .rv-ui3-meeting-event {
+  background-color:color-mix(in srgb,var(--rv3-meeting-accent,var(--rv3-blue)) 18%,#191919);
+  color:var(--rv3-text);
+  border-color:var(--rv3-divider);
+  border-inline-start:2px solid var(--rv3-meeting-accent,var(--rv3-blue));
+ }
+ & .rv-ui3-meetings-calendar .rv-ui3-meeting-event:hover {background-color:var(--rv3-hover);}
+}

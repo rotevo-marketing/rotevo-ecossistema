@@ -239,8 +239,24 @@ try {
  assert.ok((await accountButton.innerText()).trim().length<=2,"strategist name must stay inside the expanded account menu");
  await accountButton.click();
  await strategist.getByRole("button",{name:"Sair",exact:true}).waitFor();
+ const darkOption=strategist.getByRole("group",{name:"Aparência da plataforma"}).getByRole("button",{name:"Escuro",exact:true});
+ await darkOption.click();
+ const currentTheme=()=>strategist.locator("html").getAttribute("data-rotevo-appearance");
+ await strategist.waitForFunction(()=>document.documentElement.dataset.rotevoAppearance==="dark");
  await accountButton.click();
+ for(let attempt=0;attempt<2;attempt++){
+  await strategist.getByRole("link",{name:"Novo planejamento",exact:true}).first().click();
+  const planning=strategist.getByRole("dialog",{name:"Novo planejamento",exact:true});
+  await planning.waitFor();
+  assert.equal(await currentTheme(),"dark","planning modal must inherit dark account appearance");
+  const headerBackground=await planning.locator("div.sticky").evaluate(element=>getComputedStyle(element).backgroundColor);
+  assert.equal(headerBackground,"rgb(23, 23, 23)","planning dialog header must be graphite");
+  await planning.getByRole("button",{name:"Fechar cadastro",exact:true}).click();
+  await planning.waitFor({state:"hidden"});
+  assert.equal(await currentTheme(),"dark","closing planning modal must not clear account theme");
+ }
  await strategist.getByRole("button",{name:"Clientes",exact:true}).click();
+ assert.equal(await currentTheme(),"dark","module navigation must retain account theme");
  await strategist.getByRole("heading",{name:"Cadastro de clientes"}).waitFor();
  const clientDirectoryRow=strategist.locator(".rv-ui2-directory-row").filter({hasText:"Synthetic Portal Client"});
   await clientDirectoryRow.waitFor({state:"visible",timeout:20000});

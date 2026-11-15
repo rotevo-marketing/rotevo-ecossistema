@@ -1,3 +1,5 @@
+import {validPreparedClientAction} from "../workflow/clientActionsContract.ts";
+
 type ObjectValue=Record<string,unknown>;
 const object=(value:unknown):ObjectValue|null=>value!==null&&typeof value==="object"&&!Array.isArray(value)?value as ObjectValue:null;
 
@@ -63,6 +65,7 @@ export function validExecutionDependencies(data:unknown):boolean{
   for(const entry of editorial){
    const item=object(entry);
    if(!item)continue;
+   if(item.preparedClientAction!==undefined&&!validPreparedClientAction(item.preparedClientAction))return false;
    if(item.owner!==undefined&&(typeof item.owner!=="string"||item.owner.length>120))return false;
    if(item.priority!==undefined&&!["low","normal","high","urgent"].includes(String(item.priority)))return false;
   }
@@ -74,6 +77,7 @@ export function validExecutionDependencies(data:unknown):boolean{
  for(const entry of timeline){
   const item=object(entry);
   if(!item||typeof item.id!=="string"||!item.id.trim()||item.id.length>128||dependencies.has(item.id))return false;
+  if(item.preparedClientAction!==undefined&&!validPreparedClientAction(item.preparedClientAction))return false;
   if(item.startDate!==undefined&&item.startDate!==""&&(typeof item.startDate!=="string"||!validOperationalDate(item.startDate)))return false;
   if(item.dueDate!==undefined&&item.dueDate!==""&&(typeof item.dueDate!=="string"||!validOperationalDate(item.dueDate)))return false;
   if(typeof item.startDate==="string"&&item.startDate&&typeof item.dueDate==="string"&&item.dueDate&&item.startDate>item.dueDate)return false;

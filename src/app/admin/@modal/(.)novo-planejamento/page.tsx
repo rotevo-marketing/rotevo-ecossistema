@@ -7,9 +7,9 @@ import DialogFocus from "@/Components/ui/DialogFocus";
  * Direct loads still render the canonical full page, keeping deep links functional. */
 export default function NovoPlanejamentoModal(){
  const router=useRouter();
- return <div className="fixed inset-0 z-[170] flex items-center justify-center p-2 sm:p-5">
+ return <div className="rv-ui3 fixed inset-0 z-[170] flex items-center justify-center p-2 sm:p-5">
   <button type="button" aria-label="Fechar cadastro e voltar aos projetos" onClick={()=>router.back()} className="absolute inset-0 bg-[#101828]/50"/>
-  <section role="dialog" aria-modal="true" aria-label="Novo planejamento" className="relative z-10 max-h-[96vh] w-full max-w-[820px] overflow-y-auto rounded-xl bg-white shadow-2xl sm:max-h-[92vh]">
+  <section role="dialog" aria-modal="true" aria-label="Novo planejamento" className="rv-ui3-planning-modal relative z-10 max-h-[96vh] w-full max-w-[820px] overflow-y-auto rounded-xl bg-white shadow-2xl sm:max-h-[92vh]">
    <DialogFocus onClose={()=>router.back()}/>
    <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E3E6ED] bg-white px-5 py-3">
     <h2 className="text-base font-semibold text-[#323647]">Novo planejamento</h2>

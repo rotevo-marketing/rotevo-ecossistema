@@ -3,13 +3,15 @@
 import {useEffect,useRef,useState,type FormEvent} from "react";
 import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
-import type {ClientActionType,ClientResourceType} from "@/lib/workflow/clientActionsContract";
+import {validClientActionDate,type ClientActionType,type ClientResourceType,type PreparedClientAction} from "@/lib/workflow/clientActionsContract";
 
 type Recipient={id:string;full_name:string|null;email:string|null};
 type Resource={
  clientId:string;
  projectId:string;
- resourceId:string;
+ resourceId?:string;
+ prepared?:PreparedClientAction;
+ onPrepare?:(draft:PreparedClientAction|undefined)=>void;
  resourceType:ClientResourceType;
  resourceVersion?:string;
 };
@@ -22,14 +24,17 @@ const actionLabels:Record<ClientActionType,string>={
 };
 const field="mt-1 block w-full rounded-lg border border-[#E3E7F0] px-3 py-2 text-sm";
 
-export default function ClientActionCreate({clientId,projectId,resourceId,resourceType,resourceVersion}:Resource){
+export default function ClientActionCreate({clientId,projectId,resourceId,resourceType,resourceVersion,prepared,onPrepare}:Resource){
  const [opened,setOpened]=useState(false);
  const [accounts,setAccounts]=useState<Recipient[]>([]);
  const [actor,setActor]=useState("");
- const [recipient,setRecipient]=useState("");
- const [action,setAction]=useState<ClientActionType>("send_material");
- const [instructions,setInstructions]=useState("");
- const [date,setDate]=useState("");
+ const initial=prepared?.projectId===projectId?prepared:undefined;
+ const [recipient,setRecipient]=useState(initial?.clientUserId??"");
+ const [action,setAction]=useState<ClientActionType>(initial?.actionType??"send_material");
+ const [instructions,setInstructions]=useState(initial?.instructions??"");
+ const [reference,setReference]=useState("");
+ const [brief,setBrief]=useState("");
+ const [date,setDate]=useState(initial?.dueDate??"");
  const [loading,setLoading]=useState(false);
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
@@ -62,17 +67,29 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
 
  async function submit(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
-  if(inFlight.current||!actor||!recipient||!date||instructions.trim().length<3)return;
+  if(inFlight.current||!actor||!accounts.some(account=>account.id===recipient)||!date||instructions.trim().length<3)return;
+  const links=[["Referência",reference.trim()],["Roteiro",brief.trim()]].filter(([,url])=>url);
+  if(links.some(([,url])=>{try{const parsed=new URL(url);return parsed.protocol!=="https:"||!!parsed.username||!!parsed.password;}catch{return true;}})){
+   setError("Informe endereços HTTPS válidos para os links.");return;
+  }
+  const note=[instructions.trim(),...links.map(([label,url])=>label+": "+url)].join("\n");
+  if(!validClientActionDate(date)){setError("Informe um prazo válido.");return;}
+  if(note.length>4000){setError("Use até 4.000 caracteres somando instruções e links.");return;}
+  if(onPrepare){
+   onPrepare({projectId,clientUserId:recipient,actionType:action,instructions:note,dueDate:date,requestKey:crypto.randomUUID()});
+   setInstructions(note);setReference("");setBrief("");setOpened(false);setError("");return;
+  }
+  if(!resourceId)return;
   inFlight.current=true;
   setSaving(true);
   setError("");
   const payload={
    projectId,resourceType,resourceId,resourceVersion:resourceVersion??null,
-   clientUserId:recipient,actionType:action,instructions:instructions.trim(),
+   clientUserId:recipient,actionType:action,instructions:note,
    dueDate:date,expectedAuthorUserId:actor,
   };
   const serialized=JSON.stringify(payload);
-  if(attempt.current?.payload!==serialized)attempt.current={payload:serialized,key:crypto.randomUUID()};
+  if(attempt.current?.payload!==serialized)attempt.current={payload:serialized,key:initial?.requestKey??crypto.randomUUID()};
   try{
    await request("/api/workflow/client-actions","POST",{...payload,requestKey:attempt.current.key});
    attempt.current=null;
@@ -93,13 +110,15 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
   <button type="button" aria-expanded={opened} disabled={saving}
    className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-sm font-semibold"
    onClick={()=>{setOpened(value=>!value);setSuccess(false);}}>
-   Atribuir responsabilidade ao cliente
+   {onPrepare?"Preparar responsabilidade do cliente":initial?"Liberar responsabilidade preparada":"Atribuir responsabilidade ao cliente"}
   </button>
+  {onPrepare&&initial&&<p role="status" className="mt-2 text-sm">Responsabilidade preparada. Salve o item para guardar o rascunho.</p>}
+  {onPrepare&&initial&&<button type="button" className="mt-2 text-xs underline" onClick={()=>{onPrepare(undefined);setRecipient("");setInstructions("");setDate("");}}>Remover preparação</button>}
   {success&&<p role="status" className="mt-2 text-sm">Responsabilidade registrada para a conta selecionada.</p>}
   {opened&&(loading?<p role="status" className="mt-2 text-sm">Carregando contas vinculadas...</p>:
    <form className="mt-3 space-y-3" onSubmit={submit}>
     {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
-    {actor&&accounts.length===0&&<p className="text-sm">Nenhuma conta de cliente vinculada ao projeto.</p>}
+    {actor&&accounts.length===0&&<p className="text-sm">Nenhuma conta de cliente elegível para este projeto. Vincule uma conta autorizada ao cliente do projeto para atribuir a responsabilidade.</p>}
     {accounts.length>0&&<fieldset disabled={saving} className="space-y-3">
      <label className="block text-xs font-medium">Conta do cliente<select required className={field}
       value={recipient} onChange={e=>setRecipient(e.target.value)}>
@@ -114,10 +133,12 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
      </select></label>
      <label className="block text-xs font-medium">Instruções<textarea className={field} required minLength={3}
       maxLength={4000} rows={3} value={instructions} onChange={e=>setInstructions(e.target.value)}/></label>
+     <p className="text-xs">Entrega por link do Google Drive, com revisão pela equipe.</p>
+     {onPrepare&&<><label className="block text-xs font-medium">Referência<input type="url" maxLength={2048} className={field} value={reference} onChange={e=>setReference(e.target.value)}/></label><label className="block text-xs font-medium">Roteiro<input type="url" maxLength={2048} className={field} value={brief} onChange={e=>setBrief(e.target.value)}/></label></>}
      <label className="block text-xs font-medium">Prazo<input className={field} required type="date"
       value={date} onChange={e=>setDate(e.target.value)}/></label>
      <button type="submit" className="rounded-lg bg-[#6C5CE7] px-4 py-2 text-sm font-semibold text-white">
-      {saving?"Registrando...":"Confirmar atribuição"}
+      {saving?"Registrando...":onPrepare?"Guardar preparação":"Confirmar atribuição"}
      </button>
     </fieldset>}
    </form>)}

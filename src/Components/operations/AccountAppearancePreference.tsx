@@ -2,10 +2,11 @@
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {request} from "@/lib/operations/api";
+import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
 
 type Choice="light"|"dark"|"system";
-const choices:{value:Choice;label:string}[]=[
- {value:"light",label:"Claro"},{value:"dark",label:"Escuro"},{value:"system",label:"Sistema"}
+const choices:{value:Choice;label:string;icon:RotevoIconName}[]=[
+ {value:"light",label:"Claro",icon:"sun"},{value:"dark",label:"Escuro",icon:"moon"},{value:"system",label:"Sistema",icon:"device-desktop"}
 ];
 const validChoice=(v:unknown):v is Choice=>v==="light"||v==="dark"||v==="system";
 /**
@@ -62,13 +63,13 @@ export default function AccountAppearancePreference(){
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar a preferência.");}
   finally{setBusy(false);}
  }
- return <div data-ui3-account-appearance className="rounded-lg px-3 py-2">
-  <p className="mb-2 text-xs font-semibold">Aparência</p>
+ return <div data-ui3-account-appearance className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2">
+  <p className="text-xs font-semibold">Aparência</p>
   <div role="group" aria-label="Aparência da plataforma" className="flex flex-wrap gap-1">
-   {choices.map(item=><button key={item.value} type="button" aria-pressed={choice===item.value}
+   {choices.map(item=><button key={item.value} type="button" aria-pressed={choice===item.value} aria-label={item.label} title={item.label}
      disabled={loading||busy||!user} onClick={()=>void change(item.value)}
-     className={"rounded-lg border px-2.5 py-2 text-xs disabled:opacity-50 "+(choice===item.value?"border-[#6C5CE7] bg-[#F0EBFF] text-[#6034B7]":"border-[#E3E6ED] hover:bg-[#F6F7FB]")}>
-    {item.label}</button>)}
+     className="rv-ui3-appearance-option inline-grid h-8 w-8 place-items-center rounded-md border border-transparent disabled:opacity-50">
+    <RotevoTablerIcon name={item.icon} size={17} stroke={1.7}/></button>)}
   </div>
   {loading&&<p role="status" className="mt-2 text-[11px] text-[#697386]">Consultando preferência…</p>}
   {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}

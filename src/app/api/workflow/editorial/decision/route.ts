@@ -50,7 +50,9 @@ export async function POST(req:NextRequest){
   p_adjustment_body:params.decision==="changes_requested"?params.adjustmentBody:null
  });
  if(error){
+  if(error.code==="P0001"&&error.message==="rotevo_collaboration_rate_limited")return response({error:"Aguarde um momento antes de reenviar a solicitação."},429);
   if(error.code==="42501")return response({error:"Acesso não autorizado."},403);
+  if(error.code==="40001"&&error.message==="No pending idea approval request")return response({error:"Esta ideia ainda não foi enviada para aprovação pela equipe."},409);
   if(error.code==="40001"||error.code==="23505")return response({error:"Esta versão já mudou. Atualize o conteúdo."},409);
   if(error.code==="22023")return response({error:"Dados de aprovação inválidos."},400);
   return response({error:"Não foi possível registrar a decisão."},503);

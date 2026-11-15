@@ -70,7 +70,7 @@ select 'NOTIFICATIONS_G2_REVOKED_ACCESS_PASS' as result;
 
 -- Task message -> event -> recipient notification is one SQL transaction.
 -- The sole customer, authorized G2 and cross-tenant clients are synthetic.
-\ir ../../docs/security/sql/ui3-content-message-event-PROPOSAL-ONLY.sql
+\ir ../../docs/security/sql/ui3-production-conversation-notices-PROPOSAL-ONLY.sql
 update public.client_workspaces set data='{"modules":["content","execution"]}'::jsonb
  where client_id='f0000000-0000-4000-8000-000000000002';
 update public.team_members set active=true where user_id='a0000000-0000-4000-8000-000000000007';

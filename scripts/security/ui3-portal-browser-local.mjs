@@ -16,11 +16,11 @@ async function must(query,label){const r=await query;assert.equal(r.error,null,l
 async function identity(role){
  const email="ui3-"+role+"-"+suffix+"@synthetic.invalid",password="Local-Ui3-"+suffix+"!";
  const {user}=await must(db.auth.admin.createUser({email,password,email_confirm:true}),"create "+role);
- await must(db.from("profiles").insert({id:user.id,email,role,full_name:"Synthetic "+role}),"create profile "+role);
+ await must(db.from("profiles").insert({id:user.id,email,role:role==="client-secondary"?"client":role,full_name:"Synthetic "+role}),"create profile "+role);
  if(role==="strategist")await must(db.from("team_members").insert({user_id:user.id,display_name:"Synthetic Administrator",role:"admin",active:true}),"admin membership");
  return {email,password,id:user.id};
 }
-const admin=await identity("strategist"),client=await identity("client");
+const admin=await identity("strategist"),client=await identity("client"),secondAccount=await identity("client-secondary");
 const clientId=randomUUID(),projectId=randomUUID();
 await must(db.from("clients").insert({id:clientId,name:"Synthetic Portal Client",slug:"browser-"+suffix}),"client");
 await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"client association");
@@ -31,6 +31,8 @@ const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
+await must(db.from("profiles").update({client_id:secondClientId}).eq("id",secondAccount.id),"second client association");
+await must(db.from("client_users").insert({client_id:secondClientId,user_id:secondAccount.id}),"linked synthetic recipient");
 await must(db.from("planning_projects").insert({id:secondProjectId,client_id:secondClientId,title:"Synthetic Other Project",slug:"browser-other-"+suffix,status:"published",data:{executionTimeline:[]}}),"second synthetic project");
 const sharedContract={id:randomUUID(),title:"Contrato Sintético Visível",status:"active",service:"Planejamento Estratégico",summary:"Escopo aprovado para teste exclusivamente sintético.",scope:["Diagnóstico autorizado","Planejamento autorizado"],startDate:"2026-11-10",endDate:"2027-02-10",signedDate:"2026-11-10",documentUrl:"",visibleToClient:true,history:[{id:randomUUID(),title:"Contrato formalizado",date:"2026-11-10"}]};
 const privateContract={...sharedContract,id:randomUUID(),title:"PRIVATE_CONTRACT_CANARY",visibleToClient:false};
@@ -260,6 +262,8 @@ try {
  await strategist.getByRole("heading",{name:"Cadastro de clientes"}).waitFor();
  const clientDirectoryRow=strategist.locator(".rv-ui2-directory-row").filter({hasText:"Synthetic Portal Client"});
   await clientDirectoryRow.waitFor({state:"visible",timeout:20000});
+  await clientDirectoryRow.hover();
+  await strategist.waitForFunction(()=>{const row=document.querySelector(".rv-ui2-directory-row:hover");return row&&getComputedStyle(row).backgroundColor==="rgb(37, 37, 37)";});
   await clientDirectoryRow.getByRole("button",{name:"Detalhes",exact:true}).click();
  const details=strategist.getByRole("dialog",{name:"Synthetic Portal Client"});
  await details.waitFor();
@@ -281,6 +285,14 @@ try {
  await onboardingModal.getByRole("button",{name:"Fechar"}).click();
  assert.equal(await strategist.getByRole("dialog",{name:"Gerenciar onboarding"}).count(),0);
  console.log("PASS admin onboarding avatar/action and central modal with close; no checklist mutations");
+ async function prepareResponsibility(editor){
+  await editor.getByRole("button",{name:"Preparar responsabilidade do cliente"}).click();
+  await editor.getByLabel("Conta do cliente").selectOption(secondAccount.id);
+  await editor.getByLabel("Instruções").fill("Instrução sintética preparada para liberação posterior.");
+  await editor.getByLabel("Prazo",{exact:true}).fill("2027-01-12");
+  await editor.getByRole("button",{name:"Guardar preparação"}).click();
+  await editor.getByText("Responsabilidade preparada.",{exact:false}).waitFor();
+ }
  // The second client's new task must appear immediately even when urgency sorting would place it on another page.
  await strategist.getByRole("button",{name:"Tarefas",exact:true}).click();
  await strategist.getByRole("heading",{name:"Central de tarefas"}).waitFor();
@@ -290,11 +302,13 @@ try {
  await newTaskDialog.getByLabel("Nome da tarefa *").fill("Synthetic Other Client Task");
  await newTaskDialog.getByRole("button",{name:"Projeto da tarefa"}).click();
  await newTaskDialog.getByRole("option",{name:/Synthetic Other Client.*Synthetic Other Project/}).click();
+ await prepareResponsibility(newTaskDialog);
  await newTaskDialog.getByRole("button",{name:"Criar tarefa",exact:true}).click();
  await newTaskDialog.waitFor({state:"hidden"});
  await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor({timeout:15000});
  const otherProject=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic other project");
  assert.equal(otherProject.data.executionTimeline.filter(x=>x.title==="Synthetic Other Client Task").length,1,"second client task persisted exactly once");
+ assert.equal(otherProject.data.executionTimeline.find(x=>x.title==="Synthetic Other Client Task")?.preparedClientAction?.clientUserId,secondAccount.id);
  console.log("PASS synthetic cross-client task creation, persisted task visible on first filtered page");
  await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
  await strategist.getByRole("menuitem",{name:"Arquivar",exact:true}).click();
@@ -325,15 +339,20 @@ try {
  await newEditorial.getByLabel("Data de publicação *").fill(editorialDate);
  await newEditorial.getByLabel("Resumo da ideia *").fill("Canal novo e visualização contextual do calendário.");
  await newEditorial.getByLabel("Objetivo do conteúdo *").fill("Testar a persistência isolada de conteúdo editorial.");
+ await prepareResponsibility(newEditorial);
  await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();
  await newEditorial.waitFor({state:"hidden"});
  await strategist.getByRole("button",{name:"YouTube",exact:true}).waitFor({timeout:15000});
+ const editorialDay=strategist.locator(".rv-ui3-editorial-day").first();
+ await editorialDay.waitFor();
+ assert.equal(await editorialDay.evaluate(e=>getComputedStyle(e).backgroundColor),"rgb(21, 21, 21)");
  await strategist.getByRole("button",{name:/^Synthetic Other YouTube Editorial ·/}).click();
  const editorialDetails=strategist.getByRole("dialog",{name:"Detalhes do conteúdo"});
  await editorialDetails.waitFor();
  await editorialDetails.getByRole("heading",{name:"Conversa e atividade"}).waitFor();
  const otherEditorial=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic editorial");
  assert.equal(otherEditorial.data.editorialCalendar.filter(x=>x.title==="Synthetic Other YouTube Editorial"&&x.channel==="YouTube").length,1,"YouTube entry persisted for second client only");
+ assert.equal(otherEditorial.data.editorialCalendar.find(x=>x.title==="Synthetic Other YouTube Editorial")?.preparedClientAction?.clientUserId,secondAccount.id);
  await editorialDetails.getByRole("button",{name:"Fechar"}).click();
  console.log("PASS synthetic editorial creation, new channel tab, centered detail and cross-client isolation");
  await strategist.close();

@@ -7,7 +7,7 @@ import {validClientActionDate,type ClientActionType,type ClientResourceType,type
 
 type Recipient={id:string;full_name:string|null;email:string|null};
 type Resource={
- clientId:string;
+ clientId?:string;
  projectId:string;
  resourceId?:string;
  prepared?:PreparedClientAction;
@@ -43,7 +43,8 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
  const inFlight=useRef(false);
 
  useEffect(()=>{
-  if(!opened)return;
+  if(!opened||!clientId)return;
+  const selectedClientId=clientId;
   let current=true;
   async function load(){
    setLoading(true);
@@ -52,7 +53,7 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
     const {data}=await supabase.auth.getUser();
     if(!data.user)throw Error("Entre novamente para selecionar o destinatário.");
     const {users}=await request<{users:Recipient[]}>(
-     "/api/admin/client-users?"+new URLSearchParams({clientId,linkedOnly:"true"})
+     "/api/admin/client-users?"+new URLSearchParams({clientId:selectedClientId,linkedOnly:"true"})
     );
     if(current){setAccounts(users);setActor(data.user.id);}
    }catch(cause){
@@ -107,11 +108,12 @@ export default function ClientActionCreate({clientId,projectId,resourceId,resour
  }
 
  return <section className="mt-4 rounded-xl border border-[#E3E7F0] p-4" aria-label="Responsabilidade do cliente">
-  <button type="button" aria-expanded={opened} disabled={saving}
+  {onPrepare&&<h4 className="mb-2 text-sm font-semibold">Participação do cliente</h4>}
+  {!clientId?<p className="text-sm">Este projeto não tem cliente vinculado. Selecione um projeto com cliente vinculado para preparar a participação.</p>:<button type="button" aria-expanded={opened} disabled={saving}
    className="rounded-lg border border-[#E3E7F0] px-3 py-2 text-sm font-semibold"
    onClick={()=>{setOpened(value=>!value);setSuccess(false);}}>
    {onPrepare?"Preparar responsabilidade do cliente":initial?"Liberar responsabilidade preparada":"Atribuir responsabilidade ao cliente"}
-  </button>
+  </button>}
   {onPrepare&&initial&&<p role="status" className="mt-2 text-sm">Responsabilidade preparada. Salve o item para guardar o rascunho.</p>}
   {onPrepare&&initial&&<button type="button" className="mt-2 text-xs underline" onClick={()=>{onPrepare(undefined);setRecipient("");setInstructions("");setDate("");}}>Remover preparação</button>}
   {success&&<p role="status" className="mt-2 text-sm">Responsabilidade registrada para a conta selecionada.</p>}

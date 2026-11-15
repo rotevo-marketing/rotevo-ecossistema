@@ -44,13 +44,14 @@ export default function EditorialDecision({projectId,item,onDecision}:{projectId
   </div>:
   <div className="mt-3 space-y-3">
    <p className="text-sm text-[#525B70]">Confira o material e a legenda antes de registrar a decisão sobre esta versão ({version||"sem versão informada"}).</p>
-   <label className="block text-sm font-medium">Comentários ou ajustes necessários
-    <textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={3000} rows={3} placeholder="Descreva aqui o que precisa ser alterado..." className="mt-2 block w-full rounded-lg border border-[#D8DCE5] bg-white p-3 text-sm"/>
-   </label>
-   <div className="flex flex-wrap gap-2">
-    <button type="button" disabled={!available||working} onClick={()=>void decide("approved")} className="cursor-pointer rounded-lg bg-[#166B3F] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{working?"Registrando...":"Aprovar versão"}</button>
-    <button type="button" disabled={!available||working} onClick={()=>void decide("changes_requested")} className="cursor-pointer rounded-lg border border-[#D8DCE5] bg-white px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Solicitar ajustes</button>
-   </div>
+   <button type="button" disabled={!available||working} onClick={()=>void decide("approved")} className="cursor-pointer rounded-lg bg-[#166B3F] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{working?"Registrando...":"Aprovar conteúdo"}</button>
+   <form aria-label="Solicitar ajustes" className="space-y-2 rounded-lg border border-[#E3E7F0] p-3" onSubmit={event=>{event.preventDefault();void decide("changes_requested");}}>
+    <h4 className="text-sm font-semibold">Solicitar ajustes</h4>
+    <label className="block text-sm font-medium">Justificativa
+     <textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={3000} rows={3} disabled={working} className="mt-2 block w-full rounded-lg border border-[#D8DCE5] bg-white p-3 text-sm"/>
+    </label>
+    <button type="submit" disabled={!available||working||note.trim().length<3} className="cursor-pointer rounded-lg border border-[#D8DCE5] bg-white px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Enviar solicitação de ajustes</button>
+   </form>
   </div>}
   {error&&<p role="alert" className="mt-3 text-sm text-[#A83E3E]">{error}</p>}
  </section>;

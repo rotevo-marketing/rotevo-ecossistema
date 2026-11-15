@@ -18,6 +18,7 @@ import type {AgendaItem} from "@/Components/admin/OperationalAgenda";
 import ClientsDirectory from "@/Components/admin/ClientsDirectory";
 import TeamDirectory from "@/Components/admin/TeamDirectory";
 import FinanceHub from "@/Components/finance/FinanceHub";
+import NovoPlanejamentoDialog from "@/Components/admin/NovoPlanejamentoDialog";
 import EditorialManager from "@/Components/admin/EditorialManager";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
@@ -112,6 +113,7 @@ function getProjectClient(project: PlanningProject) {
 }
 
 export default function AdminPage() {
+  const [planningOpen,setPlanningOpen]=useState(false);
   const router = useRouter();
 
   const [projects, setProjects] = useState<PlanningProject[]>([]);
@@ -413,7 +415,7 @@ export default function AdminPage() {
             <h1>{workspaceTab==="overview"?"Visão geral":NAV_ITEMS.find(item=>item.id===workspaceTab)?.label??"Visão geral"}</h1>
           </div>
           <div className="rv-ui2-heading-actions">
-            {(workspaceTab==="overview"||workspaceTab==="projects")&&<Link href="/admin/novo-planejamento" className="rv-ui2-heading-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.7}/>Novo planejamento</Link>}
+            {(workspaceTab==="overview"||workspaceTab==="projects")&&<button type="button" aria-haspopup="dialog" onClick={()=>setPlanningOpen(true)} className="rv-ui2-heading-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={17} stroke={1.7}/>Novo planejamento</button>}
             {workspaceTab==="overview"&&<button type="button" onClick={()=>navigateWorkspace("tasks")} className="rv-ui2-heading-secondary inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#D8D2FF] bg-white px-4 py-2.5 text-xs font-semibold text-[#5949D1] hover:bg-[#F7F6FF]"><RotevoTablerIcon name="list-check" size={17} stroke={1.7}/>Minhas tarefas</button>}
           </div>
         </header>
@@ -437,7 +439,7 @@ export default function AdminPage() {
           {errorMessage && <div role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{errorMessage}</div>}
           {successMessage && <div role="status" className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{successMessage}</div>}
           {isLoading && <p role="status" className="mt-6 text-sm text-[#697386]">Carregando planejamentos...</p>}
-          {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><Link className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white" href="/admin/novo-planejamento">Novo planejamento</Link></div>}
+          {!isLoading && projects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="text-lg font-semibold">Nenhum planejamento encontrado</h3><p className="mt-2 text-sm text-[#697386]">Crie seu primeiro planejamento para começar.</p><button type="button" aria-haspopup="dialog" onClick={()=>setPlanningOpen(true)} className="mt-4 inline-block rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white">Novo planejamento</button></div>}
           {!isLoading && projects.length>0 && visibleProjects.length===0 && <div className="mt-6 rounded-xl border border-dashed border-[#E3E7F0] p-8 text-center"><h3 className="font-semibold">Nenhum resultado encontrado</h3><p className="mt-2 text-sm text-[#697386]">Tente outro nome ou filtro.</p><button type="button" onClick={()=>{setSearchTerm("");setStatusFilter("all");}} className="mt-3 cursor-pointer text-sm font-semibold text-[#5123C5] underline">Limpar filtros</button></div>}
           {!isLoading && visibleProjects.length>0 && (
             <div className="rv-ui2-project-list rv-ui3-project-list mt-2 divide-y divide-[#E3E6ED]">
@@ -506,6 +508,7 @@ export default function AdminPage() {
       </div>
       </div>
       <footer className="rv-ui2-footer mt-auto shrink-0 border-t border-[#E6E9F0] bg-white"><div className="mx-auto flex max-w-[1580px] flex-col gap-2 px-5 py-4 text-xs font-normal text-[#7A8392] sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia & Consultoria</span></div></footer>
+      {planningOpen&&<NovoPlanejamentoDialog onClose={()=>setPlanningOpen(false)}/>}
     </main>
   );
 }

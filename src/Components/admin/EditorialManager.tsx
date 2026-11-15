@@ -9,6 +9,7 @@ import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {request} from "@/lib/operations/api";
 import {TaskDropdown} from "@/Components/admin/TaskGridCells";
 import {editorialChannels,editorialChannelIcon} from "@/lib/editorial/channels";
+import ClientActionCreate from "@/Components/admin/ClientActionCreate";
 import EditorialApprovalsPanel from "@/Components/admin/EditorialApprovalsPanel";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
 import EditorialCalendar,{type EditorialItem,type EditorialProject,editorialStatuses} from "@/Components/cliente/EditorialCalendar";
@@ -124,7 +125,7 @@ export default function EditorialManager({projects,onChanged,notificationTarget}
    return;
   }
   if(editing.relatedTaskId&&!project.data?.executionTimeline?.some(t=>t.id===editing.relatedTaskId)){setError("A tarefa vinculada precisa pertencer ao mesmo projeto.");return;}
-  const item={...editing,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim(),references:refs.map(ref=>({url:ref.url.trim(),note:ref.note.trim()}))};
+  const item={...editing,preparedClientAction:editing.preparedClientAction?.projectId===project.id?editing.preparedClientAction:undefined,id:editing.id||crypto.randomUUID(),title:editing.title.trim(),driveUrl:editing.driveUrl?.trim(),references:refs.map(ref=>({url:ref.url.trim(),note:ref.note.trim()}))};
   void persist(editing.id?items.map(t=>t.id===editing.id?item:t):[...items,item]);
  }
  return <div className="rv-ui2-module rv-ui2-editorial rv-ui3-editorial mt-3 space-y-3">
@@ -170,6 +171,7 @@ export default function EditorialManager({projects,onChanged,notificationTarget}
      <label className="text-xs font-medium sm:col-span-2">Legenda<textarea rows={3} value={editing.caption??""} onChange={e=>setEditing({...editing,caption:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
      <label className="text-xs font-medium sm:col-span-2">Observações de revisão<textarea rows={2} value={editing.reviewNotes??""} onChange={e=>setEditing({...editing,reviewNotes:e.target.value})} className="mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm"/></label>
     </div>
+    {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&client(project)?.id&&<ClientActionCreate key={project.id+":"+editing.id} clientId={client(project)?.id??""} projectId={project.id} resourceType="content" prepared={editing.preparedClientAction} onPrepare={preparedClientAction=>setEditing(current=>current?{...current,preparedClientAction}:current)}/>}
     <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Compartilhar conteúdo no Portal do Cliente</label>
     {process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&editing.id&&items.some(item=>item.id===editing.id&&item.visibleToClient===true)&&<div className="mt-5"><ProjectConversation key={project.id+":"+editing.id} projectId={project.id} resourceType="content" resourceId={editing.id}/></div>}
     </div><footer className="flex shrink-0 justify-end gap-2 border-t border-[#E3E6ED] bg-white px-4 py-3 sm:px-7"><button type="button" onClick={close} disabled={saving} className="cursor-pointer rounded-lg border px-4 py-2.5 text-sm">Cancelar</button><button type="button" disabled={saving} onClick={save} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-40">{saving?"Salvando...":"Salvar conteúdo"}</button></footer></section></div>}

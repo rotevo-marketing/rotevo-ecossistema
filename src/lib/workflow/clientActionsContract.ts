@@ -3,6 +3,10 @@
  */
 export const clientActionTypes=["record_video","send_material","provide_information","review_material","custom"] as const;
 export type ClientActionType=typeof clientActionTypes[number];
+export type PreparedClientAction={
+ projectId:string;clientUserId:string;actionType:ClientActionType;
+ instructions:string;dueDate:string;requestKey:string;
+};
 export type ClientResourceType="content"|"task";
 export type CreateClientAction={
  projectId:string;resourceType:ClientResourceType;resourceId:string;
@@ -17,6 +21,16 @@ export function validClientActionDate(x:string):boolean{
  const [y,m,d]=x.split("-").map(Number);
  const parsed=new Date(Date.UTC(y,m-1,d));
  return parsed.getUTCFullYear()===y&&parsed.getUTCMonth()===m-1&&parsed.getUTCDate()===d;
+}
+export function validPreparedClientAction(raw:unknown):raw is PreparedClientAction{
+ if(!raw||typeof raw!=="object"||Array.isArray(raw))return false;
+ const x=raw as Record<string,unknown>;
+ return Object.keys(x).length===6&&typeof x.projectId==="string"&&uuid.test(x.projectId)
+  &&typeof x.clientUserId==="string"&&uuid.test(x.clientUserId)
+  &&clientActionTypes.some(action=>action===x.actionType)
+  &&typeof x.instructions==="string"&&x.instructions.trim().length>=3&&x.instructions.length<=4000
+  &&typeof x.dueDate==="string"&&validClientActionDate(x.dueDate)
+  &&typeof x.requestKey==="string"&&uuid.test(x.requestKey);
 }
 export function parseClientActionCreate(raw:unknown):CreateClientAction|null{
  if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;

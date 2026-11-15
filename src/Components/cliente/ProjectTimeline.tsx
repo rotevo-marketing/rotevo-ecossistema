@@ -4,7 +4,9 @@ import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
 import DialogFocus from "@/Components/ui/DialogFocus";
+import type {PreparedClientAction} from "@/lib/workflow/clientActionsContract";
 export type ExecutionItem = {
+  preparedClientAction?:PreparedClientAction;
   id:string;
   title:string;
   description?:string;

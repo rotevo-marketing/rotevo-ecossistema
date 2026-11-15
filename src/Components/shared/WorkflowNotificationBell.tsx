@@ -88,7 +88,7 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
    onClick={()=>{setOpen(v=>!v);if(!open)void refresh();}}
    className="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-[#525B70] hover:bg-[#F5F3FF] focus-visible:outline-2 focus-visible:outline-[#6D35F5]">
    <RotevoTablerIcon name="bell" size={19} stroke={1.65}/>
-   {unread>0&&<span aria-hidden="true" className="absolute -right-1 -top-1 rounded-full bg-[#6D35F5] px-1 text-[10px] font-semibold leading-4 text-white">{unread>9?"9+":unread}</span>}
+   {unread>0&&<span data-rv-tone="violet" aria-hidden="true" className="absolute -right-1 -top-1 rounded-full bg-[#6D35F5] px-1 text-[10px] font-semibold leading-4 text-white">{unread>9?"9+":unread}</span>}
   </button>
   {open&&<section role="dialog" aria-label="Central de notificações" className="absolute right-0 z-50 mt-2 w-[min(350px,90vw)] rounded-xl border border-[#E3E7F0] bg-white p-3 shadow-xl">
    <div className="flex items-center justify-between border-b border-[#EFF1F5] pb-2">

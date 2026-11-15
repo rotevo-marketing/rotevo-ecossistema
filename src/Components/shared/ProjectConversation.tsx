@@ -23,7 +23,6 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
  const [error,setError]=useState("");
  const [approvalDone,setApprovalDone]=useState<"approved"|"changes_requested"|null>(null);
  const pendingDecision=useRef(false);
- const [adjusting,setAdjusting]=useState(false);
  const [adjustment,setAdjustment]=useState("");
  const mountedAuthor=useRef<string|null>(null);
  useEffect(()=>{let active=true;setApprovalDone(null);mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
@@ -73,7 +72,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
     decision,adjustmentBody:comment,
     expectedAuthorUserId:mountedAuthor.current
    });
-   setApprovalDone(decision);setAdjusting(false);setAdjustment("");
+   setApprovalDone(decision);setAdjustment("");
    approval.onDecision(decision,comment);
    void reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar a decisão.");}
@@ -105,26 +104,23 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
    <div className="flex flex-wrap justify-end gap-2">
     <button type="submit" disabled={saving||!body.trim()||loading}
      className="rounded-lg border border-[#D8DCE5] bg-white px-4 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Enviar mensagem</button>
-    {approval&&!approvalDone&&<button type="button" disabled={saving||loading} aria-expanded={adjusting} onClick={()=>setAdjusting(value=>!value)}
-     className="inline-flex items-center gap-1 rounded-lg border border-[#D8DCE5] bg-white px-3 py-2 text-xs font-semibold text-[#5949D1] disabled:opacity-50">
-     <RotevoTablerIcon name="message-circle" size={16} stroke={1.7}/> Solicitar ajustes
-    </button>}
     {approval&&!approvalDone&&<button type="button" disabled={saving||loading} onClick={()=>void decide("approved")}
      className="inline-flex items-center gap-1 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
      <RotevoTablerIcon name="check" size={16} stroke={1.7}/> {approval.phase==="idea"?"Aprovar ideia":"Aprovar versão"}
     </button>}
    </div>
-   {approval&&!approvalDone&&adjusting&&<div className="mt-3 rounded-lg border border-[#E3E7F0] p-3">
-    <label className="block text-xs font-semibold">Ajustes solicitados
+  </form>}
+  {!readOnly&&approval&&!approvalDone&&<form aria-label="Solicitar ajustes" className="mt-4 rounded-lg border border-[#E3E7F0] p-3" onSubmit={event=>{event.preventDefault();void decide("changes_requested");}}>
+    <h4 className="mb-2 text-sm font-semibold">Solicitar ajustes</h4>
+    <label className="block text-xs font-semibold">Justificativa
      <textarea value={adjustment} maxLength={3000} rows={3} disabled={saving}
       onChange={event=>setAdjustment(event.target.value)} className="mt-2 w-full rounded-lg border border-[#E3E7F0] p-2 text-sm"/>
     </label>
-    <button type="button" disabled={saving||adjustment.trim().length<3} onClick={()=>void decide("changes_requested")}
+    <button type="submit" disabled={saving||loading||adjustment.trim().length<3}
      className="mt-2 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
      {pendingDecision.current?"Registrando solicitação…":"Enviar solicitação de ajustes"}
     </button>
-   </div>}
-   {approvalDone&&<p role="status" className="text-xs text-[#126837]">{approvalDone==="changes_requested"?"Solicitação de ajustes registrada.":"Aprovação registrada."}</p>}
   </form>}
+  {approvalDone&&<p role="status" className="text-xs text-[#126837]">{approvalDone==="changes_requested"?"Solicitação de ajustes registrada.":"Aprovação registrada."}</p>}
  </section>;
 }

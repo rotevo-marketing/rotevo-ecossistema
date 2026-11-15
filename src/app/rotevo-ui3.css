@@ -740,3 +740,96 @@ html[data-rotevo-appearance="dark"] .rv-ui3 {
   border-color:#333;
  }
 }
+
+/* Shared dark surfaces and operational accents. Light-mode classes stay intact. */
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ --rv3-neutral:#c4c4ce;
+ --rv3-blue:#60a5fa;
+ --rv3-green:#4ade80;
+ --rv3-yellow:#facc15;
+ --rv3-orange:#fb923c;
+ --rv3-rose:#fb7185;
+ --rv3-violet:#bca6ff;
+ --rv3-divider:#36363a;
+}
+html[data-rotevo-appearance="dark"] .rv-ui3.rv-ui2 .rv-ui2-nav-item:not([aria-current="page"]):hover {
+ background:#252525;
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3.rv-ui2 .rv-ui2-nav-item[aria-current="page"] {
+ background:var(--rv3-accent-soft);
+ color:var(--rv3-violet);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(button,[role="option"],a)[aria-pressed="true"] {
+ background-color:var(--rv3-accent-soft);
+ color:var(--rv3-violet);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 :is(button,[role="option"],a)[aria-pressed="false"]:not(:disabled):hover {
+ background-color:var(--rv3-hover);
+ color:var(--rv3-text);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ & :is(.rv-ui3-editorial-form-group,[class~="bg-[#FAFBFE]"],[class~="bg-[#F4F5F8]"],[class~="bg-[#F5F7FB]"],
+ [class~="bg-[#F3F6FC]"],[class~="bg-[#F8FAFF]"],[class~="bg-[#F7F8FD]"],
+ [class~="bg-[#F5F6FA]"],[class~="bg-[#F2F4F8]"],[class~="bg-[#F8F9FC]"]):not(:where(.se-paper *,.bn-editor *)) {
+  background-color:var(--rv3-surface);
+ }
+ & :is(.text-slate-950,.text-slate-800,.text-slate-700,[class~="text-[#283247]"],[class~="text-[#182033]"]):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-text);
+ }
+ & :is(.text-slate-500,.text-slate-400,[class~="text-[#7B8393]"]):not(:where(.se-paper *,.bn-editor *)) {
+  color:var(--rv3-muted);
+ }
+ & :is(.ring-slate-200,[class~="ring-[#E3E7F0]"]) {--tw-ring-color:var(--rv3-divider);}
+ & :is(.hover\:bg-slate-50,[class~="hover:bg-[#F4F5F8]"],[class~="hover:bg-[#FAFBFE]"],[class~="hover:bg-[#F5F3FF]"]):hover {
+  background-color:var(--rv3-hover);
+ }
+ & .rv-ui3-editorial-day[aria-current="date"] {border-color:var(--rv3-violet);}
+ & .rv-ui3-editorial-day[aria-current="date"] > span {color:var(--rv3-violet);font-weight:700;}
+ & [data-rv-tone="neutral"] {--rv3-tone:var(--rv3-neutral);}
+ & [data-rv-tone="blue"] {--rv3-tone:var(--rv3-blue);}
+ & [data-rv-tone="green"] {--rv3-tone:var(--rv3-green);}
+ & [data-rv-tone="yellow"] {--rv3-tone:var(--rv3-yellow);}
+ & [data-rv-tone="orange"] {--rv3-tone:var(--rv3-orange);}
+ & [data-rv-tone="rose"] {--rv3-tone:var(--rv3-rose);}
+ & [data-rv-tone="violet"] {--rv3-tone:var(--rv3-violet);}
+ & [data-rv-tone] {
+  background-color:color-mix(in srgb,var(--rv3-tone) 14%,#1a1a1a);
+  color:var(--rv3-tone);
+ }
+ & [data-ui3-color-cell] > .rv-ui3-task-cell-label {
+  color:color-mix(in srgb,var(--rv3-cell-color) 57%,#fff);
+  background-color:color-mix(in srgb,var(--rv3-cell-color) 25%,#151515);
+ }
+ & .rv-ui3-calendar-entry {
+  border-inline-start-color:color-mix(in srgb,var(--rv3-calendar-accent) 72%,#fff);
+ }
+}
+
+html[data-rotevo-appearance="dark"] .rv-ui3 {
+ & .rv-ui3-kanban-column {background-color:#171717;border-color:var(--rv3-divider);}
+ & .rv-ui3-kanban-column h3 {color:var(--rv3-text);}
+ & .rv-ui3-kanban-card {background-color:#202020;border-color:var(--rv3-divider);}
+ & .rv-ui3-kanban-card:hover {background-color:#282828;border-color:#4c435e;}
+ & :is([class~="bg-[#F3F1FC]"],[class~="bg-[#F5F3FF]"]):not([data-rv-tone]) {
+  background-color:var(--rv3-accent-soft);
+ }
+ & [class~="bg-[#FFF3F5]"] {background-color:#351e26;color:var(--rv3-rose);}
+ & :is([class~="bg-[#FFF2DC]"],[class~="bg-[#FFF5E5]"]):not([data-rv-tone]) {background-color:#36291c;color:var(--rv3-orange);}
+ & :is(.bg-emerald-50,.bg-green-50) {background-color:#172d22;color:var(--rv3-green);}
+ & .bg-red-50 {background-color:#351e26;color:var(--rv3-rose);}
+ & :is(.bg-slate-100,.bg-gray-100,[class~="bg-[#F7F8FA]"]){background-color:var(--rv3-raised);}
+ & :is(.text-slate-900,.text-gray-800,.text-gray-700){color:var(--rv3-text);}
+ & :is(.text-slate-600,.text-gray-600,.text-gray-500){color:var(--rv3-muted);}
+ & :is(.border-slate-200,.border-slate-100,.border-gray-200,[class~="border-[#E9EDF3]"],
+ [class~="border-[#E2E6ED]"],[class~="border-[#EFF0F4]"],[class~="border-[#E3E6ED]"]) {
+  border-color:var(--rv3-divider);
+ }
+ & button[data-rv-tone]:not(:disabled):hover {
+  background-color:color-mix(in srgb,var(--rv3-tone) 19%,#252525);
+  color:var(--rv3-tone);
+ }
+ & button[data-rv-tone][aria-pressed="true"] {
+  border-color:var(--rv3-tone);
+ }
+}

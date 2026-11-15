@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
+import AccountAppearanceBootstrap from "@/Components/operations/AccountAppearanceBootstrap";
 import {request} from "@/lib/operations/api";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -205,7 +206,8 @@ export default function NovoPlanejamentoPage() {
   }
 
   return (
-    <main className="admin-new-project-v2 rv-ui2 min-h-screen bg-[#F6F7FB] text-[#323647]">
+    <main className="admin-new-project-v2 rv-ui2 rv-ui3 min-h-screen bg-[#F6F7FB] text-[#323647]">
+      {process.env.NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED==="true"&&<AccountAppearanceBootstrap/>}
       <header className="sticky top-0 z-50 border-b border-[#E3E7F0] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">

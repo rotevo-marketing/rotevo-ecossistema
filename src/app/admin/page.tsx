@@ -462,7 +462,7 @@ export default function AdminPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="break-words text-[13px] leading-5 font-semibold">{clientName}</h3>
-                            <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
+                            <span data-rv-tone={project.status==="published"?"green":project.status==="draft"?"violet":"neutral"} className={"rounded-full px-2.5 py-1 text-xs font-medium " + getStatusClass(project.status)}>{getStatusLabel(project.status)}</span>
                           </div>
                           <p className="mt-1 break-words text-sm text-[#525B70]">{project.title}</p>
                           {project.description && <p className="mt-1 line-clamp-2 text-xs text-[#697386]">{project.description}</p>}

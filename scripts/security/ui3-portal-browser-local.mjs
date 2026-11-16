@@ -360,6 +360,7 @@ try {
  await newEditorial.getByLabel("Link do roteiro ou briefing",{exact:true}).fill("https://example.com/script");
  await newEditorial.getByLabel("Link do material da publicação",{exact:true}).fill("https://drive.google.com/file/d/synthetic/view");
  await prepareResponsibility(newEditorial);
+ await newEditorial.getByRole("checkbox",{name:"Compartilhar conteúdo no Portal do Cliente"}).check();
  await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();
  await newEditorial.waitFor({state:"hidden"});
  await strategist.getByRole("button",{name:"YouTube",exact:true}).waitFor({timeout:15000});
@@ -379,7 +380,14 @@ try {
  assert.deepEqual(await detailMaterials.getByRole("link").evaluateAll(items=>items.map(item=>item.href)),["https://example.com/script","https://drive.google.com/file/d/synthetic/view"]);
  assert.equal(await detailMaterials.getByRole("heading",{name:"Referências criativas"}).count(),0);
  assert.equal(await editorialDetails.getByRole("button",{name:"Solicitar ajuste",exact:true}).count(),0);
- console.log("PASS strategist content dark badges, ordered materials and client-only approval actions");
+ if(process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"){
+  const editorThread=editorialDetails.getByRole("region",{name:"Conversa sobre este item"});
+  assert.equal(await editorThread.getByRole("textbox").count(),1);
+  await editorThread.getByRole("textbox",{name:"Nova mensagem"}).fill("Mensagem sintética do estrategista");
+  await editorThread.getByRole("button",{name:"Enviar mensagem"}).click();
+  await editorThread.getByText("Mensagem sintética do estrategista",{exact:true}).waitFor();
+ }
+ console.log("PASS strategist content dark badges, ordered materials and permission-dependent composer");
  const otherEditorial=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic editorial");
  assert.equal(otherEditorial.data.editorialCalendar.filter(x=>x.title==="Synthetic Other YouTube Editorial"&&x.channel==="YouTube").length,1,"YouTube entry persisted for second client only");
  assert.equal(otherEditorial.data.editorialCalendar.find(x=>x.title==="Synthetic Other YouTube Editorial")?.preparedClientAction?.clientUserId,secondAccount.id);

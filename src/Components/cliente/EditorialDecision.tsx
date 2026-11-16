@@ -43,14 +43,14 @@ export default function EditorialDecision({projectId,item,onDecision,composer}:{
   finally{pending.current=false;setWorking(false);composer?.onBusy(false);}
  }
  if(item.status!=="awaiting_client"&&!existing)return null;
- return <section className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4">
-  <h4 className="text-sm font-semibold">Aprovação do conteúdo</h4>
+ return <section className={composer?"contents":"mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4"}>
+  {!composer&&<h4 className="text-sm font-semibold">Aprovação do conteúdo</h4>}
   {loading?<p className="mt-2 text-sm text-[#697386]">Verificando situação da aprovação...</p>:
   existing?<div className="mt-2 space-y-2"><p className="text-sm font-semibold text-[#126837]">{existing.decision==="approved"?"Versão aprovada":"Ajustes solicitados"} · {new Date(existing.decided_at).toLocaleString("pt-BR")}</p>
    {existing.comment&&<p className="whitespace-pre-wrap text-sm text-[#525B70]">{existing.comment}</p>}
    {completed&&<p role="status" className="text-sm text-[#126837]">Sua decisão foi registrada com sucesso.</p>}
   </div>:
-  <div className={composer?"flex flex-wrap justify-end gap-2":"mt-3 space-y-3"}>
+  <div className={composer?"contents":"mt-3 space-y-3"}>
    {!composer&&<label className="block text-xs font-semibold">Nova mensagem
     <textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={3000} rows={3} disabled={working} className="mt-2 block w-full rounded-lg border border-[#D8DCE5] bg-white p-3 text-sm"/>
    </label>}

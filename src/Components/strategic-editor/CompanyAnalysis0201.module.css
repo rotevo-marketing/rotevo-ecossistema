@@ -37,3 +37,4 @@
 .caveat{font-size:.85rem;color:var(--rv3-muted,#aaa);margin:.5rem 0}.conclusion{font-size:clamp(1.15rem,2vw,1.55rem);font-weight:700;line-height:1.45}
 .empty{color:var(--rv3-muted,#aaa)}.footer{display:flex;justify-content:flex-end}
 @media(max-width:700px){.fields,.repeatItem{grid-template-columns:1fr}.repeatItem .field:has(textarea){grid-column:auto}.intro{align-items:start;flex-direction:column}.milestone{grid-template-columns:5rem 1.25rem 1fr}}
+.topActions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}.topActions button:last-child{background:transparent;color:var(--rv3-accent,#a78bfa)}

@@ -43,7 +43,7 @@ export default function CompanyAnalysis0201({value,published=false,preview,onSav
  return <div className={styles.root}>
   <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2>{!preview&&<small>{published?"Uma versão anterior ou atual foi disponibilizada.":"Página não disponibilizada ao cliente."}</small>}</div>{!preview&&<div className={styles.topActions}><button type="button" onClick={()=>void save()} disabled={!onSave||saving}>{saving?"Salvando…":"Salvar rascunho"}</button>{onPublish&&<button type="button" onClick={()=>void publish()} disabled={publishing||saving||changed||!value}>{publishing?"Disponibilizando…":"Disponibilizar página"}</button>}</div>}</header>
   {notice&&<p role="status" className={styles.notice}>{notice}</p>}
-  {blocks.filter(([id])=>!preview||blockHasContent(id)).map(([id,title],i)=><section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
+  {blocks.map(([id,title],i)=>!preview||blockHasContent(id)?<section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
    {!preview&&id==="identity"&&<div className={styles.fields}>
      {field("identity","displayName","Nome de apresentação")}{field("identity","mainActivity","Atividade principal")}{field("identity","businessNature","Natureza do negócio")}
      {field("identity","sector","Setor")}{field("identity","specialty","Ramo específico")}{field("identity","niche","Especialização ou nicho")}
@@ -63,7 +63,7 @@ export default function CompanyAnalysis0201({value,published=false,preview,onSav
    {preview&&id==="conditions"&&<><TextBlock label="Estágio atual" text={groups.conditions.stage}/><TextBlock label="Condições atuais" text={groups.conditions.description}/><NoteList items={groups.conditions.items}/>{groups.conditions.items.filter(m=>has(m.caveat)).map(m=><p key={m.id} className={styles.caveat}>Ressalva: {m.caveat}</p>)}</>}
    {!preview&&id==="synthesis"&&<><div className={styles.fields}>{field("synthesis","conclusion","Conclusão principal",true)}{field("synthesis","explanation","Descrição analítica complementar",true)}</div><Repeater label="Principais constatações" items={draft.synthesis.findings} onChange={findings=>patch("synthesis",{findings})} newItem={note} render={(item,change)=><><Field label="Constatação" value={item.title} onChange={title=>change({title})}/><Field label="Explicação" value={item.description} onChange={description=>change({description})} multiline/></>}/>{field("synthesis","caveats","Ressalvas relevantes",true)}</>}
    {preview&&id==="synthesis"&&<><div className={styles.conclusion}>{groups.synthesis.conclusion||"Conclusão ainda não informada."}</div><TextBlock label="Análise" text={groups.synthesis.explanation}/><NoteList items={groups.synthesis.findings}/><TextBlock label="Ressalvas" text={groups.synthesis.caveats}/></>}
-  </section>)}
+  </section>:null)}
   {!preview&&<div className={styles.footer}><button type="button" onClick={()=>void save()} disabled={saving||!onSave}>{saving?"Salvando…":"Salvar rascunho"}</button></div>}
  </div>;
 }

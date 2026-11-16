@@ -76,3 +76,20 @@ test('meetings retain Sunday-first offset consistent with header and real date a
 });
 
 test('requested changes require agency action while executive reviews use the default dashboard documents',()=>{const p=project('a',{editorialCalendar:[{id:'feedback',title:'feedback',status:'awaiting_client',version:'v2',visibleToClient:true,publishDate:'2026-10-25'}],ecosystem2027:{selectedDocumentCodes:['01.02'],documents:{'00.01':{content:'Executive objective',reviewStatus:'review'}}}});const m=view([p],'uid-a',[{id:'d',project_id:'a',content_id:'feedback',content_version:'v2',decision:'changes_requested',decided_at:'2026-10-18T12:00:00Z'}]);assert.equal(m.pendingDecisions,1);assert.ok(m.attention.some(x=>x.owner==='Ajuste pela Rotevo'));assert.ok(m.attention.some(x=>x.title==='Revisar documento 00.01'));});
+
+test('archived and trashed tasks are excluded from active overview counts and attention until restored',()=>{
+ const past={dueDate:'2026-10-18',ownerUserId:'uid-a',priority:'urgent',status:'blocked'};
+ const removed=task('trash',{...past,deletedAt:today});
+ const archived=task('archive',{...past,archivedAt:today,dueDate:today});
+ const dependent=task('dependent',{dependencies:['archive','trash']});
+ const overview=rows=>view([project('a',{executionTimeline:rows})]);
+ const inactive=overview([removed,archived,dependent]);
+ assert.equal(inactive.overdueTasks,0);
+ assert.deepEqual(inactive.routine,[]);
+ assert.deepEqual(inactive.projectAttention,[]);
+ assert.deepEqual(overview([dependent]).projectAttention,[]);
+ const restored=overview([{...removed,deletedAt:undefined},{...archived,archivedAt:undefined},dependent]);
+ assert.equal(restored.overdueTasks,1);
+ assert.deepEqual(restored.routine.map(item=>item.title),['trash','archive']);
+ assert.equal(restored.projectAttention[0].items.length,3);
+});

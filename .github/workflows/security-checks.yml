@@ -490,6 +490,7 @@ jobs:
           export NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED="true"
           export ROTEVO_DESIGNATED_APPROVAL_ENABLED="true"
           export ROTEVO_WORKFLOW_APPROVALS_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED="$LAB_COLLABORATION"
           bash scripts/security/ui3-operational-local-install.sh
           export ROTEVO_FINANCE_ENABLED="true"
           export ROTEVO_COLLABORATION_ENABLED="$LAB_COLLABORATION"

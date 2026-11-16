@@ -17,10 +17,24 @@ const email="collab-ui-"+suffix+"@synthetic.invalid",password="SyntheticUIOnly!"
 const client=await must(service.from("clients").insert({id:clientId,name:"Synthetic Conversation",slug:"collab-ui-"+suffix}),"client");
 const user=await must(service.auth.admin.createUser({email,password,email_confirm:true}),"create user");
 await must(service.from("profiles").insert({id:user.user.id,role:"client",client_id:clientId,email,full_name:"Synthetic Client"}),"profile");
+await must(service.from("client_users").insert({client_id:clientId,user_id:user.user.id}),"client membership");
+const ownerEmail="editorial-owner-"+suffix+"@synthetic.invalid";
+const owner=await must(service.auth.admin.createUser({email:ownerEmail,password,email_confirm:true}),"strategist identity");
+await must(service.from("profiles").insert({id:owner.user.id,role:"strategist",email:ownerEmail,full_name:"Synthetic Strategist"}),"strategist profile");
+await must(service.from("team_members").insert({user_id:owner.user.id,display_name:"Synthetic Strategist",role:"admin",active:true}),"strategist team membership");
 await must(service.from("client_workspaces").insert({client_id:clientId,data:{modules:["execution","content"],folders:[],contracts:[]}}),"workspace");
 await must(service.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Shared Task",slug:"collab-ui-"+suffix,status:"draft",
  data:{executionTimeline:[{id:"browser-task",title:"Tarefa acessível",visibleToClient:true,status:"in_progress",dueDate:"2026-11-20"}],
- editorialCalendar:[{id:"browser-content",title:"Conteúdo acessível",channel:"YouTube",format:"Vídeo",status:"production",publishDate:new Date().toISOString().slice(0,7)+"-15",version:"02",visibleToClient:true}]}}),"project");
+ editorialCalendar:[{id:"browser-content",title:"Conteúdo acessível",channel:"YouTube",format:"Vídeo",status:"idea",briefUrl:"https://example.com/brief",driveUrl:"https://drive.google.com/file/d/synthetic/view",references:[{url:"https://example.net/inspiration",note:"Orientação sintética"}],publishDate:new Date().toISOString().slice(0,7)+"-15",version:"02",visibleToClient:true}]}}),"project");
+const ownerAuth=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const {session}=await must(ownerAuth.auth.signInWithPassword({email:ownerEmail,password}),"strategist login");
+async function workflow(path,body){
+ const response=await fetch(new URL(path,app),{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({...body,projectId,phase:"idea",expectedAuthorUserId:owner.user.id})});
+ assert.equal(response.status,200,await response.text());
+}
+await workflow("/api/workflow/editorial/designate-approver",{approverUserId:user.user.id,reason:"Aprovador de teste sintético"});
+await workflow("/api/workflow/editorial/request",{contentId:"browser-content",contentVersion:"02"});
+const initialEditorial=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"stage before plain message");
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},locale:"pt-BR"});
@@ -65,10 +79,39 @@ try{
  await page.getByRole("button",{name:"Conteúdo acessível",exact:true}).click();
  const editorial=page.getByRole("dialog");
  const editorialThread=editorial.getByRole("region",{name:"Conversa sobre este item"});
+ await editorial.getByRole("heading",{name:"Solicitar ajustes",exact:true}).waitFor();
+ assert.equal(await editorial.getByRole("textbox").count(),1);
+ const badges=editorial.getByRole("list",{name:"Canal, formato e versão"});
+ assert.deepEqual(await badges.getByRole("listitem").allTextContents(),["YouTube","Vídeo","Versão 02"]);
+ const colors=await badges.getByRole("listitem").evaluateAll(items=>items.map(item=>getComputedStyle(item).backgroundColor));
+ assert.equal(new Set(colors).size,3);
+ assert.ok(colors.every(color=>color!=="rgba(0, 0, 0, 0)"));
+ const links=editorial.getByRole("region",{name:"Materiais e referências"});
+ assert.deepEqual(await links.getByRole("link").evaluateAll(items=>items.map(item=>item.href)),["https://example.com/brief","https://drive.google.com/file/d/synthetic/view","https://example.net/inspiration"]);
+ await links.getByText("Orientação sintética",{exact:true}).waitFor();
+ await editorialThread.getByRole("button",{name:"Aprovar ideia"}).waitFor();
  await editorialThread.getByRole("textbox",{name:"Nova mensagem"}).fill("Comentário editorial sintético");
  await editorialThread.getByRole("button",{name:"Enviar mensagem"}).click();
  await editorialThread.getByText("Comentário editorial sintético",{exact:true}).waitFor();
  await editorialThread.getByText(/Versão 02/).waitFor();
  assert.equal(await editorialThread.getByText("Mensagem de teste acessível",{exact:true}).count(),0);
- console.log("PASS browser editorial conversation in client detail with version and thread isolation");
+ const ordinary=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"status after plain message");
+ assert.equal(ordinary.data.editorialCalendar[0].status,initialEditorial.data.editorialCalendar[0].status);
+ const decisionsBefore=await must(service.from("editorial_idea_approvals").select("decision").eq("project_id",projectId).eq("content_id","browser-content"),"decisions after plain message");
+ assert.deepEqual(decisionsBefore,[]);
+ const inputForBoth=editorialThread.getByRole("textbox",{name:"Nova mensagem"});
+ await inputForBoth.fill("Corrigir o roteiro desta versão.");
+ await page.route("**/api/workflow/editorial/decision",route=>route.fulfill({status:503,json:{error:"Falha sintética temporária"}}),{times:1});
+ await editorialThread.getByRole("button",{name:"Solicitar ajuste",exact:true}).click();
+ await editorialThread.getByText("Falha sintética temporária",{exact:true}).waitFor();
+ assert.equal(await inputForBoth.inputValue(),"Corrigir o roteiro desta versão.");
+ const result=page.waitForResponse(response=>response.url().endsWith("/api/workflow/editorial/decision")&&response.request().method()==="POST");
+ await editorialThread.getByRole("button",{name:"Solicitar ajuste",exact:true}).click();
+ assert.equal((await result).status(),200);
+ await editorialThread.getByText("Solicitação de ajustes registrada.",{exact:true}).waitFor();
+ assert.equal(await inputForBoth.inputValue(),"");
+ await editorial.getByText("Decisão da ideia: Ajustes solicitados",{exact:false}).waitFor();
+ const formal=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"formal status");
+ assert.equal(formal.data.editorialCalendar[0].status,"idea_changes");
+ console.log("PASS client content badges, ordered links, shared composer, independent message, preserved text after error and confirmed formal revision");
 }finally{await browser.close();}

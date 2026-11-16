@@ -8,10 +8,11 @@ import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 
 type Message={id:string;author_role:"client"|"staff"|"strategist";author_name:string;author_avatar_url:string|null;content_version?:string|null;body:string;created_at:string};
 type Response={messages:Message[];nextCursor:string|null};
+export type SharedDecisionComposer={body:string;disabled:boolean;onBusy:(busy:boolean)=>void;clear:()=>void};
 type Approval={phase:"idea"|"final";version:string;onDecision:(decision:"approved"|"changes_requested",comment:string|null)=>void};
 
-export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false,approval}:{
- projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;approval?:Approval;
+export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false,approval,contentDetails=false,renderLegacyActions}:{
+ projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;approval?:Approval;contentDetails?:boolean;renderLegacyActions?:(composer:SharedDecisionComposer)=>React.ReactNode;
 }){
  const messageId=useId();
  const [messages,setMessages]=useState<Message[]>([]);
@@ -23,7 +24,8 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
  const [error,setError]=useState("");
  const [approvalDone,setApprovalDone]=useState<"approved"|"changes_requested"|null>(null);
  const pendingDecision=useRef(false);
- const [adjustment,setAdjustment]=useState("");
+ const [legacyBusy,setLegacyBusy]=useState(false);
+ const pendingSend=useRef(false);
  const mountedAuthor=useRef<string|null>(null);
  useEffect(()=>{let active=true;setApprovalDone(null);mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
  const path="/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});
@@ -47,7 +49,8 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   finally{setOlderLoading(false);}
  }
  async function send(event:React.FormEvent<HTMLFormElement>){
-  event.preventDefault();if(!body.trim()||saving||readOnly)return;
+  event.preventDefault();if(!body.trim()||loading||saving||legacyBusy||pendingSend.current||pendingDecision.current||readOnly)return;
+  pendingSend.current=true;
   setSaving(true);setError("");
   try{
    const {data:actor,error:identityError}=await supabase.auth.getUser();
@@ -56,12 +59,12 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
    await request("/api/collaboration/messages","POST",{projectId,resourceType,resourceId,body:body.trim(),expectedAuthorUserId});
    setBody("");await reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível enviar a mensagem. Seu texto foi preservado.");}
-  finally{setSaving(false);}
+  finally{pendingSend.current=false;setSaving(false);}
  }
  async function decide(decision:"approved"|"changes_requested"){
-  if(!approval||saving||pendingDecision.current||approvalDone||readOnly)return;
-  if(decision==="changes_requested"&&adjustment.trim().length<3){setError("Descreva o ajuste na conversa com pelo menos 3 caracteres.");return;}
-  const comment=decision==="changes_requested"?adjustment.trim():null;
+  if(!approval||loading||saving||pendingSend.current||pendingDecision.current||approvalDone||readOnly)return;
+  if(decision==="changes_requested"&&body.trim().length<3){setError("Descreva o ajuste na conversa com pelo menos 3 caracteres.");return;}
+  const comment=decision==="changes_requested"?body.trim():null;
   pendingDecision.current=true;
   setSaving(true);setError("");
   try{
@@ -72,15 +75,16 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
     decision,adjustmentBody:comment,
     expectedAuthorUserId:mountedAuthor.current
    });
-   setApprovalDone(decision);setAdjustment("");
+   setApprovalDone(decision);
+   if(decision==="changes_requested")setBody("");
    approval.onDecision(decision,comment);
    void reload();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar a decisão.");}
   finally{pendingDecision.current=false;setSaving(false);}
  }
  return <section aria-label="Conversa sobre este item" className="rounded-xl border border-[#E3E7F0] p-4">
-  <h3 className="text-sm font-bold">Conversa sobre este item</h3>
-  <p className="mt-1 text-xs text-[#697386]">Mensagens separadas das decisões de aprovação.</p>
+  {!contentDetails&&<><h3 className="text-sm font-bold">Conversa sobre este item</h3>
+  <p className="mt-1 text-xs text-[#697386]">Mensagens separadas das decisões de aprovação.</p></>}
   {loading?<p role="status" className="mt-3 text-sm">Carregando mensagens...</p>:
    <div className="mt-3">{nextCursor&&<button type="button" disabled={olderLoading} onClick={()=>void loadOlder()} className="mb-3 rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold disabled:opacity-50">{olderLoading?"Carregando...":"Carregar mensagens anteriores"}</button>}<ol aria-live="polite" className="max-h-64 space-y-3 overflow-y-auto">
     {messages.map(message=><li key={message.id} className="flex items-start gap-2.5 border-b border-[#EFF1F5] py-3 last:border-0">
@@ -99,27 +103,19 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   {error&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p role="alert" className="text-xs text-red-700">{error}</p><button type="button" onClick={()=>{setLoading(true);void reload();}} className="rounded-lg border border-[#CFD4DF] px-3 py-2 text-xs font-semibold">Tentar novamente</button></div>}
   {!readOnly&&<form className="mt-4 space-y-2" onSubmit={send}>
    <label htmlFor={messageId} className="block text-xs font-semibold">Nova mensagem</label>
-   <textarea id={messageId} value={body} maxLength={3000} rows={3} disabled={saving} onChange={event=>setBody(event.target.value)}
+   <textarea id={messageId} value={body} maxLength={3000} rows={3} disabled={saving||legacyBusy} onChange={event=>setBody(event.target.value)}
     className="w-full rounded-lg border border-[#CFD4DF] p-3 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]" />
    <div className="flex flex-wrap justify-end gap-2">
-    <button type="submit" disabled={saving||!body.trim()||loading}
+    <button type="submit" disabled={saving||legacyBusy||!body.trim()||loading}
      className="rounded-lg border border-[#D8DCE5] bg-white px-4 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Enviar mensagem</button>
+    {approval&&!approvalDone&&<button type="button" disabled={saving||loading||body.trim().length<3} onClick={()=>void decide("changes_requested")}
+     className="rounded-lg border border-[#D8DCE5] bg-white px-3 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Solicitar ajuste</button>}
     {approval&&!approvalDone&&<button type="button" disabled={saving||loading} onClick={()=>void decide("approved")}
      className="inline-flex items-center gap-1 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
      <RotevoTablerIcon name="check" size={16} stroke={1.7}/> {approval.phase==="idea"?"Aprovar ideia":"Aprovar conteúdo"}
     </button>}
+    {renderLegacyActions?.({body,disabled:saving||loading,onBusy:setLegacyBusy,clear:()=>setBody("")})}
    </div>
-  </form>}
-  {!readOnly&&approval&&!approvalDone&&<form aria-label="Solicitar ajustes" className="mt-4 rounded-lg border border-[#E3E7F0] p-3" onSubmit={event=>{event.preventDefault();void decide("changes_requested");}}>
-    <h4 className="mb-2 text-sm font-semibold">Solicitar ajustes</h4>
-    <label className="block text-xs font-semibold">Justificativa
-     <textarea value={adjustment} maxLength={3000} rows={3} disabled={saving}
-      onChange={event=>setAdjustment(event.target.value)} className="mt-2 w-full rounded-lg border border-[#E3E7F0] p-2 text-sm"/>
-    </label>
-    <button type="submit" disabled={saving||loading||adjustment.trim().length<3}
-     className="mt-2 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
-     {pendingDecision.current?"Registrando solicitação…":"Enviar solicitação de ajustes"}
-    </button>
   </form>}
   {approvalDone&&<p role="status" className="text-xs text-[#126837]">{approvalDone==="changes_requested"?"Solicitação de ajustes registrada.":"Aprovação registrada."}</p>}
  </section>;

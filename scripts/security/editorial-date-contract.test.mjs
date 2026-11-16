@@ -37,15 +37,20 @@ test("editorial month/list navigation filters by project and status and opens a 
  assert.match(source,/projectFilter==="all"/);
  assert.match(source,/statusFilter==="all"/);
  assert.match(source,/role="dialog" aria-modal="true" aria-label="Detalhes do conteúdo"/);
- assert.match(source,/safe\(active\.driveUrl\)/);
- assert.match(source,/clientView&&\(process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"\|\|process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\)\&\&<EditorialDecision/);
+ assert.match(source,/<ContentDetailMaterials[^>]*driveUrl=\{active\.driveUrl\}[^>]*safeLink=\{safe\}/);
+ const materials=readFileSync(new URL("Components/cliente/ContentDetailMetadata.tsx",root),"utf8");
+ assert.match(materials,/safeLink\(briefUrl\)/);
+ assert.match(materials,/safeLink\(driveUrl\)/);
+ assert.match(materials,/safeLink\(reference\.url\)/);
+ assert.match(source,/clientView&&\(process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\|\|active\.visibleToClient!==true\)&&<EditorialDecision/);
 });
 test("editorial review remains an independent client decision bound to content version",()=>{
  const source=readFileSync(new URL("Components/cliente/EditorialDecision.tsx",root),"utf8");
  assert.match(source,/item\.status!=="awaiting_client"/);
  assert.match(source,/content_version:version/);
  assert.match(source,/changes_requested/);
- assert.match(source,/comment:decision==="changes_requested"/);
+ assert.match(source,/const comment=decision==="changes_requested"\?text\.trim\(\):null/);
+ assert.match(source,/p_comment:comment/);
 });
 test("manager uses titled approval records and project-bound task association",()=>{
  const source=readFileSync(new URL("Components/admin/EditorialManager.tsx",root),"utf8");
@@ -59,7 +64,8 @@ test("manager uses titled approval records and project-bound task association",(
 test("workflow decision buttons require collaboration while legacy decisions remain usable",()=>{
  const source=readFileSync(new URL("Components/cliente/EditorialCalendar.tsx",root),"utf8");
  assert.match(source,/approval=\{clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&process\.env\.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&/);
- assert.match(source,/NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"\)\&\&<EditorialDecision/);
+ assert.match(source,/renderLegacyActions=\{clientView&&process\.env\.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"/);
+ assert.match(source,/item=\{active\} composer=\{composer\}/);
 });
 
 test("publication date and completion deadline stay distinct in editorial editor and details",()=>{
@@ -78,4 +84,13 @@ test("server honors deadline and approval version integrity without requiring mi
  assert.match(route,/deadline!==oldDeadline&&deadline!==undefined/);
  assert.match(route,/deadline>item\.publishDate/);
  assert.match(route,/const materialFields=\[[^\n]*"deadlineDate"/);
+});
+
+test("editorial messages and formal decisions have one composer and distinct requests",()=>{
+ const conversation=readFileSync(new URL("Components/shared/ProjectConversation.tsx",root),"utf8");
+ assert.equal((conversation.match(/<textarea\b/g)??[]).length,1);
+ assert.match(conversation,/request\("\/api\/collaboration\/messages","POST",\{[^}]*body:body\.trim\(\)/);
+ assert.match(conversation,/const comment=decision==="changes_requested"\?body\.trim\(\):null/);
+ assert.match(conversation,/request\("\/api\/workflow\/editorial\/decision","POST"/);
+ assert.match(conversation,/adjustmentBody:comment/);
 });

@@ -13,7 +13,7 @@
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
 .wide{grid-column:1/-1}
 .field{display:grid;align-content:start;gap:.35rem;font-size:.84rem;font-weight:600;color:var(--rv3-text,#eee);min-width:0}
-.field :is(input,select,textarea){width:100%;border:1px solid var(--rv3-border,#454545);background:var(--rv3-canvas,#121212);color:var(--rv3-text,#eee);border-radius:.45rem;padding:.65rem;font-size:.875rem;font-weight:400;min-height:2.5rem;color-scheme:dark}
+.field :is(input,select,textarea){width:100%;border:1px solid var(--rv3-border,#454545);background:var(--rv3-canvas,#121212);color:var(--rv3-text,#eee);border-radius:.45rem;padding:.65rem;font-size:.875rem;font-weight:400;min-height:2.5rem;color-scheme:inherit}
 .field textarea{resize:vertical}.field small{font-weight:400;color:var(--rv3-muted,#aaa)}
 .repeater{margin:1.25rem 0;display:grid;gap:.75rem}.repeatHeading{display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .repeatHeading h4{font-weight:700}.repeatItem{padding:1rem;border:1px solid var(--rv3-border,#454545);border-radius:.5rem;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}

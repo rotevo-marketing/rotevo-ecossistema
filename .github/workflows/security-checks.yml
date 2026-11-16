@@ -108,6 +108,8 @@ jobs:
         run: node --test scripts/security/team-project-access-behavior.test.mjs
       - name: Verify client-project JSON projection is allowlisted
         run: node --test scripts/security/client-project-projection.test.mjs
+      - name: Verify V5 navigation and structured company analysis with synthetic data
+        run: node --experimental-strip-types --test scripts/security/planning-v5.test.mjs scripts/security/planning-v5-company-analysis.test.mjs
       - name: Verify conversation tenant isolation and resource visibility
         run: node --test scripts/security/ui3-collaboration-guards.test.mjs
       - name: Verify profile menu and task status palettes

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import CompanyAnalysis0201 from "./CompanyAnalysis0201";
+import type {CompanyAnalysis} from "@/lib/planning/companyAnalysis";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import { RotevoTablerIcon } from "@/Components/RotevoTablerIcon";
 import { planningV5Stages, V5_TIMELINE_PAGE } from "@/lib/planning/v5";
@@ -13,6 +15,10 @@ export type PlanningV5Timeline = {
 type Props = {
   project: { id: string; title: string };
   timeline?: PlanningV5Timeline | null;
+  companyAnalysis?: CompanyAnalysis | null;
+  publishedCompanyAnalysis?:CompanyAnalysis | null;
+  onPublishCompanyAnalysis?:()=>Promise<void>;
+  onSaveCompanyAnalysis?: (value:CompanyAnalysis)=>Promise<void>;
   editingTimeline?: ReactNode;
   preview?: boolean;
   onPreviewChange?: (value: boolean) => void;
@@ -21,7 +27,7 @@ type Props = {
 const visibleStages = planningV5Stages.filter(stage => !stage.internal);
 
 export default function PlanningV5({
-  project, timeline, editingTimeline, preview = true, onPreviewChange,
+  project, timeline, editingTimeline, companyAnalysis, publishedCompanyAnalysis, onSaveCompanyAnalysis, onPublishCompanyAnalysis, preview = true, onPreviewChange,
 }: Props) {
   const [selection, setSelection] = useState<string>(onPreviewChange ? "01.01" : "02.01");
   const [expanded, setExpanded] = useState<string | null>(selection.slice(0, 2));
@@ -59,10 +65,13 @@ export default function PlanningV5({
           <p>{stage?.code} | {stage?.title} · {page.code}</p>
           <h2>{page.title}</h2>
         </header>}
+        {page?.code === "02.01" && (onPreviewChange || !preview || companyAnalysis)
+          ? <CompanyAnalysis0201 key={project.id+"-02.01"} value={companyAnalysis} published={!!publishedCompanyAnalysis} preview={preview} onSave={onSaveCompanyAnalysis} onPublish={onPublishCompanyAnalysis}/>
+          : page?.code === "02.01" && <div className={styles.placeholder}>Página ainda não disponibilizada.</div>}
         {editingTimeline && <div hidden={preview || !activeTimeline}>{editingTimeline}</div>}
         {activeTimeline && preview && timeline
           ? <ProjectTimeline projects={[{ ...project, data: timeline }]}/>
-          : (!activeTimeline || preview || !editingTimeline) && <div className={styles.placeholder}>
+          : (page?.code !== "02.01" && (!activeTimeline || preview || !editingTimeline)) && <div className={styles.placeholder}>
               {!page ? "Selecione uma página da apresentação."
                 : preview ? "Página ainda não disponível." : "Área reservada para preenchimento."}
             </div>}

@@ -30,6 +30,7 @@ test("V5 draft stays private and presentation only projects explicitly shared ti
   const published = { ...project, status: "published", data: draftData };
   assert.deepEqual(projectForPresentation(published, false, ["planning", "execution"]).data, {
     planningStructureVersion: PLANNING_V5,
+    companyAnalysis0201:null,
     timeline: { executionTimeline: [{ id: "shared", title: "Shared", visibleToClient: true }] },
   });
   assert.equal(projectForPresentation(published, false, ["planning"]).data.timeline, null);

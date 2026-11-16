@@ -1,4 +1,5 @@
 import { isPlanningV5, PLANNING_V5 } from "../planning/v5.ts";
+import {publicCompanyAnalysis} from "../planning/companyAnalysis.ts";
 import { projectForClient } from "./projectForClient.ts";
 import {safeLink,projectModules,type PortalModule} from "../operations/model.ts";
 import {validRichContent} from "../planning/richContent.ts";
@@ -26,6 +27,8 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
     ...row,
     data: {
       planningStructureVersion: PLANNING_V5,
+      // Published snapshot only; strategist drafts and internal evidence are not exposed.
+      companyAnalysis0201:row.status==="published"?publicCompanyAnalysis(data.publishedCompanyAnalysis0201):null,
       timeline: portalModules.includes("execution") ? { executionTimeline } : null,
     },
   };

@@ -7,7 +7,7 @@ import {request} from "@/lib/operations/api";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
-import {ContentDetailBadges,ContentDetailMaterials} from "./ContentDetailMetadata";
+import {ContentDetailBadges,ContentDetailMaterials,ContentDetailText} from "./ContentDetailMetadata";
 import EditorialDecision from "@/Components/cliente/EditorialDecision";
 import {TaskDropdown,TaskAvatar} from "@/Components/admin/TaskGridCells";
 import ClientActionCreate from "@/Components/admin/ClientActionCreate";
@@ -211,9 +211,11 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
      <div className="flex min-w-0 items-center gap-2"><span className="w-20 shrink-0 text-xs text-[#697386]">Prazo</span><div className="min-w-0 flex-1"><span className="inline-flex min-h-9 items-center gap-2 px-2 text-xs text-[#525B70]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.7}/>{active.deadlineDate?fmt(active.deadlineDate):"Não definido"}</span></div></div><p className="text-[11px] text-[#697386] sm:col-span-2">As decisões de aprovação são registradas separadamente da situação editorial.</p>
     </section>
     {workflowError&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{workflowError}</p>}
-     {active.ideaSummary&&<section className="mt-5"><h4 className="text-sm font-semibold">Resumo da ideia</h4><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#344056]">{active.ideaSummary}</p></section>}
-    {(active.objective||active.audience||active.funnelStage||active.keyMessage||active.cta)&&<section className="mt-5 rounded-xl border border-[#EAECF2] bg-white p-4"><h4 className="text-sm font-semibold">Direcionamento estratégico</h4>{active.objective&&<p className="mt-2 text-sm"><strong>Objetivo:</strong> {active.objective}</p>}{active.audience&&<p className="mt-2 text-sm"><strong>Público:</strong> {active.audience}</p>}{active.funnelStage&&<p className="mt-2 text-sm"><strong>Etapa do funil:</strong> {active.funnelStage}</p>}{active.keyMessage&&<p className="mt-2 text-sm"><strong>Mensagem:</strong> {active.keyMessage}</p>}{active.cta&&<p className="mt-2 text-sm"><strong>CTA:</strong> {active.cta}</p>}</section>}
-    <h4 className="mt-6 text-sm font-semibold">Legenda</h4><div className="mt-3 min-h-[90px] whitespace-pre-wrap rounded-xl border border-[#E8EBF1] bg-white p-4 text-sm leading-7 text-[#344056]">{active.caption||"Nenhuma legenda cadastrada."}</div>
+    {active.ideaSummary&&<ContentDetailText title="Resumo da ideia">{active.ideaSummary}</ContentDetailText>}
+    {(active.objective||active.audience||active.funnelStage||active.keyMessage||active.cta)&&<ContentDetailText title="Direcionamento estratégico">
+     {active.objective&&<p ><strong>Objetivo:</strong> {active.objective}</p>}{active.audience&&<p ><strong>Público:</strong> {active.audience}</p>}{active.funnelStage&&<p ><strong>Etapa do funil:</strong> {active.funnelStage}</p>}{active.keyMessage&&<p ><strong>Mensagem:</strong> {active.keyMessage}</p>}{active.cta&&<p ><strong>CTA:</strong> {active.cta}</p>}
+    </ContentDetailText>}
+    <ContentDetailText title="Legenda">{active.caption||"Nenhuma legenda cadastrada."}</ContentDetailText>
     <ContentDetailMaterials briefUrl={active.briefUrl} driveUrl={active.driveUrl} references={active.references} safeLink={safe}/>
     {!clientView&&onEdit&&contentScope==="active"&&<button type="button" onClick={()=>{onEdit(active.projectId,active);setSelected(null);}} className="mt-5 cursor-pointer rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5949D1]">Editar conteúdo e situação</button>}
     {!clientView&&process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&contentScope==="active"&&active.visibleToClient===true&&active.version&&activeClientId&&<ClientActionCreate key={active.projectId+":"+active.id+":"+active.version} clientId={activeClientId} projectId={active.projectId} resourceType="content" resourceId={active.id} resourceVersion={active.version} prepared={active.preparedClientAction}/>}
@@ -222,7 +224,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
 
     {process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&active.visibleToClient===true?<ProjectConversation key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} resourceType="content" resourceId={active.id} contentDetails
      renderLegacyActions={clientView&&process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"
-      ? composer=><EditorialDecision projectId={active.projectId} item={active} composer={composer}
+      ? composer=><EditorialDecision hideAdjustmentAction projectId={active.projectId} item={active} composer={composer}
         onDecision={decision=>setClientDecisions(prev=>[...prev.filter(row=>!(row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))),{project_id:active.projectId,content_id:active.id,content_version:active.version??"",decision}])}/>
       : undefined}
      approval={clientView&&process.env.NEXT_PUBLIC_ROTEVO_WORKFLOW_APPROVALS_ENABLED==="true"&&process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED==="true"&&
@@ -236,7 +238,7 @@ export default function EditorialCalendar({projects,clientView=false,onNew,onEdi
     {ideaDecisions.filter(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??"")).map(row=><p key={"idea"+row.project_id+row.content_id} className="mt-3 rounded-lg bg-white p-3 text-xs text-[#525B70]">Decisão da ideia: {row.decision==="approved"?"Aprovada":"Ajustes solicitados"}{row.comment&&<span className="mt-1 block whitespace-pre-wrap">{row.comment}</span>}</p>)}
     {clientDecisions.some(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))&&<section className="mt-5 rounded-xl border border-[#E3E7F0] bg-white p-4"><h4 className="text-sm font-semibold">Última decisão do cliente</h4>{clientDecisions.filter(row=>row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??"")).map(row=><div key={row.project_id+row.content_id+row.content_version}><p className="mt-2 text-sm text-[#525B70]">{row.decision==="approved"?"Versão aprovada":"Ajustes solicitados"}{row.decided_at?" · "+new Date(row.decided_at).toLocaleString("pt-BR"):""}</p>{row.comment&&<p className="mt-2 whitespace-pre-wrap rounded-lg bg-white p-3 text-sm text-[#344056]">{row.comment}</p>}</div>)}</section>}
     {!clientView&&active.reviewNotes&&<div className="mt-5 rounded-xl border border-[#E3E7F0] bg-white p-4"><h4 className="text-sm font-semibold">Observações de revisão</h4><p className="mt-2 whitespace-pre-wrap text-sm text-[#525B70]">{active.reviewNotes}</p></div>}
-    {clientView&&(process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"||active.visibleToClient!==true)&&<EditorialDecision key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} item={active} onDecision={decision=>setClientDecisions(prev=>[...prev.filter(row=>!(row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))),{project_id:active.projectId,content_id:active.id,content_version:active.version??"",decision}])}/>}
+    {clientView&&(process.env.NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED!=="true"||active.visibleToClient!==true)&&<EditorialDecision hideAdjustmentAction key={active.projectId+":"+active.id+":"+(active.version??"")} projectId={active.projectId} item={active} onDecision={decision=>setClientDecisions(prev=>[...prev.filter(row=>!(row.project_id===active.projectId&&row.content_id===active.id&&row.content_version===(active.version??""))),{project_id:active.projectId,content_id:active.id,content_version:active.version??"",decision}])}/>}
    </aside></div></section>
   </div>}
  </div>;

@@ -108,7 +108,7 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
    <div className="flex flex-wrap justify-end gap-2">
     <button type="submit" disabled={saving||legacyBusy||!body.trim()||loading}
      className="rounded-lg border border-[#D8DCE5] bg-white px-4 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Enviar mensagem</button>
-    {approval&&!approvalDone&&<button type="button" disabled={saving||loading||body.trim().length<3} onClick={()=>void decide("changes_requested")}
+    {!contentDetails&&approval&&!approvalDone&&<button type="button" disabled={saving||loading||body.trim().length<3} onClick={()=>void decide("changes_requested")}
      className="rounded-lg border border-[#D8DCE5] bg-white px-3 py-2 text-xs font-semibold text-[#344056] disabled:opacity-50">Solicitar ajuste</button>}
     {approval&&!approvalDone&&<button type="button" disabled={saving||loading} onClick={()=>void decide("approved")}
      className="inline-flex items-center gap-1 rounded-lg bg-[#6D35F5] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">

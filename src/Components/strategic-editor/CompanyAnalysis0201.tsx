@@ -34,6 +34,7 @@ export default function CompanyAnalysis0201({value,published=false,preview,onSav
    return <Field label={label} value={String(source[key as string]??"")} multiline={multiline} helper={helper} onChange={text=>patch(section,{[key]:text} as Partial<CompanyAnalysis[K]>)}/>;
  };
  const groups=preview?parseCompanyAnalysis(value??draft):draft;
+ const blockHasContent=(id:keyof CompanyAnalysis)=>Object.values(groups[id] as unknown as Record<string,unknown>).some(v=>(typeof v==="string"&&has(v))||(Array.isArray(v)&&v.some(item=>item&&typeof item==="object"&&("title" in item)&&has(item.title))));
  const duration=groups.identity.founded.trim().match(/^\d{4}$/);
  const years=duration?new Date().getFullYear()-Number(duration[0]):null;
  async function save(){if(!onSave||saving)return;setSaving(true);setNotice("");try{await onSave(draft);setNotice("Análise da Empresa salva.");}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível salvar. Tente novamente.");}finally{setSaving(false);}}
@@ -42,7 +43,7 @@ export default function CompanyAnalysis0201({value,published=false,preview,onSav
  return <div className={styles.root}>
   <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2>{!preview&&<small>{published?"Uma versão anterior ou atual foi disponibilizada.":"Página não disponibilizada ao cliente."}</small>}</div>{!preview&&<div className={styles.topActions}><button type="button" onClick={()=>void save()} disabled={!onSave||saving}>{saving?"Salvando…":"Salvar rascunho"}</button>{onPublish&&<button type="button" onClick={()=>void publish()} disabled={publishing||saving||changed||!value}>{publishing?"Disponibilizando…":"Disponibilizar página"}</button>}</div>}</header>
   {notice&&<p role="status" className={styles.notice}>{notice}</p>}
-  {blocks.map(([id,title],i)=><section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
+  {blocks.filter(([id])=>!preview||blockHasContent(id)).map(([id,title],i)=><section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
    {!preview&&id==="identity"&&<div className={styles.fields}>
      {field("identity","displayName","Nome de apresentação")}{field("identity","mainActivity","Atividade principal")}{field("identity","businessNature","Natureza do negócio")}
      {field("identity","sector","Setor")}{field("identity","specialty","Ramo específico")}{field("identity","niche","Especialização ou nicho")}

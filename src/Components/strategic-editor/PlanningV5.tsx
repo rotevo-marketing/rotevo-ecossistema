@@ -65,7 +65,9 @@ export default function PlanningV5({
           <p>{stage?.code} | {stage?.title} · {page.code}</p>
           <h2>{page.title}</h2>
         </header>}
-        {page?.code === "02.01" && <CompanyAnalysis0201 key={project.id+"-02.01"} value={companyAnalysis} published={!!publishedCompanyAnalysis} preview={preview} onSave={onSaveCompanyAnalysis} onPublish={onPublishCompanyAnalysis}/>}
+        {page?.code === "02.01" && (onPreviewChange || !preview || companyAnalysis)
+          ? <CompanyAnalysis0201 key={project.id+"-02.01"} value={companyAnalysis} published={!!publishedCompanyAnalysis} preview={preview} onSave={onSaveCompanyAnalysis} onPublish={onPublishCompanyAnalysis}/>
+          : page?.code === "02.01" && <div className={styles.placeholder}>Página ainda não disponibilizada.</div>}
         {editingTimeline && <div hidden={preview || !activeTimeline}>{editingTimeline}</div>}
         {activeTimeline && preview && timeline
           ? <ProjectTimeline projects={[{ ...project, data: timeline }]}/>

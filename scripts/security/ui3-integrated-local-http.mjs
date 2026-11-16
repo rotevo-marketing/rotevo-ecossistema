@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
+import {EMPTY_COMPANY_ANALYSIS,publicCompanyAnalysis} from '../../src/lib/planning/companyAnalysis.ts';
 import {validWorkspace} from '../../src/lib/operations/model.ts';
 const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
 function local(value){const u=new URL(value);assert.ok(u.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(u.hostname),'refuse non-loopback URL');return u;}
@@ -79,9 +80,30 @@ for(const repeats of [2,1600]){
 await request('/api/admin/planning/document',admin,{method:'PATCH',body:{projectId:pA,code:'01.06',action:'save',expectedUpdatedAt:initialStamp,richContent:rich},status:409});
 for(const action of ['review','approve','publish'])current=(await request('/api/admin/planning/document',admin,{method:'PATCH',body:{projectId:pA,code:'01.06',action,expectedUpdatedAt:current.updated_at}})).project;
 const presentation=await request('/api/presentation/project?slug=integrated-a',a);
-assert.deepEqual(presentation.project.data.ecosystem2027.documents['01.06'].richContent,rich);
+
+assert.equal(presentation.project.data.planningStructureVersion,5);
+assert.equal(presentation.project.data.companyAnalysis0201,null);
+assert.ok(!('ecosystem2027' in presentation.project.data));
 assert.ok(!JSON.stringify(presentation).includes('PRIVATE_SYNTHETIC_ONLY'));
-pass('original document HTTP save/reopen/CAS/review/approve/publish with short and extensive HTML/CSS, preserved prior release and client published projection');
+current=(await request('/api/admin/project?id='+pA,admin)).project;
+assert.deepEqual(current.data.ecosystem2027.documents['01.06'].publishedRichContent,rich);
+const history=structuredClone(current.data.ecosystem2027);
+const analysis=structuredClone(EMPTY_COMPANY_ANALYSIS);
+analysis.identity.displayName='Published synthetic company';
+analysis.identity.traits=[{id:'note',title:'Visible trait',description:'Synthetic',evidence:'PRIVATE_V5_EVIDENCE'}];
+const update=async next=>request('/api/admin/project/update',admin,{method:'PATCH',
+ body:{projectId:pA,expectedUpdatedAt:current.updated_at,data:{...current.data,...next}}});
+await update({companyAnalysis0201:analysis});
+current=(await request('/api/admin/project?id='+pA,admin)).project;
+assert.deepEqual(current.data.companyAnalysis0201,analysis);
+assert.deepEqual(current.data.ecosystem2027,history);
+assert.equal((await request('/api/presentation/project?slug=integrated-a',a)).project.data.companyAnalysis0201,null);
+await update({publishedCompanyAnalysis0201:publicCompanyAnalysis(analysis)});
+const shared=(await request('/api/presentation/project?slug=integrated-a',a)).project.data;
+assert.equal(shared.companyAnalysis0201.identity.displayName,analysis.identity.displayName);
+assert.ok(!JSON.stringify(shared).includes('PRIVATE_V5_EVIDENCE'));
+await request('/api/presentation/project?slug=integrated-a',b,{status:404});
+pass('legacy HTML/CSS retained; V5 02.01 persists on existing projects, exposes only an explicit snapshot and denies other tenants');
 const resolved=await request('/api/assets/resolve',a,{method:'POST',body:{ids:[asset.id]}});
 local(resolved.links[asset.id]);const downloaded=await fetch(resolved.links[asset.id]);assert.equal(downloaded.status,200);assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()),png);
 await request('/api/assets/resolve',b,{method:'POST',body:{ids:[asset.id]},status:403});

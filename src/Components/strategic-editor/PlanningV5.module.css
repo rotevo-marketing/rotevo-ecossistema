@@ -42,6 +42,7 @@
   box-shadow: inset 3px 0 var(--rv3-accent);
   font-weight: 600;
 }
+.pages button[aria-current] .code { color: inherit; }
 .modes { display: flex; gap: .375rem; margin-bottom: .75rem; }
 .modes button { border: 1px solid var(--rv3-border); padding: .45rem .85rem; font-size: .875rem; }
 .panel { padding: clamp(.75rem, 2vw, 1.5rem); }

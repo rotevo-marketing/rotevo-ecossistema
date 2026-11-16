@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -9,9 +9,11 @@ import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027
 // O Painel Executivo (00) é um dashboard padrão, não um módulo selecionável.
 const selectableDocuments = ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 "));
 const selectableAreas = ecosystemDocumentAreas.filter((area) => !area.startsWith("00 "));
+import { isPlanningV5, PLANNING_V5 } from "@/lib/planning/v5";
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
+  planningStructureVersion?: typeof PLANNING_V5;
   clientId?: string;
   clientName: string;
   clientSlug: string;
@@ -63,6 +65,7 @@ function getStoredDraft(): NewPlanningDraft | null {
         typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
         typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
     return {
+      planningStructureVersion: isPlanningV5(fields) ? PLANNING_V5 : undefined,
       clientId:typeof fields.clientId==="string"&&/^[0-9a-f-]{36}$/i.test(fields.clientId)?fields.clientId:undefined,
       clientName: fields.clientName,
       clientSlug: fields.clientSlug,
@@ -170,6 +173,7 @@ export default function SelecionarModulosPage() {
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSaving) return;
     if (isPreview) {
       setErrorMessage("Modo de pré-visualização: nenhum projeto será criado. Para criar um planejamento real, volte ao painel.");
       return;
@@ -180,7 +184,7 @@ export default function SelecionarModulosPage() {
       return;
     }
 
-    if (taskExecution.length === 0) {
+    if (!v5 && taskExecution.length === 0) {
       setErrorMessage("Selecione pelo menos um documento do Ecossistema.");
       return;
     }
@@ -235,7 +239,10 @@ export default function SelecionarModulosPage() {
           slug:finalProjectSlug,
           description:draft.description||null,
           status:"draft",
-          data:{
+          data: v5 ? {
+            planningStructureVersion: PLANNING_V5,
+            coverImageUrl: draft.coverImageUrl || null,
+          } : {
             coverImageUrl:draft.coverImageUrl||null,
             ecosystem2027:{
               version:1,
@@ -263,6 +270,7 @@ export default function SelecionarModulosPage() {
   }
 
 
+  const v5 = isPlanningV5(draft);
   const visibleAreas = selectableAreas.filter((area) => {
     const term = search.toLocaleLowerCase("pt-BR").trim();
     return !term || area.toLocaleLowerCase("pt-BR").includes(term) ||
@@ -270,7 +278,7 @@ export default function SelecionarModulosPage() {
   });
 
   return (
-    <main className="admin-modules-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]">
+    <main className={"admin-modules-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]" + (v5 ? " rv-ui3" : "")}>
       <style jsx global>{`
         .admin-modules-v2, .admin-modules-v2 h1, .admin-modules-v2 h2, .admin-modules-v2 h3 {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
@@ -296,8 +304,8 @@ export default function SelecionarModulosPage() {
       <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 lg:px-10">
         <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">Escolher módulos</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">Selecione os documentos que farão parte do planejamento e quais serão exibidos na apresentação do cliente.</p>
+            <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">{v5 ? "Planejamento Rotevo V5" : "Escolher módulos"}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{v5 ? "O planejamento será criado como rascunho." : "Selecione os documentos que farão parte do planejamento e quais serão exibidos na apresentação do cliente."}</p>
           </div>
           {draft && <div className="rounded-xl border border-[#E3E7F0] bg-white px-5 py-3 text-sm">
             <span className="block text-xs text-[#697386]">Projeto</span>
@@ -307,7 +315,10 @@ export default function SelecionarModulosPage() {
         </div>
         {isPreview && <div role="status" className="mb-6 rounded-xl border border-[#A7E000] bg-[#F5FBDD] px-5 py-4 text-sm text-[#243100]"><strong>Modo de pré-visualização.</strong> Explore as áreas, documentos e opções livremente. Nenhum cliente ou planejamento será cadastrado.</div>}
         {errorMessage && <div role="alert" className="mb-6 rounded-xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{errorMessage}</div>}
-        {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando seleção de módulos...</div> : <>
+        {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando planejamento...</div> : v5 ? <form onSubmit={handleSubmit} className="flex flex-wrap justify-end gap-3">
+          <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-sm font-medium">Voltar aos dados</Link>
+          <button type="submit" disabled={isSaving} className="rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-45">{isSaving ? "Criando..." : "Criar planejamento"}</button>
+        </form> : <>
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{selectableAreas.length}</strong></div>
             <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Documentos selecionados</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {selectableDocuments.length}</span></strong></div>

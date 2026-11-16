@@ -1,4 +1,6 @@
-import {safeLink,projectModules} from "../operations/model.ts";
+import { isPlanningV5, PLANNING_V5 } from "../planning/v5.ts";
+import { projectForClient } from "./projectForClient.ts";
+import {safeLink,projectModules,type PortalModule} from "../operations/model.ts";
 import {validRichContent} from "../planning/richContent.ts";
 import {normalizedPlanningAreaSchedule} from "../planning/areaSchedule.ts";
 import {ecosystemDocuments} from "../../data/ecosystem2027.ts";
@@ -13,8 +15,21 @@ export type PresentationProjectRow={
  data:unknown;clients:unknown
 };
 
-export function projectForPresentation(row:PresentationProjectRow,strategist:boolean){
+export function projectForPresentation(row:PresentationProjectRow,strategist:boolean,clientModules?:readonly PortalModule[]){
  const data=object(row.data)??{};
+ if (isPlanningV5(data)) {
+  if (!strategist && (row.status !== "published" || !projectModules(data).includes("planning"))) return null;
+  const { executionTimeline, portalModules } = projectForClient(
+    { ...row, updated_at: "" }, clientModules,
+  ).data;
+  return {
+    ...row,
+    data: {
+      planningStructureVersion: PLANNING_V5,
+      timeline: portalModules.includes("execution") ? { executionTimeline } : null,
+    },
+  };
+ }
  const ecosystem=object(data.ecosystem2027);
  if(!ecosystem)return null;
  if(strategist)return row;

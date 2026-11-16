@@ -5,6 +5,9 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
+import PlanningV5 from "@/Components/strategic-editor/PlanningV5";
+import { isPlanningV5 } from "@/lib/planning/v5";
+import { projectForClient } from "@/lib/security/projectForClient";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 
 import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
@@ -23,6 +26,7 @@ type ClientRecord = {
 };
 
 type ProjectData = {
+  planningStructureVersion?: number;
   coverImageUrl?: string | null;
   planningStages?: PlanningStage[];
   planningAreaSchedule?: PlanningAreaDelivery[];
@@ -90,7 +94,9 @@ function PlanejamentoClienteContent() {
   const client = project ? getProjectClient(project) : null;
 
   const coverImageUrl = project?.data?.coverImageUrl || "";
-  const hasEcosystem = !!project?.data?.ecosystem2027;
+  const v5 = isPlanningV5(project?.data);
+  const previewTimeline = v5 && project ? projectForClient({...project, client_id: client?.id ?? ""}, ["execution"]).data : null;
+  const hasEcosystem = !v5 && !!project?.data?.ecosystem2027;
   const documentCodes = project?.data?.ecosystem2027?.selectedDocumentCodes ?? [];
   const presentedCodes = project?.data?.ecosystem2027?.presentedDocumentCodes ?? [];
   useUnsavedChanges(editingScope && (JSON.stringify(draftDocumentCodes)!==JSON.stringify(documentCodes)||JSON.stringify(draftPresentedCodes)!==JSON.stringify(presentedCodes)));
@@ -345,7 +351,7 @@ function PlanejamentoClienteContent() {
 
         {!isLoading && project ? (
           <>
-            <section className="pw-project-header rv-ui3-planning-header"><div className="pw-breadcrumb"><Link href="/admin?section=projects">Projetos</Link><span>/</span>{client?.name}<span>/</span>Planejamento</div><div className="pw-project-title rv-ui3-planning-title"><div className="pw-project-photo-wrap"><div className="pw-project-photo">{coverImageUrl?<img src={coverImageUrl} alt={`Foto do projeto ${project.title}`}/>:<span>{(client?.name??project.title).charAt(0).toUpperCase()}</span>}</div></div><div className="pw-project-identity"><p className="pw-project-client">{client?.name}</p><h1>{project.title}</h1><div className="pw-project-meta"><span>Planejamento estratégico</span><span className="pw-meta-divider" aria-hidden="true"/><span className="pw-status pw-project-status"><span className="pw-project-status-dot"/>{getStatusLabel(project.status)}</span></div></div><button className="pw-outline pw-project-client-view" onClick={()=>setPlanningTab("preview")}>Visão do cliente ↗</button></div><div className="workspace-project-controls rv-ui3-planning-controls"><span>Atualizado em {formatDate(project.updated_at)}</span><Link href={`/admin/planejamentos/${clientSlug}/acesso?projectId=${project.id}`}>Configurar acesso</Link><Link href={`/apresentacao/${project.slug}`}>Abrir apresentação ↗</Link>{project.status!=="archived"&&<button className="pw-outline" disabled={isPublishing||richDirty||richBusy||isSaving} onClick={()=>{if(window.confirm(project.status==="published"?"Retirar a apresentação do acesso do cliente?":"Disponibilizar ao cliente a apresentação e os documentos já publicados?"))void handlePublish(project.status==="published"?"draft":"published");}}>{isPublishing?"Atualizando…":project.status==="published"?"Retirar apresentação":"Disponibilizar apresentação"}</button>}</div>{errorMessage&&<p role="alert" className="se-notice">{errorMessage}</p>}{successMessage&&<p role="status" className="se-notice">{successMessage}</p>}</section>
+            <section className="pw-project-header rv-ui3-planning-header"><div className="pw-breadcrumb"><Link href="/admin?section=projects">Projetos</Link><span>/</span>{client?.name}<span>/</span>Planejamento</div><div className="pw-project-title rv-ui3-planning-title"><div className="pw-project-photo-wrap"><div className="pw-project-photo">{coverImageUrl?<img src={coverImageUrl} alt={`Foto do projeto ${project.title}`}/>:<span>{(client?.name??project.title).charAt(0).toUpperCase()}</span>}</div></div><div className="pw-project-identity"><p className="pw-project-client">{client?.name}</p><h1>{project.title}</h1><div className="pw-project-meta"><span>{v5 ? "Planejamento Rotevo V5" : "Planejamento estratégico"}</span><span className="pw-meta-divider" aria-hidden="true"/><span className="pw-status pw-project-status"><span className="pw-project-status-dot"/>{getStatusLabel(project.status)}</span></div></div><button className="pw-outline pw-project-client-view" onClick={()=>setPlanningTab("preview")}>Visão do cliente ↗</button></div><div className="workspace-project-controls rv-ui3-planning-controls"><span>Atualizado em {formatDate(project.updated_at)}</span><Link href={`/admin/planejamentos/${clientSlug}/acesso?projectId=${project.id}`}>Configurar acesso</Link><Link href={`/apresentacao/${project.slug}`}>Abrir apresentação ↗</Link>{project.status!=="archived"&&<button className="pw-outline" disabled={isPublishing||richDirty||richBusy||isSaving} onClick={()=>{if(window.confirm(project.status==="published"?"Retirar a apresentação do acesso do cliente?":"Disponibilizar ao cliente a apresentação e os documentos já publicados?"))void handlePublish(project.status==="published"?"draft":"published");}}>{isPublishing?"Atualizando…":project.status==="published"?"Retirar apresentação":"Disponibilizar apresentação"}</button>}</div>{errorMessage&&<p role="alert" className="se-notice">{errorMessage}</p>}{successMessage&&<p role="status" className="se-notice">{successMessage}</p>}</section>
 
             {hasEcosystem && <div className="rv-ui3-planning-nav-wrap mt-3 space-y-3">
               <nav aria-label="Seções do planejamento" className="pw-project-tabs workspace-project-tabs rv-ui3-planning-tabs" role="tablist">{([{id:"editor",label:"Planejamento"},{id:"schedule",label:"Cronograma do projeto"},{id:"execution",label:"Plano de execução"},{id:"preview",label:"Visão do cliente"},{id:"documents",label:"Configurar documentos"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} tabIndex={planningTab===item.id?0:-1} onKeyDown={event=>{
@@ -400,7 +406,14 @@ function PlanejamentoClienteContent() {
   </div>}
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PublishedPlanningPreview data={project.data??{}} status={project.status} title={project.title} clientName={client?.name??""}/></div>}
       {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><DynamicDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onBusyChange={setRichBusy} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></div>}
-      {project && !isLoading && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-none px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
+      {project && !isLoading && v5 && <div className="w-full px-5 pb-12 sm:px-8 lg:px-10">
+        <PlanningV5 key={project.id} project={project}
+          preview={planningTab === "preview"}
+          onPreviewChange={value => setPlanningTab(value ? "preview" : "editor")}
+          timeline={previewTimeline?.portalModules.includes("execution") ? previewTimeline : null}
+          editingTimeline={<ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/>}/>
+      </div>}
+      {project && !isLoading && !v5 && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-none px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="rv-ui3-planning-footer bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );

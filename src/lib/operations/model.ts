@@ -1,3 +1,5 @@
+import { isPlanningV5 } from "../planning/v5.ts";
+
 export const portalModules=["planning","execution","content","campaigns","meetings","contract","drive","finance"] as const;
 export type PortalModule=(typeof portalModules)[number];
 export type ContractRecord={id:string;title:string;status:"pending"|"active"|"ended"|"cancelled";service:string;summary:string;scope:string[];startDate:string;endDate:string;signedDate:string;documentUrl:string;visibleToClient:boolean;history:{id:string;title:string;date:string;url?:string}[]};
@@ -33,7 +35,7 @@ export function projectModules(data:unknown):PortalModule[]{
  const d=record(data)??{};
  if(Array.isArray(d.portalModules))return portalModules.filter(m=>(d.portalModules as unknown[]).includes(m));
  const result:PortalModule[]=[];
- if(d.ecosystem2027)result.push("planning");
+ if(d.ecosystem2027||isPlanningV5(d))result.push("planning");
  for(const [key,module] of [["executionTimeline","execution"],["editorialCalendar","content"],["marketingCampaigns","campaigns"],["operationalAgenda","meetings"]] as const)if(Array.isArray(d[key])&&(d[key] as unknown[]).length)result.push(module);
  return result;
 }

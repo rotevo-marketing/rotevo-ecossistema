@@ -1,5 +1,9 @@
 "use client";
 
+import AccountAppearanceBootstrap from "@/Components/operations/AccountAppearanceBootstrap";
+import PlanningV5 from "@/Components/strategic-editor/PlanningV5";
+import { isPlanningV5 } from "@/lib/planning/v5";
+import type { PlanningV5Timeline } from "@/Components/strategic-editor/PlanningV5";
 import {useEffect,useState} from "react";
 import {useParams,useRouter,useSearchParams} from "next/navigation";
 import Link from "next/link";
@@ -10,7 +14,7 @@ import EcosystemPresentationOverview from "@/Components/apresentacao/EcosystemPr
 type PresentationProject={
  id:string;title:string;slug:string;status:string;client_id:string;
  clients:{name:string;slug:string}|{name:string;slug:string}[]|null;
- data:{coverImageUrl?:string|null;deliverySchedule?:Record<string,string>|null;
+ data:{planningStructureVersion?:number;timeline?:PlanningV5Timeline|null;coverImageUrl?:string|null;deliverySchedule?:Record<string,string>|null;
  ecosystem2027?:{selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];hiddenExecutiveDocumentCodes?:string[];executiveDocuments?:Record<string,{content:string;richContent?:RichContent}>;documents?:Record<string,{content?:string;richContent?:RichContent;publishedContent?:string;publishedRichContent?:RichContent}>}}|null
 };
 const clientOf=(project:PresentationProject)=>Array.isArray(project.clients)?project.clients[0]:project.clients;
@@ -39,7 +43,7 @@ export default function ApresentacaoDinamicaPage(){
     if(!response.ok)throw new Error("presentation unavailable");
     const result=await response.json();
     const candidate=result?.project as PresentationProject|undefined;
-    if(!candidate||candidate.slug!==slug||!candidate.data?.ecosystem2027)throw new Error("Only Ecosystem 2027 presentations are supported");
+    if(!candidate||candidate.slug!==slug||(!candidate.data?.ecosystem2027&&!isPlanningV5(candidate.data)))throw new Error("Only Ecosystem 2027 presentations are supported");
     if(!cancelled){setProject(candidate);setStrategist(profile.role==="strategist");}
    }catch{if(!cancelled)setNotFound(true);}
    finally{if(!cancelled)setLoading(false);}
@@ -52,6 +56,11 @@ export default function ApresentacaoDinamicaPage(){
  const client=clientOf(project);
  const details=project.data!;
  if(!strategist&&project.status==="draft")return <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F6F7FB] p-8 text-center"><h1 className="text-2xl font-semibold text-[#090D1C]">Planejamento em desenvolvimento</h1><p className="text-[#697386]">A apresentação estará disponível quando for publicada.</p><Link href="/cliente" className="rounded-xl bg-[#090D1C] px-5 py-3 text-sm text-white">Voltar ao portal</Link></main>;
+ if (isPlanningV5(details)) return <main className="rv-ui3 min-h-screen p-4 sm:p-8" style={{background:"var(--rv3-canvas)"}}>
+  {process.env.NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED === "true" && <AccountAppearanceBootstrap/>}
+  <header className="mb-5 flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-semibold">{project.title}</h1><Link href={strategist ? "/admin?section=projects" : "/cliente"}>Voltar</Link></header>
+  <PlanningV5 key={project.id} project={project} timeline={details.timeline}/>
+ </main>;
  return <EcosystemPresentationOverview
   projectId={project.id}
   clientName={client?.name??project.title}

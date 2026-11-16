@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
 import { supabase } from "@/lib/supabase";
+import { PLANNING_V5 } from "@/lib/planning/v5";
 import {request} from "@/lib/operations/api";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -187,6 +188,7 @@ export default function NovoPlanejamentoPage() {
     }
 
     const draft = {
+      planningStructureVersion: PLANNING_V5,
       clientId:clientId||undefined,
       clientName: clientName.trim(),
       clientSlug,

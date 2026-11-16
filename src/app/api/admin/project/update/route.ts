@@ -71,6 +71,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  // Historical assignments are preserved without retroactive data migration.
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
+ if (oldRoot.planningStructureVersion !== nextRoot.planningStructureVersion) return fail(400);
  if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
  // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){

@@ -1,4 +1,7 @@
 "use client";
+import PlanningV5 from "@/Components/strategic-editor/PlanningV5";
+import { isPlanningV5 } from "@/lib/planning/v5";
+import type { PlanningV5Timeline } from "@/Components/strategic-editor/PlanningV5";
 import {useEffect,useState} from "react";
 import {clientDocumentCode} from "@/lib/ui/planningSnapshot";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
@@ -11,7 +14,7 @@ import {supabase} from "@/lib/supabase";
 type Stage={id:string;title:string;dueDate:string;status:"pending"|"in_progress"|"completed";visibleToClient:boolean};
 type ClientProject={id:string;slug:string;title:string;description:string|null;status:string;data?:{planningStages?:Stage[]}|null};
 type VisibleDocument={content:string;richContent?:RichContent};
-type Presentation={id:string;status:string;data?:{planningAreaSchedule?:PlanningAreaDelivery[];ecosystem2027?:{catalogDocumentCodes?:string[];selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>;executiveDocuments?:Record<string,VisibleDocument>}}};
+type Presentation={id:string;status:string;data?:{planningStructureVersion?:number;timeline?:PlanningV5Timeline|null;planningAreaSchedule?:PlanningAreaDelivery[];ecosystem2027?:{catalogDocumentCodes?:string[];selectedDocumentCodes?:string[];presentedDocumentCodes?:string[];documents?:Record<string,VisibleDocument>;executiveDocuments?:Record<string,VisibleDocument>}}};
 const date=(value?:string)=>value?value.split("-").reverse().join("/"):"Previsão a definir";
 const areaName=(name:string)=>name.replace(/^\d{2} /,"");
 const areaStatus=(status?:PlanningAreaDelivery["status"])=>status==="completed"?"Concluída internamente":status==="review"?"Em revisão":status==="in_progress"?"Em elaboração":"Prevista";
@@ -68,6 +71,7 @@ export default function ClientPlanning({projects}:{projects:ClientProject[]}){
   {!selected?<section className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhum planejamento está vinculado à sua conta.</section>
   :loading?<section role="status" className="rounded-xl bg-white p-6 text-sm text-[#697386]">Carregando planejamento autorizado…</section>
   :error?<section role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-sm text-red-700">{error}<button type="button" className="ml-3 cursor-pointer underline" onClick={()=>setRetry(n=>n+1)}>Tentar novamente</button></section>
+  :presentation && isPlanningV5(presentation.data) ? <PlanningV5 project={{id:presentation.id,title:selected.title}} timeline={presentation.data?.timeline}/>
   :<section className="rv-ui2-client-planning overflow-hidden rounded-xl border border-[#E3E6ED] bg-white lg:grid lg:min-h-[720px] lg:grid-cols-[272px_minmax(0,1fr)]">
    <aside aria-label="Navegação dos documentos do planejamento" className={(mobileReader?"hidden ":"block ")+"min-w-0 border-[#E3E6ED] bg-white p-4 lg:block lg:border-r"}>
     <div className="flex items-center justify-between gap-2"><h3 className="font-bold text-[#101828]">Documentos</h3><span className="text-xs text-[#697386]">{lastReleased} disponíveis</span></div>

@@ -1,0 +1,61 @@
+.workspace {
+  min-width: 0;
+  color: var(--rv3-text);
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+.navigation, .panel {
+  min-width: 0;
+  border: 1px solid var(--rv3-border);
+  border-radius: .75rem;
+  background: var(--rv3-surface);
+}
+.stage + .stage { border-top: 1px solid var(--rv3-border); }
+.stageButton, .pages button, .modes button {
+  cursor: pointer;
+  border-radius: .4rem;
+  color: var(--rv3-text);
+  text-align: left;
+}
+.stageButton, .pages button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem;
+  font-size: .875rem;
+}
+.stageButton { justify-content: space-between; font-weight: 600; }
+.stageButton svg { flex-shrink: 0; }
+.pages { margin: 0; padding: 0 .375rem .375rem; list-style: none; }
+.code, .heading p, .placeholder { color: var(--rv3-muted); }
+.code { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+:is(.navigation, .modes) button:hover { background: var(--rv3-canvas); }
+:is(.navigation, .modes) button:focus-visible { outline: 2px solid var(--rv3-accent); outline-offset: -2px; }
+.pages button[aria-current], .modes button[aria-pressed="true"] {
+  background: var(--rv3-accent-soft);
+  color: var(--rv3-text);
+  box-shadow: inset 3px 0 var(--rv3-accent);
+  font-weight: 600;
+}
+.modes { display: flex; gap: .375rem; margin-bottom: .75rem; }
+.modes button { border: 1px solid var(--rv3-border); padding: .45rem .85rem; font-size: .875rem; }
+.panel { padding: clamp(.75rem, 2vw, 1.5rem); }
+.heading { margin-bottom: 1rem; }
+.heading p { margin: 0; font-size: .75rem; }
+.heading h2 { margin: .25rem 0 0; font-size: clamp(1.125rem, 2vw, 1.5rem); font-weight: 650; }
+.placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 10rem;
+  border: 1px dashed var(--rv3-border);
+  border-radius: .6rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: .875rem;
+}
+@media (max-width: 767px) { .columns { grid-template-columns: minmax(0, 1fr); } }

@@ -25,7 +25,7 @@ await must(service.from("team_members").insert({user_id:owner.user.id,display_na
 await must(service.from("client_workspaces").insert({client_id:clientId,data:{modules:["execution","content"],folders:[],contracts:[]}}),"workspace");
 await must(service.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Shared Task",slug:"collab-ui-"+suffix,status:"draft",
  data:{executionTimeline:[{id:"browser-task",title:"Tarefa acessível",visibleToClient:true,status:"in_progress",dueDate:"2026-11-20"}],
- editorialCalendar:[{id:"browser-content",title:"Conteúdo acessível",channel:"YouTube",format:"Vídeo",status:"idea",briefUrl:"https://example.com/brief",driveUrl:"https://drive.google.com/file/d/synthetic/view",references:[{url:"https://example.net/inspiration",note:"Orientação sintética"}],publishDate:new Date().toISOString().slice(0,7)+"-15",version:"02",visibleToClient:true}]}}),"project");
+ editorialCalendar:[{id:"browser-content",title:"Conteúdo acessível",channel:"YouTube",format:"Vídeo",status:"idea",ideaSummary:"Resumo sintético",objective:"Objetivo sintético",caption:"Primeira linha\n\nTerceira linha",briefUrl:"https://example.com/brief",driveUrl:"https://drive.google.com/file/d/synthetic/view",references:[{url:"https://example.net/inspiration",note:"Orientação sintética"}],publishDate:new Date().toISOString().slice(0,7)+"-15",version:"02",visibleToClient:true}]}}),"project");
 const ownerAuth=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const {session}=await must(ownerAuth.auth.signInWithPassword({email:ownerEmail,password}),"strategist login");
 async function workflow(path,body){
@@ -99,19 +99,19 @@ try{
  assert.equal(ordinary.data.editorialCalendar[0].status,initialEditorial.data.editorialCalendar[0].status);
  const decisionsBefore=await must(service.from("editorial_idea_approvals").select("decision").eq("project_id",projectId).eq("content_id","browser-content"),"decisions after plain message");
  assert.deepEqual(decisionsBefore,[]);
- const inputForBoth=editorialThread.getByRole("textbox",{name:"Nova mensagem"});
- await inputForBoth.fill("Corrigir o roteiro desta versão.");
- await page.route("**/api/workflow/editorial/decision",route=>route.fulfill({status:503,json:{error:"Falha sintética temporária"}}),{times:1});
- await editorialThread.getByRole("button",{name:"Solicitar ajuste",exact:true}).click();
- await editorialThread.getByText("Falha sintética temporária",{exact:true}).waitFor();
- assert.equal(await inputForBoth.inputValue(),"Corrigir o roteiro desta versão.");
+ assert.equal(await editorialThread.getByRole("button",{name:"Solicitar ajuste",exact:true}).count(),0);
+ for(const title of ["Resumo da ideia","Direcionamento estratégico","Legenda"]){
+  const block=editorial.getByRole("region",{name:title,exact:true});
+  await block.getByRole("heading",{name:title,exact:true}).waitFor();
+  const style=await block.evaluate(e=>{
+   const style=getComputedStyle(e.lastElementChild);
+   return {heading:e.firstElementChild.tagName,surface:style.backgroundColor,whiteSpace:style.whiteSpace};
+  });
+  assert.deepEqual(style,{heading:"H4",surface:"rgb(246, 247, 251)",whiteSpace:"pre-wrap"});
+ }
  const result=page.waitForResponse(response=>response.url().endsWith("/api/workflow/editorial/decision")&&response.request().method()==="POST");
- await editorialThread.getByRole("button",{name:"Solicitar ajuste",exact:true}).click();
+ await editorialThread.getByRole("button",{name:"Aprovar ideia",exact:true}).click();
  assert.equal((await result).status(),200);
- await editorialThread.getByText("Solicitação de ajustes registrada.",{exact:true}).waitFor();
- assert.equal(await inputForBoth.inputValue(),"");
- await editorial.getByText("Decisão da ideia: Ajustes solicitados",{exact:false}).waitFor();
- const formal=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"formal status");
- assert.equal(formal.data.editorialCalendar[0].status,"idea_changes");
- console.log("PASS client content badges, ordered links, shared composer, independent message, preserved text after error and confirmed formal revision");
+ await editorialThread.getByText("Aprovação registrada.",{exact:true}).waitFor();
+ console.log("PASS client detail: light text boxes, single composer, hidden adjustment control, plain message and confirmed idea approval");
 }finally{await browser.close();}

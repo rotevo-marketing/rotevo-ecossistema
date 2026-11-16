@@ -50,3 +50,10 @@ export function ContentDetailMaterials({briefUrl,driveUrl,references,safeLink}:{
   </div>
  </section>;
 }
+
+export function ContentDetailText({title,children}:{title:string;children:React.ReactNode}){
+ return <section aria-label={title} className={styles.detailContent}>
+  <h4 className="text-sm font-semibold">{title}</h4>
+  <div className={styles.detailSurface}>{children}</div>
+ </section>;
+}

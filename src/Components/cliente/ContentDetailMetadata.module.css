@@ -19,3 +19,9 @@
 .material :is(h5,h6) { font-size:.75rem; font-weight:600; overflow-wrap:anywhere; }
 .material a { display:inline-flex; align-items:center; gap:.35rem; width:fit-content; font-size:.75rem; text-decoration:underline; text-underline-offset:.15em; }
 .material a:focus-visible { outline:2px solid var(--rv3-accent,#6d35f5); outline-offset:2px; }
+
+.detailContent { margin-top:1.25rem; }
+.detailContent h4 { font-size:.875rem; font-weight:600; }
+.detailSurface { margin-top:.625rem; padding:.875rem 1rem; border:1px solid var(--rv3-border,#e3e7f0); border-radius:.625rem; background:#f6f7fb; color:var(--rv3-text,#344056); font-size:.875rem; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+.detailSurface p + p { margin-top:.45rem; }
+:global(html[data-rotevo-appearance="dark"]) .detailSurface { background:#252525; }

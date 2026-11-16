@@ -359,6 +359,7 @@ try {
  await newEditorial.getByLabel("Objetivo do conteúdo *").fill("Testar a persistência isolada de conteúdo editorial.");
  await newEditorial.getByLabel("Link do roteiro ou briefing",{exact:true}).fill("https://example.com/script");
  await newEditorial.getByLabel("Link do material da publicação",{exact:true}).fill("https://drive.google.com/file/d/synthetic/view");
+ await newEditorial.getByLabel("Legenda",{exact:true}).fill("Legenda sintética\n\nSegunda parte.");
  await prepareResponsibility(newEditorial);
  await newEditorial.getByRole("checkbox",{name:"Compartilhar conteúdo no Portal do Cliente"}).check();
  await newEditorial.getByRole("button",{name:"Salvar conteúdo"}).click();
@@ -387,7 +388,16 @@ try {
   await editorThread.getByRole("button",{name:"Enviar mensagem"}).click();
   await editorThread.getByText("Mensagem sintética do estrategista",{exact:true}).waitFor();
  }
- console.log("PASS strategist content dark badges, ordered materials and permission-dependent composer");
+ for(const title of ["Resumo da ideia","Direcionamento estratégico","Legenda"]){
+  const block=editorialDetails.getByRole("region",{name:title,exact:true});
+  await block.getByRole("heading",{name:title,exact:true}).waitFor();
+  const style=await block.evaluate(e=>{
+   const style=getComputedStyle(e.lastElementChild);
+   return {heading:e.firstElementChild.tagName,surface:style.backgroundColor,whiteSpace:style.whiteSpace};
+  });
+  assert.deepEqual(style,{heading:"H4",surface:"rgb(37, 37, 37)",whiteSpace:"pre-wrap"});
+ }
+ console.log("PASS strategist detail: uniform dark text boxes, materials and permission-dependent composer");
  const otherEditorial=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic editorial");
  assert.equal(otherEditorial.data.editorialCalendar.filter(x=>x.title==="Synthetic Other YouTube Editorial"&&x.channel==="YouTube").length,1,"YouTube entry persisted for second client only");
  assert.equal(otherEditorial.data.editorialCalendar.find(x=>x.title==="Synthetic Other YouTube Editorial")?.preparedClientAction?.clientUserId,secondAccount.id);

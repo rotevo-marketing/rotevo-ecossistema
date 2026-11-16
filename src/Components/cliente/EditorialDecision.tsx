@@ -5,7 +5,7 @@ import {supabase} from "@/lib/supabase";
 import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 
 type Decision={id:string;decision:"approved"|"changes_requested";comment:string|null;decided_at:string;content_version:string};
-export default function EditorialDecision({projectId,item,onDecision,composer}:{projectId:string;item:EditorialItem;onDecision?:(decision:"approved"|"changes_requested")=>void;composer?:SharedDecisionComposer}){
+export default function EditorialDecision({projectId,item,onDecision,composer,hideAdjustmentAction=false}:{projectId:string;item:EditorialItem;onDecision?:(decision:"approved"|"changes_requested")=>void;composer?:SharedDecisionComposer;hideAdjustmentAction?:boolean}){
  const [existing,setExisting]=useState<Decision|null>(null);
  const [note,setNote]=useState("");
  const [loading,setLoading]=useState(true);
@@ -54,7 +54,7 @@ export default function EditorialDecision({projectId,item,onDecision,composer}:{
    {!composer&&<label className="block text-xs font-semibold">Nova mensagem
     <textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={3000} rows={3} disabled={working} className="mt-2 block w-full rounded-lg border border-[#D8DCE5] bg-white p-3 text-sm"/>
    </label>}
-   <button type="button" disabled={!available||working||composer?.disabled||text.trim().length<3} onClick={()=>void decide("changes_requested")} className="rounded-lg border border-[#D8DCE5] bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">Solicitar ajuste</button>
+   {!hideAdjustmentAction&&<button type="button" disabled={!available||working||composer?.disabled||text.trim().length<3} onClick={()=>void decide("changes_requested")} className="rounded-lg border border-[#D8DCE5] bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">Solicitar ajuste</button>}
    <button type="button" disabled={!available||working||composer?.disabled} onClick={()=>void decide("approved")} className="rounded-lg bg-[#166B3F] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Aprovar conteúdo</button>
   </div>}
   {error&&<p role="alert" className="mt-3 text-sm text-[#A83E3E]">{error}</p>}

@@ -30,7 +30,11 @@ const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visu
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
 const company=structuredClone(EMPTY_COMPANY_ANALYSIS);
 company.identity.displayName="Empresa V5 publicada";
-const planData={publishedCompanyAnalysis0201:publicCompanyAnalysis(company),internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+const overflowDate=new Date().toISOString().slice(0,7)+"-14";
+const overflowItems=Array.from({length:13},(_,i)=>({id:"overflow-"+i,
+ title:i===12?"Conteúdo interno do calendário":`Conteúdo sintético ${String(i+1).padStart(2,"0")}`,
+ channel:"YouTube",format:"Vídeo",version:"01",status:"production",publishDate:overflowDate,visibleToClient:i!==12}));
+const planData={publishedCompanyAnalysis0201:publicCompanyAnalysis(company),internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true},...overflowItems],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
@@ -52,6 +56,54 @@ const assignResult=await fetch(new URL("/api/workflow/client-actions",app),{
 });
 assert.equal(assignResult.status,200,"synthetic assignment must be available before client browser login");
 const assignmentPayload=await assignResult.json();assert.ok(assignmentPayload.assignment?.id);
+async function verifyCalendarOverflow(page,{clientView}){
+ const overflowDay=overflowDate.split("-").reverse().join("/");
+ const total=clientView?12:13;
+ const calendar=page.locator(".rv-ui3-editorial-calendar");
+ const monthView=calendar.locator(".rv-ui3-editorial-month");
+ await monthView.waitFor();
+ const channel=calendar.getByRole("group",{name:"Filtrar conteúdos por canal"}).getByRole("button",{name:"YouTube",exact:true});
+ await channel.click();
+ const trigger=calendar.getByRole("button",{name:`Ver os ${total} conteúdos de ${overflowDay}`,exact:true});
+ assert.equal((await trigger.textContent()).trim(),`+${total-2} · Ver todos`);
+ const month=await calendar.getByRole("heading",{level:3}).textContent();
+ const url=page.url();
+ const popup=calendar.getByRole("region",{name:`Conteúdos de ${overflowDay}`,exact:true});
+ const visible=()=>popup.waitFor({state:"visible"});
+ const hidden=()=>popup.waitFor({state:"hidden"});
+ await trigger.click();await visible();
+ assert.equal(await popup.getByRole("listitem").count(),total);
+ assert.equal(await popup.getByText("Conteúdo interno do calendário",{exact:true}).count(),clientView?0:1);
+ await popup.getByText("YouTube · Vídeo",{exact:true}).first().waitFor();
+ await popup.getByRole("button",{name:"Fechar conteúdos do dia",exact:true}).click();
+ await hidden();
+ await trigger.click();await visible();
+ await page.mouse.click(2,2);await hidden();
+ await trigger.click();await visible();
+ await page.setViewportSize({width:900,height:640});
+ await page.waitForFunction(()=>{
+  const el=document.querySelector("[popover]:popover-open");
+  if(!el)return false;
+  const r=el.getBoundingClientRect(),root=document.documentElement;
+  return r.left>=0&&r.top>=0&&r.right<=root.clientWidth&&r.bottom<=root.clientHeight;
+ });
+ const list=popup.getByRole("list");
+ assert.ok(await list.evaluate(el=>el.scrollHeight>el.clientHeight));
+ await page.setViewportSize({width:1440,height:900});
+ const chosen=popup.getByRole("button",{name:/Conteúdo sintético 12/});
+ await chosen.click();await hidden();
+ const detail=page.getByRole("dialog",{name:"Detalhes do conteúdo",exact:true});
+ await detail.getByRole("heading",{name:"Conteúdo sintético 12",exact:true}).waitFor();
+ await detail.getByRole("button",{name:"Fechar",exact:true}).click();
+ await detail.waitFor({state:"hidden"});
+ assert.equal(await trigger.evaluate(el=>el===document.activeElement),true);
+ assert.equal(page.url(),url);
+ assert.equal(await calendar.getByRole("heading",{level:3}).textContent(),month);
+ assert.equal(await channel.getAttribute("aria-pressed"),"true");
+ assert.ok(await monthView.isVisible());
+ await calendar.getByRole("group",{name:"Filtrar conteúdos por canal"}).getByRole("button",{name:"Todos os canais",exact:true}).click();
+ console.log("PASS editorial overflow "+(clientView?"client":"strategist")+": authorized rows, close controls, viewport bounds, scroll, detail and calendar state");
+}
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 async function session(role,account,path,destination){
  const page=await browser.newPage({viewport:{width:1440,height:900},locale:"pt-BR"});
@@ -235,6 +287,9 @@ try {
  assert.equal(planScan.violations.filter(v=>v.impact==="serious"||v.impact==="critical").length,0,"published planning critical/serious WCAG violations");
  console.log("PASS existing published planning uses V5 and hides historical content");
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"private data stays hidden");
+ await customer.setViewportSize({width:1440,height:900});
+ await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Conteúdo",exact:true}).click();
+ await verifyCalendarOverflow(customer,{clientView:true});
  await customer.close();
  const strategist=await session("strategist",admin,"/estrategista/login","/admin");
  await checkWidths("strategist",strategist);
@@ -343,6 +398,7 @@ try {
  console.log("PASS synthetic reversible trash and restore without permanent deletion");
  // Create a YouTube editorial entry for the second synthetic client and verify the dynamic channel tab.
  await strategist.getByRole("button",{name:"Conteúdo",exact:true}).click();
+ await verifyCalendarOverflow(strategist,{clientView:false});
  await strategist.getByRole("button",{name:/Novo conteúdo/}).click();
  const newEditorial=strategist.getByRole("dialog",{name:"Editor de conteúdo"});
  await newEditorial.waitFor();

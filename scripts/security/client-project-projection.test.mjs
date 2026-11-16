@@ -52,7 +52,7 @@ test("client portal must use the authorized projection endpoint, not raw project
 
 test("client editorial calendar independently requires explicit sharing",()=>{
  const source=readFileSync(new URL("../../src/Components/cliente/EditorialCalendar.tsx",import.meta.url),"utf8");
- assert.match(source,/!clientView\|\|task\.visibleToClient===true/);
+ assert.match(source,/!clientView\|\|i\.visibleToClient===true/);
  assert.doesNotMatch(source,/!clientView\|\|task\.visibleToClient!==false/);
 });
 

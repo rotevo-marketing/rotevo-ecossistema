@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {TaskAvatar} from "@/Components/admin/TaskGridCells";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
@@ -110,12 +110,21 @@ export default function ProjectTimeline({projects,clientName,focusTask,showShare
     priority:sharedTask?.priority??(title?editorial?.priority:undefined)??"normal",
     dueDate:primary.dueDate??sharedTask?.dueDate,
     status:assignmentStatus[primary.status]??sharedTask?.status??"planned",
+    completedAt:primary.status==="validated"?primary.updatedAt??sharedTask?.completedAt:undefined,
    });
   }
   return [...rows.values()];
  }),[projects,assignments,showSharedTasks,assigneeName,clientName]);
  const selected=selection?items.find(item=>item.projectKey===selection.projectKey&&item.id===selection.id):undefined;
- useEffect(()=>{if(!focusTask)return;const target=items.find(item=>item.projectKey===focusTask.projectId&&item.id===focusTask.taskId);if(target)setSelected(target);},[focusTask?.nonce,items]);
+ const focusedTaskNonce=useRef<number|null>(null);
+ useEffect(()=>{
+  if(!focusTask||focusedTaskNonce.current===focusTask.nonce)return;
+  const target=items.find(item=>item.projectKey===focusTask.projectId&&item.id===focusTask.taskId);
+  if(target){
+   focusedTaskNonce.current=focusTask.nonce;
+   setSelected(target);
+  }
+ },[focusTask,items]);
  const people=useMemo(()=>[...new Set(items.map(i=>i.owner?.trim()).filter((v):v is string=>!!v))].sort((a,b)=>a.localeCompare(b,"pt-BR")),[items]);
  const filtered=useMemo(()=>items.filter(i=>{
   if(section==="completed"?(i.status!=="completed"||(completedMonth&&!i.completedAt?.startsWith(completedMonth))):(view==="list"&&(i.status==="completed"||i.status==="cancelled")))return false;

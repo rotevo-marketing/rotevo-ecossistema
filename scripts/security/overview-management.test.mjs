@@ -87,6 +87,7 @@ test('archived and trashed tasks are excluded from active overview counts and at
  assert.equal(inactive.overdueTasks,0);
  assert.deepEqual(inactive.routine,[]);
  assert.deepEqual(inactive.projectAttention,[]);
+ assert.deepEqual(overview([dependent]).projectAttention,[]);
  const restored=overview([{...removed,deletedAt:undefined},{...archived,archivedAt:undefined},dependent]);
  assert.equal(restored.overdueTasks,1);
  assert.deepEqual(restored.routine.map(item=>item.title),['trash','archive']);

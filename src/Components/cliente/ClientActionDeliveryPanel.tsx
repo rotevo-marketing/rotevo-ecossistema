@@ -5,7 +5,7 @@ import {request} from "@/lib/operations/api";
 import {validGoogleDriveUrl} from "@/lib/workflow/clientActionsContract";
 
 type Project={id:string;title:string};
-export type ClientAssignment={id:string;projectId:string;projectTitle:string;resourceType:"content"|"task";resourceId:string;resourceVersion:string|null;actionType:string;instructions:string;dueDate:string|null;status:string};
+export type ClientAssignment={id:string;projectId:string;projectTitle:string;resourceType:"content"|"task";resourceId:string;resourceVersion:string|null;actionType:string;instructions:string;dueDate:string|null;status:string;updatedAt?:string};
 const emptyAssignments:ClientAssignment[]=[];
 type Draft={url:string;note:string;requestKey:string};
 const editable=(status:string)=>["pending","in_progress","correction_requested"].includes(status);

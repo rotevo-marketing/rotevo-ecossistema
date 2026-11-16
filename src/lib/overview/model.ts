@@ -45,7 +45,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
    const due=validOverviewDate(task.dueDate)?task.dueDate:undefined;if(task.dueDate&&!due)invalidDates++;
    const overdue=!!due&&due<today,blocked=task.status==="blocked",remaining=[...new Set(task.dependencies??[])].filter(id=>{
      const prerequisite=tasksById.get(id);
-     return !prerequisite||open(prerequisite);
+     return prerequisite!==undefined&&open(prerequisite);
     });
    const personal=!!userId&&task.ownerUserId===userId;
    if(task.owner?.trim()&&!task.ownerUserId)unlinkedOwners++;

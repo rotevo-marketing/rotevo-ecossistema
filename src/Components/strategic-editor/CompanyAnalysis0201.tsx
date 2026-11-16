@@ -3,13 +3,13 @@ import {useState, type ReactNode} from "react";
 import {EMPTY_COMPANY_ANALYSIS,parseCompanyAnalysis,type CompanyAnalysis,type NamedNote} from "@/lib/planning/companyAnalysis";
 import styles from "./CompanyAnalysis0201.module.css";
 
-type Props={value?:CompanyAnalysis|null;preview:boolean;onSave?:(value:CompanyAnalysis)=>Promise<void>};
+type Props={value?:CompanyAnalysis|null;published?:boolean;preview:boolean;onSave?:(value:CompanyAnalysis)=>Promise<void>;onPublish?:()=>Promise<void>};
 const blocks=[["identity","Caracterização Empresarial"],["history","Trajetória e Evolução"],["organization","Estrutura e Organização"],["governance","Governança e Decisões"],["conditions","Estágio e Condições Atuais"],["synthesis","Síntese da Análise"]] as const;
 const newId=()=>typeof crypto!=="undefined" && "randomUUID" in crypto?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2);
 const has=(text?:string)=>Boolean(text?.trim());
 const nonempty=(items:NamedNote[])=>items.filter(item=>has(item.title)||has(item.description));
 function Field({label,value,onChange,multiline=false,helper}:{label:string;value:string;onChange:(value:string)=>void;multiline?:boolean;helper?:string}){
- return <label className={styles.field}><span>{label}</span>{multiline?<textarea rows={3} value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/>:<input value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/ >}{helper&&<small>{helper}</small>}</label>;
+ return <label className={styles.field}><span>{label}</span>{multiline?<textarea rows={3} value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/>:<input value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/>}{helper&&<small>{helper}</small>}</label>;
 }
 function Repeater<T extends NamedNote>({label,items,onChange,render,newItem}:{label:string;items:T[];onChange:(items:T[])=>void;render:(item:T,onPatch:(patch:Partial<T>)=>void)=>ReactNode;newItem:()=>T}){
  const update=(i:number,patch:Partial<T>)=>onChange(items.map((item,j)=>j===i?{...item,...patch}:item));
@@ -24,9 +24,10 @@ function Heading({number,title}:{number:number;title:string}){return <div classN
 function Empty(){return <p className={styles.empty}>Informação ainda não preenchida.</p>;}
 function TextBlock({label,text}:{label:string;text:string}){return has(text)?<div className={styles.textBlock}><h4>{label}</h4><p>{text}</p></div>:null;}
 function NoteList({items}:{items:NamedNote[]}){const a=nonempty(items);return a.length?<div className={styles.noteGrid}>{a.map(item=><article key={item.id}><h4>{item.title}</h4>{has(item.description)&&<p>{item.description}</p>}</article>)}</div>:null;}
-export default function CompanyAnalysis0201({value,preview,onSave}:Props){
+export default function CompanyAnalysis0201({value,published=false,preview,onSave,onPublish}:Props){
  const [draft,setDraft]=useState<CompanyAnalysis>(()=>parseCompanyAnalysis(value??EMPTY_COMPANY_ANALYSIS));
- const [saving,setSaving]=useState(false),[notice,setNotice]=useState("");
+ const [saving,setSaving]=useState(false),[publishing,setPublishing]=useState(false),[notice,setNotice]=useState("");
+ const changed=JSON.stringify(draft)!==JSON.stringify(parseCompanyAnalysis(value));
  const patch=<K extends keyof CompanyAnalysis>(section:K,changes:Partial<CompanyAnalysis[K]>)=>setDraft(current=>({...current,[section]:{...current[section],...changes}}));
  const field=<K extends keyof CompanyAnalysis>(section:K,key:keyof CompanyAnalysis[K],label:string,multiline=false,helper?:string)=>{
    const source=draft[section] as unknown as Record<string,unknown>;
@@ -36,9 +37,10 @@ export default function CompanyAnalysis0201({value,preview,onSave}:Props){
  const duration=groups.identity.founded.trim().match(/^\d{4}$/);
  const years=duration?new Date().getFullYear()-Number(duration[0]):null;
  async function save(){if(!onSave||saving)return;setSaving(true);setNotice("");try{await onSave(draft);setNotice("Análise da Empresa salva.");}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível salvar. Tente novamente.");}finally{setSaving(false);}}
+ async function publish(){if(!onPublish||publishing||changed)return;setPublishing(true);setNotice("");try{await onPublish();setNotice("Versão da página disponibilizada. O acesso do cliente depende também da publicação do planejamento.");}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível disponibilizar a página.");}finally{setPublishing(false);}}
  const orgKinds={department:"Departamento",workstream:"Frente de atuação",person:"Pessoa e função",external:"Apoio externo"};
  return <div className={styles.root}>
-  <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2></div>{!preview&&<button type="button" onClick={()=>void save()} disabled={!onSave||saving}>{saving?"Salvando…":"Salvar análise"}</button>}</header>
+  <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2>{!preview&&<small>{published?"Uma versão anterior ou atual foi disponibilizada.":"Página não disponibilizada ao cliente."}</small>}</div>{!preview&&<div className={styles.topActions}><button type="button" onClick={()=>void save()} disabled={!onSave||saving}>{saving?"Salvando…":"Salvar rascunho"}</button>{onPublish&&<button type="button" onClick={()=>void publish()} disabled={publishing||saving||changed||!value}>{publishing?"Disponibilizando…":"Disponibilizar página"}</button>}</div>}</header>
   {notice&&<p role="status" className={styles.notice}>{notice}</p>}
   {blocks.map(([id,title],i)=><section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
    {!preview&&id==="identity"&&<div className={styles.fields}>
@@ -61,6 +63,6 @@ export default function CompanyAnalysis0201({value,preview,onSave}:Props){
    {!preview&&id==="synthesis"&&<><div className={styles.fields}>{field("synthesis","conclusion","Conclusão principal",true)}{field("synthesis","explanation","Descrição analítica complementar",true)}</div><Repeater label="Principais constatações" items={draft.synthesis.findings} onChange={findings=>patch("synthesis",{findings})} newItem={note} render={(item,change)=><><Field label="Constatação" value={item.title} onChange={title=>change({title})}/><Field label="Explicação" value={item.description} onChange={description=>change({description})} multiline/></>}/>{field("synthesis","caveats","Ressalvas relevantes",true)}</>}
    {preview&&id==="synthesis"&&<><div className={styles.conclusion}>{groups.synthesis.conclusion||"Conclusão ainda não informada."}</div><TextBlock label="Análise" text={groups.synthesis.explanation}/><NoteList items={groups.synthesis.findings}/><TextBlock label="Ressalvas" text={groups.synthesis.caveats}/></>}
   </section>)}
-  {!preview&&<div className={styles.footer}><button type="button" onClick={()=>void save()} disabled={saving||!onSave}>{saving?"Salvando…":"Salvar análise"}</button></div>}
+  {!preview&&<div className={styles.footer}><button type="button" onClick={()=>void save()} disabled={saving||!onSave}>{saving?"Salvando…":"Salvar rascunho"}</button></div>}
  </div>;
 }

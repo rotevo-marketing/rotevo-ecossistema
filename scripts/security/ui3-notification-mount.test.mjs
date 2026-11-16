@@ -60,7 +60,8 @@ test("task notifications route to the correct authorized task in both portals",(
  assert.match(client,/onOpenTask=\{\(projectId,taskId\)=>/);
  assert.match(client,/workspace\?\.modules\.includes\("execution"/);
  assert.match(tasks,/notificationTask\?\.nonce/);
- assert.match(timeline,/focusTask\?\.nonce/);
+ assert.match(timeline,/focusedTaskNonce\.current===focusTask\.nonce/);
+ assert.match(timeline,/item\.projectKey===focusTask\.projectId&&item\.id===focusTask\.taskId/);
 });
 test("transactional content and task SQL preserve authorized recipient checks",()=>{
  const sql=read("docs/security/sql/ui3-content-message-event-PROPOSAL-ONLY.sql");

@@ -137,8 +137,11 @@ test("client panel accepts Drive URLs without file upload or download",()=>{
  const portal=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  assert.doesNotMatch(overview,/ClientActionDeliveryPanel/);
  assert.match(portal,/NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"/);
- assert.match(portal,/ClientActionDeliveryPanel/);
- assert.match(portal,/workspace\.modules\.includes\("execution" as never\)&&<ProjectTimeline/);
+ const tasks=readFileSync(new URL("../../src/Components/cliente/ProjectTimeline.tsx",import.meta.url),"utf8");
+ assert.match(portal,/assignmentUserId=\{clientActionEnabled\?/);
+ assert.doesNotMatch(portal,/Atribuídas a mim/);
+ assert.match(tasks,/selected\.assignments&&<ClientActionDeliveryPanel/);
+ assert.match(portal,/showSharedTasks=\{workspace\.modules\.includes\("execution" as never\)\}/);
  assert.ok(panel.includes("validGoogleDriveUrl(url)"));
  assert.ok(panel.includes('type="url"'));
  assert.ok(panel.includes("driveUrl:current.url"));

@@ -52,15 +52,15 @@ test("client portal must use the authorized projection endpoint, not raw project
 
 test("client editorial calendar independently requires explicit sharing",()=>{
  const source=readFileSync(new URL("../../src/Components/cliente/EditorialCalendar.tsx",import.meta.url),"utf8");
- assert.match(source,/!clientView\|\|i\.visibleToClient===true/);
- assert.doesNotMatch(source,/!clientView\|\|i\.visibleToClient!==false/);
+ assert.match(source,/!clientView\|\|task\.visibleToClient===true/);
+ assert.doesNotMatch(source,/!clientView\|\|task\.visibleToClient!==false/);
 });
 
 test("client execution timeline independently hides unshared tasks and separates project keys",()=>{
  const source=readFileSync(new URL("../../src/Components/cliente/ProjectTimeline.tsx",import.meta.url),"utf8");
- assert.match(source,/i\.visibleToClient===true/);
- assert.doesNotMatch(source,/i\.visibleToClient!==false/);
- assert.match(source,/projectKey:p\.id/);
+ assert.match(source,/task\.visibleToClient===true/);
+ assert.doesNotMatch(source,/task\.visibleToClient!==false/);
+ assert.match(source,/projectKey:project\.id/);
  assert.match(source,/key=\{item\.projectKey\+"\:"\+item\.id\}/);
  assert.doesNotMatch(source,/new Date\(\)\.toISOString\(\)\.slice\(0,10\)/);
 });

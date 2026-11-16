@@ -291,17 +291,10 @@ export default function AdminPage() {
     let data:PlanningProject[]|null=null;
     let error:Error|null=null;
     try {
-      const {data:session,error:sessionError}=await supabase.auth.getSession();
-      const token=session.session?.access_token;
-      if(sessionError||!token)throw new Error("Sessão expirada.");
-      const response=await fetch("/api/admin/projects",{
-        headers:{Authorization:`Bearer ${token}`},cache:"no-store"
-      });
-      if(response.status===403)setOverviewForbidden(true);
-      if(!response.ok)throw new Error("Consulta administrativa não autorizada.");
-      const result=await response.json();
-      if(!Array.isArray(result?.projects))throw new Error("Resposta administrativa inválida.");
-      data=result.projects as PlanningProject[];
+      const result=await fetchAdminProjects(userData.user.id);
+      setOverviewForbidden(result.forbidden);
+      if(result.forbidden)throw new Error("Consulta administrativa não autorizada.");
+      data=result.projects;
     }catch(cause){
       error=cause instanceof Error?cause:new Error("Não foi possível carregar os planejamentos.");
     }
@@ -546,7 +539,4 @@ export default function AdminPage() {
       {planningOpen&&<NovoPlanejamentoDialog onClose={()=>setPlanningOpen(false)}/>}
     </main>
   );
-}       const result=await fetchAdminProjects(userData.user.id);
-       setOverviewForbidden(result.forbidden);
-       if(result.forbidden)throw new Error("Consulta administrativa não autorizada.");
-       data=result.projects;
+}

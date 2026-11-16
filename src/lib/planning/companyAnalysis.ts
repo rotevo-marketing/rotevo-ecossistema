@@ -40,3 +40,46 @@ export function parseCompanyAnalysis(value: unknown): CompanyAnalysis {
   }
   return result;
 }
+
+const stringKeys={
+ identity:["displayName","mainActivity","businessNature","sector","specialty","niche","founded","referenceLocation","geographicScope","operatingMode","deliveryProfile","summary"],
+ history:["reading"],
+ organization:["organizationName","lead","leadRole","description"],
+ governance:["summary","decisionMakers","conclusion"],
+ conditions:["stage","description"],
+ synthesis:["conclusion","explanation","caveats"]
+} as const;
+const listKeys={identity:"traits",history:"milestones",organization:"entries",governance:"responsibilities",conditions:"items",synthesis:"findings"} as const;
+export function validCompanyAnalysis(value:unknown):value is CompanyAnalysis{
+ if(!value||typeof value!=="object"||Array.isArray(value))return false;
+ if(JSON.stringify(value).length>250000)return false;
+ const record=value as Record<string,unknown>;
+ for(const section of Object.keys(stringKeys) as (keyof typeof stringKeys)[]){
+  const raw=record[section];
+  if(!raw||typeof raw!=="object"||Array.isArray(raw))return false;
+  const data=raw as Record<string,unknown>;
+  if(!stringKeys[section].every(key=>typeof data[key]==="string"&&(data[key] as string).length<=12000))return false;
+  const items=data[listKeys[section]];
+  if(!Array.isArray(items)||items.length>100)return false;
+  const ids=new Set<string>();
+  for(const item of items){
+   if(!item||typeof item!=="object"||Array.isArray(item))return false;
+   const v=item as Record<string,unknown>;
+   if(typeof v.id!=="string"||!v.id||v.id.length>100||ids.has(v.id))return false;
+   ids.add(v.id);
+   if(typeof v.title!=="string"||v.title.length>12000||typeof v.description!=="string"||v.description.length>12000)return false;
+   for(const key of ["evidence","period","parentId","responsible","caveat"]){
+    if(v[key]!==undefined&&(typeof v[key]!=="string"||(v[key] as string).length>12000))return false;
+   }
+   if(section==="organization"&&!["department","workstream","person","external"].includes(String(v.kind)))return false;
+  }
+ }
+ return true;
+}
+export function publicCompanyAnalysis(value:unknown):CompanyAnalysis|null{
+ if(!validCompanyAnalysis(value))return null;
+ const copy=parseCompanyAnalysis(value);
+ // Editorial evidence must never leave the strategist-only context.
+ copy.identity.traits=copy.identity.traits.map(({id,title,description})=>({id,title,description}));
+ return copy;
+}

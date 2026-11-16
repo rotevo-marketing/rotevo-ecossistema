@@ -1,4 +1,5 @@
 import {validPlanningStages} from "@/lib/planning/stages";
+import {validCompanyAnalysis,publicCompanyAnalysis} from "@/lib/planning/companyAnalysis";
 import {validPlanningAreaSchedule} from "@/lib/planning/areaSchedule";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -72,6 +73,18 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  const oldRoot=existing.data&&typeof existing.data==="object"&&!Array.isArray(existing.data)?existing.data as Record<string,unknown>:{};
  const nextRoot=b.data as Record<string,unknown>;
  if (oldRoot.planningStructureVersion !== nextRoot.planningStructureVersion) return fail(400);
+ // V5 02.01 remains an opt-in draft field; legacy documents are untouched.
+ if(JSON.stringify(oldRoot.companyAnalysis0201)!==JSON.stringify(nextRoot.companyAnalysis0201)){
+  if(oldRoot.planningStructureVersion!==5||!validCompanyAnalysis(nextRoot.companyAnalysis0201))return fail(400);
+ }
+ // A published snapshot is an explicit strategist action. It must match
+ // the validated draft, and cannot carry evidence-only internal fields.
+ if(JSON.stringify(oldRoot.publishedCompanyAnalysis0201)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201)){
+  if(oldRoot.planningStructureVersion!==5)return fail(400);
+  const expected=publicCompanyAnalysis(nextRoot.companyAnalysis0201);
+  if(!expected||JSON.stringify(expected)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201))return fail(400);
+ }
+
  if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
  // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){

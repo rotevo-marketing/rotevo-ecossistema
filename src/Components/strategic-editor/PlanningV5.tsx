@@ -16,6 +16,8 @@ type Props = {
   project: { id: string; title: string };
   timeline?: PlanningV5Timeline | null;
   companyAnalysis?: CompanyAnalysis | null;
+  publishedCompanyAnalysis?:CompanyAnalysis | null;
+  onPublishCompanyAnalysis?:()=>Promise<void>;
   onSaveCompanyAnalysis?: (value:CompanyAnalysis)=>Promise<void>;
   editingTimeline?: ReactNode;
   preview?: boolean;
@@ -25,7 +27,7 @@ type Props = {
 const visibleStages = planningV5Stages.filter(stage => !stage.internal);
 
 export default function PlanningV5({
-  project, timeline, editingTimeline, companyAnalysis, onSaveCompanyAnalysis, preview = true, onPreviewChange,
+  project, timeline, editingTimeline, companyAnalysis, publishedCompanyAnalysis, onSaveCompanyAnalysis, onPublishCompanyAnalysis, preview = true, onPreviewChange,
 }: Props) {
   const [selection, setSelection] = useState<string>(onPreviewChange ? "01.01" : "02.01");
   const [expanded, setExpanded] = useState<string | null>(selection.slice(0, 2));
@@ -63,7 +65,7 @@ export default function PlanningV5({
           <p>{stage?.code} | {stage?.title} · {page.code}</p>
           <h2>{page.title}</h2>
         </header>}
-        {page?.code === "02.01" && <CompanyAnalysis0201 key={project.id+"-02.01"} value={companyAnalysis} preview={preview} onSave={onSaveCompanyAnalysis}/>}
+        {page?.code === "02.01" && <CompanyAnalysis0201 key={project.id+"-02.01"} value={companyAnalysis} published={!!publishedCompanyAnalysis} preview={preview} onSave={onSaveCompanyAnalysis} onPublish={onPublishCompanyAnalysis}/>}
         {editingTimeline && <div hidden={preview || !activeTimeline}>{editingTimeline}</div>}
         {activeTimeline && preview && timeline
           ? <ProjectTimeline projects={[{ ...project, data: timeline }]}/>

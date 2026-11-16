@@ -43,10 +43,9 @@ test("access is intercepted into contextual drawer with direct authorized route 
 test("presentation returns to project list only when opened from projects",()=>{
  const admin=source("app/admin/page.tsx");
  const page=source("app/apresentacao/[slug]/page.tsx");
- const view=source("Components/apresentacao/EcosystemPresentationOverview.tsx");
  assert.match(admin,/\?from=projects/);
  assert.match(page,/query\.get\("from"\)==="projects"/);
- assert.match(view,/returnToProjects\?"\/admin\?section=projects":planningHref/);
+ assert.match(page,/href=\{backHref\}/);
 });
 
 test("UI3 leaves published strategic document sheets untouched",()=>{
@@ -103,15 +102,13 @@ test("strategic editor UI3 uses compact navigation and preserves safe authorized
  const css=source("app/rotevo-ui3.css");
  assert.match(shell,/pw-app rv-ui2 rv-ui3 workspace-production/);
  assert.match(page,/admin-manage-v2 rv-ui2 rv-ui3 workspace-project-page/);
- assert.match(page,/rv-ui3-planning-tabs/);
+ assert.match(page,/<PlanningV5/);
  assert.match(page,/rv-ui3-planning-header/);
- assert.match(page,/documentSearch/);
- assert.match(page,/matchesDocumentSearch\(doc\)/);
- assert.match(page,/saveDocumentScope/);
+ assert.doesNotMatch(page,/saveDocumentScope|DynamicDocumentEditor/);
+ assert.match(page,/onSaveCompanyAnalysis/);
  assert.match(page,/expectedUpdatedAt:current\.updated_at/);
  assert.match(page,/expectedUpdatedAt:project\.updated_at/);
  assert.match(page,/onSaved=/);
- assert.match(page,/richDirty\|\|richBusy/);
  assert.match(css,/rv-ui3-planning-tabs/);
  assert.match(css,/rv-ui3-document-group/);
  assert.doesNotMatch(css,/\.se-paper\s*\{/);
@@ -126,7 +123,7 @@ test("scheduling remains editable by area without automatically publishing docum
  assert.match(schedule,/normalizedPlanningAreaSchedule\(initial\)/);
  assert.match(schedule,/visibleToClient/);
  assert.match(planning,/planningClientAccessEnabled/);
- assert.match(planning,/PlanningScheduleEditor/);
+ assert.doesNotMatch(planning,/<PlanningScheduleEditor/);
 });
 
 test("execution detail form is a contextual drawer with existing concurrency-safe save",()=>{

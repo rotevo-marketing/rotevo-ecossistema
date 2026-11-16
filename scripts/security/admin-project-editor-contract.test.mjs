@@ -215,7 +215,7 @@ test("switching between client projects isolates editor state and late save call
   assert.match(page,new RegExp("<"+name+"[^>]* key=\\{project\\.id\\} projectId=\\{project\\.id\\}"));
  }
  const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
- assert.equal(guards.length,2,"document and execution callbacks must verify project identity");
+ assert.equal(guards.length,3,"document and both execution editor callbacks must verify project identity");
  assert.doesNotMatch(page,/<(?:ProjectOnboarding|OperationalAgenda)\b/);
  assert.match(page,/<PlanningScheduleEditor key=\{project\.id\}/);
  assert.doesNotMatch(page,/key=\{project\.id\+project\.updated_at\}/);

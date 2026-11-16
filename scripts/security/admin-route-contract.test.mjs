@@ -241,7 +241,7 @@ test("strategist presentation is scoped to active assigned projects when team en
  assert.match(presentationRoute,/profile\.role==="strategist"&&process\.env\.ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED==="true"/);
  before(presentationRoute,'member.active!==true','.from("team_project_assignments")',"inactive members denied");
  before(presentationRoute,'.from("team_project_assignments")','.from("team_member_permissions")',"project assignment before read permission");
- before(presentationRoute,'.eq("permission","projects.read")','projectForPresentation(',"read authorization before presentation");
+ before(presentationRoute,'.eq("permission","projects.read")','projectForActivePresentation(',"read authorization before presentation");
 });
 
 const clientAccessRoute=readFileSync(new URL("../../src/app/api/admin/create-client-access/route.ts",import.meta.url),"utf8");

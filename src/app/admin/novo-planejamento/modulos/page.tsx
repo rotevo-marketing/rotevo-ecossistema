@@ -4,16 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
-import { ecosystemDocuments, ecosystemDocumentAreas } from "@/data/ecosystem2027";
 
-// O Painel Executivo (00) é um dashboard padrão, não um módulo selecionável.
-const selectableDocuments = ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 "));
-const selectableAreas = ecosystemDocumentAreas.filter((area) => !area.startsWith("00 "));
-import { isPlanningV5, PLANNING_V5 } from "@/lib/planning/v5";
+import { PLANNING_V5 } from "@/lib/planning/v5";
 import { supabase } from "@/lib/supabase";
 
 type NewPlanningDraft = {
-  planningStructureVersion?: typeof PLANNING_V5;
   clientId?: string;
   clientName: string;
   clientSlug: string;
@@ -21,31 +16,6 @@ type NewPlanningDraft = {
   projectSlug: string;
   description: string;
   coverImageUrl: string;
-};
-
-type ScheduleKey =
-  | "essencia-do-projeto"
-  | "fundamentos-estrategicos"
-  | "estrategia-editorial-e-canais"
-  | "campanhas-automacoes-e-conversao"
-  | "execucao-acompanhamento-e-gestao";
-
-type DeliverySchedule = Record<ScheduleKey, string>;
-
-const SCHEDULE_GROUPS: { key: ScheduleKey; label: string }[] = [
-  { key: "essencia-do-projeto", label: "Essência do Projeto" },
-  { key: "fundamentos-estrategicos", label: "Fundamentos Estratégicos do Projeto" },
-  { key: "estrategia-editorial-e-canais", label: "Estratégia Editorial e Canais de Conteúdo" },
-  { key: "campanhas-automacoes-e-conversao", label: "Campanhas, Automações e Conversão" },
-  { key: "execucao-acompanhamento-e-gestao", label: "Execução, Acompanhamento e Gestão" },
-];
-
-const EMPTY_SCHEDULE: DeliverySchedule = {
-  "essencia-do-projeto": "",
-  "fundamentos-estrategicos": "",
-  "estrategia-editorial-e-canais": "",
-  "campanhas-automacoes-e-conversao": "",
-  "execucao-acompanhamento-e-gestao": "",
 };
 
 function getStoredDraft(): NewPlanningDraft | null {
@@ -65,7 +35,6 @@ function getStoredDraft(): NewPlanningDraft | null {
         typeof fields.projectSlug !== "string" || !slugPattern.test(fields.projectSlug) ||
         typeof fields.description !== "string" || typeof fields.coverImageUrl !== "string") return null;
     return {
-      planningStructureVersion: isPlanningV5(fields) ? PLANNING_V5 : undefined,
       clientId:typeof fields.clientId==="string"&&/^[0-9a-f-]{36}$/i.test(fields.clientId)?fields.clientId:undefined,
       clientName: fields.clientName,
       clientSlug: fields.clientSlug,
@@ -83,16 +52,11 @@ export default function SelecionarModulosPage() {
   const router = useRouter();
 
   const [draft, setDraft] = useState<NewPlanningDraft | null>(null);
-  const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule>(EMPTY_SCHEDULE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPreview, setIsPreview] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [taskExecution, setTaskExecution] = useState<string[]>([]);
-  const [taskPresentation, setTaskPresentation] = useState<string[]>([]);
-  const [expandedAreas, setExpandedAreas] = useState<string[]>([selectableAreas[0]]);
-  const [search, setSearch] = useState("");
 
 
   const finalProjectSlug = useMemo(() => {
@@ -143,34 +107,6 @@ export default function SelecionarModulosPage() {
     validateAndLoadDraft();
   }, [router]);
 
-  function toggleTask(code: string, target: "execution" | "presentation") {
-    if (target === "execution") {
-      setTaskExecution((prev) => {
-        const next = prev.includes(code) ? prev.filter((item) => item !== code) : [...prev, code];
-        if (!next.includes(code)) setTaskPresentation((shown) => shown.filter((item) => item !== code));
-        return next;
-      });
-    } else {
-      if (!taskExecution.includes(code)) return;
-      setTaskPresentation((prev) => prev.includes(code) ? prev.filter((item) => item !== code) : [...prev, code]);
-    }
-  }
-
-  function toggleArea(area: string) {
-    const codes = selectableDocuments.filter((task) => task.area === area).map((task) => task.code);
-    const allSelected = codes.every((code) => taskExecution.includes(code));
-    setTaskExecution((prev) => allSelected ? prev.filter((code) => !codes.includes(code)) : Array.from(new Set([...prev, ...codes])));
-    if (allSelected) setTaskPresentation((prev) => prev.filter((code) => !codes.includes(code)));
-  }
-
-  function toggleExpanded(area: string) {
-    setExpandedAreas((prev) => prev.includes(area) ? prev.filter((item) => item !== area) : [...prev, area]);
-  }
-
-  function updateScheduleDate(key: ScheduleKey, value: string) {
-    setDeliverySchedule((prev) => ({ ...prev, [key]: value }));
-  }
-
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSaving) return;
@@ -181,11 +117,6 @@ export default function SelecionarModulosPage() {
 
     if (!draft) {
       setErrorMessage("Os dados iniciais do planejamento não foram encontrados.");
-      return;
-    }
-
-    if (!v5 && taskExecution.length === 0) {
-      setErrorMessage("Selecione pelo menos um documento do Ecossistema.");
       return;
     }
 
@@ -220,11 +151,6 @@ export default function SelecionarModulosPage() {
       return;
     }
 
-    // Only save schedule keys that have a date filled
-    const filledSchedule = Object.fromEntries(
-      Object.entries(deliverySchedule).filter(([, v]) => v !== "")
-    );
-
     let createdProjectId="";
     try {
       const {data:session,error:sessionError}=await supabase.auth.getSession();
@@ -239,17 +165,9 @@ export default function SelecionarModulosPage() {
           slug:finalProjectSlug,
           description:draft.description||null,
           status:"draft",
-          data: v5 ? {
+          data: {
             planningStructureVersion: PLANNING_V5,
             coverImageUrl: draft.coverImageUrl || null,
-          } : {
-            coverImageUrl:draft.coverImageUrl||null,
-            ecosystem2027:{
-              version:1,
-              selectedDocumentCodes:selectableDocuments.filter(doc=>taskExecution.includes(doc.code)).map(doc=>doc.code),
-              presentedDocumentCodes:selectableDocuments.filter(doc=>taskPresentation.includes(doc.code)).map(doc=>doc.code)
-            },
-            deliverySchedule:Object.keys(filledSchedule).length>0?filledSchedule:null
           }
         }),cache:"no-store"
       });
@@ -270,15 +188,8 @@ export default function SelecionarModulosPage() {
   }
 
 
-  const v5 = isPlanningV5(draft);
-  const visibleAreas = selectableAreas.filter((area) => {
-    const term = search.toLocaleLowerCase("pt-BR").trim();
-    return !term || area.toLocaleLowerCase("pt-BR").includes(term) ||
-      ecosystemDocuments.some((task) => task.area === area && (task.title.toLocaleLowerCase("pt-BR").includes(term) || task.code.includes(term)));
-  });
-
   return (
-    <main className={"admin-modules-v2 rv-ui2 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]" + (v5 ? " rv-ui3" : "")}>
+    <main className="admin-modules-v2 rv-ui2 rv-ui3 flex min-h-screen flex-col bg-[#F6F7FB] text-[#323647]">
       <style jsx global>{`
         .admin-modules-v2, .admin-modules-v2 h1, .admin-modules-v2 h2, .admin-modules-v2 h3 {
           font-family: var(--font-body), Arial, Helvetica, sans-serif !important;
@@ -304,8 +215,8 @@ export default function SelecionarModulosPage() {
       <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 lg:px-10">
         <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">{v5 ? "Planejamento Rotevo V5" : "Escolher módulos"}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">{v5 ? "O planejamento será criado como rascunho." : "Selecione os documentos que farão parte do planejamento e quais serão exibidos na apresentação do cliente."}</p>
+            <h1 className="text-[30px] font-bold leading-[38px] tracking-[-0.02em]">Planejamento Rotevo V5</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#525B70]">O planejamento será criado como rascunho.</p>
           </div>
           {draft && <div className="rounded-xl border border-[#E3E7F0] bg-white px-5 py-3 text-sm">
             <span className="block text-xs text-[#697386]">Projeto</span>
@@ -313,65 +224,12 @@ export default function SelecionarModulosPage() {
             <span className="mt-1 block text-xs text-[#525B70]">{draft.clientName}</span>
           </div>}
         </div>
-        {isPreview && <div role="status" className="mb-6 rounded-xl border border-[#A7E000] bg-[#F5FBDD] px-5 py-4 text-sm text-[#243100]"><strong>Modo de pré-visualização.</strong> Explore as áreas, documentos e opções livremente. Nenhum cliente ou planejamento será cadastrado.</div>}
+        {isPreview && <div role="status" className="mb-6 rounded-xl border border-[#A7E000] bg-[#F5FBDD] px-5 py-4 text-sm text-[#243100]"><strong>Modo de pré-visualização.</strong>  Nenhum cliente ou planejamento será cadastrado.</div>}
         {errorMessage && <div role="alert" className="mb-6 rounded-xl bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{errorMessage}</div>}
-        {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando planejamento...</div> : v5 ? <form onSubmit={handleSubmit} className="flex flex-wrap justify-end gap-3">
+        {isLoading || !draft ? <div className="rounded-xl border border-[#E3E7F0] bg-white p-8 text-sm text-[#697386]">Carregando planejamento...</div> : <form onSubmit={handleSubmit} className="flex flex-wrap justify-end gap-3">
           <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-sm font-medium">Voltar aos dados</Link>
-          <button type="submit" disabled={isSaving} className="rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-45">{isSaving ? "Criando..." : "Criar planejamento"}</button>
-        </form> : <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Áreas disponíveis</span><strong className="mt-2 block text-2xl">{selectableAreas.length}</strong></div>
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Documentos selecionados</span><strong className="mt-2 block text-2xl">{taskExecution.length} <span className="text-sm font-normal text-[#697386]">de {selectableDocuments.length}</span></strong></div>
-            <div className="rounded-xl border border-[#E3E7F0] bg-white p-5"><span className="text-xs text-[#697386]">Visíveis ao cliente</span><strong className="mt-2 block text-2xl">{taskPresentation.length}</strong></div>
-          </div>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <input aria-label="Buscar área ou tarefa" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar área, tarefa ou código..." className="w-full rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-sm outline-none focus:border-[#6D35F5] sm:max-w-md"/>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => {setTaskExecution(selectableDocuments.map((doc) => doc.code));setTaskPresentation(selectableDocuments.map((doc) => doc.code));setExpandedAreas(selectableAreas);}} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Selecionar todas</button>
-              <button type="button" onClick={() => {setTaskExecution([]);setTaskPresentation([]);}} className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white px-4 py-3 text-xs font-semibold hover:bg-[#F6F7FB]">Limpar seleção</button>
-            </div>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-3">
-              {visibleAreas.map((area) => {
-                const tasks = selectableDocuments.filter((task) => task.area === area);
-                const chosen = tasks.filter((task) => taskExecution.includes(task.code)).length;
-                const open = expandedAreas.includes(area) || !!search.trim();
-                const all = chosen === tasks.length;
-                const partial = chosen > 0 && !all;
-                return <section key={area} className="overflow-hidden rounded-xl border border-[#E3E7F0] bg-white">
-                  <div className="flex flex-wrap items-center gap-3 p-4 sm:p-5">
-                    <input type="checkbox" aria-label={`Selecionar todos os documentos de ${area}`} checked={all} ref={(element) => {if(element) element.indeterminate = partial;}} onChange={() => toggleArea(area)} className="h-5 w-5 cursor-pointer accent-[#6D35F5]"/>
-                    <button type="button" aria-expanded={open} onClick={() => toggleExpanded(area)} className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-3 text-left">
-                      <span className="text-sm font-bold sm:text-base">{area}</span>
-                      <span className="shrink-0 text-xs text-[#697386]">{chosen} / {tasks.length} <span aria-hidden="true" className="ml-2">{open ? "▲" : "▼"}</span></span>
-                    </button>
-                  </div>
-                  {open && <div className="border-t border-[#E3E7F0] px-4 pb-3 pt-2 sm:px-5">
-                    <div className="grid grid-cols-[1fr_82px_82px] items-center gap-2 border-b border-[#E3E7F0] py-3 text-xs font-semibold text-[#697386] sm:grid-cols-[1fr_112px_112px]">
-                      <span>Documento do Notion</span><span className="text-center">Executar</span><span className="text-center">Exibir</span>
-                    </div>
-                    {tasks.filter((task) => !search.trim() || area.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")) || task.title.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")) || task.code.includes(search)).map((task) =>
-                      <div key={task.code} className="grid grid-cols-[1fr_82px_82px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_112px_112px]">
-                        <div className="min-w-0"><div className="flex flex-wrap items-baseline gap-2"><span className="text-xs font-semibold text-[#697386]">{task.code}</span><span className="text-sm font-medium">{task.title}</span></div>
-                          <span className={task.visibility === "Condicional" ? "mt-1 inline-block text-[11px] text-[#4A5971]" : "mt-1 inline-block text-[11px] text-[#825E20]"}>{task.visibility || "Documento do planejamento"}</span>
-                        </div>
-                        <div className="text-center"><input type="checkbox" aria-label={`Executar ${task.code} ${task.title}`} checked={taskExecution.includes(task.code)} onChange={() => toggleTask(task.code,"execution")} className="h-5 w-5 accent-[#6D35F5]"/></div>
-                        <div className="text-center"><input type="checkbox" aria-label={`Exibir ${task.code} ${task.title}`} disabled={!taskExecution.includes(task.code)} checked={taskPresentation.includes(task.code)} onChange={() => toggleTask(task.code,"presentation")} className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30"/></div>
-                      </div>
-                    )}
-                  </div>}
-                </section>;
-              })}
-              {visibleAreas.length === 0 && <p className="rounded-xl bg-white p-6 text-sm text-[#697386]">Nenhum documento encontrado.</p>}
-            </div>
-            <div className="mt-6 rounded-xl bg-[#EEF0F5] px-5 py-4 text-xs leading-5 text-[#525B70]"><strong>Execução e apresentação são independentes.</strong> Para exibir um documento, marque primeiro “Executar”. Os títulos seguem a base Docs do Notion. A seleção para execução e exibição é configurada por documento.</div>
-            <div className="mt-7 flex flex-col gap-3 border-t border-[#E3E7F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <Link href="/admin/novo-planejamento" className="rounded-xl border border-[#E3E7F0] bg-white px-6 py-3 text-center text-sm font-medium">Voltar aos dados</Link>
-              <button type="submit" disabled={isSaving || isPreview || taskExecution.length === 0} className="cursor-pointer rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:cursor-not-allowed disabled:opacity-45">{isPreview ? "Pré-visualização — não salva" : isSaving ? "Criando..." : "Criar planejamento"}</button>
-            </div>
-          </form>
-        </>}
+          <button type="submit" disabled={isSaving || isPreview} className="rounded-lg bg-[#6C5CE7] px-7 py-3 text-sm font-semibold text-white hover:bg-[#5949D1] disabled:opacity-45">{isSaving ? "Criando..." : "Criar planejamento"}</button>
+        </form>}
       </div>
       <footer className="border-t border-[#E3E6ED] bg-white text-[#687487]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>

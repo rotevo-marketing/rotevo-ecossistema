@@ -1,7 +1,7 @@
 import {workspaceForClient, type PortalModule} from "@/lib/operations/model";
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
-import {projectForPresentation,type PresentationProjectRow} from "@/lib/security/projectForPresentation";
+import {projectForActivePresentation,type PresentationProjectRow} from "@/lib/security/projectForPresentation";
 export const runtime="nodejs";
 const fail=(status:number)=>NextResponse.json({error:"Não foi possível acessar a apresentação autorizada."},{status,headers:{"Cache-Control":"no-store"}});
 export async function GET(req:NextRequest){
@@ -46,7 +46,7 @@ export async function GET(req:NextRequest){
   clientModules=workspaceForClient(workspace.data?.data).modules;
   if(!clientModules.includes("planning"))return fail(404);
  }
- const projected=projectForPresentation(project as PresentationProjectRow,profile.role==="strategist",clientModules);
+ const projected=projectForActivePresentation(project as PresentationProjectRow,profile.role==="strategist",clientModules);
  if(!projected)return fail(404);
  return NextResponse.json({project:projected},{headers:{"Cache-Control":"no-store"}});
 }

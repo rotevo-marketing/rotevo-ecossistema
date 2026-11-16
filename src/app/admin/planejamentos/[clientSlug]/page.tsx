@@ -1,6 +1,5 @@
 "use client";
 
-import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -11,13 +10,7 @@ import { isPlanningV5 } from "@/lib/planning/v5";
 import { projectForClient } from "@/lib/security/projectForClient";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
 
-import PlanningScheduleEditor,{safePlanningStages,type PlanningStage} from "@/Components/admin/PlanningScheduleEditor";
-import PlanningAreaScheduleEditor from "@/Components/admin/PlanningAreaScheduleEditor";
-import type {PlanningAreaDelivery} from "@/lib/planning/areaSchedule";
-import PublishedPlanningPreview from "@/Components/strategic-editor/PublishedPlanningPreview";
 import type {StrategicPlanningData} from "@/Components/strategic-editor/StrategicDocumentEditor";
-import DynamicDocumentEditor from "@/Components/strategic-editor/DynamicDocumentEditor";
-import { ecosystemDocuments } from "@/data/ecosystem2027";
 import { supabase } from "@/lib/supabase";
 
 type ClientRecord = {
@@ -31,8 +24,6 @@ type ProjectData = {
   companyAnalysis0201?:CompanyAnalysis;
   publishedCompanyAnalysis0201?:CompanyAnalysis;
   coverImageUrl?: string | null;
-  planningStages?: PlanningStage[];
-  planningAreaSchedule?: PlanningAreaDelivery[];
   planningClientAccessEnabled?: boolean;
   executionTimeline?: import("@/Components/cliente/ProjectTimeline").ExecutionItem[];
   ecosystem2027?: StrategicPlanningData["ecosystem2027"];
@@ -80,32 +71,17 @@ function PlanejamentoClienteContent() {
 
   const [project, setProject] = useState<PlanningProject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
 
-  const [richDirty,setRichDirty]=useState(false);
-  const [richBusy,setRichBusy]=useState(false);
-  const [editingScope, setEditingScope] = useState(false);
-  const [documentSearch,setDocumentSearch]=useState("");
-  const [planningTab,setPlanningTab]=useState<"documents"|"schedule"|"preview"|"editor"|"execution">("editor");
-  const [draftDocumentCodes, setDraftDocumentCodes] = useState<string[]>([]);
-  const [draftPresentedCodes, setDraftPresentedCodes] = useState<string[]>([]);
+  const [planningTab,setPlanningTab]=useState<"preview"|"editor">("editor");
 
   const client = project ? getProjectClient(project) : null;
 
   const coverImageUrl = project?.data?.coverImageUrl || "";
-  const v5 = isPlanningV5(project?.data);
-  const previewTimeline = v5 && project ? projectForClient({...project, client_id: client?.id ?? ""}, ["execution"]).data : null;
-  const hasEcosystem = !v5 && !!project?.data?.ecosystem2027;
-  const documentCodes = project?.data?.ecosystem2027?.selectedDocumentCodes ?? [];
-  const presentedCodes = project?.data?.ecosystem2027?.presentedDocumentCodes ?? [];
-  useUnsavedChanges(editingScope && (JSON.stringify(draftDocumentCodes)!==JSON.stringify(documentCodes)||JSON.stringify(draftPresentedCodes)!==JSON.stringify(presentedCodes)));
-  const selectedDocuments = ecosystemDocuments.filter((doc) => documentCodes.includes(doc.code));
-  const documentAreas = Array.from(new Set(selectedDocuments.map((doc) => doc.area)));
-  const matchesDocumentSearch=(doc:{code:string;title:string})=>`${doc.code} ${doc.title}`.toLocaleLowerCase("pt-BR").includes(documentSearch.trim().toLocaleLowerCase("pt-BR"));
+  const previewTimeline = project ? projectForClient({...project, client_id: client?.id ?? ""}, ["execution"]).data : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -210,8 +186,6 @@ function PlanejamentoClienteContent() {
         return;
       }
       setProject(foundProject);
-      setDraftDocumentCodes(foundProject.data?.ecosystem2027?.selectedDocumentCodes ?? []);
-      setDraftPresentedCodes(foundProject.data?.ecosystem2027?.presentedDocumentCodes ?? []);
 
       setIsLoading(false);
     }
@@ -237,54 +211,6 @@ function PlanejamentoClienteContent() {
     const result=await response.json();
     if(!result?.project||typeof result.project.updated_at!=="string") throw new Error("Não foi possível confirmar a gravação.");
     return {data:result.project.data as ProjectData,updated_at:result.project.updated_at};
-  }
-
-  function toggleScopeDocument(code: string, kind: "include" | "present") {
-    if (kind === "include") {
-      if (draftDocumentCodes.includes(code)) {
-        setDraftDocumentCodes((prev) => prev.filter((item) => item !== code));
-        setDraftPresentedCodes((prev) => prev.filter((item) => item !== code));
-      } else {
-        setDraftDocumentCodes((prev) => [...prev, code]);
-      }
-    } else if (draftDocumentCodes.includes(code)) {
-      setDraftPresentedCodes((prev) => prev.includes(code) ? prev.filter((item) => item !== code) : [...prev, code]);
-    }
-  }
-
-  async function saveDocumentScope() {
-    if (!project || !project.data?.ecosystem2027 || isSaving) return;
-    if (draftDocumentCodes.length === 0) {
-      setErrorMessage("Selecione pelo menos um documento para o planejamento.");
-      return;
-    }
-    if(richDirty||richBusy){setErrorMessage("Salve ou descarte as alterações do editor antes de mudar o escopo.");return;}
-    setIsSaving(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-    const validCodes = new Set(ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 ")).map((doc) => doc.code));
-    const included = draftDocumentCodes.filter((code) => validCodes.has(code));
-    const visible = draftPresentedCodes.filter((code) => included.includes(code));
-    const nextData: ProjectData = {
-      ...project.data,
-      ecosystem2027: {
-        ...project.data.ecosystem2027,
-        selectedDocumentCodes: included,
-        presentedDocumentCodes: visible,
-      },
-    };
-    try {
-      const saved=await saveAuthorizedProjectData(project,nextData);
-      setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);
-      setDraftDocumentCodes(included);
-      setDraftPresentedCodes(visible);
-      setEditingScope(false);
-      setSuccessMessage("Documentos do planejamento atualizados com sucesso.");
-    } catch(error) {
-      setErrorMessage(error instanceof Error?error.message:"Não foi possível salvar os documentos.");
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   async function handlePublish(newStatus: "draft" | "published") {
@@ -354,62 +280,14 @@ function PlanejamentoClienteContent() {
 
         {!isLoading && project ? (
           <>
-            <section className="pw-project-header rv-ui3-planning-header"><div className="pw-breadcrumb"><Link href="/admin?section=projects">Projetos</Link><span>/</span>{client?.name}<span>/</span>Planejamento</div><div className="pw-project-title rv-ui3-planning-title"><div className="pw-project-photo-wrap"><div className="pw-project-photo">{coverImageUrl?<img src={coverImageUrl} alt={`Foto do projeto ${project.title}`}/>:<span>{(client?.name??project.title).charAt(0).toUpperCase()}</span>}</div></div><div className="pw-project-identity"><p className="pw-project-client">{client?.name}</p><h1>{project.title}</h1><div className="pw-project-meta"><span>{v5 ? "Planejamento Rotevo V5" : "Planejamento estratégico"}</span><span className="pw-meta-divider" aria-hidden="true"/><span className="pw-status pw-project-status"><span className="pw-project-status-dot"/>{getStatusLabel(project.status)}</span></div></div><button className="pw-outline pw-project-client-view" onClick={()=>setPlanningTab("preview")}>Visão do cliente ↗</button></div><div className="workspace-project-controls rv-ui3-planning-controls"><span>Atualizado em {formatDate(project.updated_at)}</span><Link href={`/admin/planejamentos/${clientSlug}/acesso?projectId=${project.id}`}>Configurar acesso</Link><Link href={`/apresentacao/${project.slug}`}>Abrir apresentação ↗</Link>{project.status!=="archived"&&<button className="pw-outline" disabled={isPublishing||richDirty||richBusy||isSaving} onClick={()=>{if(window.confirm(project.status==="published"?"Retirar a apresentação do acesso do cliente?":"Disponibilizar ao cliente a apresentação e os documentos já publicados?"))void handlePublish(project.status==="published"?"draft":"published");}}>{isPublishing?"Atualizando…":project.status==="published"?"Retirar apresentação":"Disponibilizar apresentação"}</button>}</div>{errorMessage&&<p role="alert" className="se-notice">{errorMessage}</p>}{successMessage&&<p role="status" className="se-notice">{successMessage}</p>}</section>
+            <section className="pw-project-header rv-ui3-planning-header"><div className="pw-breadcrumb"><Link href="/admin?section=projects">Projetos</Link><span>/</span>{client?.name}<span>/</span>Planejamento</div><div className="pw-project-title rv-ui3-planning-title"><div className="pw-project-photo-wrap"><div className="pw-project-photo">{coverImageUrl?<img src={coverImageUrl} alt={`Foto do projeto ${project.title}`}/>:<span>{(client?.name??project.title).charAt(0).toUpperCase()}</span>}</div></div><div className="pw-project-identity"><p className="pw-project-client">{client?.name}</p><h1>{project.title}</h1><div className="pw-project-meta"><span>Planejamento Rotevo V5</span><span className="pw-meta-divider" aria-hidden="true"/><span className="pw-status pw-project-status"><span className="pw-project-status-dot"/>{getStatusLabel(project.status)}</span></div></div><button className="pw-outline pw-project-client-view" onClick={()=>setPlanningTab("preview")}>Visão do cliente ↗</button></div><div className="workspace-project-controls rv-ui3-planning-controls"><span>Atualizado em {formatDate(project.updated_at)}</span><Link href={`/admin/planejamentos/${clientSlug}/acesso?projectId=${project.id}`}>Configurar acesso</Link><Link href={`/apresentacao/${project.slug}`}>Abrir apresentação ↗</Link>{project.status!=="archived"&&<button className="pw-outline" disabled={isPublishing} onClick={()=>{if(window.confirm(project.status==="published"?"Retirar a apresentação do acesso do cliente?":"Disponibilizar ao cliente a apresentação e as páginas V5 já disponibilizadas?"))void handlePublish(project.status==="published"?"draft":"published");}}>{isPublishing?"Atualizando…":project.status==="published"?"Retirar apresentação":"Disponibilizar apresentação"}</button>}</div>{errorMessage&&<p role="alert" className="se-notice">{errorMessage}</p>}{successMessage&&<p role="status" className="se-notice">{successMessage}</p>}</section>
 
-            {hasEcosystem && <div className="rv-ui3-planning-nav-wrap mt-3 space-y-3">
-              <nav aria-label="Seções do planejamento" className="pw-project-tabs workspace-project-tabs rv-ui3-planning-tabs" role="tablist">{([{id:"editor",label:"Planejamento"},{id:"schedule",label:"Cronograma do projeto"},{id:"execution",label:"Plano de execução"},{id:"preview",label:"Visão do cliente"},{id:"documents",label:"Configurar documentos"}] as const).map(item=><button key={item.id} type="button" role="tab" id={"planning-tab-"+item.id} aria-controls={"planning-panel-"+item.id} aria-selected={planningTab===item.id} tabIndex={planningTab===item.id?0:-1} onKeyDown={event=>{
- if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
- event.preventDefault();
- const tabs=Array.from(event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
- const index=tabs.indexOf(event.currentTarget);
- const next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(index+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
- tabs[next]?.click();tabs[next]?.focus();
- }} disabled={richBusy||isSaving||isPublishing} onClick={()=>setPlanningTab(item.id)} className={planningTab===item.id?"workspace-tab-active":""}>{item.label}</button>)}</nav>
-              <div id="planning-panel-documents" role="tabpanel" tabIndex={0} aria-labelledby="planning-tab-documents" hidden={planningTab!=="documents"}>
-              <div className="rv-ui3-documents-config bg-white py-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div><h2 className="text-xl font-bold">Documentos do planejamento</h2><p className="mt-1 text-sm text-[#525B70]">Gerencie o escopo e a exibição dos documentos do Ecossistema 2027.</p></div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="rv-ui3-documents-search"><span className="sr-only">Buscar documento por nome ou código</span><input type="search" placeholder="Buscar documentos..." value={documentSearch} onChange={event=>setDocumentSearch(event.target.value)} className="min-h-10 w-full rounded-lg border border-[#E3E6ED] px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"/></label>
-                    <button type="button" onClick={() => { if(isSaving)return;setEditingScope(!editingScope); setDraftDocumentCodes(documentCodes); setDraftPresentedCodes(presentedCodes); setErrorMessage(""); }} className="cursor-pointer rounded-xl bg-[#0B142A] px-4 py-2.5 text-sm font-medium text-white">{editingScope ? "Cancelar edição" : "Editar documentos"}</button>
-                  </div>
-                </div>
-                {editingScope ? <div className="mt-5">
-                  <div className="rounded-xl bg-[#F6F7FB] p-4 text-xs text-[#525B70]">Marque os documentos que farão parte do projeto e quais devem ser exibidos ao cliente. Ao retirar um documento, sua exibição também será desmarcada. Os conteúdos já salvos não serão excluídos.</div>
-                  <div className="rv-ui3-document-groups mt-4 max-h-[660px] space-y-3 overflow-y-auto">
-                    {Array.from(new Set(ecosystemDocuments.filter((doc) => !doc.area.startsWith("00 ") && matchesDocumentSearch(doc)).map((doc) => doc.area))).map((area) => <section key={area} className="rv-ui3-document-group">
-                      <h3 className="mb-2 text-sm font-semibold">{area}</h3>
-                      <div className="grid grid-cols-[1fr_64px_64px] gap-2 border-b border-[#E3E7F0] pb-2 text-xs text-[#697386] sm:grid-cols-[1fr_90px_90px]"><span>Documento</span><span className="text-center">Incluir</span><span className="text-center">Exibir</span></div>
-                      {ecosystemDocuments.filter((doc) => doc.area === area && matchesDocumentSearch(doc)).map((doc) => <div key={doc.code} className="grid grid-cols-[1fr_64px_64px] items-center gap-2 border-b border-[#EEF0F5] py-3 last:border-0 sm:grid-cols-[1fr_90px_90px]">
-                        <div className="flex flex-wrap items-baseline gap-2"><span className="text-xs text-[#697386]">{doc.code}</span><span className="text-sm">{doc.title}</span></div>
-                        <div className="text-center"><input aria-label={`Incluir ${doc.title}`} type="checkbox" disabled={isSaving} className="h-5 w-5 cursor-pointer accent-[#6D35F5]" checked={draftDocumentCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"include")}/></div>
-                        <div className="text-center"><input aria-label={`Exibir ${doc.title}`} type="checkbox" className="h-5 w-5 cursor-pointer accent-[#6D35F5] disabled:cursor-not-allowed disabled:opacity-30" disabled={isSaving||!draftDocumentCodes.includes(doc.code)} checked={draftPresentedCodes.includes(doc.code)} onChange={() => toggleScopeDocument(doc.code,"present")}/></div>
-                      </div>)}
-                    </section>)}
-                  </div>
-                  {errorMessage && <p role="alert" className="mt-4 text-sm text-red-700">{errorMessage}</p>}
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#E3E7F0] pt-5"><span className="text-xs text-[#525B70]">{draftDocumentCodes.length} documentos incluídos · {draftPresentedCodes.length} visíveis</span><button type="button" disabled={isSaving || draftDocumentCodes.length === 0} onClick={saveDocumentScope} className="cursor-pointer rounded-xl bg-[#0B142A] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? "Salvando..." : "Salvar alterações"}</button></div>
-                </div> : <div className="rv-ui3-document-groups mt-5 space-y-3">
-                  {documentAreas.filter(area=>selectedDocuments.some(doc=>doc.area===area&&matchesDocumentSearch(doc))).map((area) => <section key={area} className="rv-ui3-document-group"><h3 className="mb-2 text-sm font-semibold">{area}</h3><div className="divide-y divide-[#EEF0F5]">{selectedDocuments.filter((doc) => doc.area === area && matchesDocumentSearch(doc)).map((doc) => <div key={doc.code} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="flex items-baseline gap-3"><span className="text-xs font-semibold text-[#697386]">{doc.code}</span><span className="text-sm font-medium">{doc.title}</span></div><span className="text-xs text-[#697386]">{presentedCodes.includes(doc.code) ? "Marcado para exibição" : "Uso interno"}</span></div>)}</div></section>)}
-                </div>}
-                {!editingScope && <div className="mt-5 rounded-xl bg-[#F6F7FB] p-4 text-xs leading-5 text-[#525B70]">A seleção define o escopo e a visibilidade. Na aba Planejamento, edite os documentos e controle revisão, aprovação e publicação. Somente versões explicitamente publicadas podem aparecer na apresentação do cliente.</div>}
-              </div>
-              </div>
-            </div>}
+            {!isPlanningV5(project.data) && project.status !== "archived" && <section className="rv-ui3-progressive-settings mx-auto w-full max-w-none px-5 pt-4 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E7F0] bg-white py-4"><div className="max-w-xl"><h2 className="text-sm font-bold">Leitura progressiva no Portal do Cliente</h2><p className="mt-1 text-xs leading-5 text-[#697386]">Permitir acesso às páginas V5 disponibilizadas, mesmo antes da publicação integral do projeto.</p></div><button type="button" disabled={isPublishing} onClick={async()=>{try{setErrorMessage("");const enabled=project.data?.planningClientAccessEnabled===true;const saved=await saveAuthorizedProjectData(project,{...project.data,planningClientAccessEnabled:!enabled});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);setSuccessMessage(!enabled?"Leitura progressiva habilitada.":"Leitura progressiva desabilitada.");}catch(e){setErrorMessage(e instanceof Error?e.message:"Não foi possível atualizar o acesso.");}}} className={"cursor-pointer rounded-lg px-4 py-2.5 text-xs font-semibold "+(project.data?.planningClientAccessEnabled?"border border-[#D1DBE4] bg-white text-[#4B5563]":"bg-[#6D35F5] text-white")}>{project.data?.planningClientAccessEnabled?"Desabilitar leitura progressiva":"Habilitar leitura progressiva"}</button></div></section>}
           </>
         ) : null}
       </section>
 
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-schedule" aria-labelledby="planning-tab-schedule" hidden={planningTab!=="schedule"}>
-   <section className="rv-ui3-progressive-settings mx-auto w-full max-w-none px-5 pt-4 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E7F0] bg-white py-4"><div className="max-w-xl"><h2 className="text-sm font-bold">Leitura progressiva no Portal do Cliente</h2><p className="mt-1 text-xs leading-5 text-[#697386]">Permitir acesso aos documentos já aprovados, publicados e marcados para apresentação, mesmo antes da publicação integral do projeto. Rascunhos e documentos não autorizados continuam privados.</p></div><button type="button" disabled={isSaving||richDirty||richBusy||isPublishing} onClick={async()=>{try{setErrorMessage("");const enabled=project.data?.planningClientAccessEnabled===true;const saved=await saveAuthorizedProjectData(project,{...project.data,planningClientAccessEnabled:!enabled});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);setSuccessMessage(!enabled?"Leitura progressiva habilitada.":"Leitura progressiva desabilitada.");}catch(e){setErrorMessage(e instanceof Error?e.message:"Não foi possível atualizar o acesso.");}}} className={"cursor-pointer rounded-lg px-4 py-2.5 text-xs font-semibold "+(project.data?.planningClientAccessEnabled?"border border-[#D1DBE4] bg-white text-[#4B5563]":"bg-[#6D35F5] text-white")}>{project.data?.planningClientAccessEnabled?"Desabilitar leitura progressiva":"Habilitar leitura progressiva"}</button></div></section>
-   <PlanningAreaScheduleEditor key={project.id+"-areas"} initial={project.data?.planningAreaSchedule??[]} selectedDocumentCodes={documentCodes} onSave={async(schedule)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningAreaSchedule:schedule});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>
-   <details className="mx-auto w-full max-w-none px-5 py-4 sm:px-8 lg:px-10"><summary className="cursor-pointer rounded-xl border border-[#E3E7F0] bg-white p-4 text-sm font-semibold text-[#525B70]">Cronograma operacional anterior (manter dados existentes)</summary>
-    <PlanningScheduleEditor key={project.id} initial={safePlanningStages(project.data?.planningStages)} onSave={async(stages)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,planningStages:stages});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}/>
-   </details>
-  </div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-preview" aria-labelledby="planning-tab-preview" hidden={planningTab!=="preview"}><PublishedPlanningPreview data={project.data??{}} status={project.status} title={project.title} clientName={client?.name??""}/></div>}
-      {project && !isLoading && hasEcosystem && <div role="tabpanel" tabIndex={0} id="planning-panel-editor" aria-labelledby="planning-tab-editor" hidden={planningTab!=="editor"}><DynamicDocumentEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onBusyChange={setRichBusy} onDirtyChange={setRichDirty} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></div>}
-      {project && !isLoading && v5 && <div className="w-full px-5 pb-12 sm:px-8 lg:px-10">
+      {project && !isLoading && <div className="w-full px-5 pb-12 sm:px-8 lg:px-10">
         <PlanningV5 key={project.id} project={project}
           preview={planningTab === "preview"}
           onPreviewChange={value => setPlanningTab(value ? "preview" : "editor")}
@@ -420,7 +298,6 @@ function PlanejamentoClienteContent() {
           timeline={previewTimeline?.portalModules.includes("execution") ? previewTimeline : null}
           editingTimeline={<ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/>}/>
       </div>}
-      {project && !isLoading && !v5 && <div role="tabpanel" tabIndex={0} id="planning-panel-execution" aria-labelledby="planning-tab-execution" hidden={hasEcosystem && planningTab!=="execution"}><section className="mx-auto w-full max-w-none px-5 pb-12 sm:px-8 lg:px-10"><ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/></section></div>}
       <footer className="rv-ui3-planning-footer bg-[#A7E000]"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs font-medium sm:flex-row sm:justify-between sm:px-8 lg:px-10"><span>© 2026 Rotevo. Todos os direitos reservados.</span><span>Rotevo Estratégia &amp; Consultoria</span></div></footer>
     </main>
   );

@@ -24,7 +24,8 @@ export function validOverviewDate(value:unknown):value is string{
  const date=new Date(value+"T12:00:00Z");return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value;
 }
 const distance=(date:string,today:string)=>Math.round((Date.parse(date+"T12:00:00Z")-Date.parse(today+"T12:00:00Z"))/86400000);
-const open=(task:ExecutionItem)=>task.status!=="completed"&&task.status!=="cancelled";
+const active=(task:ExecutionItem)=>!task.deletedAt&&!task.archivedAt;
+const open=(task:ExecutionItem)=>active(task)&&task.status!=="completed"&&task.status!=="cancelled";
 const unique=<T extends {id:string;title:string}>(rows:T[])=>[...new Map(rows.filter(x=>x&&typeof x.id==="string"&&x.id&&typeof x.title==="string").map(x=>[x.id,x])).values()];
 export function editorialCandidates(projects:OperationsProject[]){
  return projects.filter(p=>p.status!=="archived"&&p.status!=="cancelled"&&p.status!=="closed").flatMap(project=>unique(Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(x=>(x.status==="awaiting_client"||x.status==="idea_pending")&&x.visibleToClient===true).map(item=>({project,item})));
@@ -39,9 +40,13 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
  const currentTime=new Intl.DateTimeFormat("en-GB",{timeZone:"America/Sao_Paulo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(now);
  for(const project of usable){
   const tasks=unique(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[]);
+  const tasksById=new Map(tasks.map(task=>[task.id,task]));
   for(const task of tasks.filter(open)){
    const due=validOverviewDate(task.dueDate)?task.dueDate:undefined;if(task.dueDate&&!due)invalidDates++;
-   const overdue=!!due&&due<today,blocked=task.status==="blocked",remaining=[...new Set(task.dependencies??[])].filter(id=>tasks.find(x=>x.id===id)?.status!=="completed");
+   const overdue=!!due&&due<today,blocked=task.status==="blocked",remaining=[...new Set(task.dependencies??[])].filter(id=>{
+     const prerequisite=tasksById.get(id);
+     return !prerequisite||open(prerequisite);
+    });
    const personal=!!userId&&task.ownerUserId===userId;
    if(task.owner?.trim()&&!task.ownerUserId)unlinkedOwners++;
    const reasons:string[]=[];if(overdue){overdueTasks++;reasons.push("Prazo vencido");}if(blocked)reasons.push("Entrega marcada como bloqueada");
@@ -63,7 +68,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
    if(!validOverviewDate(row.date)){invalidDates++;continue;}
    const time=row.time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(row.time)?row.time:undefined;
    const past=row.date<today||(row.date===today&&!!time&&time<currentTime);
-   const linked=tasks.find(x=>x.id===row.relatedTaskId);const personal=!!userId&&linked?.ownerUserId===userId;
+   const linked=row.relatedTaskId?tasksById.get(row.relatedTaskId):undefined;const personal=!!userId&&!!linked&&active(linked)&&linked.ownerUserId===userId;
    const item:OverviewItem={key:JSON.stringify([project.id,"meeting",row.id]),kind:"meeting",title:row.title,project,owner:row.owner?.trim()||"Responsável não informado",due:row.date,time,priority:past?1:2,reasons:past?["Compromisso vencido, ainda marcado como agendado"]:[({meeting:"Reunião",followup:"Acompanhamento",checkpoint:"Marco de controle"})[row.kind]??"Compromisso"],personal,taskPriority:2};
    if(past)attention.push(item);else if(distance(row.date,today)<=7)meetings.push(item);
    if(personal&&(past||distance(row.date,today)<=7))routine.push(item);

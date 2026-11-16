@@ -2,7 +2,7 @@
 import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 import "./rotevo-ui2.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotevoLogo } from "@/Components/RotevoLogo";
@@ -24,6 +24,20 @@ import type {EditorialItem} from "@/Components/cliente/EditorialCalendar";
 import type { ExecutionItem } from "@/Components/cliente/ProjectTimeline";
 import { supabase } from "@/lib/supabase";
 import {useSessionBoundary} from "@/hooks/useSessionBoundary";
+
+async function fetchAdminProjects(userId:string, signal?:AbortSignal){
+  const {data,error}=await supabase.auth.getSession();
+  const session=data.session;
+  if(error||!session?.access_token||session.user.id!==userId)throw new Error("Sessão expirada.");
+  const response=await fetch("/api/admin/projects",{
+    headers:{Authorization:`Bearer ${session.access_token}`},cache:"no-store",signal
+  });
+  if(response.status===403)return {forbidden:true,projects:null};
+  if(!response.ok)throw new Error("Consulta administrativa não autorizada.");
+  const result=await response.json();
+  if(!Array.isArray(result?.projects))throw new Error("Resposta administrativa inválida.");
+  return {forbidden:false,projects:result.projects as PlanningProject[]};
+}
 
 const NAV_ITEMS:{id:string;label:string;icon:RotevoIconName}[]=[
  {id:"overview",label:"Visão geral",icon:"layout-dashboard"},
@@ -211,6 +225,27 @@ export default function AdminPage() {
   useEffect(() => {
     loadAdminData();
   }, []);
+
+  const overviewWasLeft=useRef(false);
+  useEffect(()=>{
+    if(workspaceTab!=="overview"){
+      overviewWasLeft.current=true;
+      return;
+    }
+    if(!overviewWasLeft.current||!userId||isLoading||sessionBlocked)return;
+    const controller=new AbortController();
+    void fetchAdminProjects(userId,controller.signal).then(result=>{
+      if(controller.signal.aborted)return;
+      setOverviewForbidden(result.forbidden);
+      if(result.projects){
+        setProjects(result.projects);
+        setErrorMessage("");
+      }
+    }).catch(()=>{
+      if(!controller.signal.aborted)setErrorMessage("Não foi possível atualizar os planejamentos.");
+    });
+    return()=>controller.abort();
+  },[workspaceTab,userId,isLoading,sessionBlocked]);
 
   async function loadAdminData() {
     setIsLoading(true);
@@ -511,4 +546,7 @@ export default function AdminPage() {
       {planningOpen&&<NovoPlanejamentoDialog onClose={()=>setPlanningOpen(false)}/>}
     </main>
   );
-}
+}       const result=await fetchAdminProjects(userData.user.id);
+       setOverviewForbidden(result.forbidden);
+       if(result.forbidden)throw new Error("Consulta administrativa não autorizada.");
+       data=result.projects;

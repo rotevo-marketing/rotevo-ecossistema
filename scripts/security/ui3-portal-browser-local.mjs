@@ -189,18 +189,27 @@ try {
  // Full UI tests the assigned Drive delivery. Minimal release must prove the pilot is NOT mounted.
  const clientPortalSource=readFileSync(new URL("../../src/app/cliente/page.tsx",import.meta.url),"utf8");
  const delivery=customer.locator("[data-ui3-client-actions]");
- if(clientPortalSource.includes("ClientActionDeliveryPanel")){
+ if(clientPortalSource.includes("assignmentUserId=")){
   const openTasks=async()=>{await customer.getByText("Carregando seu ambiente...").waitFor({state:"hidden",timeout:20000});const menu=customer.getByRole("button",{name:"Menu",exact:true});if(await menu.isVisible())await menu.click();await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Tarefas",exact:true}).click();};
   await openTasks();
-  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
-  await customer.reload({waitUntil:"domcontentloaded",timeout:45000});await openTasks();
-  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor({timeout:20000});
+  const assignedTask=customer.getByRole("button",{name:"Enviar material · Synthetic Drive Delivery",exact:true});
+  await assignedTask.waitFor({timeout:20000});
+  assert.equal(await assignedTask.count(),1,"assignment appears once in task list");
+  assert.equal(await customer.getByText("Atribuídas a mim",{exact:true}).count(),0);
+  await assignedTask.click();
+  await delivery.getByText("Enviar URL sintética da entrega no Google Drive").waitFor();
+  await customer.getByRole("dialog",{name:/Detalhes da tarefa/}).getByRole("button",{name:"Fechar",exact:true}).click();
+  await customer.getByRole("button",{name:"Kanban",exact:true}).click();
+  await assignedTask.click();
   await delivery.getByLabel("Link do arquivo no Google Drive").fill("https://drive.google.com/file/d/synthetic-browser-ui3/view");
+  await delivery.getByLabel("Observação (opcional)").fill("Observação sintética da entrega.");
   await delivery.getByRole("button",{name:"Enviar link para validação"}).click();
-  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+  await delivery.getByText("Aguardando validação",{exact:true}).waitFor({timeout:20000});
   await customer.reload({waitUntil:"domcontentloaded",timeout:45000});await openTasks();
-  await delivery.getByText("submitted",{exact:true}).waitFor({timeout:20000});
+  await assignedTask.click();
+  await delivery.getByText("Aguardando validação",{exact:true}).waitFor({timeout:20000});
   assert.equal(await delivery.getByLabel("Link do arquivo no Google Drive").count(),0,"submitted delivery is no longer editable after refresh");
+  await customer.getByRole("dialog",{name:/Detalhes da tarefa/}).getByRole("button",{name:"Fechar",exact:true}).click();
   const menu=customer.getByRole("button",{name:"Menu",exact:true});if(await menu.isVisible())await menu.click();await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Visão geral",exact:true}).click();
   console.log("PASS browser client Drive URL submission and persisted status after refresh");
  }else{
@@ -365,10 +374,16 @@ try {
  // The second client's new task must appear immediately even when urgency sorting would place it on another page.
  await strategist.getByRole("button",{name:"Tarefas",exact:true}).click();
  await strategist.getByRole("heading",{name:"Central de tarefas"}).waitFor();
+ const submittedDelivery=strategist.locator("[data-ui3-client-review]").getByRole("listitem").filter({hasText:"Observação sintética da entrega."});
+ await submittedDelivery.waitFor({timeout:20000});
+ assert.equal(await submittedDelivery.getByRole("link",{name:"Abrir material no Google Drive"}).getAttribute("href"),"https://drive.google.com/file/d/synthetic-browser-ui3/view");
+ await submittedDelivery.getByRole("button",{name:"Validar entrega"}).click();
+ await submittedDelivery.waitFor({state:"hidden",timeout:20000});
  await strategist.getByRole("button",{name:"Criar tarefa",exact:true}).click();
  const newTaskDialog=strategist.getByRole("dialog",{name:"Nova tarefa"});
  await newTaskDialog.waitFor();
  await newTaskDialog.getByLabel("Nome da tarefa *").fill("Synthetic Other Client Task");
+ await newTaskDialog.getByLabel("Prazo de entrega").fill("2020-01-15");
  await newTaskDialog.getByRole("button",{name:"Projeto da tarefa"}).click();
  await newTaskDialog.getByRole("option",{name:/Synthetic Other Client.*Synthetic Other Project/}).click();
  await prepareResponsibility(newTaskDialog);
@@ -379,6 +394,14 @@ try {
  assert.equal(otherProject.data.executionTimeline.filter(x=>x.title==="Synthetic Other Client Task").length,1,"second client task persisted exactly once");
  assert.equal(otherProject.data.executionTimeline.find(x=>x.title==="Synthetic Other Client Task")?.preparedClientAction?.clientUserId,secondAccount.id);
  console.log("PASS synthetic cross-client task creation, persisted task visible on first filtered page");
+ const focusProjectAttention=()=>strategist.getByRole("region",{name:"Projetos que exigem atenção"}).getByText("Synthetic Other Project",{exact:true});
+ const openAdminOverview=async()=>await strategist.getByRole("button",{name:"Visão geral",exact:true}).click();
+ const openAdminTasks=async()=>await strategist.getByRole("button",{name:"Tarefas",exact:true}).click();
+ await openAdminOverview();
+ await focusProjectAttention().waitFor();
+ const overdueBeforeTrash=Number(await strategist.getByLabel("Tarefas atrasadas",{exact:true}).innerText());
+ assert.ok(overdueBeforeTrash>0);
+ await openAdminTasks();
  await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
  await strategist.getByRole("menuitem",{name:"Arquivar",exact:true}).click();
  await strategist.getByRole("button",{name:"Arquivo",exact:true}).click();
@@ -390,11 +413,19 @@ try {
  await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
  strategist.once("dialog",dialog=>void dialog.accept());
  await strategist.getByRole("menuitem",{name:"Excluir (Lixeira)"}).click();
+ await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor({state:"hidden"});
+ await openAdminOverview();
+ await focusProjectAttention().waitFor({state:"hidden"});
+ assert.equal(Number(await strategist.getByLabel("Tarefas atrasadas",{exact:true}).innerText()),overdueBeforeTrash-1);
+ await openAdminTasks();
  await strategist.getByRole("button",{name:"Lixeira",exact:true}).click();
  await strategist.getByRole("button",{name:"Ações da tarefa Synthetic Other Client Task"}).click();
  await strategist.getByRole("menuitem",{name:"Restaurar da Lixeira"}).click();
  await strategist.getByRole("button",{name:"Ativas",exact:true}).click();
  await strategist.getByRole("button",{name:"Synthetic Other Client Task",exact:true}).waitFor();
+ await openAdminOverview();
+ await focusProjectAttention().waitFor();
+ assert.equal(Number(await strategist.getByLabel("Tarefas atrasadas",{exact:true}).innerText()),overdueBeforeTrash);
  console.log("PASS synthetic reversible trash and restore without permanent deletion");
  // Create a YouTube editorial entry for the second synthetic client and verify the dynamic channel tab.
  await strategist.getByRole("button",{name:"Conteúdo",exact:true}).click();

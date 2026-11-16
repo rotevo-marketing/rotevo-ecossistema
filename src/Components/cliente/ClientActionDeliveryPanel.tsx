@@ -1,63 +1,87 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {request} from "@/lib/operations/api";
 import {validGoogleDriveUrl} from "@/lib/workflow/clientActionsContract";
 
 type Project={id:string;title:string};
-type Action={id:string;projectId:string;projectTitle:string;resourceType:"content"|"task";resourceId:string;resourceVersion:string|null;actionType:string;instructions:string;dueDate:string|null;status:string};
+export type ClientAssignment={id:string;projectId:string;projectTitle:string;resourceType:"content"|"task";resourceId:string;resourceVersion:string|null;actionType:string;instructions:string;dueDate:string|null;status:string};
+const emptyAssignments:ClientAssignment[]=[];
 type Draft={url:string;note:string;requestKey:string};
 const editable=(status:string)=>["pending","in_progress","correction_requested"].includes(status);
 
-/** Never accepts a binary file. Client uploads directly to Google Drive and pastes a URL. */
-export default function ClientActionDeliveryPanel({projects,userId}:{projects:Project[];userId:string}){
- const [items,setItems]=useState<Action[]>([]);
- const [urls,setUrls]=useState<Record<string,string>>({});
- const [notes,setNotes]=useState<Record<string,string>>({});
- const [drafts,setDrafts]=useState<Record<string,Draft>>({});
- const [busy,setBusy]=useState(""),[loading,setLoading]=useState(true),[error,setError]=useState("");
- const [revision,setRevision]=useState(0);
- const ids=projects.map(p=>p.id).sort().join("|");
+export function useClientAssignments(projects:Project[],userId?:string){
+ const key=JSON.stringify([userId,projects.map(p=>[p.id,p.title]).sort()]);
+ const [snapshot,setSnapshot]=useState<{key:string;items:ClientAssignment[]}>({key:"",items:[]});
+ const [loading,setLoading]=useState(false),[error,setError]=useState("");
  useEffect(()=>{
   let active=true;
-  setItems([]);setLoading(true);setError("");
+  setSnapshot({key,items:[]});setLoading(!!userId);setError("");
+  if(!userId)return;
   // Session changes are handled by useSessionBoundary in the parent portal.
   // Do not subscribe a second listener inside the fetch lifecycle: auth events
   // can invalidate an in-flight response and strand this panel in loading state.
   // The effect cleanup still discards results on project/user changes or unmount.
   void (async()=>{
    try{
-    if(!userId)throw Error("Sessão expirada.");
     const results=await Promise.allSettled(projects.map(async p=>{
      const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
-     const r=await request<{assignments:Omit<Action,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
+     const r=await request<{assignments:Omit<ClientAssignment,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
      return (r.assignments??[]).map(a=>({...a,projectTitle:p.title}));
     }));
     if(!active)return;
-    const valid=results.filter((r):r is PromiseFulfilledResult<Action[]>=>r.status==="fulfilled");
-    setItems(valid.flatMap(r=>r.value));
+    const valid=results.filter((r):r is PromiseFulfilledResult<ClientAssignment[]>=>r.status==="fulfilled");
+    setSnapshot({key,items:valid.flatMap(r=>r.value)});
     if(valid.length!==results.length)setError("Alguns projetos não puderam ser consultados.");
    }catch(e){if(active)setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}
    finally{if(active)setLoading(false);}
   })();
   return()=>{active=false;};
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[ids,userId,revision]);
- async function submit(item:Action){
-  if(busy||!editable(item.status))return;
+ },[key]);
+ return {
+  items:snapshot.key===key?snapshot.items:emptyAssignments,
+  loading:!!userId&&(loading||snapshot.key!==key),
+  error:snapshot.key===key?error:"",
+  markSubmitted:(id:string)=>setSnapshot(current=>current.key===key?{
+   ...current,items:current.items.map(item=>item.id===id?{...item,status:"submitted"}:item)
+  }:current)
+ };
+}
+
+export const assignmentLabels:Record<string,string>={
+ record_video:"Gravar vídeo",send_material:"Enviar material",provide_information:"Fornecer informações",
+ review_material:"Revisar material",custom:"Atribuição"
+};
+export const assignmentStatusLabels:Record<string,string>={
+ pending:"Pendente",in_progress:"Em andamento",submitted:"Aguardando validação",
+ correction_requested:"Correção solicitada",validated:"Validada",cancelled:"Cancelada"
+};
+
+/** The client uploads directly to Google Drive and submits the link. */
+export default function ClientActionDeliveryPanel({items,userId,onSubmitted}:{
+ items:ClientAssignment[];userId:string;onSubmitted:(id:string)=>void;
+}){
+ const [urls,setUrls]=useState<Record<string,string>>({});
+ const [notes,setNotes]=useState<Record<string,string>>({});
+ const [drafts,setDrafts]=useState<Record<string,Draft>>({});
+ const [busy,setBusy]=useState(""),[error,setError]=useState("");
+ const inFlight=useRef(false);
+ async function submit(item:ClientAssignment){
+  if(inFlight.current||!editable(item.status))return;
   const url=(urls[item.id]??"").trim(),note=(notes[item.id]??"").trim();
   if(!validGoogleDriveUrl(url)){setError("Cole um link válido do Google Drive.");return;}
-  setBusy(item.id);setError("");
   const draft=drafts[item.id];
   if(draft&&(draft.url!==url||draft.note!==note)){
-   setBusy("");setError("A tentativa anterior está pendente. Mantenha o link e a observação até confirmar o envio.");return;
+   setError("A tentativa anterior está pendente. Mantenha o link e a observação até confirmar o envio.");return;
   }
+  inFlight.current=true;
+  setBusy(item.id);setError("");
   const current=draft??{url,note,requestKey:"client-drive:"+crypto.randomUUID()};
   if(!draft)setDrafts(v=>({...v,[item.id]:current}));
   try{
    const {data,error:authError}=await supabase.auth.getUser();
-   if(authError||!data.user)throw Error("Sessão expirada.");
-   const userId=data.user.id;
+   if(authError||data.user?.id!==userId)throw Error("Sessão expirada.");
    const result=await request<{submission:{id:string}}>(
     "/api/workflow/client-actions/submit","POST",{
      assignmentId:item.id,driveUrl:current.url,note:current.note,
@@ -66,22 +90,19 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
    const identity=await supabase.auth.getUser();
    if(identity.error||identity.data.user?.id!==userId)throw Error("A sessão mudou.");
    if(!result.submission?.id)throw Error("A entrega não foi confirmada.");
-   setItems(v=>v.map(x=>x.id===item.id?{...x,status:"submitted"}:x));
+   onSubmitted(item.id);
    setUrls(v=>({...v,[item.id]:""}));setNotes(v=>({...v,[item.id]:""}));
    setDrafts(v=>{const next={...v};delete next[item.id];return next;});
-   setRevision(v=>v+1);
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar o link da entrega.");}
-  finally{setBusy("");}
+  finally{inFlight.current=false;setBusy("");}
  }
- return <section data-ui3-client-actions aria-label="Minhas entregas atribuídas" className="rounded-xl border border-[#E3E6ED] bg-white p-4">
-  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Atribuídas a mim</h3><span className="text-xs text-[#697386]">{loading?"…":items.length}</span></div>
+ return <section data-ui3-client-actions aria-label="Instruções e entrega" className="rounded-xl border border-[#E3E6ED] p-4">
+  <h3 className="text-sm font-semibold">Instruções e entrega</h3>
   <p className="mt-1 text-xs text-[#697386]">Grave ou prepare o material no Google Drive e cole o link aqui. A Rotevo não armazena arquivos.</p>
   {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}
-  {loading?<p role="status" className="mt-3 text-xs">Consultando entregas…</p>
-  :items.length===0?<p className="mt-3 text-xs text-[#697386]">Nenhuma entrega atribuída.</p>
-  :<ul className="mt-3 divide-y">{items.slice(0,20).map(item=><li key={item.id} className="space-y-2 py-3">
-    <div className="flex flex-wrap justify-between gap-2"><p className="text-xs font-semibold">{item.projectTitle} · {item.actionType}</p><span className="text-xs text-[#697386]">{item.status}</span></div>
-    <p className="text-xs text-[#525B70]">{item.instructions}</p>
+  <ul className="mt-3 divide-y">{items.map(item=><li key={item.id} className="space-y-2 py-3">
+    <div className="flex flex-wrap justify-between gap-2"><p className="text-xs font-semibold">{assignmentLabels[item.actionType]??assignmentLabels.custom}</p><span className="text-xs text-[#697386]">{assignmentStatusLabels[item.status]??item.status}</span></div>
+    <p className="whitespace-pre-wrap text-xs text-[#525B70]">{item.instructions}</p>
     {editable(item.status)&&<>
      <label className="block text-xs font-medium">Link do arquivo no Google Drive
       <input type="url" required maxLength={2048} value={urls[item.id]??""}
@@ -97,6 +118,6 @@ export default function ClientActionDeliveryPanel({projects,userId}:{projects:Pr
       className="rounded-lg bg-[#6C5CE7] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
       {busy===item.id?"Enviando…":"Enviar link para validação"}</button>
     </>}
-   </li>)}</ul>}
+   </li>)}</ul>
  </section>;
 }

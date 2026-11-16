@@ -79,7 +79,12 @@ export function validCompanyAnalysis(value:unknown):value is CompanyAnalysis{
 export function publicCompanyAnalysis(value:unknown):CompanyAnalysis|null{
  if(!validCompanyAnalysis(value))return null;
  const copy=parseCompanyAnalysis(value);
- // Editorial evidence must never leave the strategist-only context.
+ // Explicit allowlist for every public collection; internal evidences never leave the strategist context.
  copy.identity.traits=copy.identity.traits.map(({id,title,description})=>({id,title,description}));
+ copy.history.milestones=copy.history.milestones.map(({id,title,description,period})=>({id,title,description,period}));
+ copy.organization.entries=copy.organization.entries.map(({id,title,description,kind,parentId})=>({id,title,description,kind,parentId}));
+ copy.governance.responsibilities=copy.governance.responsibilities.map(({id,title,description,responsible})=>({id,title,description,responsible}));
+ copy.conditions.items=copy.conditions.items.map(({id,title,description,caveat})=>({id,title,description,caveat}));
+ copy.synthesis.findings=copy.synthesis.findings.map(({id,title,description})=>({id,title,description}));
  return copy;
 }

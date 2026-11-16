@@ -1,0 +1,21 @@
+.badges { display:flex; flex-wrap:wrap; gap:.375rem; margin-top:.5rem; }
+.chip { display:inline-flex; min-height:1.5rem; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:.35rem; background:var(--light); color:#fff; font-size:.75rem; font-weight:600; overflow-wrap:anywhere; }
+.chip svg,.material svg { flex-shrink:0; }
+.chip[data-tone="0"] { --light:#a51c62; --dark:#a8266b; }
+.chip[data-tone="1"] { --light:#1749a6; --dark:#2459b5; }
+.chip[data-tone="2"] { --light:#096580; --dark:#106c85; }
+.chip[data-tone="3"] { --light:#a92c38; --dark:#a73540; }
+.chip[data-tone="4"] { --light:#252030; --dark:#493358; }
+.chip[data-tone="5"] { --light:#186341; --dark:#216c48; }
+.chip[data-tone="6"] { --light:#78530b; --dark:#806014; }
+.chip[data-tone="7"] { --light:#5e3e9e; --dark:#6845a1; }
+.chip[data-tone="8"] { --light:#993e20; --dark:#a34628; }
+.chip[data-tone="9"] { --light:#52652b; --dark:#566b30; }
+.chip[data-tone="10"] { --light:#455972; --dark:#4c607e; }
+.chip[data-tone="11"] { --light:#236352; --dark:#286d59; }
+.chip[data-tone="version"] { --light:#6d35f5; --dark:#6d35f5; }
+:global(html[data-rotevo-appearance="dark"]) .chip { background:var(--dark); color:#fff; }
+.material { display:grid; gap:.35rem; border:1px solid var(--rv3-border,#e3e7f0); border-radius:.5rem; padding:.6rem .7rem; }
+.material :is(h5,h6) { font-size:.75rem; font-weight:600; overflow-wrap:anywhere; }
+.material a { display:inline-flex; align-items:center; gap:.35rem; width:fit-content; font-size:.75rem; text-decoration:underline; text-underline-offset:.15em; }
+.material a:focus-visible { outline:2px solid var(--rv3-accent,#6d35f5); outline-offset:2px; }

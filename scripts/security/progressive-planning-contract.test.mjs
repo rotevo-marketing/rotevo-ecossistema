@@ -25,8 +25,7 @@ test("planning dates cannot publish documents automatically",()=>{
 test("reader is read-only and uses authorized document presentation endpoint",()=>{
  const reader=source("Components/cliente/ClientPlanning.tsx");
  assert.match(reader,/api\/presentation\/project/);
- assert.match(reader,/DynamicDocumentReader/);
- assert.match(reader,/catalogDocumentCodes/);
- assert.match(reader,/Se[u]? planejamento est[aá] sendo constru[ií]do/);
+ assert.match(reader,/<PlanningV5/);
+ assert.doesNotMatch(reader,/catalogDocumentCodes/);
  assert.doesNotMatch(reader,/contentEditable|saveDocument|publishDocument|setPublishedContent/);
 });

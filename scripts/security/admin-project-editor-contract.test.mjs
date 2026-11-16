@@ -80,7 +80,7 @@ test("presentation never fetches raw project JSON directly from browser",()=>{
  const token=endpoint.indexOf("auth.getUser("),role=endpoint.indexOf('.from("profiles")'),project=endpoint.indexOf('.from("planning_projects")');
  assert.ok(token>=0&&role>token&&project>role);
  assert.match(endpoint,/profile\.client_id!==project\.client_id/);
- assert.match(endpoint,/projectForPresentation/);
+ assert.match(endpoint,/projectForActivePresentation/);
  const projection=readFileSync(new URL("lib/security/projectForPresentation.ts",root),"utf8");
  assert.match(projection,/if\(!ecosystem\)return null/);
  assert.match(projection,/presentedDocumentCodes:visible/);
@@ -211,13 +211,13 @@ test("editorial decisions cannot silently approve modified material under the sa
 
 test("switching between client projects isolates editor state and late save callbacks",()=>{
  const page=readFileSync(new URL("app/admin/planejamentos/[clientSlug]/page.tsx",root),"utf8");
- for(const name of ["DynamicDocumentEditor","ExecutionTimelineEditor"]){
+ for(const name of ["ExecutionTimelineEditor"]){
   assert.match(page,new RegExp("<"+name+"[^>]* key=\\{project\\.id\\} projectId=\\{project\\.id\\}"));
  }
  const guards=page.match(/onSaved=\{\(data,updated_at\)=>setProject\(p=>p\?\.id===project\.id\?/g)??[];
- assert.equal(guards.length,3,"document and both execution editor callbacks must verify project identity");
+ assert.equal(guards.length,1,"timeline callback must verify project identity");
  assert.doesNotMatch(page,/<(?:ProjectOnboarding|OperationalAgenda)\b/);
- assert.match(page,/<PlanningScheduleEditor key=\{project\.id\}/);
+ assert.match(page,/<PlanningV5 key=\{project\.id\}/);
  assert.doesNotMatch(page,/key=\{project\.id\+project\.updated_at\}/);
 });
 

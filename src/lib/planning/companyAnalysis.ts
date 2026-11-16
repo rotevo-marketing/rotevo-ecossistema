@@ -86,5 +86,7 @@ export function publicCompanyAnalysis(value:unknown):CompanyAnalysis|null{
  copy.governance.responsibilities=copy.governance.responsibilities.map(({id,title,description,responsible})=>({id,title,description,responsible}));
  copy.conditions.items=copy.conditions.items.map(({id,title,description,caveat})=>({id,title,description,caveat}));
  copy.synthesis.findings=copy.synthesis.findings.map(({id,title,description})=>({id,title,description}));
- return copy;
+ return Object.values(copy).some(section=>Object.values(section).some(value=>
+  typeof value==="string"?value.trim():Array.isArray(value)&&value.some(item=>item.title.trim())
+ ))?copy:null;
 }

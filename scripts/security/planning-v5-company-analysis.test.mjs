@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {EMPTY_COMPANY_ANALYSIS,parseCompanyAnalysis,validCompanyAnalysis,publicCompanyAnalysis} from "../../src/lib/planning/companyAnalysis.ts";
-import {projectForPresentation} from "../../src/lib/security/projectForPresentation.ts";
+import {projectForActivePresentation as projectForPresentation} from "../../src/lib/security/projectForPresentation.ts";
 
 const identity={...EMPTY_COMPANY_ANALYSIS.identity,displayName:"Empresa Sintética",mainActivity:"Serviços de treinamento",founded:"2020",traits:[{id:"trait-1",title:"Atendimento online",description:"Entrega realizada à distância.",evidence:"Evidence strictly internal"}]};
 const sample={...structuredClone(EMPTY_COMPANY_ANALYSIS),identity,history:{milestones:[{id:"m-1",title:"Início das atividades",description:"Atuação individual.",period:"2020"}],reading:"Trajetória baseada em informação declarada."}};
@@ -30,4 +30,24 @@ test("02.01 separa rascunho, página disponibilizada e publicação do projeto",
  assert.equal(JSON.stringify(p).includes("Evidence strictly internal"),false);
  const hidden={...publishedPage,data:{...publishedPage.data,portalModules:["content"]}};
  assert.equal(projectForPresentation(hidden,false,["planning"]),null);
+});
+
+
+test("existing planning renders the V5 shell without copying or projecting historical documents",()=>{
+ const historical={id:"synthetic",client_id:"client",title:"Sintético",slug:"synthetic",description:null,clients:null,status:"published",
+ data:{ecosystem2027:{documents:{"02.01":{publishedContent:"HISTORICAL",content:"PRIVATE"}}},
+ companyAnalysis0201:sample,executionTimeline:[{id:"shared",title:"Compartilhado",visibleToClient:true},{id:"internal",title:"Interno"}]}};
+ const original=structuredClone(historical);
+ const view=projectForPresentation(historical,false,["planning","execution"]);
+ assert.equal(view.data.planningStructureVersion,5);
+ assert.equal(view.data.companyAnalysis0201,null);
+ assert.deepEqual(view.data.timeline.executionTimeline.map(item=>item.id),["shared"]);
+ assert.doesNotMatch(JSON.stringify(view),/HISTORICAL|PRIVATE|ecosystem2027|Empresa Sintética/);
+ assert.deepEqual(historical,original);
+ assert.equal(projectForPresentation(historical,false,["execution"]),null);
+ const draft={...historical,status:"draft",data:{...historical.data,publishedCompanyAnalysis0201:publicCompanyAnalysis(sample)}};
+ assert.equal(projectForPresentation(draft,false,["planning","execution"]).data.timeline,null);
+ assert.equal(projectForPresentation(draft,false,["planning"]).data.companyAnalysis0201,null);
+ assert.equal(projectForPresentation({...draft,data:{...draft.data,planningClientAccessEnabled:true}},false,["planning"]).data.companyAnalysis0201.identity.displayName,"Empresa Sintética");
+ assert.equal(publicCompanyAnalysis(EMPTY_COMPANY_ANALYSIS),null);
 });

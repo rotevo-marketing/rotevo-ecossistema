@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import {readFileSync} from "node:fs";
 import {createClient} from "@supabase/supabase-js";
+import {EMPTY_COMPANY_ANALYSIS,publicCompanyAnalysis} from "../../src/lib/planning/companyAnalysis.ts";
 import {chromium} from "playwright";
 import axe from "axe-core";
 const api=process.env.API_URL,app=process.env.ROTEVO_LOCAL_APP_URL;
@@ -27,7 +28,9 @@ await must(db.from("profiles").update({client_id:clientId}).eq("id",client.id),"
 await must(db.from("client_users").insert({client_id:clientId,user_id:client.id}),"client account membership for workflow authorization");
 const releasedRich={format:"blocknote-v1",blocks:[{id:"released-html",type:"visualHtml",props:{label:"Documento publicado sintético",description:"Leitura autorizada",height:300,markup:"<section><p>PLANNING_PUBLIC_CANARY</p></section>",stylesheet:"section{padding:12px}p{color:#344054}"},children:[]}]};
 const unreleasedRich={format:"blocknote-v1",blocks:[{id:"unreleased",type:"paragraph",content:"PLANNING_DRAFT_SECRET"}]};
-const planData={internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
+const company=structuredClone(EMPTY_COMPANY_ANALYSIS);
+company.identity.displayName="Empresa V5 publicada";
+const planData={publishedCompanyAnalysis0201:publicCompanyAnalysis(company),internalNotes:"DO_NOT_EXPOSE_INTERNAL_FIXTURE",editorialCalendar:[{id:"ui3-drive-demo",title:"Synthetic Drive Delivery",version:"01",status:"idea",visibleToClient:true}],planningClientAccessEnabled:true,ecosystem2027:{version:1,selectedDocumentCodes:["01.06"],presentedDocumentCodes:["01.06"],documents:{"01.06":{content:"PLANNING_DRAFT_SECRET",richContent:unreleasedRich,reviewStatus:"approved",updatedAt:"2026-11-10T00:00:00Z",publishedAt:"2026-11-10T00:00:00Z",publishedContent:"PLANNING_PUBLIC_CANARY",publishedRichContent:releasedRich}}}};
 await must(db.from("planning_projects").insert({id:projectId,client_id:clientId,title:"Synthetic Portal Plan",slug:"browser-"+suffix,status:"published",data:planData}),"project");
 const secondClientId=randomUUID(),secondProjectId=randomUUID();
 await must(db.from("clients").insert({id:secondClientId,name:"Synthetic Other Client",slug:"browser-other-"+suffix}),"second synthetic client");
@@ -208,11 +211,12 @@ try {
  console.log("PASS shared contract keyboard ArrowRight/Home/End, focus and ARIA tabpanel mapping");
  console.log("PASS synthetic shared contract visual, four tabs, authorized scope and hidden contract excluded");
 
- // Published strategic document: browser-rendered released HTML/CSS, not the private draft.
+ // Published V5 page on an existing project; historical documents stay private.
  await customer.setViewportSize({width:1440,height:900});
  await customer.getByRole("navigation",{name:"Navegação do portal"}).getByRole("button",{name:"Planejamento",exact:true}).click();
- await customer.getByRole("button",{name:"Ler primeiro documento disponível"}).click();
- await customer.frameLocator('iframe[title="Documento publicado sintético"]').getByText("PLANNING_PUBLIC_CANARY").waitFor({timeout:15000});
+ await customer.getByText("Empresa V5 publicada",{exact:true}).waitFor({timeout:15000});
+ assert.equal(await customer.getByText("PLANNING_PUBLIC_CANARY").count(),0,"historical publication must not appear in V5");
+ assert.equal(await customer.getByRole("button",{name:/Investigar/}).count(),0,"investigation stays internal");
  assert.equal(await customer.getByText("PLANNING_DRAFT_SECRET").count(),0,"private draft must not be displayed");
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"internal notes must remain absent");
  for(const width of [320,375,390,430,768,1024,1440]){
@@ -220,7 +224,7 @@ try {
   await customer.waitForTimeout(100);
   const measure=await customer.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
   assert.ok(measure.scroll<=measure.viewport+1,"Published planning overflow at "+width+"px: "+JSON.stringify(measure));
-  await customer.frameLocator('iframe[title="Documento publicado sintético"]').getByText("PLANNING_PUBLIC_CANARY").waitFor();
+  await customer.getByText("Empresa V5 publicada",{exact:true}).waitFor();
   console.log("PASS published planning responsive viewport",width,"px");
  }
  await customer.setViewportSize({width:390,height:900});
@@ -229,7 +233,7 @@ try {
  const planScan=await customer.evaluate(async()=>await window.axe.run(document,{runOnly:{type:"tag",values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}}));
  console.log("ACCESSIBILITY published planning",JSON.stringify(planScan.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary?.slice(0,280)}))}))));
  assert.equal(planScan.violations.filter(v=>v.impact==="serious"||v.impact==="critical").length,0,"published planning critical/serious WCAG violations");
- console.log("PASS synthetic published planning HTML/CSS, private draft exclusion and seven viewports");
+ console.log("PASS existing published planning uses V5 and hides historical content");
  assert.equal(await customer.getByText("DO_NOT_EXPOSE_INTERNAL_FIXTURE").count(),0,"private data stays hidden");
  await customer.close();
  const strategist=await session("strategist",admin,"/estrategista/login","/admin");
@@ -369,6 +373,39 @@ try {
  assert.equal(otherEditorial.data.editorialCalendar.find(x=>x.title==="Synthetic Other YouTube Editorial")?.preparedClientAction?.clientUserId,secondAccount.id);
  await editorialDetails.getByRole("button",{name:"Fechar"}).click();
  console.log("PASS synthetic editorial creation, new channel tab, centered detail and cross-client isolation");
+ // Exercise the same editor on an existing published plan, a historical draft and a new V5 draft.
+ const historicalDraftId=randomUUID();
+ const historicalDraftSlug="browser-draft-"+suffix;
+ await must(db.from("planning_projects").insert({id:historicalDraftId,client_id:clientId,title:"Synthetic historical draft",slug:historicalDraftSlug,status:"draft",data:{ecosystem2027:planData.ecosystem2027}}),"historical draft");
+ const openPlanning=async id=>{
+  await strategist.goto(new URL("/admin/planejamentos/browser-"+suffix+"?projectId="+id,app).href);
+  const navigation=strategist.getByRole("navigation",{name:"Etapas do planejamento"});
+  const diagnose=navigation.getByRole("button",{name:/02.*Diagnosticar/});
+  await diagnose.click();
+  await navigation.getByRole("button",{name:/02.01.*Análise da Empresa/}).click();
+  await strategist.getByLabel("Nome de apresentação",{exact:true}).waitFor();
+ };
+ await openPlanning(projectId);
+ const draftName="Rascunho V5 sintético";
+ await strategist.getByLabel("Nome de apresentação",{exact:true}).fill(draftName);
+ await strategist.getByRole("button",{name:"Salvar rascunho",exact:true}).first().click();
+ await strategist.getByText("Análise da Empresa salva.",{exact:true}).waitFor();
+ await openPlanning(projectId);
+ assert.equal(await strategist.getByLabel("Nome de apresentação",{exact:true}).inputValue(),draftName);
+ await strategist.getByRole("button",{name:"Visualizar",exact:true}).click();
+ await strategist.getByText(draftName,{exact:true}).waitFor();
+ const retained=await must(db.from("planning_projects").select("data").eq("id",projectId).single(),"read historical plan after V5 draft save");
+ assert.deepEqual(retained.data.ecosystem2027,planData.ecosystem2027);
+ assert.equal(retained.data.publishedCompanyAnalysis0201.identity.displayName,"Empresa V5 publicada");
+ await openPlanning(historicalDraftId);
+ assert.equal(await strategist.getByLabel("Nome de apresentação",{exact:true}).inputValue(),"");
+ const created=await fetch(new URL("/api/admin/project/create",app),{method:"POST",
+  headers:{"Content-Type":"application/json",Authorization:"Bearer "+adminLogin.session.access_token},
+  body:JSON.stringify({client_id:clientId,title:"Synthetic new V5",slug:"browser-new-"+suffix,description:null,status:"draft",data:{planningStructureVersion:5}})});
+ assert.equal(created.status,201);
+ await openPlanning((await created.json()).project.id);
+ assert.equal(await strategist.getByLabel("Nome de apresentação",{exact:true}).inputValue(),"");
+ console.log("PASS V5 opens legacy published, legacy draft and new draft; 02.01 persists, preview works and history stays intact");
  await strategist.close();
  console.log("PASS synthetic client and strategist portal logins, private projection and all seven widths");
 } finally {await browser.close();}

@@ -18,21 +18,7 @@ export type PresentationProjectRow={
 
 export function projectForPresentation(row:PresentationProjectRow,strategist:boolean,clientModules?:readonly PortalModule[]){
  const data=object(row.data)??{};
- if (isPlanningV5(data)) {
-  if (!strategist && (row.status !== "published" || !projectModules(data).includes("planning"))) return null;
-  const { executionTimeline, portalModules } = projectForClient(
-    { ...row, updated_at: "" }, clientModules,
-  ).data;
-  return {
-    ...row,
-    data: {
-      planningStructureVersion: PLANNING_V5,
-      // Published snapshot only; strategist drafts and internal evidence are not exposed.
-      companyAnalysis0201:row.status==="published"?publicCompanyAnalysis(data.publishedCompanyAnalysis0201):null,
-      timeline: portalModules.includes("execution") ? { executionTimeline } : null,
-    },
-  };
- }
+ if(isPlanningV5(data))return projectForActivePresentation(row,strategist,clientModules);
  const ecosystem=object(data.ecosystem2027);
  if(!ecosystem)return null;
  if(strategist)return row;
@@ -65,5 +51,25 @@ export function projectForPresentation(row:PresentationProjectRow,strategist:boo
    ecosystem2027:{version:ecosystem.version===1?1:undefined,
     catalogDocumentCodes:selected.filter(code=>code!=="01.01"&&!code.startsWith("00.")&&ecosystemDocuments.some(d=>d.code===code)),
     selectedDocumentCodes:visible,presentedDocumentCodes:visible,documents,executiveDocuments}}
+ };
+}
+
+
+/** Active V5 view. Legacy documents stay in storage for recovery. */
+export function projectForActivePresentation(row:PresentationProjectRow,strategist:boolean,clientModules?:readonly PortalModule[]){
+ const data=object(row.data)??{};
+ const nativeV5=isPlanningV5(data);
+ const progressive=!nativeV5&&(row.status==="draft"||row.status==="in_progress")&&data.planningClientAccessEnabled===true;
+ const released=row.status==="published"||progressive;
+ if(!strategist&&(!projectModules(data).includes("planning")||
+    (clientModules&&!clientModules.includes("planning"))||(nativeV5&&!released)))return null;
+ const {executionTimeline,portalModules}=projectForClient({...row,updated_at:""},clientModules).data;
+ return {
+  id:row.id,client_id:row.client_id,title:row.title,slug:row.slug,description:row.description,status:row.status,clients:row.clients,
+  data:{
+   planningStructureVersion:PLANNING_V5,
+   companyAnalysis0201:released?publicCompanyAnalysis(data.publishedCompanyAnalysis0201):null,
+   timeline:(released||strategist)&&portalModules.includes("execution")?{executionTimeline}:null,
+  },
  };
 }

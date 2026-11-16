@@ -75,12 +75,11 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  if (oldRoot.planningStructureVersion !== nextRoot.planningStructureVersion) return fail(400);
  // V5 02.01 remains an opt-in draft field; legacy documents are untouched.
  if(JSON.stringify(oldRoot.companyAnalysis0201)!==JSON.stringify(nextRoot.companyAnalysis0201)){
-  if(oldRoot.planningStructureVersion!==5||!validCompanyAnalysis(nextRoot.companyAnalysis0201))return fail(400);
+  if(!validCompanyAnalysis(nextRoot.companyAnalysis0201))return fail(400);
  }
  // A published snapshot is an explicit strategist action. It must match
  // the validated draft, and cannot carry evidence-only internal fields.
  if(JSON.stringify(oldRoot.publishedCompanyAnalysis0201)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201)){
-  if(oldRoot.planningStructureVersion!==5)return fail(400);
   const expected=publicCompanyAnalysis(nextRoot.companyAnalysis0201);
   if(!expected||JSON.stringify(expected)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201))return fail(400);
  }

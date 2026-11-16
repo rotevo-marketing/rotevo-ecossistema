@@ -34,6 +34,7 @@ async function workflow(path,body){
 }
 await workflow("/api/workflow/editorial/designate-approver",{approverUserId:user.user.id,reason:"Aprovador de teste sintético"});
 await workflow("/api/workflow/editorial/request",{contentId:"browser-content",contentVersion:"02"});
+const initialEditorial=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"stage before plain message");
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},locale:"pt-BR"});
@@ -95,7 +96,9 @@ try{
  await editorialThread.getByText(/Versão 02/).waitFor();
  assert.equal(await editorialThread.getByText("Mensagem de teste acessível",{exact:true}).count(),0);
  const ordinary=await must(service.from("planning_projects").select("data").eq("id",projectId).single(),"status after plain message");
- assert.equal(ordinary.data.editorialCalendar[0].status,"idea_pending");
+ assert.equal(ordinary.data.editorialCalendar[0].status,initialEditorial.data.editorialCalendar[0].status);
+ const decisionsBefore=await must(service.from("editorial_idea_approvals").select("decision").eq("project_id",projectId).eq("content_id","browser-content"),"decisions after plain message");
+ assert.deepEqual(decisionsBefore,[]);
  const inputForBoth=editorialThread.getByRole("textbox",{name:"Nova mensagem"});
  await inputForBoth.fill("Corrigir o roteiro desta versão.");
  await page.route("**/api/workflow/editorial/decision",route=>route.fulfill({status:503,json:{error:"Falha sintética temporária"}}),{times:1});

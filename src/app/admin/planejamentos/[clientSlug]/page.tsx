@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import PlanningV5 from "@/Components/strategic-editor/PlanningV5";
-import type {CompanyAnalysis} from "@/lib/planning/companyAnalysis";
+import {publicCompanyAnalysis,type CompanyAnalysis} from "@/lib/planning/companyAnalysis";
 import { isPlanningV5 } from "@/lib/planning/v5";
 import { projectForClient } from "@/lib/security/projectForClient";
 import ExecutionTimelineEditor from "@/Components/admin/ExecutionTimelineEditor";
@@ -414,6 +414,8 @@ function PlanejamentoClienteContent() {
           preview={planningTab === "preview"}
           onPreviewChange={value => setPlanningTab(value ? "preview" : "editor")}
           companyAnalysis={project.data?.companyAnalysis0201??null}
+          publishedCompanyAnalysis={project.data?.publishedCompanyAnalysis0201??null}
+          onPublishCompanyAnalysis={async()=>{const snapshot=publicCompanyAnalysis(project.data?.companyAnalysis0201);if(!snapshot)throw new Error("Salve uma análise válida antes de disponibilizar.");const saved=await saveAuthorizedProjectData(project,{...project.data,publishedCompanyAnalysis0201:snapshot});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}
           onSaveCompanyAnalysis={async(value)=>{const saved=await saveAuthorizedProjectData(project,{...project.data,companyAnalysis0201:value});setProject(p=>p?.id===project.id?{...p,data:saved.data,updated_at:saved.updated_at}:p);}}
           timeline={previewTimeline?.portalModules.includes("execution") ? previewTimeline : null}
           editingTimeline={<ExecutionTimelineEditor key={project.id} projectId={project.id} projectData={project.data??{}} updatedAt={project.updated_at} onSaved={(data,updated_at)=>setProject(p=>p?.id===project.id?{...p,data,updated_at}:p)}/>}/>

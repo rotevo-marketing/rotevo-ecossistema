@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
+import {meetingInterval} from "@/lib/googleCalendar/meetingTiming";
 import {validCampaignLinks,validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
@@ -108,6 +109,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    if(oldItem&&JSON.stringify(oldItem)===JSON.stringify(item))continue; // Preserve untouched legacy meetings.
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
    if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
+   if(item.timing!==undefined&&!meetingInterval(item.date,item.time??"",item.timing))return fail(400);
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
    for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);

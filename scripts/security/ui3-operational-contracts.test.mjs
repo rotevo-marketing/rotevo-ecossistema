@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {meetingInterval,meetingIntervalsOverlap} from "../../src/lib/googleCalendar/meetingTiming.ts";
 import {readFileSync} from "node:fs";
 import {campaignResources,validCampaignLinks,validCampaignRecords} from "../../src/lib/security/campaignMetricsValidation.ts";
 import {
@@ -83,4 +84,15 @@ test("campaign storage accepts historical campaigns and rejects duplicate links"
  assert.equal(validCampaignRecords([legacy]),true);
  assert.equal(validCampaignRecords([{...legacy,contentIds:["creative"],taskIds:["task"]}]),true);
  assert.equal(validCampaignRecords([{...legacy,contentIds:["creative","creative"]}]),false);
+});
+
+test("meeting timing validates local ranges and uses the supplied time zone",()=>{
+ const timing={endDate:"2026-11-18",endTime:"18:00",timeZone:"America/Sao_Paulo",allDay:false};
+ const interval=meetingInterval("2026-11-18","17:30",timing);
+ assert.equal(interval.minutes,30);
+ assert.equal(new Date(interval.start).toISOString(),"2026-11-18T20:30:00.000Z");
+ assert.equal(meetingInterval("2026-11-18","18:00",timing),null);
+ assert.equal(meetingInterval("2026-11-18","17:30",{...timing,timeZone:"Invalid/Zone"}),null);
+ assert.equal(meetingInterval("2026-11-18","",{...timing,endTime:"",allDay:true}).minutes,1440);
+ assert.equal(meetingIntervalsOverlap(interval,{start:interval.end,end:interval.end+1000}),false);
 });

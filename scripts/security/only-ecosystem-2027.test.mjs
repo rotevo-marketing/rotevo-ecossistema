@@ -183,8 +183,8 @@ test("task hub filters project, owner, priority, status and deadlines without ch
 });
 test("task triage shows today's and overdue deadlines without completed items",()=>{
  const board=source("Components/admin/CentralTarefas.tsx");
- assert.match(board,/todayCount=tasks.filter/);
- assert.match(board,/overdue=tasks.filter/);
+ assert.match(board,/todayCount=displayTasks.filter/);
+ assert.match(board,/overdue=displayTasks.filter/);
  assert.match(board,/isOpen\(x.task\)/);
  assert.match(board,/Minha visão do dia/);
 });

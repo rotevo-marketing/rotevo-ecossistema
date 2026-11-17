@@ -1,0 +1,36 @@
+name: 02.01 existing evidence export
+on:
+  push:
+    branches: [feat/company-analysis-0201-v1-20261117]
+    paths: [.github/workflows/company-analysis-0201-evidence.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: company-analysis-0201-review
+          run-id: 44194783493
+          github-token: ${{ github.token }}
+          path: existing-evidence
+      - name: Export existing screenshots without re-running application tests
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import base64,io
+          for p in sorted(Path("existing-evidence").glob("*desktop.png")):
+              im=Image.open(p).convert("RGB")
+              im=im.crop((0,0,im.width,min(1700,im.height)))
+              out=io.BytesIO()
+              im.save(out,format="WEBP",quality=85,method=6)
+              data=base64.b64encode(out.getvalue()).decode()
+              print("CAPTURE_BEGIN "+p.stem)
+              for i in range(0,len(data),12000): print(data[i:i+12000])
+              print("CAPTURE_END")
+          PY

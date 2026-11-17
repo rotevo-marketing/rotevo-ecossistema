@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useId,useMemo,useState} from "react";
 import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
@@ -25,6 +25,7 @@ const readableAction=(value:string)=>({
  * A client cannot gain team privileges by rendering this component.
  */
 export default function ClientActionReviewPanel({projects,assignmentId,onReviewed}:{projects:Project[];assignmentId?:string;onReviewed?:()=>void}){
+ const titleId=useId();
  const [items,setItems]=useState<Review[]>([]);
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState("");
@@ -91,14 +92,14 @@ export default function ClientActionReviewPanel({projects,assignmentId,onReviewe
    setItems(rows=>rows.filter(x=>x.submissionId!==item.submissionId));
    onReviewed?.();
    setFeedback(old=>{const next={...old};delete next[item.submissionId];return next;});
-   setRevision(v=>v+1);
+   window.dispatchEvent(new Event("rotevo:assignment-reviewed"));
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar a revisão.");}
   finally{setWorking(null);}
  }
- return <section data-ui3-client-review aria-labelledby="client-review-title"
+ return <section data-ui3-client-review aria-labelledby={titleId}
   className="rounded-xl border border-[#E3E6ED] bg-white p-4">
   <div className="flex items-center justify-between gap-3">
-   <div><h3 id="client-review-title" className="flex items-center gap-2 text-sm font-semibold text-[#263146]">
+   <div><h3 id={titleId} className="flex items-center gap-2 text-sm font-semibold text-[#263146]">
     <RotevoTablerIcon name="list-check" size={18}/>Entregas para validar</h3>
     <p className="mt-1 text-xs text-[#697386]">Somente solicitações atribuídas e aguardando revisão interna.</p></div>
    <span className="text-xs tabular-nums text-[#697386]">{loading?"…":items.length}</span>

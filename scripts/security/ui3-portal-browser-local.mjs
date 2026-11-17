@@ -387,7 +387,7 @@ try {
  assert.equal(await assignmentRow.getByRole("link",{name:/Abrir projeto/}).count(),1);
  assert.equal(await assignmentRow.getByRole("button",{name:/Responsável por/}).getAttribute("aria-disabled"),"true");
  assert.equal(await assignmentRow.locator('[aria-label^="Prazo de"]').count(),1);
- assert.notEqual(await statusCell.evaluate(element=>getComputedStyle(element).backgroundColor),"rgba(0, 0, 0, 0)");
+ assert.notEqual(await statusCell.locator(".rv-ui3-task-cell-label").evaluate(element=>getComputedStyle(element).backgroundColor),"rgba(0, 0, 0, 0)");
  const taskState=await must(db.from("planning_projects").select("id,data"),"synthetic task counters");
  const countedKeys=new Set(taskState.flatMap(project=>(project.data?.executionTimeline??[]).filter(item=>!item.deletedAt).map(item=>project.id+":"+item.id)));
  for(const project of taskState){

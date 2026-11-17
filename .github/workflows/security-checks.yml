@@ -62,6 +62,12 @@ jobs:
           package-manager-cache: false
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Resolve targeted Next.js security patch
+        shell: bash
+        run: |
+          cp package-lock.json "$RUNNER_TEMP/rotevo-lock-before.json"
+          npm install next@16.4.6 --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund
+          node -e 'const f=require("node:fs");const a=JSON.parse(f.readFileSync(process.env.RUNNER_TEMP+"/rotevo-lock-before.json"));const b=require("./package-lock.json");for(const k of [...new Set([...Object.keys(a.packages), ...Object.keys(b.packages)])]){if(JSON.stringify(a.packages[k])!==JSON.stringify(b.packages[k]))console.log("ROTEVO_LOCK_ENTRY "+JSON.stringify([k,b.packages[k]??null]));}'
       - name: Enforce production dependency audit
         shell: bash
         run: |

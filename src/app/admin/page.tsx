@@ -163,7 +163,7 @@ export default function AdminPage() {
   },[openMenuId]);
   const [workspaceTab,setWorkspaceTab]=useState("overview");
   const [notificationTarget,setNotificationTarget]=useState<{projectId:string;contentId:string;nonce:number}|null>(null);
-  const [notificationTaskTarget,setNotificationTaskTarget]=useState<{projectId:string;taskId:string;nonce:number}|null>(null);
+  const [notificationTaskTarget,setNotificationTaskTarget]=useState<{projectId:string;taskId:string;nonce:number;fromCampaign?:boolean}|null>(null);
   // Keep the active module, deep links, reloads and browser Back/Forward in sync.
   useEffect(()=>{
     const readSection=()=>{
@@ -189,9 +189,12 @@ export default function AdminPage() {
     navigateWorkspace("content");
   }
   function openWorkflowTask(projectId:string,taskId:string){
-    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&item.visibleToClient===true&&!item.archivedAt&&!item.deletedAt)))return;
+    openTask(projectId,taskId,true);
+  }
+  function openTask(projectId:string,taskId:string,sharedOnly=false){
+    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&(!sharedOnly||item.visibleToClient===true)&&!item.archivedAt&&!item.deletedAt)))return;
     if(!confirmDiscardChanges())return;
-    setNotificationTaskTarget({projectId,taskId,nonce:Date.now()});
+    setNotificationTaskTarget({projectId,taskId,nonce:Date.now(),fromCampaign:!sharedOnly});
     navigateWorkspace("tasks");
   }
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
@@ -528,7 +531,7 @@ export default function AdminPage() {
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 
-        {workspaceTab==="campaigns" && !isLoading && <CampaignsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="campaigns" && !isLoading && <CampaignsHub onOpenContent={openWorkflowContent} onOpenTask={openTask} projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="finance" && !isLoading && userEmail && <FinanceHub/>}
         {workspaceTab!=="finance" && workspaceTab!=="campaigns" && workspaceTab!=="projects" && workspaceTab!=="overview" && workspaceTab!=="tasks" && workspaceTab!=="content" && workspaceTab!=="clients" && workspaceTab!=="team" && workspaceTab!=="onboarding" && workspaceTab!=="meetings" && <section className="mt-8 rounded-2xl border border-[#E3E7F0] bg-white p-6"><h2 className="text-lg font-semibold">{workspaceTab==="tasks"?"Central de tarefas":workspaceTab==="clients"?"Gestão de clientes":"Área em preparação"}</h2><p className="mt-3 text-sm leading-6 text-[#525B70]">{workspaceTab==="tasks"?"O cadastro de entregas já está disponível dentro de cada projeto. A consulta centralizada por cliente e responsável será conectada nesta área.":workspaceTab==="clients"?"Os clientes vinculados aos projetos podem ser acessados na seção Projetos. A ficha administrativa individual será integrada nesta área.":"Esta seção será integrada aos registros e permissões existentes. Não há dados fictícios ou funcionalidades simuladas."}</p><button type="button" onClick={()=>navigateWorkspace("projects")} className="mt-4 cursor-pointer text-sm font-semibold text-[#6D35F5]">Ver projetos →</button></section>}
 

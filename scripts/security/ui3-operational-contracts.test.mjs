@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {campaignResources,validCampaignLinks,validCampaignRecords} from "../../src/lib/security/campaignMetricsValidation.ts";
 import {
  canTransitionEditorial, canTransitionClientAction, isFormalDecisionDue,
  resultOfFormalDecision, validateEditorialDates, validateTaskDates,
@@ -61,4 +62,25 @@ test("task launch is optional, stored independently and never drives overdue ale
  assert.match(tasks,/Lançamento de \$\{task\.title\}/);
  assert.match(api,/task\.dueDate>task\.launchDate/);
  assert.match(api,/task\.launchDate===prior\?\.launchDate&&task\.dueDate===prior\?\.dueDate/);
+});
+
+test("campaign links select existing active records from their own project",()=>{
+ const before={
+  editorialCalendar:[{id:"editorial",title:"Publicação",status:"scheduled"},{id:"removed",title:"Rascunho",deletedAt:"2026-11-16"}],
+  executionTimeline:[{id:"task",title:"Editar vídeo",status:"in_progress"}],
+  marketingCampaigns:[{id:"existing",contentIds:["removed"]}]
+ };
+ assert.deepEqual(campaignResources(before.editorialCalendar),[{id:"editorial",title:"Publicação",status:"scheduled"}]);
+ const campaign=(id,contentIds,taskIds=[])=>({marketingCampaigns:[{id,contentIds,taskIds}]});
+ assert.equal(validCampaignLinks(campaign("existing",["editorial","removed"],["task"]),before),true);
+ assert.equal(validCampaignLinks(campaign("new",["removed"]),before),false);
+ assert.equal(validCampaignLinks(campaign("new",["external"]),before),false);
+ assert.equal(validCampaignLinks(campaign("new",["task"]),before),false);
+ assert.equal(validCampaignLinks(campaign("existing",[],["editorial"]),before),false);
+});
+test("campaign storage accepts historical campaigns and rejects duplicate links",()=>{
+ const legacy={id:"campaign",title:"Campanha",status:"draft",platform:"Outro",objective:"",notes:"",resultLabel:"Leads",dashboardUrl:"",startDate:"",endDate:""};
+ assert.equal(validCampaignRecords([legacy]),true);
+ assert.equal(validCampaignRecords([{...legacy,contentIds:["creative"],taskIds:["task"]}]),true);
+ assert.equal(validCampaignRecords([{...legacy,contentIds:["creative","creative"]}]),false);
 });

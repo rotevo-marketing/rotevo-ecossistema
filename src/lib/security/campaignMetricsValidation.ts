@@ -20,8 +20,14 @@ export function validCampaignRecords(value:unknown):boolean{
    !finite(x.budget)||!finite(x.spent)||!finite(x.results,true)||!safeUrl(x.dashboardUrl))return false;
   if(x.kind!==undefined&&!["online","offline","hybrid"].includes(String(x.kind)))return false;
   if(x.visibleToClient!==undefined&&typeof x.visibleToClient!=="boolean")return false;
-  for(const [key,max] of [["channels",600],["resultSummary",2000],["nextStep",1000]] as const)if(x[key]!==undefined&&!str(x[key],max))return false;
+  for(const [key,max] of [["channels",600],["resultSummary",2000],["nextStep",1000],["owner",120],["commercialObjective",220],["offer",240],["audience",300]] as const)if(x[key]!==undefined&&!str(x[key],max))return false;
   if(x.actions!==undefined&&(!Array.isArray(x.actions)||x.actions.length>100||!x.actions.every(a=>str(a,1000))))return false;
+  for(const key of ["contentIds","taskIds"]){
+   const links=x[key];
+   if(links!==undefined&&(!Array.isArray(links)||links.length>500||
+    !links.every(id=>typeof id==="string"&&id.length>0&&id.length<=140)||
+    new Set(links).size!==links.length))return false;
+  }
   ids.add(x.id);
   if(x.snapshots!==undefined){
    if(!Array.isArray(x.snapshots)||x.snapshots.length>120)return false;
@@ -35,6 +41,31 @@ export function validCampaignRecords(value:unknown):boolean{
      !["impressions","clicks","results","leads","appointments","sales"].every(k=>finite(r[k],true)))return false;
     months.add(r.month);
    }
+  }
+ }
+ return true;
+}
+
+type CampaignResource={id:string;title:string;status?:string};
+export function campaignResources(value:unknown):CampaignResource[]{
+ if(!Array.isArray(value))return [];
+ const resources=new Map<string,CampaignResource>();
+ for(const row of value){
+  if(!row||typeof row!=="object"||typeof row.id!=="string"||typeof row.title!=="string"||row.archivedAt||row.deletedAt)continue;
+  resources.set(row.id,{id:row.id,title:row.title,status:typeof row.status==="string"?row.status:undefined});
+ }
+ return [...resources.values()];
+}
+
+export function validCampaignLinks(next:Record<string,unknown>,previous:Record<string,unknown>):boolean{
+ const campaigns=Array.isArray(next.marketingCampaigns)?next.marketingCampaigns:[];
+ const originals=Array.isArray(previous.marketingCampaigns)?previous.marketingCampaigns:[];
+ for(const [field,source] of [["contentIds","editorialCalendar"],["taskIds","executionTimeline"]] as const){
+  const active=new Set(campaignResources(previous[source]).map(resource=>resource.id));
+  for(const campaign of campaigns){
+   const oldCampaign=originals.find(row=>row?.id===campaign.id);
+   const retained=new Set(Array.isArray(oldCampaign?.[field])?oldCampaign[field]:[]);
+   if((campaign[field]??[]).some((id:string)=>!active.has(id)&&!retained.has(id)))return false;
   }
  }
  return true;

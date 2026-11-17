@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
-import {validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
+import {validCampaignLinks,validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 export const runtime = "nodejs";
@@ -84,7 +84,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(!expected||JSON.stringify(expected)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201))return fail(400);
  }
 
- if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&(!validCampaignRecords(nextRoot.marketingCampaigns)||!validCampaignLinks(nextRoot,oldRoot)))return fail(400);
  // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
   const agenda=nextRoot.operationalAgenda;

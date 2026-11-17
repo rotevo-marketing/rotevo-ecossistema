@@ -1,13 +1,16 @@
 "use client";
 import {useMemo,useState} from "react";
+import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import {campaignResources} from "@/lib/security/campaignMetricsValidation";
 import DialogFocus from "@/Components/ui/DialogFocus";
 
 export type CampaignStatus="draft"|"active"|"paused"|"finished";
 export type CampaignPlatform="Google Ads"|"Meta Ads"|"Outro";
 export type CampaignSnapshot={id:string;month:string;spent:number|null;impressions:number|null;clicks:number|null;results:number|null;leads:number|null;appointments:number|null;sales:number|null;revenue:number|null;notes:string;updatedAt:string};
 export type CampaignRecord={
+ contentIds?:string[];taskIds?:string[];owner?:string;commercialObjective?:string;offer?:string;audience?:string;
  id:string;title:string;platform:CampaignPlatform;objective:string;status:CampaignStatus;
  startDate:string;endDate:string;budget:number|null;spent:number|null;results:number|null;
  kind?:"online"|"offline"|"hybrid";visibleToClient?:boolean;channels?:string;actions?:string[];resultSummary?:string;nextStep?:string;resultLabel:string;dashboardUrl:string;notes:string;updatedAt?:string;snapshots?:CampaignSnapshot[];
@@ -15,12 +18,18 @@ export type CampaignRecord={
 export type CampaignProject={id:string;title:string;updated_at:string;data:Record<string,unknown>|null;clients:{name:string}|{name:string}[]|null};
 const client=(p:CampaignProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
 const statuses:Record<CampaignStatus,string>={draft:"Planejada",active:"Ativa",paused:"Pausada",finished:"Finalizada"};
+const campaignResourceStatus:Record<string,string>={
+ planned:"Pendente",in_progress:"Em andamento",blocked:"Bloqueada",completed:"Concluída",cancelled:"Cancelada",
+ idea:"Ideia",idea_pending:"Ideia aguardando aprovação",idea_changes:"Ideia em ajustes",idea_approved:"Ideia aprovada",
+ production:"Em produção",recording:"Em gravação",review:"Revisão",awaiting_client:"Aguardando cliente",
+ changes_requested:"Ajustes solicitados",approved:"Aprovado",scheduled:"Agendado",published:"Publicado"
+};
 const blank:CampaignRecord={kind:"online",visibleToClient:false,channels:"",actions:[],resultSummary:"",nextStep:"",id:"",title:"",platform:"Google Ads",objective:"",status:"draft",startDate:"",endDate:"",budget:null,spent:null,results:null,resultLabel:"Leads",dashboardUrl:"",notes:""};
 const money=(value:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(value);
 const validDate=(v:string)=>!v||(/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v+"T12:00:00").toISOString().slice(0,10)===v);
 const numberOrNull=(v:string)=>v.trim()===""?null:Number(v.replace(",","."));
 const https=(v:string)=>{if(!v)return true;try{return new URL(v).protocol==="https:";}catch{return false;}};
-export default function CampaignsHub({projects,onChanged}:{projects:CampaignProject[];onChanged:(id:string,data:CampaignProject["data"],updatedAt:string)=>void}){
+export default function CampaignsHub({projects,onChanged,onOpenContent,onOpenTask}:{projects:CampaignProject[];onOpenContent:(projectId:string,id:string)=>void;onOpenTask:(projectId:string,id:string)=>void;onChanged:(id:string,data:CampaignProject["data"],updatedAt:string)=>void}){
  const [projectFilter,setProjectFilter]=useState("");
  const [snapshotCampaign,setSnapshotCampaign]=useState<{projectId:string;campaignId:string}|null>(null);
  const [snapshotDraft,setSnapshotDraft]=useState<CampaignSnapshot>({id:"",month:"",spent:null,impressions:null,clicks:null,results:null,leads:null,appointments:null,sales:null,revenue:null,notes:"",updatedAt:""});
@@ -39,6 +48,9 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   const list=Array.isArray(source)?source as CampaignRecord[]:[];
   return list.filter(item=>item&&typeof item.id==="string"&&typeof item.title==="string").map(item=>({item,project}));
  }),[projects]);
+ const editProject=projects.find(project=>project.id===editProjectId);
+ const savedCampaign=rows.find(({item,project})=>item.id===editing?.id&&project.id===editProjectId)?.item;
+ useUnsavedChanges(!!editing&&JSON.stringify(editing)!==JSON.stringify(savedCampaign??{...blank,contentIds:[],taskIds:[]}));
  const selectedProjectId=projectFilter||projects[0]?.id||"";
  const scoped=rows.filter(({item,project})=>project.id===selectedProjectId&&(platformFilter==="all"||item.platform===platformFilter)&&(statusFilter==="all"||item.status===statusFilter)&&(project.title+" "+(client(project)?.name??"")+" "+item.title+" "+item.objective).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
  const dataFor=(item:CampaignRecord)=>{const reports=Array.isArray(item.snapshots)?item.snapshots:[];return reports.find(x=>x.month===monthFilter)??null;};
@@ -60,7 +72,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
   (project.title+" "+(client(project)?.name??"")+" "+item.title+" "+item.objective).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))
  );
  
- const openNew=()=>{setEditing({...blank});setEditProjectId(selectedProjectId);setError("");setNotice("");};
+ const openNew=()=>{setEditing({...blank,contentIds:[],taskIds:[]});setEditProjectId(selectedProjectId);setError("");setNotice("");};
  const openEdit=(id:string,item:CampaignRecord)=>{setEditing({...item});setEditProjectId(id);setError("");setNotice("");};
  const close=()=>{if(!saving){setEditing(null);setError("");}};
  const openSnapshot=(projectId:string,item:CampaignRecord)=>{
@@ -172,7 +184,7 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
     <DialogFocus onClose={()=>{if(!snapshotSaving){setSnapshotCampaign(null);setError("");}}}/>
     <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold text-[#090D1C]">Resultados mensais</h2><p className="mt-1 text-xs text-[#697386]">Registro específico desta campanha. O histórico dos outros meses é preservado.</p></div><button type="button" aria-label="Fechar" disabled={snapshotSaving} onClick={()=>{setSnapshotCampaign(null);setError("");}} className="rounded-lg border border-[#E3E7F0] p-2"><RotevoTablerIcon name="x" size={19}/></button></div>
     {error&&<p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#A3223D]">{error}</p>}
-    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+    <fieldset className="mt-5 grid gap-4 sm:grid-cols-2"><legend className="text-sm font-semibold">Visão Geral</legend>
      <label className="text-xs font-semibold sm:col-span-2">Mês de referência<input type="month" value={snapshotDraft.month} disabled={snapshotSaving} onChange={e=>{setSnapshotDraft({...snapshotDraft,month:e.target.value});setError("");}} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
      {([
       ["spent","Investimento efetivo (R$)"],["impressions","Impressões"],["clicks","Cliques"],["results","Resultados do objetivo"],["leads","Leads"],["appointments","Agendamentos"],["sales","Vendas"],["revenue","Receita atribuída (R$)"]
@@ -189,11 +201,12 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
    <p className="mt-2 text-xs text-[#697386]">Acompanhamento manual por projeto. A configuração real do anúncio continua na plataforma de mídia.</p>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#A3223D]">{error}</p>}
    <div className="mt-5 grid gap-4 sm:grid-cols-2">
-    <label className="text-xs font-semibold sm:col-span-2">Projeto<select disabled={!!editing.id} value={editProjectId} onChange={e=>setEditProjectId(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="">Selecione um projeto</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
+    <label className="text-xs font-semibold sm:col-span-2">Projeto<select disabled={!!editing.id} value={editProjectId} onChange={e=>{setEditProjectId(e.target.value);setEditing({...editing,contentIds:[],taskIds:[]});}} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="">Selecione um projeto</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>
     <label className="text-xs font-semibold sm:col-span-2">Campanha *<input value={editing.title} maxLength={140} onChange={e=>setEditing({...editing,title:e.target.value})} placeholder="Nome usado no gerenciador de anúncios" className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
     <label className="text-xs font-semibold">Tipo de campanha<select value={editing.kind??"online"} onChange={e=>setEditing({...editing,kind:e.target.value as "online"|"offline"|"hybrid"})} className="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm"><option value="online">Online</option><option value="offline">Offline</option><option value="hybrid">Híbrida</option></select></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient===true} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})}/>Compartilhar campanha e resultados com o cliente</label>{([{key:"channels",label:"Canais e parceiros",max:600},{key:"resultSummary",label:"Resultados e aprendizados",max:2000},{key:"nextStep",label:"Próximo passo",max:1000}] as const).map(f=><label key={f.key} className="text-xs font-semibold sm:col-span-2">{f.label}<textarea rows={2} maxLength={f.max} value={editing[f.key]??""} onChange={e=>setEditing({...editing,[f.key]:e.target.value})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label>)}<label className="text-xs font-semibold sm:col-span-2">Ações da campanha (uma por linha)<textarea rows={3} maxLength={20000} value={(editing.actions??[]).join("\n")} onChange={e=>setEditing({...editing,actions:e.target.value.split("\n")})} className="mt-1 w-full rounded-lg border p-3 text-sm"/></label><label className="text-xs font-semibold">Plataforma<select value={editing.platform} onChange={e=>setEditing({...editing,platform:e.target.value as CampaignPlatform})} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"><option>Google Ads</option><option>Meta Ads</option><option>Outro</option></select></label>
     <label className="text-xs font-semibold">Situação<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value as CampaignStatus})} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm">{Object.entries(statuses).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     <label className="text-xs font-semibold sm:col-span-2">Objetivo<input value={editing.objective} maxLength={220} onChange={e=>setEditing({...editing,objective:e.target.value})} placeholder="Ex.: captação de leads" className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
+    {([{key:"owner",label:"Responsável",max:120},{key:"commercialObjective",label:"Objetivo comercial",max:220},{key:"offer",label:"Oferta ou produto",max:240},{key:"audience",label:"Público",max:300}] as const).map(field=><label key={field.key} className="text-xs font-semibold">{field.label}<input value={editing[field.key]??""} maxLength={field.max} onChange={e=>setEditing({...editing,[field.key]:e.target.value})} className="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm"/></label>)}
     <label className="text-xs font-semibold">Início<input type="date" value={editing.startDate} onChange={e=>setEditing({...editing,startDate:e.target.value})} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
     <label className="text-xs font-semibold">Fim<input type="date" value={editing.endDate} onChange={e=>setEditing({...editing,endDate:e.target.value})} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
     <label className="text-xs font-semibold">Orçamento planejado (R$)<input type="number" min={0} step="0.01" value={editing.budget??""} onChange={e=>setEditing({...editing,budget:numberOrNull(e.target.value)})} className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
@@ -201,7 +214,31 @@ export default function CampaignsHub({projects,onChanged}:{projects:CampaignProj
     <label className="text-xs font-semibold sm:col-span-2">Link externo da campanha (HTTPS)<input type="url" value={editing.dashboardUrl} onChange={e=>setEditing({...editing,dashboardUrl:e.target.value})} placeholder="https://ads.google.com/..." className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
     {https(editing.dashboardUrl)&&editing.dashboardUrl&&<a href={editing.dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#6034B7] sm:col-span-2">Abrir painel externo ↗</a>}
     <label className="text-xs font-semibold sm:col-span-2">Observações<textarea rows={3} value={editing.notes} maxLength={1200} onChange={e=>setEditing({...editing,notes:e.target.value})} placeholder="Acompanhamento e próximos ajustes" className="mt-1 w-full rounded-lg border border-[#E3E7F0] px-3 py-2.5 text-sm"/></label>
-   </div>
+   </fieldset>
+   {editProject&&([
+    {heading:"Criativos e Conteúdos",field:"contentIds",source:"editorialCalendar",open:onOpenContent},
+    {heading:"Execução",field:"taskIds",source:"executionTimeline",open:onOpenTask},
+   ] as const).map(group=>{
+    const selected=editing[group.field]??[];
+    const resources=campaignResources(editProject.data?.[group.source]);
+    const missing=selected.filter(id=>!resources.some(resource=>resource.id===id));
+    const update=(id:string,checked:boolean)=>setEditing({
+     ...editing,[group.field]:checked?[...new Set([...selected,id])]:selected.filter(value=>value!==id)
+    });
+    return <fieldset key={group.field} className="mt-5 rounded-xl border p-4">
+     <legend className="px-1 text-sm font-semibold">{group.heading}</legend>
+     {resources.length===0&&!missing.length&&<p className="text-xs text-[#697386]">Nenhum registro ativo neste projeto.</p>}
+     <ul className="max-h-56 divide-y overflow-y-auto">
+      {resources.map(resource=><li key={resource.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+       <label className="inline-flex items-center gap-2"><input type="checkbox" checked={selected.includes(resource.id)} onChange={e=>update(resource.id,e.target.checked)}/>{resource.title}</label>
+       <span className="text-xs text-[#697386]">{campaignResourceStatus[resource.status??""]??resource.status??"Pendente"}</span>
+       {editing.id&&selected.includes(resource.id)&&<button type="button" className="text-xs font-semibold text-[#6034B7]" onClick={()=>group.open(editProject.id,resource.id)}>Abrir detalhes</button>}
+      </li>)}
+      {missing.map(id=><li key={id} className="flex justify-between gap-2 py-2 text-sm"><span>Registro arquivado ou indisponível</span><button type="button" className="text-xs font-semibold text-[#6034B7]" onClick={()=>update(id,false)}>Remover vínculo</button></li>)}
+     </ul>
+    </fieldset>;
+   })}
+   {editing.id&&<h3 className="mt-5 text-sm font-semibold">Resultados</h3>}
    {editing.id&&<details className="mt-5 rounded-xl border border-[#E3E7F0] bg-[#F6F7FB] p-4"><summary className="cursor-pointer text-sm font-semibold text-[#6034B7]">Histórico mensal ({(editing.snapshots??[]).length})</summary>
     {(editing.snapshots??[]).length===0?<p className="mt-3 text-xs text-[#697386]">Sem dados de desempenho registrados.</p>:<div className="mt-3 space-y-2">{[...(editing.snapshots??[])].sort((a,b)=>b.month.localeCompare(a.month)).map(snapshot=><div key={snapshot.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 text-xs"><div><strong>{snapshot.month.split("-").reverse().join("/")}</strong><p className="mt-1 text-[#697386]">Investimento: {snapshot.spent==null?"—":money(snapshot.spent)} · Leads: {snapshot.leads??"—"} · Vendas: {snapshot.sales??"—"}</p></div><button type="button" onClick={()=>{setMonthFilter(snapshot.month);openSnapshot(editProjectId,editing);setSnapshotDraft({...snapshot});setEditing(null);}} className="cursor-pointer rounded-lg border border-[#D9C9FA] px-3 py-2 font-semibold text-[#6034B7]">Editar mês</button></div>)}</div>}
    </details>}

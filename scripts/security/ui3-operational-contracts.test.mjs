@@ -96,3 +96,17 @@ test("meeting timing validates local ranges and uses the supplied time zone",()=
  assert.equal(meetingInterval("2026-11-18","",{...timing,endTime:"",allDay:true}).minutes,1440);
  assert.equal(meetingIntervalsOverlap(interval,{start:interval.end,end:interval.end+1000}),false);
 });
+
+test("Google Calendar connection credentials and availability stay server-side",()=>{
+ const read=path=>readFileSync(new URL("../../"+path,import.meta.url),"utf8");
+ const oauth=read("src/app/api/admin/google-calendar/route.ts");
+ const callback=read("src/app/api/admin/google-calendar/callback/route.ts");
+ const available=read("src/app/api/admin/google-calendar/availability/route.ts");
+ const sql=read("docs/security/sql/ui3-google-calendar-connection-PROPOSAL-ONLY.sql");
+ assert.match(oauth,/attempt\.userId!==userId/);
+ assert.match(oauth,/code_challenge_method:"S256"/);
+ assert.match(callback,/attempt\.state===state/);
+ assert.match(sql,/enable row level security/);
+ assert.match(sql,/from public,anon,authenticated/);
+ assert.match(available,/return json\(\{busy:calendar\.busy\.length>0\}\)/);
+});

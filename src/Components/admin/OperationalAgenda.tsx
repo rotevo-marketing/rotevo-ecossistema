@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
+import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 import {defaultMeetingZone,meetingInterval,meetingIntervalsOverlap,type MeetingTiming} from "@/lib/googleCalendar/meetingTiming";
@@ -19,6 +20,8 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
  const tasks=projectData.executionTimeline??[];
  const timing=editing?.timing;
  const interval=editing&&timing?meetingInterval(editing.date,editing.time??"",timing):null;
+ const [availability,setAvailability]=useState<{key:string;message:string}|null>(null);
+ const availabilityKey=interval?interval.start+":"+interval.end:"";
  const overlapping=editing?.status==="planned"&&interval?rows.some(row=>{
   if(row.id===editing.id||row.status!=="planned"||!row.timing)return false;
   const other=meetingInterval(row.date,row.time??"",row.timing);
@@ -27,6 +30,17 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
  const baseline=editing?.id?rows.find(row=>row.id===editing.id):empty;
  const dirty=!!editing&&JSON.stringify(editing)!==JSON.stringify(baseline);
  useUnsavedChanges(dirty);
+ async function checkAvailability(){
+  if(!editing||!interval||!timing)return;
+  const key=availabilityKey;
+  setAvailability({key,message:"Consultando disponibilidade…"});
+  try{
+   const status=await request<{busy:boolean}>("/api/admin/google-calendar/availability","POST",{date:editing.date,time:editing.time??"",timing});
+   setAvailability(previous=>previous?.key===key?{key,message:status.busy?"O calendário tem um horário ocupado nesse intervalo.":"O calendário está livre nesse intervalo."}:previous);
+  }catch(error){
+   setAvailability(previous=>previous?.key===key?{key,message:error instanceof Error?error.message:"Consulta de disponibilidade indisponível."}:previous);
+  }
+ }
  function discard(){return !working&&(!dirty||window.confirm("Descartar as alterações não salvas do compromisso?"));}
  function close(){if(discard())setEditing(null);}
 
@@ -72,13 +86,17 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
   {!startNew&&<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-[#E3E6ED] py-2 text-xs text-[#687487]"><span>{ordered.filter(x=>x.status==="planned").length} agendados</span><span>{ordered.filter(x=>x.status==="completed").length} realizados</span><span>{ordered.filter(x=>x.status==="cancelled").length} cancelados</span></div>}
   {!startNew&&<div className="mt-5 divide-y divide-[#E3E7F0]">{ordered.length===0?<p className="text-sm text-[#697386]">Nenhum compromisso registrado.</p>:ordered.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#697386]">{kinds[item.kind]} · {item.date}{item.time?` às ${item.time}`:""} · {item.status==="completed"?"Concluído":item.status==="cancelled"?"Cancelado":"Planejado"} · {item.owner||"Sem responsável"}</p>{item.relatedTaskId&&<p className="text-xs text-[#697386]">Atividade: {tasks.find(t=>t.id===item.relatedTaskId)?.title??"Referência indisponível"}</p>}{item.notes&&<p className="mt-1 text-xs text-[#697386]">{item.notes}</p>}{item.meetingUrl&&<a href={item.meetingUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-semibold text-[#5949D1]">Abrir reunião ↗</a>}</div><div className="flex gap-2"><button type="button" disabled={working} onClick={()=>{if(discard())setEditing({...item});}} className="rounded-lg border px-3 py-2 text-xs">Editar</button><button type="button" disabled={working||item.status==="completed"||!!item.minutes?.trim()} title={item.status==="completed"||!!item.minutes?.trim()?"Reuniões realizadas e atas registradas são preservadas no histórico.":"Excluir compromisso sem ata"} onClick={()=>{if(window.confirm("Excluir este compromisso sem ata?"))void save(rows.filter(x=>x.id!==item.id));}} className="rounded-lg border border-red-200 px-3 py-2 text-xs text-red-700 disabled:cursor-not-allowed disabled:opacity-35">Excluir</button></div></div>)}</div>}
   {dirty&&<p role="status" className="rv-unsaved">Alterações não salvas no compromisso</p>}
-  {editing&&<div className="mt-4 grid gap-4 rounded-xl border border-[#E3E7F0] bg-[#FAFBFD] p-4 sm:grid-cols-2 sm:p-5"><label className="text-xs font-semibold">Título<input value={editing.title} maxLength={140} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="text-xs font-semibold">Data<input type="date" value={editing.date} onChange={e=>setEditing({...editing,date:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="text-xs font-semibold">Horário de início<input disabled={timing?.allDay} type="time" value={editing.time??""} onChange={e=>setEditing({...editing,time:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><fieldset className="space-y-3 rounded-lg border p-3 sm:col-span-2"><legend className="px-1 text-xs font-semibold">Data e horário do compromisso</legend>
+  {editing&&<div className="mt-4 grid gap-4 rounded-xl border border-[#E3E7F0] bg-[#FAFBFD] p-4 sm:grid-cols-2 sm:p-5"><label className="text-xs font-semibold">Título<input value={editing.title} maxLength={140} onChange={e=>setEditing({...editing,title:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="text-xs font-semibold">Data<input type="date" value={editing.date} onChange={e=>setEditing({...editing,date:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="text-xs font-semibold">{timing?"Horário de início":"Horário (opcional)"}<input disabled={timing?.allDay} type="time" value={editing.time??""} onChange={e=>setEditing({...editing,time:e.target.value})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><fieldset className="space-y-3 rounded-lg border p-3 sm:col-span-2"><legend className="px-1 text-xs font-semibold">Data e horário do compromisso</legend>
  {timing?<><div className="grid gap-3 sm:grid-cols-3">
  <label className="text-xs font-semibold">Data de término<input type="date" value={timing.endDate} onChange={e=>setEditing({...editing,timing:{...timing,endDate:e.target.value}})} className="mt-1 w-full rounded-lg border p-2"/></label>
  <label className="text-xs font-semibold">Horário de término<input type="time" disabled={timing.allDay} value={timing.endTime} onChange={e=>setEditing({...editing,timing:{...timing,endTime:e.target.value}})} className="mt-1 w-full rounded-lg border p-2"/></label>
  <label className="text-xs font-semibold">Fuso horário (IANA)<input value={timing.timeZone} maxLength={100} onChange={e=>setEditing({...editing,timing:{...timing,timeZone:e.target.value}})} className="mt-1 w-full rounded-lg border p-2"/></label>
  </div><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={timing.allDay} onChange={e=>setEditing({...editing,time:e.target.checked?"":editing.time,timing:{...timing,allDay:e.target.checked,endTime:e.target.checked?"":timing.endTime}})}/>Dia inteiro</label>
  {interval&&<p className="text-xs">Duração: {interval.minutes} minutos</p>}
+ {process.env.NEXT_PUBLIC_ROTEVO_GOOGLE_CALENDAR_ENABLED==="true"&&interval&&<div>
+  <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={()=>void checkAvailability()}>Verificar disponibilidade no Google</button>
+  {availability?.key===availabilityKey&&<p role="status" className="mt-1 text-xs">{availability.message}</p>}
+ </div>}
  {overlapping&&<p role="status" className="text-xs">Há outro compromisso neste projeto no mesmo horário.</p>}
  <button type="button" onClick={()=>setEditing({...editing,timing:undefined})} className="rounded-lg border px-3 py-2 text-xs">Remover horário de término</button></>:
  <button type="button" onClick={()=>setEditing({...editing,timing:{endDate:editing.date,endTime:"",timeZone:defaultMeetingZone,allDay:false}})} className="rounded-lg border px-3 py-2 text-xs">Definir término e fuso horário</button>}

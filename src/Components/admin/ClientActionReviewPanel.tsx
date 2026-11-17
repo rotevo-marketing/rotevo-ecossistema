@@ -31,6 +31,11 @@ export default function ClientActionReviewPanel({projects,assignmentId,onReviewe
  const [working,setWorking]=useState<string|null>(null);
  const [feedback,setFeedback]=useState<Record<string,string>>({});
  const [revision,setRevision]=useState(0);
+ useEffect(()=>{
+  const refresh=()=>setRevision(value=>value+1);
+  window.addEventListener("rotevo:assignment-reviewed",refresh);
+  return()=>window.removeEventListener("rotevo:assignment-reviewed",refresh);
+ },[]);
  const projectKey=useMemo(()=>projects.map(p=>p.id).sort().join("|"),[projects]);
  useEffect(()=>{
   let alive=true;

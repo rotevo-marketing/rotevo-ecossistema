@@ -22,13 +22,16 @@ export function useStrategistAssignments(projects:Project[],enabled:boolean){
  const [revision,setRevision]=useState(0);
  useEffect(()=>{
   if(!enabled||!ids)return;
-  let active=true,requestNumber=0;
+  let active=true,requestNumber=0,loadedUser="";
   const refresh=async()=>{
    const generation=++requestNumber;
    try{
     const {data,error}=await supabase.auth.getUser();
     if(error||!data.user)throw new Error("Sessão expirada.");
     const author=data.user.id;
+    if(!active||generation!==requestNumber)return;
+    if(loadedUser&&loadedUser!==author)setSnapshot(null);
+    loadedUser=author;
     const results=await Promise.allSettled(ids.split("|").map(async projectId=>{
      const query=new URLSearchParams({projectId,expectedAuthorUserId:author});
      const response=await request<{assignments:ProjectAssignment[]}>("/api/workflow/client-actions/project?"+query);
@@ -41,8 +44,8 @@ export function useStrategistAssignments(projects:Project[],enabled:boolean){
     if(active&&generation===requestNumber)setSnapshot({ids,rows:[],error:"Não foi possível consultar as atribuições."});
    }
   };
-  const auth=supabase.auth.onAuthStateChange((event)=>{
-   if(event==="SIGNED_OUT")setSnapshot(null);
+  const auth=supabase.auth.onAuthStateChange((event,session)=>{
+   if(event==="SIGNED_OUT"||(event==="SIGNED_IN"&&loadedUser&&loadedUser!==session?.user.id))setSnapshot(null);
    if(event==="SIGNED_IN"||event==="SIGNED_OUT")requestNumber++;
    if(event==="SIGNED_IN")setTimeout(()=>{if(active)void refresh();},0);
   });

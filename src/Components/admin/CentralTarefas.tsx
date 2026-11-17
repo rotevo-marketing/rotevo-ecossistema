@@ -72,6 +72,8 @@ function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{proje
   </div>}
  </div>;
 }
+const keyOf=(item:Item)=>item.project.id+":"+item.task.id;
+
 export default function CentralTarefas({projects,onChanged,onOpenContent,onOpenAssignedContent,notificationTask}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void;onOpenAssignedContent?:(projectId:string,contentId:string)=>void;notificationTask?:{projectId:string;taskId:string;nonce:number;fromCampaign?:boolean}|null}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
  const [section,setSection]=useState<"active"|"completed"|"archived"|"trash">("active");
@@ -200,7 +202,6 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,onOpenA
  const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
  const paginated=filtered.slice((Math.min(page,pages)-1)*pageSize,Math.min(page,pages)*pageSize);
  const groupedTaskRows=groupTaskRows(paginated,collapsedGroups,groupMode);
- const keyOf=(item:Item)=>item.project.id+":"+item.task.id;
  const selectedItems=tasks.filter(item=>selectedKeys.includes(keyOf(item)));
  const selectablePage=paginated.filter(item=>!item.assignments);
  const allPageSelected=selectablePage.length>0&&selectablePage.every(item=>selectedKeys.includes(keyOf(item)));

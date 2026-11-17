@@ -1,0 +1,53 @@
+name: 02.01 isolated review
+on:
+  push:
+    branches: [feat/company-analysis-0201-v1-20261117]
+    paths: ["src/**", "scripts/security/company-analysis-0201*", ".github/workflows/company-analysis-0201.yml"]
+permissions:
+  contents: read
+concurrency:
+  group: company-analysis-0201-isolated
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: synthetic-isolated-anon
+      SUPABASE_SERVICE_ROLE_KEY: synthetic-isolated-service
+      ROTEVO_COMPANY_ANALYSIS_PREVIEW: "true"
+      ROTEVO_GOOGLE_CALENDAR_ENABLED: "false"
+      NEXT_PUBLIC_ROTEVO_GOOGLE_CALENDAR_ENABLED: "false"
+      ROTEVO_NOTIFICATIONS_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Targeted persistence, publication, G2 and tenant tests
+        run: node --test scripts/security/company-analysis-0201-v2.test.cjs scripts/security/planning-v5-company-analysis.test.mjs
+      - name: Build complete application with isolated configuration
+        run: npm run build
+      - name: Install existing browser test tools temporarily
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.65.0 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+      - name: Browser review and screenshots with synthetic data only
+        run: |
+          npm run start -- --hostname 127.0.0.1 > /tmp/rotevo-0201-server.log 2>&1 &
+          node -e 'const wait=async()=>{for(let i=0;i<60;i++){try{const r=await fetch("http://127.0.0.1:3000/previa/analise-empresa-0201");if(r.ok)return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error("Isolated preview did not start");};wait();'
+          node scripts/security/company-analysis-0201-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: company-analysis-0201-review
+          path: company-analysis-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 import CompanyAnalysis0201 from "./CompanyAnalysis0201";
 import type {CompanyAnalysis} from "@/lib/planning/companyAnalysis";
 import ProjectTimeline, { type ExecutionItem } from "@/Components/cliente/ProjectTimeline";
@@ -54,7 +55,7 @@ export default function PlanningV5({
           {expandedStage === item.code && <ul className={styles.pages}>
             {item.pages.map(candidate => <li key={candidate.code}>
               <button type="button" aria-current={candidate.code === selection ? "page" : undefined}
-                onClick={() => setSelection(candidate.code)}>
+                onClick={() => {if(candidate.code===selection||confirmDiscardChanges())setSelection(candidate.code);}}>
                 <span className={styles.code}>{candidate.code}</span>{candidate.title}
               </button>
             </li>)}

@@ -1,69 +1,92 @@
 "use client";
-import {useState, type ReactNode} from "react";
-import {EMPTY_COMPANY_ANALYSIS,parseCompanyAnalysis,type CompanyAnalysis,type NamedNote,type OrganizationalEntry} from "@/lib/planning/companyAnalysis";
+import {useId,useRef,useState,type ReactNode} from "react";
+import RichTextEditor from "@/Components/RichTextEditor";
+import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
+import {companyAnalysisForEditing,companyAnalysisPublicationErrors,isCompanyAnalysisV2,parseCompanyAnalysis,type CompanyAnalysis,type CompanyAnalysisV2,type AnalysisNote} from "@/lib/planning/companyAnalysis";
+import CompanyAnalysis0201Presentation,{LegacyCompanyAnalysisView} from "./CompanyAnalysis0201Presentation";
 import styles from "./CompanyAnalysis0201.module.css";
 
 type Props={value?:CompanyAnalysis|null;published?:boolean;preview:boolean;onSave?:(value:CompanyAnalysis)=>Promise<void>;onPublish?:()=>Promise<void>};
-const blocks=[["identity","Caracterização Empresarial"],["history","Trajetória e Evolução"],["organization","Estrutura e Organização"],["governance","Governança e Decisões"],["conditions","Estágio e Condições Atuais"],["synthesis","Síntese da Análise"]] as const;
-const newId=()=>typeof crypto!=="undefined" && "randomUUID" in crypto?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2);
-const has=(text?:string)=>Boolean(text?.trim());
-const nonempty=(items:NamedNote[])=>items.filter(item=>has(item.title)||has(item.description));
-function Field({label,value,onChange,multiline=false,helper}:{label:string;value:string;onChange:(value:string)=>void;multiline?:boolean;helper?:string}){
- return <label className={styles.field}><span>{label}</span>{multiline?<textarea rows={3} value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/>:<input value={value} onChange={event=>onChange(event.target.value)} maxLength={12000}/>}{helper&&<small>{helper}</small>}</label>;
+const blocks=[["identity","Caracterização Empresarial"],["history","Trajetória e Evolução"],["organization","Estrutura e Governança"],["conditions","Estágio e Condições Atuais"],["synthesis","Síntese da Análise"]] as const;
+const note=():AnalysisNote=>({id:crypto.randomUUID(),title:"",description:""});
+function Field({label,value,onChange,rich=false,helper,accessibleLabel}:{label:string;value:string;onChange:(v:string)=>void;rich?:boolean;helper?:string;accessibleLabel?:string}){
+ return rich?<div className={styles.richField}><span className={styles.fieldLabel}>{label}</span><RichTextEditor label={accessibleLabel??label} tablerToolbar value={value} onChange={onChange} minHeight={100}/>{helper&&<small>{helper}</small>}</div>:<label className={styles.field}><span>{label}</span><input value={value} aria-label={accessibleLabel??label} maxLength={12000} onChange={e=>onChange(e.target.value)}/>{helper&&<small>{helper}</small>}</label>;
 }
-function Repeater<T extends NamedNote>({label,items,onChange,render,newItem}:{label:string;items:T[];onChange:(items:T[])=>void;render:(item:T,onPatch:(patch:Partial<T>)=>void)=>ReactNode;newItem:()=>T}){
- const update=(i:number,patch:Partial<T>)=>onChange(items.map((item,j)=>j===i?{...item,...patch}:item));
- return <div className={styles.repeater}><div className={styles.repeatHeading}><h4>{label}</h4><button type="button" onClick={()=>onChange([...items,newItem()])}>+ Adicionar</button></div>
- {items.map((item,i)=><div className={styles.repeatItem} key={item.id}>
-   {render(item,patch=>update(i,patch))}
-   <div className={styles.repeatActions}><button type="button" disabled={i===0} onClick={()=>{const a=[...items];[a[i-1],a[i]]=[a[i],a[i-1]];onChange(a);}}>Subir</button><button type="button" disabled={i===items.length-1} onClick={()=>{const a=[...items];[a[i+1],a[i]]=[a[i],a[i+1]];onChange(a);}}>Descer</button><button type="button" onClick={()=>onChange(items.filter((_,j)=>j!==i))}>Remover</button></div>
- </div>)}</div>;
+function Repeater<T extends AnalysisNote>({label,items,onChange,create,extra,period=false,helper}:{label:string;items:T[];onChange:(items:T[])=>void;create:()=>T;extra?:(item:T,change:(patch:Partial<T>)=>void,context:string)=>ReactNode;period?:boolean;helper?:string}){
+ const change=(id:string,patch:Partial<T>)=>onChange(items.map(item=>item.id===id?{...item,...patch}:item));
+ const move=(index:number,offset:number)=>{const next=[...items];[next[index],next[index+offset]]=[next[index+offset],next[index]];onChange(next);};
+ return <section className={styles.repeater} aria-label={label}><div className={styles.repeatHeading}><div><h4>{label}</h4>{helper&&<p className={styles.help}>{helper}</p>}</div><button type="button" onClick={()=>onChange([...items,create()])} className={styles.addButton}><RotevoTablerIcon name="square-rounded-plus" size={17}/>Adicionar<span className={styles.srOnly}> em {label}</span></button></div>
+  {items.map((item,index)=><div key={item.id} className={styles.repeatItem}>
+   {period&&<Field label="Período" value={(item as T&{period:string}).period} onChange={value=>change(item.id,{period:value} as unknown as Partial<T>)} helper="Ano, mês/ano ou intervalo. Preserve a precisão conhecida." accessibleLabel={"Período de "+label+" "+(index+1)}/>}
+   <Field label={label==="Responsabilidades"?"Função":"Título"} value={item.title} onChange={title=>change(item.id,{title} as Partial<T>)} accessibleLabel={(label==="Responsabilidades"?"Função":"Título")+" de "+label+" "+(index+1)}/>
+   {extra?.(item,patch=>change(item.id,patch),label+" "+(index+1))}
+   <div className={styles.wide}><Field label="Descrição" rich value={item.description} onChange={description=>change(item.id,{description} as Partial<T>)} accessibleLabel={"Descrição de "+label+" "+(index+1)}/></div>
+   <div className={styles.repeatActions}><button type="button" aria-label={"Subir "+label+" "+(index+1)} disabled={index===0} onClick={()=>move(index,-1)}><RotevoTablerIcon name="chevron-up" size={16}/>Subir</button><button type="button" aria-label={"Descer "+label+" "+(index+1)} disabled={index===items.length-1} onClick={()=>move(index,1)}><RotevoTablerIcon name="chevron-down" size={16}/>Descer</button><button type="button" aria-label={"Excluir "+label+" "+(index+1)} onClick={()=>{if((item.title.trim()||item.description.trim())&&!window.confirm("Excluir este registro? A alteração será aplicada ao salvar o rascunho."))return;onChange(items.filter(row=>row.id!==item.id));}}><RotevoTablerIcon name="x" size={16}/>Excluir</button></div>
+  </div>)}
+ </section>;
 }
-const note=():NamedNote=>({id:newId(),title:"",description:""});
-function Heading({number,title}:{number:number;title:string}){return <div className={styles.blockHeading}><span>{String(number).padStart(2,"0")}</span><h3>{title}</h3></div>;}
-function Empty(){return <p className={styles.empty}>Informação ainda não preenchida.</p>;}
-function TextBlock({label,text}:{label:string;text:string}){return has(text)?<div className={styles.textBlock}><h4>{label}</h4><p>{text}</p></div>:null;}
-function NoteList({items}:{items:NamedNote[]}){const a=nonempty(items);return a.length?<div className={styles.noteGrid}>{a.map(item=><article key={item.id}><h4>{item.title}</h4>{has(item.description)&&<p>{item.description}</p>}</article>)}</div>:null;}
 export default function CompanyAnalysis0201({value,published=false,preview,onSave,onPublish}:Props){
- const [draft,setDraft]=useState<CompanyAnalysis>(()=>parseCompanyAnalysis(value??EMPTY_COMPANY_ANALYSIS));
- const [saving,setSaving]=useState(false),[publishing,setPublishing]=useState(false),[notice,setNotice]=useState("");
- const changed=JSON.stringify(draft)!==JSON.stringify(parseCompanyAnalysis(value));
- const patch=<K extends keyof CompanyAnalysis>(section:K,changes:Partial<CompanyAnalysis[K]>)=>setDraft(current=>({...current,[section]:{...current[section],...changes}}));
- const field=<K extends keyof CompanyAnalysis>(section:K,key:keyof CompanyAnalysis[K],label:string,multiline=false,helper?:string)=>{
-   const source=draft[section] as unknown as Record<string,unknown>;
-   return <Field label={label} value={String(source[key as string]??"")} multiline={multiline} helper={helper} onChange={text=>patch(section,{[key]:text} as Partial<CompanyAnalysis[K]>)}/>;
- };
- const groups=preview?parseCompanyAnalysis(value??draft):draft;
- const blockHasContent=(id:keyof CompanyAnalysis)=>Object.values(groups[id] as unknown as Record<string,unknown>).some(v=>(typeof v==="string"&&has(v))||(Array.isArray(v)&&v.some(item=>item&&typeof item==="object"&&("title" in item)&&has(item.title))));
- const duration=groups.identity.founded.trim().match(/^\d{4}$/);
- const years=duration?new Date().getFullYear()-Number(duration[0]):null;
- async function save(){if(!onSave||saving)return;setSaving(true);setNotice("");try{await onSave(draft);setNotice("Análise da Empresa salva.");}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível salvar. Tente novamente.");}finally{setSaving(false);}}
- async function publish(){if(!onPublish||publishing||changed)return;setPublishing(true);setNotice("");try{await onPublish();setNotice("Versão da página disponibilizada. O acesso do cliente depende também da publicação do planejamento.");}catch(e){setNotice(e instanceof Error?e.message:"Não foi possível disponibilizar a página.");}finally{setPublishing(false);}}
- const orgKinds={department:"Departamento",workstream:"Frente de atuação",person:"Pessoa e função",external:"Apoio externo"};
- return <div className={styles.root}>
-  <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2>{!preview&&<small>{published?"Uma versão anterior ou atual foi disponibilizada.":"Página não disponibilizada ao cliente."}</small>}</div>{!preview&&<div className={styles.topActions}><button type="button" onClick={()=>void save()} disabled={!onSave||saving}>{saving?"Salvando…":"Salvar rascunho"}</button>{onPublish&&<button type="button" onClick={()=>void publish()} disabled={publishing||saving||changed||!value}>{publishing?"Disponibilizando…":"Disponibilizar página"}</button>}</div>}</header>
-  {notice&&<p role="status" className={styles.notice}>{notice}</p>}
-  {blocks.map(([id,title],i)=>!preview||blockHasContent(id)?<section key={id} className={styles.block} aria-label={title}><Heading number={i+1} title={title}/>
-   {!preview&&id==="identity"&&<div className={styles.fields}>
-     {field("identity","displayName","Nome de apresentação")}{field("identity","mainActivity","Atividade principal")}{field("identity","businessNature","Natureza do negócio")}
-     {field("identity","sector","Setor")}{field("identity","specialty","Ramo específico")}{field("identity","niche","Especialização ou nicho")}
-     {field("identity","founded","Ano de fundação / início",false,"Informe apenas a precisão conhecida.")}{field("identity","referenceLocation","Localização de referência")}{field("identity","geographicScope","Abrangência geográfica")}
-     {field("identity","operatingMode","Modalidade principal de atuação")}{field("identity","deliveryProfile","Atendimento e entrega",true)}
-     <div className={styles.wide}><Repeater label="Características distintivas atuais" items={draft.identity.traits} onChange={items=>patch("identity",{traits:items})} newItem={note} render={(item,change)=><><Field label="Característica objetiva" value={item.title} onChange={title=>change({title})}/><Field label="Descrição" value={item.description} onChange={description=>change({description})} multiline/><Field label="Fundamentação interna (não publicada)" value={item.evidence??""} onChange={evidence=>change({evidence})} multiline/></>}/></div>
-     <div className={styles.wide}>{field("identity","summary","Síntese empresarial",true)}</div>
+ const prefix=useId(),[draft,setDraft]=useState<CompanyAnalysisV2>(()=>companyAnalysisForEditing(value));
+ const [busy,setBusy]=useState<"save"|"publish"|null>(null),[notice,setNotice]=useState(""),[error,setError]=useState(false);
+ const lock=useRef(false);
+ const changed=!!onSave&&JSON.stringify(draft)!==JSON.stringify(companyAnalysisForEditing(value));
+ useUnsavedChanges(changed);
+ const problems=companyAnalysisPublicationErrors(draft);
+ const [expanded,setExpanded]=useState<string[]>(["identity"]);
+ const patch=<K extends keyof CompanyAnalysisV2>(group:K,fields:Partial<CompanyAnalysisV2[K]>)=>setDraft(current=>({...current,[group]:{...(current[group] as object),...fields}}));
+ function show(id:string){setExpanded(current=>current.includes(id)?current:[...current,id]);requestAnimationFrame(()=>document.getElementById(prefix+id)?.scrollIntoView({block:"start",behavior:"smooth"}));}
+ async function save(){
+  if(!onSave||lock.current)return;
+  lock.current=true;setBusy("save");setError(false);setNotice("");
+  try{await onSave(draft);setNotice("Análise da Empresa salva.");}catch(cause){setError(true);setNotice(cause instanceof Error?cause.message:"Não foi possível salvar. Seu rascunho foi preservado.");}
+  finally{lock.current=false;setBusy(null);}
+ }
+ async function publish(){
+  if(!onPublish||changed||lock.current||problems.length)return;
+  lock.current=true;setBusy("publish");setError(false);setNotice("");
+  try{await onPublish();setNotice("Página disponibilizada. O acesso do cliente continua condicionado à publicação e às permissões do planejamento.");}
+  catch(cause){setError(true);setNotice(cause instanceof Error?cause.message:"Não foi possível disponibilizar a página.");}
+  finally{lock.current=false;setBusy(null);}
+ }
+ const actions=<div className={styles.topActions}><button type="button" onClick={()=>void save()} disabled={!onSave||!!busy}><RotevoTablerIcon name="check" size={16}/>{busy==="save"?"Salvando…":"Salvar rascunho"}</button>{onPublish&&<button type="button" onClick={()=>void publish()} disabled={!!busy||changed||!value||problems.length>0} aria-describedby={problems.length?prefix+"requirements":undefined}>{busy==="publish"?"Disponibilizando…":"Disponibilizar página"}</button>}</div>;
+ const readValue=onSave?draft:parseCompanyAnalysis(value);
+ return <div className={styles.root} data-company-analysis-editor="1.0">
+  <header className={styles.intro}><div><p>PLANEJAMENTO V5 · 02.01</p><h2>Análise da Empresa</h2>{!preview&&<small>{published?"Existe uma versão disponibilizada. Salvar rascunho não altera essa versão.":"Página ainda não disponibilizada ao cliente."}</small>}</div>{!preview&&actions}</header>
+  {notice&&<p role={error?"alert":"status"} className={styles.notice}>{notice}</p>}
+  {changed&&<p role="status" className={styles.unsaved}>Alterações não salvas na Análise da Empresa.</p>}
+  {preview?(isCompanyAnalysisV2(readValue)?<CompanyAnalysis0201Presentation value={readValue}/>:<LegacyCompanyAnalysisView value={readValue}/>):<>
+   <nav aria-label="Blocos da Análise da Empresa" className={styles.blockNavigation}>{blocks.map(([id,title],index)=><button key={id} type="button" onClick={()=>show(id)}>{String(index+1).padStart(2,"0")} · {title}</button>)}</nav>
+   {problems.length>0&&<p id={prefix+"requirements"} className={styles.help}>Para disponibilizar: {problems.join(" ")} O rascunho pode ser salvo parcialmente.</p>}
+   {blocks.map(([id,title],index)=><details id={prefix+id} key={id} className={styles.block} open={expanded.includes(id)} onToggle={event=>{const open=event.currentTarget.open;setExpanded(current=>open?current.includes(id)?current:[...current,id]:current.filter(item=>item!==id));}}>
+    <summary className={styles.blockHeading}><span>{String(index+1).padStart(2,"0")}</span><h3>{title}</h3><RotevoTablerIcon name="chevron-down" size={18}/></summary>
+    {id==="identity"&&<div className={styles.fields}>
+     <div className={styles.wide}><Field label="Nome de apresentação" value={draft.identity.displayName} onChange={displayName=>patch("identity",{displayName})} helper="Obrigatório para publicação."/></div>
+     <div className={styles.wide}><Field label="Descrição do negócio" value={draft.identity.description} onChange={description=>patch("identity",{description})} rich helper="Obrigatória para publicação."/></div>
+     {([["founded","Fundação"],["referenceLocation","Localização"],["geographicScope","Abrangência geográfica"],["operatingMode","Modalidade de atuação"]] as const).map(([key,label])=><Field key={key} label={label} value={draft.identity[key]} onChange={text=>patch("identity",{[key]:text})} helper={key==="founded"?"Ano ou mês/ano. Opcional.":undefined}/>)}
     </div>}
-   {preview&&id==="identity"&&<div><h3 className={styles.entityTitle}>{groups.identity.displayName || "Empresa"}</h3><TextBlock label="Atividade principal" text={groups.identity.mainActivity}/><div className={styles.attributes}>{([["Natureza",groups.identity.businessNature],["Setor",groups.identity.sector],["Ramo",groups.identity.specialty],["Nicho",groups.identity.niche],["Início",groups.identity.founded],["Tempo de atuação",years!==null&&years>=0&&years<300?years+" anos":""],["Localização",groups.identity.referenceLocation],["Abrangência",groups.identity.geographicScope],["Modalidade",groups.identity.operatingMode],["Atendimento",groups.identity.deliveryProfile]] as const).filter(([,v])=>has(v)).map(([label,txt])=><div key={label}><span>{label}</span><strong>{txt}</strong></div>)}</div><NoteList items={groups.identity.traits}/><TextBlock label="Caracterização da empresa" text={groups.identity.summary}/></div>}
-   {!preview&&id==="history"&&<><Repeater label="Marcos da trajetória" items={draft.history.milestones} onChange={milestones=>patch("history",{milestones})} newItem={()=>({...note(),period:""})} render={(item,change)=><><Field label="Ano, mês/ano, data ou período" value={item.period} onChange={period=>change({period})}/><Field label="Acontecimento" value={item.title} onChange={title=>change({title})}/><Field label="Descrição resumida" value={item.description} onChange={description=>change({description})} multiline/></>}/>{field("history","reading","Leitura editorial da trajetória",true)}</>}
-   {preview&&id==="history"&&<><div className={styles.timeline}>{groups.history.milestones.filter(m=>has(m.title)).map(m=><div className={styles.milestone} key={m.id}><time>{m.period}</time><span className={styles.dot}/><div><h4>{m.title}</h4><p>{m.description}</p></div></div>)}</div><TextBlock label="Leitura da trajetória" text={groups.history.reading}/></>}
-   {!preview&&id==="organization"&&<><div className={styles.fields}>{field("organization","organizationName","Nome da organização")}{field("organization","lead","Responsável principal")}{field("organization","leadRole","Papel ou função")}{field("organization","description","Descrição da organização atual",true)}</div><Repeater<OrganizationalEntry> label="Elementos organizacionais" items={draft.organization.entries} onChange={entries=>patch("organization",{entries})} newItem={()=>({...note(),kind:"workstream" as const})} render={(item,change)=><><label className={styles.field}>Classificação<select value={item.kind} onChange={e=>change({kind:e.target.value as typeof item.kind})}>{Object.entries(orgKinds).map(([key,title])=><option key={key} value={key}>{title}</option>)}</select></label><Field label="Título / função" value={item.title} onChange={title=>change({title})}/><Field label="Descrição" value={item.description} onChange={description=>change({description})} multiline/><label className={styles.field}>Vínculo hierárquico conhecido (opcional)<select value={item.parentId??""} onChange={e=>change({parentId:e.target.value})}><option value="">Sem relação informada</option>{draft.organization.entries.filter(e=>e.id!==item.id&&has(e.title)).map(e=><option key={e.id} value={e.id}>{e.title}</option>)}</select></label></>}/></>}
-   {preview&&id==="organization"&&<div><div className={styles.orgLead}><strong>{groups.organization.organizationName}</strong><p>{groups.organization.lead}{has(groups.organization.leadRole)?" · "+groups.organization.leadRole:""}</p><p>{groups.organization.description}</p></div><div className={styles.orgGrid}>{groups.organization.entries.filter(e=>has(e.title)).map(e=><div key={e.id}><small>{orgKinds[e.kind]}</small><h4>{e.title}</h4><p>{e.description}</p>{e.parentId&&<small>Vinculado a: {groups.organization.entries.find(row=>row.id===e.parentId)?.title??"Não informado"}</small>}</div>)}</div></div>}
-   {!preview&&id==="governance"&&<><div className={styles.fields}>{field("governance","summary","Como as decisões são tomadas?",true)}{field("governance","decisionMakers","Responsáveis pelas decisões")}</div><Repeater label="Responsabilidades decisórias" items={draft.governance.responsibilities} onChange={responsibilities=>patch("governance",{responsibilities})} newItem={()=>({...note(),responsible:""})} render={(item,change)=><><Field label="Assunto / dimensão" value={item.title} onChange={title=>change({title})}/><Field label="Responsável" value={item.responsible} onChange={responsible=>change({responsible})}/><Field label="Observação" value={item.description} onChange={description=>change({description})} multiline/></>}/>{field("governance","conclusion","Conclusão do modelo decisório",true)}</>}
-   {preview&&id==="governance"&&<><TextBlock label="Modelo de decisão" text={groups.governance.summary}/><TextBlock label="Responsáveis" text={groups.governance.decisionMakers}/><div className={styles.governance}>{groups.governance.responsibilities.filter(r=>has(r.title)).map(r=><div key={r.id}><strong>{r.title}</strong><span>{r.responsible}</span><p>{r.description}</p></div>)}</div><TextBlock label="Conclusão" text={groups.governance.conclusion}/></>}
-   {!preview&&id==="conditions"&&<><div className={styles.fields}>{field("conditions","stage","Caracterização do estágio atual")}{field("conditions","description","Descrição complementar",true)}</div><Repeater label="Condições e condicionantes" items={draft.conditions.items} onChange={items=>patch("conditions",{items})} newItem={()=>({...note(),caveat:""})} render={(item,change)=><><Field label="Condicionante" value={item.title} onChange={title=>change({title})}/><Field label="Descrição objetiva" value={item.description} onChange={description=>change({description})} multiline/><Field label="Ressalva, se necessária" value={item.caveat??""} onChange={caveat=>change({caveat})} multiline/></>}/></>}
-   {preview&&id==="conditions"&&<><TextBlock label="Estágio atual" text={groups.conditions.stage}/><TextBlock label="Condições atuais" text={groups.conditions.description}/><NoteList items={groups.conditions.items}/>{groups.conditions.items.filter(m=>has(m.caveat)).map(m=><p key={m.id} className={styles.caveat}>Ressalva: {m.caveat}</p>)}</>}
-   {!preview&&id==="synthesis"&&<><div className={styles.fields}>{field("synthesis","conclusion","Conclusão principal",true)}{field("synthesis","explanation","Descrição analítica complementar",true)}</div><Repeater label="Principais constatações" items={draft.synthesis.findings} onChange={findings=>patch("synthesis",{findings})} newItem={note} render={(item,change)=><><Field label="Constatação" value={item.title} onChange={title=>change({title})}/><Field label="Explicação" value={item.description} onChange={description=>change({description})} multiline/></>}/>{field("synthesis","caveats","Ressalvas relevantes",true)}</>}
-   {preview&&id==="synthesis"&&<><div className={styles.conclusion}>{groups.synthesis.conclusion||"Conclusão ainda não informada."}</div><TextBlock label="Análise" text={groups.synthesis.explanation}/><NoteList items={groups.synthesis.findings}/><TextBlock label="Ressalvas" text={groups.synthesis.caveats}/></>}
-  </section>:null)}
-  {!preview&&<div className={styles.footer}><button type="button" onClick={()=>void save()} disabled={saving||!onSave}>{saving?"Salvando…":"Salvar rascunho"}</button></div>}
+    {id==="history"&&<Repeater label="Marcos da trajetória" items={draft.history.milestones} onChange={milestones=>patch("history",{milestones})} create={()=>({...note(),period:""})} period helper="Organize os marcos cronologicamente com Subir e Descer. Nenhuma data será inferida."/>}
+    {id==="organization"&&<>
+     <section aria-label="Liderança" className={styles.fields}><h4 className={styles.wide}>Liderança</h4><Field label="Nome" value={draft.organization.leadership.name} onChange={name=>patch("organization",{leadership:{...draft.organization.leadership,name}})}/><Field label="Função" value={draft.organization.leadership.role} onChange={role=>patch("organization",{leadership:{...draft.organization.leadership,role}})}/><div className={styles.wide}><Field label="Descrição da liderança" rich value={draft.organization.leadership.description} onChange={description=>patch("organization",{leadership:{...draft.organization.leadership,description}})}/></div></section>
+     <Repeater label="Frentes de atuação" items={draft.organization.workstreams} onChange={workstreams=>patch("organization",{workstreams})} create={note} helper="Frentes de negócio não representam departamentos automaticamente."/>
+     <Repeater label="Responsabilidades" items={draft.organization.responsibilities} onChange={responsibilities=>patch("organization",{responsibilities})} create={()=>({...note(),responsible:""})} extra={(n,change,context)=><Field label="Responsável" value={n.responsible} onChange={responsible=>change({responsible})} accessibleLabel={"Responsável de "+context}/>}/>
+     <Repeater label="Apoios externos" items={draft.organization.externalSupports} onChange={externalSupports=>patch("organization",{externalSupports})} create={()=>({...note(),supportType:""})} extra={(n,change,context)=><Field label="Tipo de apoio" value={n.supportType} onChange={supportType=>change({supportType})} accessibleLabel={"Tipo de apoio de "+context}/>} helper="Parceiros externos permanecem identificados como apoios."/>
+     <Field label="Governança" rich value={draft.governance.summary} onChange={summary=>patch("governance",{summary})} helper="Síntese sobre decisões e distribuição de responsabilidades."/>
+    </>}
+    {id==="conditions"&&<>
+     <Field label="Caracterização do estágio atual" rich value={draft.conditions.stage} onChange={stage=>patch("conditions",{stage})}/>
+     <Repeater label="Capacidades identificadas" items={draft.conditions.capacities} onChange={capacities=>patch("conditions",{capacities})} create={note}/>
+     <Repeater label="Condicionantes" items={draft.conditions.constraints} onChange={constraints=>patch("conditions",{constraints})} create={note}/>
+     <Repeater label="Limitações relevantes" items={draft.conditions.limitations} onChange={limitations=>patch("conditions",{limitations})} create={note}/>
+    </>}
+    {id==="synthesis"&&<>
+     <Field label="Conclusão central" rich value={draft.synthesis.conclusion} onChange={conclusion=>patch("synthesis",{conclusion})}/>
+     <Repeater label="Principais constatações" items={draft.synthesis.findings} onChange={findings=>patch("synthesis",{findings})} create={note} helper="Priorize editorialmente até três constatações. Você pode adicionar mais, sem truncar o conteúdo."/>
+     <Field label="Implicação estratégica" rich value={draft.synthesis.implication} onChange={implication=>patch("synthesis",{implication})} helper="Registre as consequências da análise, sem antecipar posicionamento, ofertas, campanhas ou canais."/>
+    </>}
+   </details>)}
+   {draft.legacySnapshot&&<details className={styles.compatibility}><summary>Dados preservados da versão anterior<RotevoTablerIcon name="history" size={16}/></summary><p>Confira o registro original antes de disponibilizar a nova composição. Estes dados internos não são copiados para a apresentação ao cliente.</p><LegacyCompanyAnalysisView value={draft.legacySnapshot}/></details>}
+   <div className={styles.footer}>{actions}</div>
+  </>}
  </div>;
 }

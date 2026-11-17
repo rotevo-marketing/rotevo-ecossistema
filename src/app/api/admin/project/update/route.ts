@@ -1,5 +1,5 @@
 import {validPlanningStages} from "@/lib/planning/stages";
-import {validCompanyAnalysis,publicCompanyAnalysis} from "@/lib/planning/companyAnalysis";
+import {validCompanyAnalysis,publicCompanyAnalysis,companyAnalysisPublicationErrors} from "@/lib/planning/companyAnalysis";
 import {validPlanningAreaSchedule} from "@/lib/planning/areaSchedule";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -81,6 +81,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  // A published snapshot is an explicit strategist action. It must match
  // the validated draft, and cannot carry evidence-only internal fields.
  if(JSON.stringify(oldRoot.publishedCompanyAnalysis0201)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201)){
+  if(companyAnalysisPublicationErrors(nextRoot.companyAnalysis0201).length)return fail(400);
   const expected=publicCompanyAnalysis(nextRoot.companyAnalysis0201);
   if(!expected||JSON.stringify(expected)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201))return fail(400);
  }

@@ -84,7 +84,7 @@ export async function POST(req:NextRequest){
   let createdNow=false;
   if(!remote&&!linked.etag&&meeting.status!=="cancelled"){
    if(body.action!=="sync")throw new CalendarError(409,"Atualize a comparação antes de resolver o conflito.");
-   const input={...payload,id:eventId,visibility:"private",extendedProperties:{private:{rotevoMeeting:marker}},
+   const input={...payload,id:eventId,extendedProperties:{private:{rotevoMeeting:marker}},
     ...(meeting.googleOptions?.meet?{conferenceData:{createRequest:{requestId:eventId,conferenceSolutionKey:{type:"hangoutsMeet"}}}}:{})};
    const created=await send(api+query,"POST",input);
    if(created.status===409)remote=await read();

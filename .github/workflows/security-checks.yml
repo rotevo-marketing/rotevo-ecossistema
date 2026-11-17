@@ -119,7 +119,7 @@ jobs:
       - name: Verify editorial calendar date validation
         run: node --test scripts/security/editorial-date-contract.test.mjs
       - name: Verify UI3 operational contract transitions and date isolation
-        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs
+        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs scripts/security/google-calendar-sync.test.mjs
       - name: Verify client overview delivery, approval and meeting focus
         run: node --test scripts/security/ui3-client-overview-contract.test.mjs
       - name: Verify client action API parsing and fail-closed authentication

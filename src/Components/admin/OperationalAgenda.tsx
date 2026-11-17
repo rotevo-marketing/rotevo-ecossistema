@@ -149,6 +149,18 @@ export default function OperationalAgenda({projectId,projectData,updatedAt,onSav
    <input value={(options.optionalGuests??[]).join(",")} onChange={e=>changeOptions({optionalGuests:e.target.value.split(",")})} className="mt-1 w-full rounded-lg border p-2"/>
   </label>
   <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={options.meet} onChange={e=>changeOptions({meet:e.target.checked})}/> Gerar link do Google Meet</label>
+  <div className="grid gap-3 sm:grid-cols-2">
+   <label className="block text-xs font-semibold">Visibilidade no Google
+    <select value={options.visibility??"private"} onChange={e=>changeOptions({visibility:e.target.value as EventOptions["visibility"]})} className="mt-1 w-full rounded-lg border p-2">
+     <option value="private">Privado</option><option value="default">Padrão do calendário</option><option value="public">Público</option>
+    </select>
+   </label>
+   <label className="block text-xs font-semibold">Disponibilidade no Google
+    <select value={options.availability??"opaque"} onChange={e=>changeOptions({availability:e.target.value as EventOptions["availability"]})} className="mt-1 w-full rounded-lg border p-2">
+     <option value="opaque">Ocupado</option><option value="transparent">Livre</option>
+    </select>
+   </label>
+  </div>
   <label className="block text-xs font-semibold">Recorrência
    <select value={options.recurrence.replace(/^RRULE:FREQ=/,"").split(";")[0]} onChange={e=>changeOptions({recurrence:e.target.value?"RRULE:FREQ="+e.target.value:""})} className="mt-1 rounded-lg border p-2">
     <option value="">Não repetir</option>

@@ -69,7 +69,7 @@ jobs:
           npm audit --omit=dev --json > npm-audit-production-ci.json
           result=$?
           set -e
-          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync("npm-audit-production-ci.json","utf8")); const v=a.metadata?.vulnerabilities || {}; console.log("Production dependency findings:",JSON.stringify(v)); if(a.error)console.log("Audit returned an error:",a.error.code || "unknown");'
+          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync("npm-audit-production-ci.json","utf8")); const v=a.metadata?.vulnerabilities || {}; console.log("Production dependency findings:",JSON.stringify(v)); for(const [name, entry] of Object.entries(a.vulnerabilities ?? {})) console.log(JSON.stringify({name,direct:entry.isDirect,range:entry.range,nodes:entry.nodes,fix:entry.fixAvailable,advisories:entry.via.map(v=>typeof v==="string"?v:{id:v.source,url:v.url,severity:v.severity,range:v.range})})); if(a.error)console.log("Audit returned an error:",a.error.code || "unknown");'
           if [ "$result" -ne 0 ]; then
             echo "Blocking deployment candidate: production dependency audit failed"
             exit 1
@@ -119,7 +119,7 @@ jobs:
       - name: Verify editorial calendar date validation
         run: node --test scripts/security/editorial-date-contract.test.mjs
       - name: Verify UI3 operational contract transitions and date isolation
-        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs
+        run: node --experimental-strip-types --test scripts/security/ui3-operational-contracts.test.mjs scripts/security/google-calendar-sync.test.mjs
       - name: Verify client overview delivery, approval and meeting focus
         run: node --test scripts/security/ui3-client-overview-contract.test.mjs
       - name: Verify client action API parsing and fail-closed authentication
@@ -486,6 +486,8 @@ jobs:
           export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED="true"
           export ROTEVO_CLIENT_ACTIONS_ENABLED="true"
           export NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED="true"
+          export ROTEVO_STRATEGIST_ASSIGNMENTS_ENABLED="true"
+          export NEXT_PUBLIC_ROTEVO_STRATEGIST_ASSIGNMENTS_ENABLED="true"
           export ROTEVO_APPEARANCE_ENABLED="true"
           export NEXT_PUBLIC_ROTEVO_APPEARANCE_ENABLED="true"
           export ROTEVO_DESIGNATED_APPROVAL_ENABLED="true"

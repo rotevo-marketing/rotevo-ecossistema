@@ -5,7 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
-import {validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
+import {eventOptions} from "@/lib/googleCalendar/eventSync";
+import {meetingInterval} from "@/lib/googleCalendar/meetingTiming";
+import {validCampaignLinks,validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
 export const runtime = "nodejs";
@@ -84,7 +86,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(!expected||JSON.stringify(expected)!==JSON.stringify(nextRoot.publishedCompanyAnalysis0201))return fail(400);
  }
 
- if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&!validCampaignRecords(nextRoot.marketingCampaigns))return fail(400);
+ if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&(!validCampaignRecords(nextRoot.marketingCampaigns)||!validCampaignLinks(nextRoot,oldRoot)))return fail(400);
  // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
  if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
   const agenda=nextRoot.operationalAgenda;
@@ -94,7 +96,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(Array.isArray(oldRoot.operationalAgenda)&&oldRoot.operationalAgenda.some(row=>{
    if(!row||typeof row!=="object"||Array.isArray(row))return false;
    const old=row as Record<string,unknown>;
-   return typeof old.id==="string"&&!nextIds.has(old.id)&&(old.status==="completed"||(typeof old.minutes==="string"&&old.minutes.trim()!==""));
+   return typeof old.id==="string"&&!nextIds.has(old.id)&&(!!old.googleLink||old.status==="completed"||(typeof old.minutes==="string"&&old.minutes.trim()!==""));
   }))return fail(400);
   const legacyIds=new Set(Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]):[]);
   const ids=new Set<string>();
@@ -105,9 +107,12 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
    if(typeof item.id!=="string"||(!uuid.test(item.id)&&!legacyIds.has(item.id))||ids.has(item.id))return fail(400);
    ids.add(item.id);
    const oldItem=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.find(row=>row&&typeof row==="object"&&!Array.isArray(row)&&(row as Record<string,unknown>).id===item.id):undefined;
+   if(JSON.stringify((oldItem as Record<string,unknown>|undefined)?.googleLink)!==JSON.stringify(item.googleLink))return fail(400);
+   if(item.googleOptions!==undefined&&!eventOptions(item.googleOptions))return fail(400);
    if(oldItem&&JSON.stringify(oldItem)===JSON.stringify(item))continue; // Preserve untouched legacy meetings.
    if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
    if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
+   if(item.timing!==undefined&&!meetingInterval(item.date,item.time??"",item.timing))return fail(400);
    if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
    for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
    if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);

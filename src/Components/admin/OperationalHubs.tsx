@@ -7,6 +7,7 @@ import {request} from "@/lib/operations/api";
 import Link from "next/link";
 import ProjectOnboarding, {type OnboardingData} from "@/Components/admin/ProjectOnboarding";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
+import GoogleCalendarConnection from "@/Components/admin/GoogleCalendarConnection";
 import OperationalAgenda, {type AgendaItem} from "@/Components/admin/OperationalAgenda";
 
 export type HubProject={id:string;title:string;updated_at:string;data:OnboardingData & {operationalAgenda?:AgendaItem[];executionTimeline?:{id:string;title:string}[]};clients:{name:string;slug:string}|{name:string;slug:string}[]|null};
@@ -109,6 +110,7 @@ export function AdminMeetingsHub({projects,onChanged}:{projects:HubProject[];onC
  return <div className="rv-ui2-module rv-ui2-meetings rv-ui3-meetings mt-3 space-y-3">
   <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#E3E6ED] pb-3 text-xs text-[#687487]" aria-label="Resumo da agenda"><span>{filtered.filter(x=>x.item.status==="planned").length} agendadas</span><span>{filtered.filter(x=>x.item.status==="completed").length} realizadas</span><span>{filtered.filter(x=>x.item.status==="cancelled").length} canceladas</span></div>
   <section className="rv-ui3-meetings-surface bg-white py-3">
+   {process.env.NEXT_PUBLIC_ROTEVO_GOOGLE_CALENDAR_ENABLED==="true"&&<GoogleCalendarConnection/>}
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="sr-only">Agenda de reuniões</h2><p className="text-xs text-[#687487]">Agenda dos projetos · sem convites externos automáticos</p></div><button type="button" onClick={()=>{if(!confirmDiscardChanges())return;setEditingProject(projectFilter!=="all"&&projects.some(p=>p.id===projectFilter)?projectFilter:projects[0]?.id??"");setNewOpen(true);}} className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#6C5CE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5949D1]"><RotevoTablerIcon name="square-rounded-plus" size={18}/>Novo compromisso</button></div>
    <div className="mt-3 grid gap-2 border-b border-[#E3E6ED] pb-3 sm:grid-cols-2 xl:grid-cols-4">
     <label className="text-xs font-semibold text-[#525B70]">Projeto<select aria-label="Filtrar projeto das reuniões" value={projectFilter} onChange={e=>setProjectFilter(e.target.value)} className="mt-1 w-full rounded-lg border border-[#E3E7F0] bg-white px-3 py-2.5 text-sm"><option value="all">Todos os projetos</option>{projects.map(p=><option key={p.id} value={p.id}>{client(p)?.name??"Cliente"} · {p.title}</option>)}</select></label>

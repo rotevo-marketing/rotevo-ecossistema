@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useId,useMemo,useState} from "react";
 import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
@@ -24,13 +24,19 @@ const readableAction=(value:string)=>({
  * NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED and server ROTEVO_CLIENT_ACTIONS_ENABLED.
  * A client cannot gain team privileges by rendering this component.
  */
-export default function ClientActionReviewPanel({projects}:{projects:Project[]}){
+export default function ClientActionReviewPanel({projects,assignmentId,onReviewed}:{projects:Project[];assignmentId?:string;onReviewed?:()=>void}){
+ const titleId=useId();
  const [items,setItems]=useState<Review[]>([]);
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState("");
  const [working,setWorking]=useState<string|null>(null);
  const [feedback,setFeedback]=useState<Record<string,string>>({});
  const [revision,setRevision]=useState(0);
+ useEffect(()=>{
+  const refresh=()=>setRevision(value=>value+1);
+  window.addEventListener("rotevo:assignment-reviewed",refresh);
+  return()=>window.removeEventListener("rotevo:assignment-reviewed",refresh);
+ },[]);
  const projectKey=useMemo(()=>projects.map(p=>p.id).sort().join("|"),[projects]);
  useEffect(()=>{
   let alive=true;
@@ -53,7 +59,7 @@ export default function ClientActionReviewPanel({projects}:{projects:Project[]})
     const responses=await Promise.allSettled(ids.map(async p=>{
      const params=new URLSearchParams({projectId:p.id,expectedAuthorUserId:data.user!.id});
      const res=await request<ReviewResponse>("/api/workflow/client-actions/review-queue?"+params.toString());
-     return (res.reviews??[]).map(row=>({...row,projectId:p.id,projectTitle:p.title}));
+     return (res.reviews??[]).filter(row=>!assignmentId||row.assignmentId===assignmentId).map(row=>({...row,projectId:p.id,projectTitle:p.title}));
     }));
     if(!alive)return;
     const successful=responses.filter((r):r is PromiseFulfilledResult<Review[]>=>r.status==="fulfilled");
@@ -68,7 +74,7 @@ export default function ClientActionReviewPanel({projects}:{projects:Project[]})
   return()=>{alive=false;authChange.data.subscription.unsubscribe();};
  // Only project ID membership should cause a refetch. Changes in title are non-security metadata.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[projectKey,revision]);
+ },[projectKey,revision,assignmentId]);
  async function decide(item:Review,decision:"validated"|"correction_requested"){
   if(working)return;
   const note=(feedback[item.submissionId]??"").trim();
@@ -84,15 +90,16 @@ export default function ClientActionReviewPanel({projects}:{projects:Project[]})
     decision,feedback:decision==="validated"?"":note,expectedAuthorUserId:data.user.id
    });
    setItems(rows=>rows.filter(x=>x.submissionId!==item.submissionId));
+   onReviewed?.();
    setFeedback(old=>{const next={...old};delete next[item.submissionId];return next;});
-   setRevision(v=>v+1);
+   window.dispatchEvent(new Event("rotevo:assignment-reviewed"));
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível registrar a revisão.");}
   finally{setWorking(null);}
  }
- return <section data-ui3-client-review aria-labelledby="client-review-title"
+ return <section data-ui3-client-review aria-labelledby={titleId}
   className="rounded-xl border border-[#E3E6ED] bg-white p-4">
   <div className="flex items-center justify-between gap-3">
-   <div><h3 id="client-review-title" className="flex items-center gap-2 text-sm font-semibold text-[#263146]">
+   <div><h3 id={titleId} className="flex items-center gap-2 text-sm font-semibold text-[#263146]">
     <RotevoTablerIcon name="list-check" size={18}/>Entregas para validar</h3>
     <p className="mt-1 text-xs text-[#697386]">Somente solicitações atribuídas e aguardando revisão interna.</p></div>
    <span className="text-xs tabular-nums text-[#697386]">{loading?"…":items.length}</span>

@@ -145,3 +145,35 @@ reset role;
 update public.planning_projects
 set data=jsonb_set(data,'{editorialCalendar,0,visibleToClient}','true'::jsonb,false)
 where id='00000000-0000-4000-8000-000000000011';
+
+-- Pending assignments can be read by an authorized strategist before any upload.
+\ir ../../docs/security/sql/ui3-strategist-client-assignments-PROPOSAL-ONLY.sql
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',false);
+set role authenticated;
+do $strategist$
+declare items jsonb;
+begin
+ select public.rotevo_project_client_assignments('00000000-0000-4000-8000-000000000011') into items;
+ if jsonb_array_length(items)<>1 or items->0->>'status' is distinct from 'pending'
+  or items->0->>'resourceId' is distinct from 'content-1'
+ then raise exception 'Strategist assignment projection lost the original pending delivery';end if;
+end $strategist$;
+reset role;
+set role authenticated;
+do $deny$
+declare actor uuid;
+begin
+ foreach actor in array array[
+  '00000000-0000-4000-8000-000000000014'::uuid,
+  '00000000-0000-4000-8000-000000000015'::uuid
+ ] loop
+  perform set_config('request.jwt.claim.sub',actor::text,false);
+  begin
+   perform public.rotevo_project_client_assignments('00000000-0000-4000-8000-000000000011');
+   raise exception 'Unauthorized user read strategist assignments';
+  exception when insufficient_privilege then null;
+  end;
+ end loop;
+end $deny$;
+reset role;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000012',false);

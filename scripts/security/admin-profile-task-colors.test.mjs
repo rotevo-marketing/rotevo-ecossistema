@@ -78,8 +78,8 @@ test("central task table preserves six meaningful columns and Monday-like workin
 });
 
 test("task details open from list and kanban and save through protected project API",()=>{
- assert.match(tasks,/onClick=\{\(\)=>openDetails\(\{task,project,client\}\)\}/);
- assert.match(tasks,/onClick=\{\(\)=>openDetails\(x\)\}/);
+ assert.match(tasks,/onClick=\{\(\)=>assignments\?setAssignmentKey\(keyOf\(row\.item\)\):openDetails\(\{task,project,client\}\)\}/);
+ assert.match(tasks,/onClick=\{\(\)=>x\.assignments\?setAssignmentKey\(keyOf\(x\)\):openDetails\(x\)\}/);
  assert.match(tasks,/aria-label="Detalhes da tarefa"/);
  assert.match(tasks,/onClick=\{\(\)=>void saveDetails\(\)\}/);
  assert.match(tasks,/visibleToClient:detailDraft.visibleToClient/);
@@ -95,7 +95,7 @@ test("task operations use the selected official Tabler icons",()=>{
 });
 
 test("task title visibly behaves as a clickable detail opener",()=>{
- assert.match(tasks,/onClick=\{\(\)=>openDetails\(\{task,project,client\}\)\} className="group inline-flex max-w-full cursor-pointer/);
+ assert.match(tasks,/onClick=\{\(\)=>assignments\?setAssignmentKey\(keyOf\(row\.item\)\):openDetails\(\{task,project,client\}\)\} className="group inline-flex max-w-full cursor-pointer/);
  assert.match(tasks,/focus-visible:outline-2/);
  assert.match(tasks,/openDetails\(\{task,project,client\}\)/);
  assert.match(tasks,/openDetails\(x\)/);

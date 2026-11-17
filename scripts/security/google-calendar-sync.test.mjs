@@ -62,7 +62,7 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
    assert.equal(payload.conferenceData.createRequest.conferenceSolutionKey.type,"hangoutsMeet");
    assert.match(payload.id,/^r[0-9a-f]{64}$/);
    assert.doesNotMatch(init.body,/Nunca enviar|Arquivo interno/);
-   remote={...payload,etag:String(++version),hangoutLink:"https://meet.google.com/aaa-bbbb-ccc"};
+   remote={...payload,etag:String(++version),conferenceData:{createRequest:{status:{statusCode:"pending"}}}};
    return Response.json(remote);
   }
   assert.equal(init.headers["If-Match"],remote.etag);
@@ -84,6 +84,10 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
  }
  assert.equal((await sync()).status,409);
  assert.equal(creations,1);
+ assert.equal((await sync()).status,200);
+ assert.equal(projected().googleLink.meetUrl,undefined);
+ assert.equal(projected().googleLink.meetStatus,"pending");
+ remote={...remote,etag:String(++version),hangoutLink:"https://meet.google.com/aaa-bbbb-ccc",conferenceData:{createRequest:{status:{statusCode:"success"}}}};
  assert.equal((await sync()).status,200);
  assert.equal(projected().googleLink.meetUrl,"https://meet.google.com/aaa-bbbb-ccc");
  assert.equal((await sync()).status,200);

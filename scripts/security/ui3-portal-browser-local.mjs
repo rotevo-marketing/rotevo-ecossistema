@@ -377,7 +377,33 @@ try {
  const strategistAssignment=strategist.getByRole("button",{name:"Enviar material · Synthetic Drive Delivery",exact:true});
  await strategistAssignment.waitFor();
  assert.equal(await strategistAssignment.count(),1);
+ const assignmentRow=strategist.getByRole("row").filter({has:strategistAssignment});
+ const statusCell=assignmentRow.locator('[data-ui3-color-cell="status"]');
+ const priorityCell=assignmentRow.locator('[data-ui3-color-cell="priority"]');
+ assert.equal(await statusCell.count(),1);
+ assert.equal(await priorityCell.count(),1);
+ assert.equal(await statusCell.getAttribute("aria-disabled"),"true");
+ assert.match(await statusCell.innerText(),/Aguardando validação/);
+ assert.equal(await assignmentRow.getByRole("link",{name:/Abrir projeto/}).count(),1);
+ assert.equal(await assignmentRow.getByRole("button",{name:/Responsável por/}).getAttribute("aria-disabled"),"true");
+ assert.equal(await assignmentRow.locator('[aria-label^="Prazo de"]').count(),1);
+ assert.notEqual(await statusCell.locator(".rv-ui3-task-cell-label").evaluate(element=>getComputedStyle(element).backgroundColor),"rgba(0, 0, 0, 0)");
+ const taskState=await must(db.from("planning_projects").select("id,data"),"synthetic task counters");
+ const countedKeys=new Set(taskState.flatMap(project=>(project.data?.executionTimeline??[]).filter(item=>!item.deletedAt).map(item=>project.id+":"+item.id)));
+ for(const project of taskState){
+  const response=await fetch(new URL("/api/workflow/client-actions/project?"+new URLSearchParams({projectId:project.id,expectedAuthorUserId:admin.id}),app),{headers:{Authorization:"Bearer "+adminLogin.session.access_token}});
+  assert.equal(response.status,200);
+  const body=await response.json();
+  for(const assignment of body.assignments){
+   const native=assignment.resourceType==="task"&&(project.data?.executionTimeline??[]).some(item=>item.id===assignment.resourceId);
+   countedKeys.add(project.id+":"+(native?assignment.resourceId:"client-assignment:"+assignment.id));
+  }
+ }
+ const expectedTasks=countedKeys.size;
+ assert.equal(Number(await strategist.getByRole("button",{name:/^Todas \d+/}).locator("strong").innerText()),expectedTasks);
  await strategist.getByRole("button",{name:"Kanban",exact:true}).click();
+ const assignmentCard=strategist.locator(".rv-ui3-kanban-card").filter({has:strategistAssignment});
+ assert.equal(await assignmentCard.locator('[aria-label^="Responsável, prazo e prioridade"]').count(),1);
  await strategistAssignment.click();
  const assignmentDetails=strategist.getByRole("dialog",{name:"Detalhes da atribuição",exact:true});
  await assignmentDetails.getByText("Enviar URL sintética da entrega no Google Drive",{exact:true}).waitFor();
@@ -525,6 +551,26 @@ try {
  assert.equal(await taskDetails.getByRole("textbox",{name:"Título da tarefa",exact:true}).inputValue(),"Synthetic Other Client Task");
  await taskDetails.getByRole("button",{name:"Fechar",exact:true}).click();
  console.log("PASS campaign links reuse scoped tasks and editorial records; native task details open");
+ await strategist.getByRole("button",{name:"Reuniões",exact:true}).click();
+ await strategist.getByRole("button",{name:"Novo compromisso",exact:true}).click();
+ const meetingDialog=strategist.getByRole("dialog",{name:"Novo compromisso",exact:true});
+ await meetingDialog.getByLabel("Projeto do novo compromisso").selectOption(secondProjectId);
+ await meetingDialog.getByLabel("Título",{exact:true}).fill("Synthetic Meet Meeting");
+ await meetingDialog.getByLabel("Data",{exact:true}).fill("2027-01-20");
+ await meetingDialog.getByLabel("Horário (opcional)",{exact:true}).fill("14:00");
+ const conference=meetingDialog.getByRole("group",{name:"Videoconferência",exact:true});
+ await conference.getByRole("checkbox",{name:"Gerar link do Google Meet",exact:true}).check();
+ await meetingDialog.getByLabel("Horário de término",{exact:true}).fill("15:00");
+ await conference.getByText("Salve o compromisso e use Sincronizar com Google Calendar para solicitar o link.",{exact:true}).waitFor();
+ assert.equal(await conference.getByRole("link").count(),0);
+ await meetingDialog.getByRole("button",{name:"Salvar compromisso",exact:true}).click();
+ await meetingDialog.waitFor({state:"hidden"});
+ const meetingProject=await must(db.from("planning_projects").select("data").eq("id",secondProjectId).single(),"read synthetic Meet preference");
+ const meeting=meetingProject.data.operationalAgenda.find(item=>item.title==="Synthetic Meet Meeting");
+ assert.equal(meeting.googleOptions.meet,true);
+ assert.equal(meeting.googleLink,undefined);
+ console.log("PASS Meet preference is visible at creation, persists, and displays no unconfirmed link");
+
  // Exercise the same editor on an existing published plan, a historical draft and a new V5 draft.
  const historicalDraftId=randomUUID();
  const historicalDraftSlug="browser-draft-"+suffix;

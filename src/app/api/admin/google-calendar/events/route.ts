@@ -9,7 +9,7 @@ export const runtime="nodejs";
 const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 const digest=(value:unknown)=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const identifier=(v:unknown):v is string=>typeof v==="string"&&/^[a-zA-Z0-9_-]{1,120}$/.test(v);
-type Meeting=SyncMeeting&{id:string;googleLink?:EventLink};
+type Meeting=SyncMeeting&{id:string;duration?:string;googleLink?:EventLink};
 
 export async function POST(req:NextRequest){
  try{
@@ -115,7 +115,7 @@ export async function POST(req:NextRequest){
   if(deleted||((body.action==="pull"||decision==="pull")&&body.action!=="push")){
    if(deleted)next={...meeting,status:"cancelled"};
    else if(external&&externalRange&&externalHash){
-    next={...meeting,...external,status:meeting.status==="completed"?"completed":"planned"};
+    next={...meeting,...external,duration:`${externalRange.minutes} min`,status:meeting.status==="completed"?"completed":"planned"};
     appliedHash=externalHash;
    }else return conflict("O evento do Google contém campos incompatíveis ou indisponíveis.");
   }else if(body.action==="push"||decision==="push"||previouslyCancelled){

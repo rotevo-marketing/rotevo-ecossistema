@@ -87,9 +87,10 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
  projected().title="Alteração Rotevo";
  assert.equal((await sync({notify:true})).status,200);
  assert.equal(remote.summary,"Alteração Rotevo");
- remote={...remote,summary:"Alteração Google",etag:String(++version)};
+ remote={...remote,summary:"Alteração Google",end:{...remote.end,dateTime:"2026-11-19T17:30:00.000Z"},etag:String(++version)};
  assert.equal((await sync()).status,200);
  assert.equal(projected().title,"Alteração Google");
+ assert.equal(projected().duration,"90 min");
 
  projected().title="Editei na Rotevo";
  remote={...remote,summary:"Editei no Google",etag:String(++version)};

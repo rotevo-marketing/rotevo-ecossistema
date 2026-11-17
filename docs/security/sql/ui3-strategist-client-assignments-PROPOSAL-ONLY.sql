@@ -26,7 +26,13 @@ begin
   'id',a.id,'projectId',a.project_id,'resourceType',a.resource_type,'resourceId',a.resource_id,
   'resourceVersion',a.resource_version,'clientUserId',a.client_user_id,'actionType',a.action_type,
   'instructions',a.instructions,'dueDate',a.due_date,'status',a.status,'completedAt',a.completed_at,
-  'updatedAt',a.updated_at
+  'updatedAt',a.updated_at,
+  'responsible',(select nullif(btrim(to_jsonb(p)->>'full_name'),'') from public.profiles p where p.id=a.client_user_id),
+  'deliveries',coalesce((select jsonb_agg(jsonb_build_object(
+   'id',d.id,'driveUrl',d.submission_url,'note',d.note,'attempt',d.attempt_number,
+   'status',d.review_status,'feedback',d.reviewer_feedback,'createdAt',d.created_at
+  ) order by d.attempt_number desc)
+  from rotevo_workflow.client_action_submissions d where d.assignment_id=a.id and d.submitted_by=a.client_user_id),'[]'::jsonb)
  ) order by a.due_date nulls last,a.created_at,a.id),'[]'::jsonb)
  into result
  from rotevo_workflow.client_action_assignments a

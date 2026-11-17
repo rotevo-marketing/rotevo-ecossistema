@@ -14,6 +14,8 @@ import {request} from "@/lib/operations/api";
 import ProjectConversation from "@/Components/shared/ProjectConversation";
 import type {PreparedClientAction} from "@/lib/workflow/clientActionsContract";
 import ClientActionCreate from "@/Components/admin/ClientActionCreate";
+import {StrategistAssignmentDetails,useStrategistAssignments,type ProjectAssignment} from "./StrategistAssignments";
+import {assignmentLabels,assignmentStatusLabels} from "@/Components/cliente/ClientActionDeliveryPanel";
 import ClientActionReviewPanel from "@/Components/admin/ClientActionReviewPanel";
 type Client={id:string;name:string;slug:string;cover_image_url?:string|null};
 export type TaskProject={id:string;title:string;updated_at:string;data:{executionTimeline?:ExecutionItem[];operationalAgenda?:AgendaItem[];editorialCalendar?:EditorialItem[]}|null;clients:Client|Client[]|null};
@@ -41,7 +43,7 @@ const formatted=(s?:string)=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s)?`${s.slice(8,10)}/
 const relativeDue=(due?:string)=>{if(!due||!/^\d{4}-\d{2}-\d{2}$/.test(due))return "Sem prazo";const parse=(v:string)=>Date.UTC(Number(v.slice(0,4)),Number(v.slice(5,7))-1,Number(v.slice(8,10)));const delta=Math.round((parse(due)-parse(today()))/86400000);return delta===0?"Hoje":delta===-1?"Ontem":delta===1?"Amanhã":delta<0&&delta>=-6?"Há "+Math.abs(delta)+" dias":delta>1&&delta<=6?"Em "+delta+" dias":formatted(due);};
 const isOpen=(t:ExecutionItem)=>t.status!=="completed"&&t.status!=="cancelled";
 const buttonClass="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#E3E6ED] bg-white px-3 py-2 text-xs font-semibold text-[#485368] transition-colors hover:border-[#D8D2FF] hover:bg-[#F1EEFF]";
-type Item={task:ExecutionItem;project:TaskProject;client:Client|null};
+type Item={task:ExecutionItem;project:TaskProject;client:Client|null;assignments?:ProjectAssignment[];originalTask?:ExecutionItem};
 function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{projects:TaskProject[];value:string;onChange:(v:string)=>void;allowAll?:boolean;photos?:Record<string,string>}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState("");
  const pickerRef=useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ function ProjectPicker({projects,value,onChange,allowAll=false,photos={}}:{proje
   </div>}
  </div>;
 }
-export default function CentralTarefas({projects,onChanged,onOpenContent,notificationTask}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void;notificationTask?:{projectId:string;taskId:string;nonce:number;fromCampaign?:boolean}|null}){
+export default function CentralTarefas({projects,onChanged,onOpenContent,onOpenAssignedContent,notificationTask}:{projects:TaskProject[];onChanged:(id:string,data:TaskProject["data"],updatedAt:string)=>void;onOpenContent?:()=>void;onOpenAssignedContent?:(projectId:string,contentId:string)=>void;notificationTask?:{projectId:string;taskId:string;nonce:number;fromCampaign?:boolean}|null}){
  const [projectId,setProjectId]=useState("all"),[owner,setOwner]=useState("all"),[status,setStatus]=useState("all"),[priority,setPriority]=useState("all");
  const [section,setSection]=useState<"active"|"completed"|"archived"|"trash">("active");
  const [completedWindow,setCompletedWindow]=useState<"7"|"30"|"90"|"all">("30");
@@ -136,17 +138,43 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
  const tasks=useMemo<Item[]>(()=>projects.flatMap(project=>(Array.isArray(project.data?.executionTimeline)?project.data.executionTimeline:[])
   .filter(task=>task&&typeof task.id==="string"&&typeof task.title==="string")
   .map(task=>({task,project,client:getClient(project)??null}))),[projects]);
+ const [assignmentKey,setAssignmentKey]=useState<string|null>(null);
+ const assignmentSource=useStrategistAssignments(projects,process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&process.env.NEXT_PUBLIC_ROTEVO_STRATEGIST_ASSIGNMENTS_ENABLED==="true");
+ const displayTasks=useMemo(()=>{
+  const rows=new Map(tasks.map(item=>[keyOf(item),item]));
+  const byProject=new Map(projects.map(project=>[project.id,project]));
+  for(const assignment of assignmentSource.rows){
+   const project=byProject.get(assignment.projectId);
+   if(!project)continue;
+   const native=assignment.resourceType==="task"?tasks.find(item=>item.project.id===project.id&&item.task.id===assignment.resourceId):undefined;
+   const content=assignment.resourceType==="content"?project.data?.editorialCalendar?.find(item=>item.id===assignment.resourceId):undefined;
+   const id=native?.task.id??"client-assignment:"+assignment.id;
+   const key=project.id+":"+id;
+   const items=[...(rows.get(key)?.assignments??[]),assignment];
+   const primary=items.find(item=>item.status==="submitted")??items.find(item=>item.status!=="validated")??items[0];
+   const stage:Record<string,Status>={pending:"planned",in_progress:"in_progress",correction_requested:"in_progress",submitted:"blocked",validated:"completed"};
+   const client=getClient(project)??null;
+   rows.set(key,{project,client,assignments:items,originalTask:native?.task,task:{
+    ...native?.task,id,title:native?.task.title??[assignmentLabels[assignment.actionType]??"Atribuição",content?.title].filter(Boolean).join(" · "),
+    owner:primary.responsible??client?.name??"Cliente",ownerUserId:primary.clientUserId,
+    priority:native?.task.priority??content?.priority??"normal",dueDate:primary.dueDate??native?.task.dueDate,
+    completedAt:primary.completedAt??undefined,status:stage[primary.status]??"planned",
+   }});
+  }
+  return [...rows.values()];
+ },[tasks,projects,assignmentSource.rows]);
+ const assignmentDetail=displayTasks.find(item=>keyOf(item)===assignmentKey);
  const selected=tasks.find(x=>x.project.id+":"+x.task.id===detailKey);
  const openDetails=(x:Item)=>{setDetailKey(x.project.id+":"+x.task.id);setDetailDraft({title:x.task.title,description:x.task.description??"",driveUrl:x.task.driveUrl??"",referenceUrl:x.task.referenceUrl??"",dueDate:x.task.dueDate??"",launchDate:x.task.launchDate??"",visibleToClient:x.task.visibleToClient===true,checklist:x.task.checklist??[],dependencies:x.task.dependencies??[]});setError("");};
  useEffect(()=>{if(!notificationTask)return;const target=tasks.find(x=>x.project.id===notificationTask.projectId&&x.task.id===notificationTask.taskId&&(notificationTask.fromCampaign||x.task.visibleToClient===true)&&!x.task.archivedAt&&!x.task.deletedAt);if(!target)return;setProjectId(target.project.id);setSection("active");openDetails(target);},[notificationTask?.nonce,tasks]);
  const linkedContent=selected?(selected.project.data?.editorialCalendar??[]).filter(item=>item.relatedTaskId===selected.task.id):[];
  useEffect(()=>{let mounted=true;const pairs=projects.flatMap(p=>(p.data?.editorialCalendar??[]).filter(i=>!!i.relatedTaskId).map(()=>p.id));const ids=[...new Set(pairs)];if(!ids.length){void Promise.resolve().then(()=>{if(mounted){setApprovalRows([]);setApprovalUnavailable(false);}});return()=>{mounted=false;};}void (async()=>{const {data,error}=await supabase.from("editorial_approvals").select("project_id,content_id,content_version,decision,comment,decided_at").in("project_id",ids).order("decided_at",{ascending:false}).limit(150);if(mounted){setApprovalUnavailable(!!error);setApprovalRows(error?[]:(data??[]));}})();return()=>{mounted=false};},[projects]);
- const owners=useMemo(()=>[...new Set(tasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[tasks]);
+ const owners=useMemo(()=>[...new Set(displayTasks.map(x=>x.task.owner?.trim()).filter((x):x is string=>!!x))].sort(),[displayTasks]);
  const appointments=useMemo(()=>projects.flatMap(project=>(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[])
   .filter(item=>item&&item.status==="planned"&&typeof item.date==="string"&&typeof item.title==="string")
   .map(appointment=>({appointment,project,client:getClient(project)}))),[projects]);
  const todayAppointments=appointments.filter(x=>x.appointment.date===today()).sort((a,b)=>(a.appointment.time??"23:59").localeCompare(b.appointment.time??"23:59"));
- const filtered=useMemo(()=>tasks.filter(({task,project,client})=>
+ const filtered=useMemo(()=>displayTasks.filter(({task,project,client})=>
   (section==="trash"?!!task.deletedAt:!task.deletedAt&&(section==="archived"?!!task.archivedAt:!task.archivedAt&&(section==="active"?(view==="board"||isOpen(task)):task.status==="completed")))&&
   (section!=="completed"||completedWindow==="all"||!!task.completedAt&&new Date(task.completedAt).getTime()>=completionNow-Number(completedWindow)*86400000)&&
   (projectId==="all"||project.id===projectId)&&
@@ -168,13 +196,14 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
   return openScore(a.task)-openScore(b.task)+(order==="priority"?priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)):
    order==="due"?dateScore(a.task).localeCompare(dateScore(b.task))||priorityScore(a.task)-priorityScore(b.task):
    urgencyScore(a.task)-urgencyScore(b.task)||priorityScore(a.task)-priorityScore(b.task)||dateScore(a.task).localeCompare(dateScore(b.task)));
- }),[tasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId,section,completedWindow,completionNow,view]);
+ }),[displayTasks,projectId,owner,status,priority,deadline,query,order,periodMonth,periodMode,mineOnly,currentUserId,section,completedWindow,completionNow,view]);
  const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
  const paginated=filtered.slice((Math.min(page,pages)-1)*pageSize,Math.min(page,pages)*pageSize);
  const groupedTaskRows=groupTaskRows(paginated,collapsedGroups,groupMode);
  const keyOf=(item:Item)=>item.project.id+":"+item.task.id;
  const selectedItems=tasks.filter(item=>selectedKeys.includes(keyOf(item)));
- const allPageSelected=paginated.length>0&&paginated.every(item=>selectedKeys.includes(keyOf(item)));
+ const selectablePage=paginated.filter(item=>!item.assignments);
+ const allPageSelected=selectablePage.length>0&&selectablePage.every(item=>selectedKeys.includes(keyOf(item)));
  const groupColor=(id:string)=>{let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return ["#7554D9","#3289CE","#279D81","#D58B3E","#C0658E"][h%5];};
  async function persist(project:TaskProject,nextTasks:ExecutionItem[],key:string,success:string){
   if(working)return false;
@@ -290,7 +319,7 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
     <span data-rv-tone="violet" className="inline-flex items-center gap-2 rounded-lg bg-[#F5F3FF] px-3 py-2 text-xs font-semibold text-[#6034B7]"><RotevoTablerIcon name="calendar-week" size={16} stroke={1.9}/> Reuniões hoje: {todayAppointments.length}</span>
    </div>
   </section>
-  {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<ClientActionReviewPanel projects={projects.map(p=>({id:p.id,title:p.title}))}/>}
+  {process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true"&&<ClientActionReviewPanel projects={projects.map(p=>({id:p.id,title:p.title}))} onReviewed={assignmentSource.refresh}/>}
   {todayAppointments.length>0&&<section className="rounded-xl border bg-white p-4"><h3 className="text-sm font-semibold">Agenda de hoje</h3><div className="mt-2 flex flex-wrap gap-2">{todayAppointments.map(({appointment,project})=><Link key={project.id+":"+appointment.id} href={projectLink(project)} className="rounded-lg bg-[#F6F7FB] px-3 py-2 text-xs">{appointment.time??"Sem horário"} · {appointment.title} · {project.title}</Link>)}</div></section>}
   <section data-ui2-surface className="relative rounded-xl border border-[#E3E7F0] bg-white p-4">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold text-[#323647]">Central de tarefas</h2><p className="mt-1 text-xs text-[#697386]">Todos os clientes · {filtered.length} tarefas</p></div></div>
@@ -338,10 +367,30 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
       <div className="sm:col-span-2"><button type="button" onClick={()=>setAdvanced(v=>!v)} className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold">{advanced?"Ocultar":"Mostrar"} checklist e dependências</button></div>
       {advanced&&<div className="space-y-3 rounded-lg border border-[#DDD4FB] bg-white p-3 sm:col-span-2"><p className="text-xs font-semibold">Checklist</p><div className="flex gap-2"><input value={newChecklistText} maxLength={240} onChange={e=>setNewChecklistText(e.target.value)} placeholder="Adicionar etapa..." className="min-w-0 flex-1 rounded-lg border p-2 text-sm"/><button type="button" onClick={()=>{if(newChecklistText.trim()&&draft.checklist.length<50){setDraft({...draft,checklist:[...draft.checklist,{id:crypto.randomUUID(),text:newChecklistText.trim(),done:false}]});setNewChecklistText("");}}} className="cursor-pointer rounded-lg border px-3 text-xs">Adicionar</button></div>{draft.checklist.map(ch=><div key={ch.id} className="flex items-center justify-between gap-2 text-xs">{ch.text}<button type="button" onClick={()=>setDraft({...draft,checklist:draft.checklist.filter(x=>x.id!==ch.id)})} className="cursor-pointer text-[#B33653]">Remover</button></div>)}<p className="text-xs font-semibold">Pré-requisitos</p>{(projects.find(p=>p.id===draft.projectId)?.data?.executionTimeline??[]).filter(t=>t.status!=="cancelled").map(t=><label key={t.id} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={draft.dependencies.includes(t.id)} onChange={e=>setDraft({...draft,dependencies:e.target.checked?[...draft.dependencies,t.id]:draft.dependencies.filter(id=>id!==t.id)})}/>{t.title}</label>)}<p className="text-[11px] text-[#718096]">Essas tarefas precisarão ser concluídas antes da nova atividade.</p></div>}
     </div><div className="mt-4 flex justify-end gap-2"><button type="button" disabled={!!working} className={buttonClass} onClick={()=>setCreating(false)}>Cancelar</button><button type="button" disabled={!!working||projects.length===0} className="rounded-lg bg-[#0B142A] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>void createTask()}>{working?"Salvando...":"Criar tarefa"}</button></div></section></div>}
+   {assignmentSource.error&&<p role="status" className="mt-2 text-xs text-[#697386]">{assignmentSource.error}</p>}
+   {assignmentDetail?.assignments&&<StrategistAssignmentDetails
+    items={assignmentDetail.assignments} project={assignmentDetail.project} client={assignmentDetail.client?.name}
+    title={assignmentDetail.task.title} onClose={()=>setAssignmentKey(null)} onReviewed={assignmentSource.refresh}
+    onOpenResource={assignmentDetail.originalTask?()=>{setAssignmentKey(null);openDetails({...assignmentDetail,task:assignmentDetail.originalTask!});}:
+      assignmentDetail.assignments[0].resourceType==="content"&&onOpenAssignedContent?
+      ()=>onOpenAssignedContent(assignmentDetail.project.id,assignmentDetail.assignments![0].resourceId):undefined}/>}
    {filtered.length===0?<div className="mt-4 rounded-lg bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma tarefa corresponde aos filtros. Use “Nova tarefa” para cadastrar uma atividade em um projeto.</div>:view==="list"?
-   <div className="rv-ui2-task-board mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full table-fixed min-w-[1120px] border-collapse text-left text-sm"><colgroup><col style={{width:44}}/><col/>{visibleColumns.project&&<col style={{width:70}}/>}{visibleColumns.owner&&<col style={{width:84}}/>}{visibleColumns.status&&<col style={{width:130}}/>}{visibleColumns.priority&&<col style={{width:114}}/>}{visibleColumns.due&&<col style={{width:138}}/>}{visibleColumns.launch&&<col style={{width:138}}/>}<col style={{width:48}}/></colgroup><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr><th scope="col" className="w-10 border-b border-r border-[#E3E7F0] px-2 py-3 text-center"><input type="checkbox" aria-label="Selecionar todas as tarefas da página" checked={allPageSelected} onChange={e=>{const ids=paginated.map(keyOf);setSelectedKeys(prev=>e.target.checked?[...new Set([...prev,...ids])]:prev.filter(id=>!ids.includes(id)));}} className="h-4 w-4 cursor-pointer accent-[#6C5CE7]"/></th>{([["Tarefa","list","task"],["Projeto","folder","project"],["Responsável","user-check","owner"],["Situação","filter","status"],["Prioridade","flag","priority"],["Prazo","calendar-week","due"],["Lançamento","calendar-week","launch"]] as const).filter(([, ,key])=>key==="task"||visibleColumns[key as keyof typeof visibleColumns]).map(([name,icon,key])=><th scope="col" key={name} title={key==="due"?"Prazo de entrega":name} aria-label={key==="due"?"Prazo de entrega":name} className={"border-b border-r border-[#E3E7F0] py-3 "+(key==="project"||key==="owner"?"px-1 text-center":"px-2")}><span className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap"><RotevoTablerIcon name={icon} size={17} stroke={1.9}/>{key==="project"||key==="owner"?<span className="sr-only">{name}</span>:name}</span></th>)}<th scope="col" className="w-12 border-b border-[#E3E7F0] px-2 py-3 text-center"><span className="sr-only">Ações da tarefa</span><RotevoTablerIcon name="dots" size={17}/></th></tr></thead><tbody className="divide-y divide-[#EEF0F5]">{groupedTaskRows.map(row=>{
+   <div className="rv-ui2-task-board mt-4 overflow-x-auto rounded-lg border border-[#E3E7F0]"><table className="w-full table-fixed min-w-[1120px] border-collapse text-left text-sm"><colgroup><col style={{width:44}}/><col/>{visibleColumns.project&&<col style={{width:70}}/>}{visibleColumns.owner&&<col style={{width:84}}/>}{visibleColumns.status&&<col style={{width:130}}/>}{visibleColumns.priority&&<col style={{width:114}}/>}{visibleColumns.due&&<col style={{width:138}}/>}{visibleColumns.launch&&<col style={{width:138}}/>}<col style={{width:48}}/></colgroup><thead className="bg-[#F7F8FC] text-xs font-semibold text-[#525B70]"><tr><th scope="col" className="w-10 border-b border-r border-[#E3E7F0] px-2 py-3 text-center"><input type="checkbox" aria-label="Selecionar todas as tarefas da página" checked={allPageSelected} onChange={e=>{const ids=selectablePage.map(keyOf);setSelectedKeys(prev=>e.target.checked?[...new Set([...prev,...ids])]:prev.filter(id=>!ids.includes(id)));}} className="h-4 w-4 cursor-pointer accent-[#6C5CE7]"/></th>{([["Tarefa","list","task"],["Projeto","folder","project"],["Responsável","user-check","owner"],["Situação","filter","status"],["Prioridade","flag","priority"],["Prazo","calendar-week","due"],["Lançamento","calendar-week","launch"]] as const).filter(([, ,key])=>key==="task"||visibleColumns[key as keyof typeof visibleColumns]).map(([name,icon,key])=><th scope="col" key={name} title={key==="due"?"Prazo de entrega":name} aria-label={key==="due"?"Prazo de entrega":name} className={"border-b border-r border-[#E3E7F0] py-3 "+(key==="project"||key==="owner"?"px-1 text-center":"px-2")}><span className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap"><RotevoTablerIcon name={icon} size={17} stroke={1.9}/>{key==="project"||key==="owner"?<span className="sr-only">{name}</span>:name}</span></th>)}<th scope="col" className="w-12 border-b border-[#E3E7F0] px-2 py-3 text-center"><span className="sr-only">Ações da tarefa</span><RotevoTablerIcon name="dots" size={17}/></th></tr></thead><tbody className="divide-y divide-[#EEF0F5]">{groupedTaskRows.map(row=>{
     if(row.kind==="header")return <tr key={"group:"+row.key} className="bg-[#FAF9FE]"><td colSpan={columnSpan} className="border-b border-[#E9E6F2] px-0 py-0"><button type="button" aria-expanded={!collapsedGroups[row.key]} aria-label={`${collapsedGroups[row.key]?"Expandir":"Recolher"} grupo ${row.label}`} onClick={()=>setCollapsedGroups(prev=>({...prev,[row.key]:!prev[row.key]}))} className="flex min-h-11 w-full cursor-pointer items-center gap-2.5 border-l-[4px] px-3 py-2.5 text-left text-sm font-semibold text-[#323647] transition-colors hover:bg-[#F2EEFF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]" style={{borderLeftColor:groupColor(row.key)}}><RotevoTablerIcon name={collapsedGroups[row.key]?"chevron-right":"chevron-down"} size={17} stroke={1.8}/><TaskAvatar name={row.client?.name??(row.project?getClient(row.project)?.name??row.label:row.label)} src={row.client?clientPhotos[row.client.id]:row.project?clientPhotos[getClient(row.project)?.id??""]:undefined} size={26}/><span className="min-w-0 truncate">{row.label}</span>{row.project&&<span className="hidden min-w-0 truncate text-xs font-normal text-[#697386] sm:inline">· {row.project.title}</span>}<span className="ml-auto shrink-0 text-xs font-normal text-[#697386]">{row.count} tarefa(s)</span></button></td></tr>;
-    const {task,project,client}=row.item;
+    const {task,project,client,assignments}=row.item;
+    if(assignments){
+     const statusLabel=assignmentStatusLabels[(assignments.find(item=>item.status==="submitted")??assignments.find(item=>item.status!=="validated")??assignments[0]).status];
+     return <tr key={keyOf(row.item)} className="hover:bg-[#FBFAFF]">
+      <td/>
+      <td className="border-r px-3 py-3"><button type="button" className="text-left font-medium hover:underline" onClick={()=>setAssignmentKey(keyOf(row.item))}>{task.title}</button></td>
+      {visibleColumns.project&&<td className="border-r px-2 text-xs" title={project.title}>{client?.name??project.title}</td>}
+      {visibleColumns.owner&&<td className="border-r px-2 text-xs">{task.owner}</td>}
+      {visibleColumns.status&&<td className="border-r px-2 text-xs">{statusLabel}</td>}
+      {visibleColumns.priority&&<td className="border-r px-2 text-xs">{chipPriority(task).name}</td>}
+      {visibleColumns.due&&<td className="border-r px-2 text-xs">{task.dueDate?formatted(task.dueDate):"Sem prazo"}</td>}
+      {visibleColumns.launch&&<td/>}<td/>
+     </tr>;
+    }
     return <tr key={project.id+":"+task.id} className={"hover:bg-[#FBFAFF] "+(selectedKeys.includes(project.id+":"+task.id)?"bg-[#F3F0FF]":"")}><td className="w-10 border-l-4 border-r border-[#E3E7F0] px-2 py-2 text-center" style={{borderLeftColor:task.status==="completed"?"#37B36E":task.priority==="urgent"?"#E04961":task.priority==="high"?"#E9AE39":"#9C78F4"}}><input type="checkbox" aria-label={`Selecionar tarefa ${task.title}`} checked={selectedKeys.includes(project.id+":"+task.id)} onChange={e=>{const key=project.id+":"+task.id;setSelectedKeys(prev=>e.target.checked?[...new Set([...prev,key])]:prev.filter(x=>x!==key));}} className="h-4 w-4 cursor-pointer accent-[#6C5CE7]"/></td>
      <td className="max-w-[280px] border-r border-[#E3E7F0] px-3 py-3 font-medium"><button type="button" onClick={()=>openDetails({task,project,client})} className="group inline-flex max-w-full cursor-pointer items-center rounded-md px-1 py-1 text-left text-[13px] font-medium leading-5 text-[#323B4D] no-underline transition-colors hover:bg-[#F7F7FB] hover:text-[#5949D1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]">{task.title}</button>{(task.dependencies??[]).length>0&&<span className="mt-1 block text-[10px] text-[#697386]">Pré-requisitos: {(task.dependencies??[]).length}</span>}</td>
      {visibleColumns.project&&<td className="border-r border-[#E3E7F0] px-1 py-2 text-center"><Link title={`${client?.name??"Cliente"} · ${project.title}`} aria-label={`Abrir projeto ${project.title} de ${client?.name??"Cliente"}`} className="inline-flex items-center justify-center rounded-full p-0.5 hover:ring-2 hover:ring-[#DDD4FF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]" href={projectLink(project)}><TaskAvatar name={client?.name??"Cliente"} src={clientPhotos[client?.id??""]} size={28}/></Link></td>}
@@ -358,7 +407,17 @@ export default function CentralTarefas({projects,onChanged,onOpenContent,notific
    })}</tbody></table></div>:
    <div className="mt-4 flex gap-3 overflow-x-auto pb-3" aria-label="Quadro Kanban com cinco situações">{statuses.map(col=>{const columnItems=paginated.filter(x=>(x.task.status??"planned")===col.id);return <section key={col.id} aria-label={col.name+": "+columnItems.length+" tarefas nesta página"} className="rv-ui3-kanban-column w-[258px] shrink-0 self-start rounded-xl border border-[#E9EDF3] bg-[#F7F8FA] p-2.5">
      <h3 className="mb-2 flex min-h-8 items-center justify-between gap-2 px-1 text-xs font-semibold text-[#475467]"><span className="inline-flex items-center gap-2"><span className={"h-2 w-2 rounded-full "+col.bar}/>{col.name}</span><span className="tabular-nums text-[#697386]">{filtered.filter(x=>(x.task.status??"planned")===col.id).length}</span></h3>
-     <div className="space-y-2">{columnItems.map(x=>{const assigned=members.find(m=>m.user_id===x.task.ownerUserId);const priority=chipPriority(x.task);const due=relativeDue(x.task.dueDate);return <article key={x.project.id+":"+x.task.id} className="rv-ui3-kanban-card rounded-xl border border-[#E2E6ED] bg-white p-3 shadow-[0_1px_2px_rgba(9,13,28,0.035)] transition-colors hover:border-[#C5B8E8]">
+     <div className="space-y-2">{columnItems.map(x=>{
+      if(x.assignments){
+       const assignment=x.assignments.find(item=>item.status==="submitted")??x.assignments.find(item=>item.status!=="validated")??x.assignments[0];
+       return <article key={keyOf(x)} className="rv-ui3-kanban-card rounded-xl border bg-white p-3">
+        <button type="button" className="text-left text-sm font-medium hover:underline" onClick={()=>setAssignmentKey(keyOf(x))}>{x.task.title}</button>
+        <p className="mt-2 text-xs">{x.client?.name??"Cliente"} · {x.project.title}</p>
+        <p className="mt-1 text-xs">{x.task.owner} · {assignmentStatusLabels[assignment.status]}</p>
+        <p className="mt-1 text-xs">{x.task.dueDate?formatted(x.task.dueDate):"Sem prazo"} · {chipPriority(x.task).name}</p>
+       </article>;
+      }
+      const assigned=members.find(m=>m.user_id===x.task.ownerUserId);const priority=chipPriority(x.task);const due=relativeDue(x.task.dueDate);return <article key={x.project.id+":"+x.task.id} className="rv-ui3-kanban-card rounded-xl border border-[#E2E6ED] bg-white p-3 shadow-[0_1px_2px_rgba(9,13,28,0.035)] transition-colors hover:border-[#C5B8E8]">
        <div className="flex items-start justify-between gap-1"><button type="button" onClick={()=>openDetails(x)} className="min-w-0 flex-1 cursor-pointer text-left text-[13px] font-medium leading-5 text-[#283247] hover:text-[#6034B7] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]">{x.task.title}</button><label title="Mudar situação" className="relative inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[#7B8393] hover:bg-[#F4F0FF] focus-within:outline-2 focus-within:outline-[#6C5CE7]"><RotevoTablerIcon name="chevron-down" size={16} stroke={1.7}/><select aria-label={"Mudar situação de "+x.task.title} value={x.task.status??"planned"} disabled={!!working||!!x.task.archivedAt||!!x.task.deletedAt} onChange={event=>void updateTask(x.project,x.task,{status:event.target.value as Status})} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default">{statuses.map(option=><option key={option.id} value={option.id}>{option.name}</option>)}</select></label></div>
        {!!x.task.description?.trim()&&<span role="img" aria-label="Tarefa com descrição preenchida" title="Descrição preenchida" className="mt-2 inline-flex text-[#8B95A5]"><RotevoTablerIcon name="align-left" size={16} stroke={1.6}/></span>}
        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-[#EFF0F4] pt-2" aria-label={"Responsável, prazo e prioridade de "+x.task.title}>

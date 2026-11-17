@@ -374,11 +374,21 @@ try {
  // The second client's new task must appear immediately even when urgency sorting would place it on another page.
  await strategist.getByRole("button",{name:"Tarefas",exact:true}).click();
  await strategist.getByRole("heading",{name:"Central de tarefas"}).waitFor();
- const submittedDelivery=strategist.locator("[data-ui3-client-review]").getByRole("listitem").filter({hasText:"Observação sintética da entrega."});
+ const strategistAssignment=strategist.getByRole("button",{name:"Enviar material · Synthetic Drive Delivery",exact:true});
+ await strategistAssignment.waitFor();
+ assert.equal(await strategistAssignment.count(),1);
+ await strategist.getByRole("button",{name:"Kanban",exact:true}).click();
+ await strategistAssignment.click();
+ const assignmentDetails=strategist.getByRole("dialog",{name:"Detalhes da atribuição",exact:true});
+ await assignmentDetails.getByText("Enviar URL sintética da entrega no Google Drive",{exact:true}).waitFor();
+ const submittedDelivery=assignmentDetails.locator("[data-ui3-client-review]").getByRole("listitem").filter({hasText:"Observação sintética da entrega."});
  await submittedDelivery.waitFor({timeout:20000});
  assert.equal(await submittedDelivery.getByRole("link",{name:"Abrir material no Google Drive"}).getAttribute("href"),"https://drive.google.com/file/d/synthetic-browser-ui3/view");
  await submittedDelivery.getByRole("button",{name:"Validar entrega"}).click();
  await submittedDelivery.waitFor({state:"hidden",timeout:20000});
+ await assignmentDetails.getByText(/Validada/).first().waitFor({timeout:20000});
+ await assignmentDetails.getByRole("button",{name:"Fechar",exact:true}).click();
+ await strategist.getByRole("button",{name:"Lista",exact:true}).click();
  await strategist.getByRole("button",{name:"Criar tarefa",exact:true}).click();
  const newTaskDialog=strategist.getByRole("dialog",{name:"Nova tarefa"});
  await newTaskDialog.waitFor();

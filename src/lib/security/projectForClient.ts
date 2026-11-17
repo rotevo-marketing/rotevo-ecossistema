@@ -14,6 +14,11 @@ function publishedArray(v: unknown, names: readonly string[], allowLink=false) {
     if (!item || item.visibleToClient !== true || item.archivedAt || item.deletedAt || typeof item.id !== "string" || typeof item.title !== "string") return [];
     const projected: RecordObject & {id:string;title:string;visibleToClient:true} = {...fields(item,names), id:item.id, title:item.title, visibleToClient:true};
     for(const key of ["meetingUrl","materialUrl"]){if(names.includes(key)){const link=https(item[key]);if(link)projected[key]=link;else delete projected[key];}}
+    if (names.includes("minutes")) {
+      if(item.agendaVisibleToClient === false) delete projected.notes;
+      const options=object(item.googleOptions);
+      if(typeof options?.description==="string") projected.description=options.description.slice(0,2000);
+    }
     if (names.includes("minutes") && item.minutesVisibleToClient === false) delete projected.minutes;
     // Only explicitly shared meetings may expose action items, and never internal notes.
     if (names.includes("minutes") && item.minutesVisibleToClient !== false && Array.isArray(item.actionItems)) {
@@ -82,3 +87,4 @@ export function projectForClient(project:PrivateProjectRow,allowedModules?:reado
     }
   };
 }
+

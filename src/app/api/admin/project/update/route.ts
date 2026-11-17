@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {validEcosystemDocumentTransition} from "@/lib/security/ecosystemDocumentTransitions";
 import {validExecutionDependencies} from "@/lib/security/executionDependencyValidation";
-import {eventOptions} from "@/lib/googleCalendar/eventSync";
-import {meetingInterval} from "@/lib/googleCalendar/meetingTiming";
+import {validMeetingAgenda,recordMeetingMinutes} from "@/lib/security/meetingAgendaValidation";
 import {validCampaignLinks,validCampaignRecords} from "@/lib/security/campaignMetricsValidation";
 import {ecosystemDocuments} from "@/data/ecosystem2027";
 
@@ -87,55 +86,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  }
 
  if(JSON.stringify(oldRoot.marketingCampaigns)!==JSON.stringify(nextRoot.marketingCampaigns)&&(!validCampaignRecords(nextRoot.marketingCampaigns)||!validCampaignLinks(nextRoot,oldRoot)))return fail(400);
- // Validate newly changed meeting records while preserving existing legacy records during unrelated edits.
- if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)){
-  const agenda=nextRoot.operationalAgenda;
-  if(!Array.isArray(agenda)||agenda.length>500)return fail(400);
-  // Completed meetings and meetings with a recorded minute are retained to preserve accountability.
-  const nextIds=new Set(agenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]));
-  if(Array.isArray(oldRoot.operationalAgenda)&&oldRoot.operationalAgenda.some(row=>{
-   if(!row||typeof row!=="object"||Array.isArray(row))return false;
-   const old=row as Record<string,unknown>;
-   return typeof old.id==="string"&&!nextIds.has(old.id)&&(!!old.googleLink||old.status==="completed"||(typeof old.minutes==="string"&&old.minutes.trim()!==""));
-  }))return fail(400);
-  const legacyIds=new Set(Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id as string]:[]):[]);
-  const ids=new Set<string>();
-  const validHttps=(value:unknown)=>{if(value===undefined||value==="")return true;if(typeof value!=="string"||value.length>2048)return false;try{return new URL(value).protocol==="https:";}catch{return false;}};
-  for(const value of agenda){
-   if(!value||typeof value!=="object"||Array.isArray(value))return fail(400);
-   const item=value as Record<string,unknown>;
-   if(typeof item.id!=="string"||(!uuid.test(item.id)&&!legacyIds.has(item.id))||ids.has(item.id))return fail(400);
-   ids.add(item.id);
-   const oldItem=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda.find(row=>row&&typeof row==="object"&&!Array.isArray(row)&&(row as Record<string,unknown>).id===item.id):undefined;
-   if(JSON.stringify((oldItem as Record<string,unknown>|undefined)?.googleLink)!==JSON.stringify(item.googleLink))return fail(400);
-   if(item.googleOptions!==undefined&&!eventOptions(item.googleOptions))return fail(400);
-   if(oldItem&&JSON.stringify(oldItem)===JSON.stringify(item))continue; // Preserve untouched legacy meetings.
-   if(typeof item.title!=="string"||item.title.trim().length<3||item.title.length>140)return fail(400);
-   if(typeof item.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!Number.isFinite(Date.parse(item.date)))return fail(400);
-   if(item.timing!==undefined&&!meetingInterval(item.date,item.time??"",item.timing))return fail(400);
-   if(!["meeting","followup","checkpoint"].includes(String(item.kind))||!["planned","completed","cancelled"].includes(String(item.status)))return fail(400);
-   for(const [key,max] of [["minutes",5000],["internalNotes",5000],["notes",2000],["owner",120],["location",180],["duration",60]] as const)if(item[key]!==undefined&&(typeof item[key]!=="string"||item[key].length>max))return fail(400);
-   if(item.minutesVisibleToClient!==undefined&&typeof item.minutesVisibleToClient!=="boolean")return fail(400);
-   if(item.actionItems!==undefined){
-    if(!Array.isArray(item.actionItems)||item.actionItems.length>25)return fail(400);
-    const actionIds=new Set<string>();
-    const taskIds=new Set(Array.isArray(nextRoot.executionTimeline)?nextRoot.executionTimeline.flatMap(row=>row&&typeof row==="object"&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==="string"?[(row as Record<string,unknown>).id]:[]):[]);
-    for(const raw of item.actionItems){
-     if(!raw||typeof raw!=="object"||Array.isArray(raw))return fail(400);
-     const action=raw as Record<string,unknown>;
-     if(typeof action.id!=="string"||!uuid.test(action.id)||actionIds.has(action.id))return fail(400);
-     actionIds.add(action.id);
-     if(typeof action.title!=="string"||action.title.trim().length<3||action.title.length>240)return fail(400);
-     if(typeof action.owner!=="string"||action.owner.length>120||typeof action.dueDate!=="string")return fail(400);
-     if(action.dueDate!==""&&(!/^\d{4}-\d{2}-\d{2}$/.test(action.dueDate)||!Number.isFinite(Date.parse(action.dueDate))))return fail(400);
-     if(action.relatedTaskId!==undefined&&action.relatedTaskId!==""&&(typeof action.relatedTaskId!=="string"||!taskIds.has(action.relatedTaskId)))return fail(400);
-    }
-   }
-
-   if(item.visibleToClient!==undefined&&typeof item.visibleToClient!=="boolean")return fail(400);
-   if(!validHttps(item.materialUrl)||!validHttps(item.meetingUrl))return fail(400);
-  }
- }
+ if(!validMeetingAgenda(oldRoot,nextRoot))return fail(400);
 
  // Validate new scope selections, but preserve historical scope during unrelated edits.
  const previousEco=oldRoot.ecosystem2027;
@@ -327,23 +278,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(new Set((members??[]).map(m=>m.user_id)).size!==changedOwners.length)return fail(400);
  }
 
- // Append-only audit trail for edited minutes. Attribution and timestamp come from
- // the authenticated server identity, never from browser-supplied history.
- if(JSON.stringify(oldRoot.operationalAgenda)!==JSON.stringify(nextRoot.operationalAgenda)&&Array.isArray(nextRoot.operationalAgenda)){
-  const originals=Array.isArray(oldRoot.operationalAgenda)?oldRoot.operationalAgenda:[];
-  const originalById=new Map(originals.filter((value):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value)&&typeof (value as Record<string,unknown>).id==="string").map(value=>[value.id as string,value]));
-  nextRoot.operationalAgenda=nextRoot.operationalAgenda.map(value=>{
-   const current=value as Record<string,unknown>;
-   const previous=originalById.get(current.id as string);
-   const historical=previous&&Array.isArray(previous.minutesHistory)?previous.minutesHistory.slice(-99):[];
-   const before=typeof previous?.minutes==="string"?previous.minutes:"";
-   const after=typeof current.minutes==="string"?current.minutes:"";
-   const changed=before!==after;
-   const history=changed?[...historical,{version:historical.length+1,text:after,changedAt:new Date().toISOString(),changedBy:identity.user.id}]:historical;
-   const {minutesHistory:_ignored,...safeCurrent}=current;
-   return history.length?{...safeCurrent,minutesHistory:history}:safeCurrent;
-  });
- }
+ recordMeetingMinutes(oldRoot,nextRoot,identity.user.id);
  const nextAt=new Date().toISOString();
  const {data:updated,error:updateError}=await admin.from("planning_projects")
    .update({data:b.data,updated_at:nextAt}).eq("id",b.projectId)
@@ -353,3 +288,4 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
  if(!updated)return fail(409);
  return NextResponse.json({project:updated},{headers:{"Cache-Control":"no-store"}});
 }
+

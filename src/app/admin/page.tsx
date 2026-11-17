@@ -529,7 +529,7 @@ export default function AdminPage() {
         {workspaceTab==="team" && !isLoading && <TeamDirectory/>}
         {workspaceTab==="tasks" && !isLoading && <CentralTarefas projects={projects} notificationTask={notificationTaskTarget} onOpenAssignedContent={openWorkflowContent} onOpenContent={()=>navigateWorkspace("content")} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="onboarding" && !isLoading && <AdminOnboardingHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
-        {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
+        {workspaceTab==="meetings" && !isLoading && <AdminMeetingsHub key={userId??"no-user"} userId={userId} projects={projects.map(p=>({...p,data:p.data??{}}))} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
 
         {workspaceTab==="campaigns" && !isLoading && <CampaignsHub projects={projects.map(p=>({...p,data:p.data??{}}))} onOpenContent={openWorkflowContent} onOpenTask={openTask} onChanged={(id,data,updatedAt)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,data,updated_at:updatedAt}:p))}/>}
         {workspaceTab==="finance" && !isLoading && userEmail && <FinanceHub/>}

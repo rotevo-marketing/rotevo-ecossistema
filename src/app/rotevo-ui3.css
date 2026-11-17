@@ -874,3 +874,30 @@ html[data-rotevo-appearance="dark"] .rv-ui3 {
  }
  & .rv-ui3-meetings-calendar .rv-ui3-meeting-event:hover {background-color:var(--rv3-hover);}
 }
+
+
+/* Quick meeting scheduling reuses the agenda and its account palette. */
+.rv-ui3 .rv-ui3-meeting-quick .rv-meeting-line {
+ display:grid;grid-template-columns:20px minmax(0,1fr);gap:12px;align-items:start;
+ margin:0;padding:0;border:0;min-width:0;
+}
+.rv-ui3 .rv-ui3-meeting-quick .rv-meeting-line > svg {margin-top:9px;color:#687487}
+.rv-ui3 .rv-ui3-meeting-quick .rv-meeting-form {padding-top:12px}
+.rv-ui3 .rv-ui3-meeting-quick :is(input,select,textarea) {min-width:0;border-color:#E3E7F0}
+.rv-ui3 .rv-ui3-meeting-quick :is(button,summary) {cursor:pointer}
+.rv-ui3 .rv-ui3-meeting-quick :is(button,summary):focus-visible {outline:2px solid #6C5CE7;outline-offset:2px}
+.rv-ui3 .rv-ui3-meeting-quick button:disabled {cursor:default}
+.rv-ui3 .rv-ui3-meeting-quick .rv-meeting-guest {background:#F4F1FF;color:#493895}
+.rv-ui3 .rv-ui3-meeting-quick .rv-meeting-more > summary {min-height:32px}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-meeting-quick :is(input,select,textarea) {
+ background:var(--rv3-surface);color:var(--rv3-text);border-color:var(--rv3-border);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-guest {
+ background:var(--rv3-accent-soft);color:var(--rv3-accent);border-color:var(--rv3-border);
+}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-line > svg {color:var(--rv3-muted)}
+@media(max-width:420px) {
+ .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-line {grid-template-columns:16px minmax(0,1fr);gap:8px}
+ .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-more {margin-left:24px}
+}
+

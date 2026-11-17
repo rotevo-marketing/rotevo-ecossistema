@@ -16,14 +16,17 @@ export async function POST(req:NextRequest){
   const {db,userId}=await calendarAdmin(req);
   const config=calendarConfig();
   const body=await req.json().catch(()=>null);
-  if(!identifier(body?.projectId)||!identifier(body?.meetingId)||typeof body.expectedUpdatedAt!=="string"||
+  const personal=body?.scope==="personal";
+  if((personal?body.projectId!==null:!identifier(body?.projectId))||
+   (body?.scope!==undefined&&!["personal","project"].includes(body.scope))||!identifier(body?.meetingId)||typeof body.expectedUpdatedAt!=="string"||
    !["sync","pull","push"].includes(body.action)||typeof body.notify!=="boolean"||
    (body.action!=="sync"&&(typeof body.conflictToken!=="string"||body.conflictToken.length!==64)))return json({error:"Solicitação inválida."},400);
 
+  if(personal&&body.expectedOwnerUserId!==userId)return json({error:"Sessão alterada. Reabra sua agenda."},403);
   const {data:member,error:memberError}=await db.from("team_members").select("active,role").eq("user_id",userId).maybeSingle();
   if(memberError)throw new CalendarError(503,"Não foi possível confirmar o acesso.");
   if(!member?.active)throw new CalendarError(403,"Acesso ao projeto não autorizado.");
-  if(member.role!=="admin"){
+  if(!personal&&member.role!=="admin"){
    const [assignment,permission]=await Promise.all([
     db.from("team_project_assignments").select("project_id").eq("user_id",userId).eq("project_id",body.projectId).maybeSingle(),
     db.from("team_member_permissions").select("permission").eq("user_id",userId).eq("permission","projects.write").maybeSingle()
@@ -31,8 +34,12 @@ export async function POST(req:NextRequest){
    if(assignment.error||permission.error)throw new CalendarError(503,"Não foi possível confirmar o acesso.");
    if(!assignment.data||!permission.data)throw new CalendarError(403,"Acesso ao projeto não autorizado.");
   }
+  const storageTable=personal?"rotevo_user_agendas":"planning_projects";
+  const storageColumn=personal?"user_id":"id";
+  const storageId=personal?userId:body.projectId;
+  const resultKey=personal?"agenda":"project";
   const [projectResult,connectionResult]=await Promise.all([
-   db.from("planning_projects").select("id,data,updated_at").eq("id",body.projectId).maybeSingle(),
+   personal?db.from(storageTable).select("data,updated_at").eq(storageColumn,storageId).maybeSingle():db.from(storageTable).select("id,data,updated_at").eq(storageColumn,storageId).maybeSingle(),
    db.from("rotevo_google_calendar_connections").select("google_account,selected_calendar_id,refresh_token_ciphertext").eq("user_id",userId).maybeSingle()
   ]);
   if(projectResult.error||connectionResult.error)throw new CalendarError(503,"Não foi possível carregar a sincronização.");
@@ -53,7 +60,7 @@ export async function POST(req:NextRequest){
   const localHash=digest([payload,meeting.googleOptions?.meet===true,meeting.status==="cancelled"]);
   const calendarId=linked?.calendarId??connection.selected_calendar_id;
   if(typeof calendarId!=="string"||!calendarId)throw new CalendarError(409,"Escolha um calendário.");
-  const marker=digest([body.projectId,body.meetingId]);
+  const marker=digest(personal?["user",userId,body.meetingId]:[body.projectId,body.meetingId]);
   const eventId="r"+marker;
   const api="https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(calendarId)+"/events";
   const {access_token}=await googleToken({grant_type:"refresh_token",refresh_token:open(config.key,"refresh:"+userId,connection.refresh_token_ciphertext)});
@@ -72,10 +79,10 @@ export async function POST(req:NextRequest){
   if(!linked){
    if(body.action!=="sync")throw new CalendarError(409,"Atualize a comparação antes de resolver o conflito.");
    const reservation:EventLink={userId,account:connection.google_account,calendarId,etag:"",localHash};
-   const {data:reserved,error:reserveError}=await db.from("planning_projects").update({
+   const {data:reserved,error:reserveError}=await db.from(storageTable).update({
     data:{...project.data,operationalAgenda:agenda.map((item:Meeting)=>item.id===meeting.id?{...item,googleLink:reservation}:item)},
     updated_at:new Date(Date.parse(project.updated_at)+1).toISOString()
-   }).eq("id",project.id).eq("updated_at",project.updated_at).select("updated_at").maybeSingle();
+   }).eq(storageColumn,storageId).eq("updated_at",project.updated_at).select("updated_at").maybeSingle();
    if(reserveError||!reserved)throw new CalendarError(409,"Não foi possível reservar o vínculo. Atualize a agenda.");
    project.updated_at=reserved.updated_at;
    linked=reservation;
@@ -142,14 +149,14 @@ export async function POST(req:NextRequest){
   next={...next,googleLink:{userId,account:connection.google_account,calendarId,etag:remote?.etag??"",localHash:appliedHash,
    ...(wasCancelled?{cancelled:true}:{}),...(meetUrl?{meetUrl}:{}),
    ...(remote?.conferenceData?.createRequest?.status?.statusCode?{meetStatus:remote.conferenceData.createRequest.status.statusCode}:{})}};
-  if(JSON.stringify(next)===JSON.stringify(meeting))return json({project});
+  if(JSON.stringify(next)===JSON.stringify(meeting))return json({[resultKey]:project});
   const clock=new Date(Math.max(Date.now(),Date.parse(project.updated_at)+1)).toISOString();
-  const {data:updated,error}=await db.from("planning_projects").update({
+  const {data:updated,error}=await db.from(storageTable).update({
    data:{...project.data,operationalAgenda:agenda.map((item:Meeting)=>item.id===meeting.id?next:item)},updated_at:clock
-  }).eq("id",project.id).eq("updated_at",project.updated_at).select("data,updated_at").maybeSingle();
+  }).eq(storageColumn,storageId).eq("updated_at",project.updated_at).select("data,updated_at").maybeSingle();
   if(error)throw new CalendarError(503,"Não foi possível registrar o vínculo. Tente sincronizar novamente.");
   if(!updated)throw new CalendarError(409,"O projeto mudou durante a sincronização. Atualize e tente novamente.");
-  return json({project:updated});
+  return json({[resultKey]:updated});
  }catch(error){
   if(error instanceof CalendarError)return json({error:error.message},error.status);
   return json({error:"Não foi possível sincronizar o evento."},503);

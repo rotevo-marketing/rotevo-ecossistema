@@ -13,8 +13,8 @@ export function TaskAvatar({name,src,size=30}:{name:string;src?:string|null;size
  </span>;
 }
 type Option<T extends string>={value:T;label:string;color?:string;photo?:string|null};
-export function TaskDropdown<T extends string>({label,value,options,onChange,disabled=false,kind="status",avatar,presentation="cell"}:{
- label:string;value:T;options:Option<T>[];onChange:(value:T)=>void;disabled?:boolean;kind?:"status"|"priority"|"people";avatar?:{name:string;src?:string|null};presentation?:"cell"|"detail"|"board";
+export function TaskDropdown<T extends string>({label,value,options,onChange,disabled=false,readOnly=false,kind="status",avatar,presentation="cell"}:{
+ label:string;value:T;options:Option<T>[];onChange:(value:T)=>void;disabled?:boolean;readOnly?:boolean;kind?:"status"|"priority"|"people";avatar?:{name:string;src?:string|null};presentation?:"cell"|"detail"|"board";
 }){
  const [open,setOpen]=useState(false),[position,setPosition]=useState({left:0,top:0,width:0});
  const anchor=useRef<HTMLButtonElement>(null);
@@ -23,15 +23,15 @@ export function TaskDropdown<T extends string>({label,value,options,onChange,dis
  const isBoard=presentation==="board";
  const selected=options.find(o=>o.value===value)??options[0];
  useEffect(()=>{if(!open)return;const close=()=>setOpen(false);window.addEventListener("scroll",close,true);window.addEventListener("resize",close);return()=>{window.removeEventListener("scroll",close,true);window.removeEventListener("resize",close);};},[open]);
- function toggle(){if(disabled)return;const r=anchor.current?.getBoundingClientRect();if(r){setPosition({left:Math.max(8,Math.min(r.left,window.innerWidth-224)),top:Math.min(r.bottom+5,window.innerHeight-270),width:r.width});setOpen(v=>!v);}}
+ function toggle(){if(disabled||readOnly)return;const r=anchor.current?.getBoundingClientRect();if(r){setPosition({left:Math.max(8,Math.min(r.left,window.innerWidth-224)),top:Math.min(r.bottom+5,window.innerHeight-270),width:r.width});setOpen(v=>!v);}}
  return <div className="min-w-0">
-  <button ref={anchor} type="button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} disabled={disabled} onClick={toggle}
+  <button ref={anchor} type="button" aria-label={label} aria-haspopup={readOnly?undefined:"listbox"} aria-expanded={readOnly?undefined:open} aria-disabled={readOnly||undefined} disabled={disabled} onClick={toggle}
    title={selected?.label??""}
    className={"group flex w-full cursor-pointer items-center text-xs font-semibold transition focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#3B2C72] disabled:cursor-default disabled:opacity-60 "+(isBoard?"min-h-8 justify-between gap-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[#525B70] hover:border-[#E4E8F0] hover:bg-white":isDetail?"min-h-10 justify-between gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-2 text-[#323647] hover:border-[#E1E5EE] hover:bg-[#F7F8FB]":kind==="people"?"min-h-9 justify-center rounded-md bg-transparent px-1 py-1 text-[#344056] hover:bg-[#F8F7FF]":"min-h-9 justify-between gap-2 rounded-none px-3 py-2 text-white hover:brightness-95")}
    data-ui3-color-cell={isColorCell&&!isDetail&&!isBoard ? kind : undefined}
    style={isColorCell&&!isDetail&&!isBoard?{"--rv3-cell-color":selected?.color??"#8994A7"} as React.CSSProperties:undefined}>
    <span className="rv-ui3-task-cell-label flex min-w-0 items-center justify-center gap-2">{kind==="people"?<><TaskAvatar name={avatar?.name??selected?.label??"Não atribuído"} src={avatar?.src} size={26}/>{isDetail&&<span className="truncate font-medium">{selected?.label??"Não atribuído"}</span>}</>:<>{kind==="priority"&&<span style={{color:selected?.color??"#8994A7"}}><RotevoTablerIcon name="flag" size={isBoard||isDetail?15:13} stroke={1.75}/></span>}{kind==="status"&&(isDetail||isBoard)&&<span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{backgroundColor:selected?.color??"#8994A7"}}/>}<span className="truncate">{selected?.label??"Selecionar"}</span></>}</span>
-   {(isDetail||isColorCell)&&<span className={isDetail||isBoard?"text-[#788398] opacity-70 transition-opacity group-hover:opacity-100":"opacity-0 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90"}><RotevoTablerIcon name="chevron-down" size={14}/></span>}
+   {!readOnly&&(isDetail||isColorCell)&&<span className={isDetail||isBoard?"text-[#788398] opacity-70 transition-opacity group-hover:opacity-100":"opacity-0 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90"}><RotevoTablerIcon name="chevron-down" size={14}/></span>}
   </button>
   {open&&typeof document!=="undefined"&&createPortal(<>
    <button type="button" aria-label="Fechar opções" onClick={()=>setOpen(false)} className="fixed inset-0 z-[140] cursor-default"/>
@@ -47,17 +47,17 @@ export function TaskDropdown<T extends string>({label,value,options,onChange,dis
 }
 
 /** Inline due-date editor: local draft until confirmed, uses existing authorized task update callback. */
-export function TaskDueDateCell({label,value,onChange,disabled=false,overdue=false}:{label:string;value:string;onChange:(value:string)=>void;disabled?:boolean;overdue?:boolean}){
+export function TaskDueDateCell({label,value,onChange,disabled=false,readOnly=false,overdue=false}:{label:string;value:string;onChange:(value:string)=>void;disabled?:boolean;readOnly?:boolean;overdue?:boolean}){
  const [open,setOpen]=useState(false),[draft,setDraft]=useState(value);
  const [position,setPosition]=useState({left:8,top:8});
  const trigger=useRef<HTMLButtonElement>(null);
  useEffect(()=>{if(!open)setDraft(value);},[value,open]);
  useEffect(()=>{if(!open)return;const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpen(false);trigger.current?.focus();}};const onScroll=()=>setOpen(false);document.addEventListener("keydown",onKey);window.addEventListener("resize",onScroll);window.addEventListener("scroll",onScroll,true);return()=>{document.removeEventListener("keydown",onKey);window.removeEventListener("resize",onScroll);window.removeEventListener("scroll",onScroll,true);};},[open]);
  const display=(date:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return "Definir data";const [y,m,d]=date.split("-").map(Number);const parsed=new Date(y,m-1,d);return Number.isNaN(parsed.getTime())?"Definir data":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(parsed);};
- function toggle(){if(disabled)return;if(open){setOpen(false);return;}const rect=trigger.current?.getBoundingClientRect();if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-280)),top:Math.max(8,Math.min(rect.bottom+4,window.innerHeight-255))});setDraft(value);setOpen(true);}
+ function toggle(){if(disabled||readOnly)return;if(open){setOpen(false);return;}const rect=trigger.current?.getBoundingClientRect();if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-280)),top:Math.max(8,Math.min(rect.bottom+4,window.innerHeight-255))});setDraft(value);setOpen(true);}
  function save(next:string){if(next&&!/^\d{4}-\d{2}-\d{2}$/.test(next))return;setOpen(false);if(next!==value)onChange(next);trigger.current?.focus();}
  return <div className="min-w-0">
-  <button ref={trigger} type="button" aria-label={label} aria-haspopup="dialog" aria-expanded={open} disabled={disabled} onClick={toggle} title={value?display(value):"Definir prazo"} className={"flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 px-2 text-xs transition hover:bg-[#F2F6FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7] disabled:cursor-default disabled:opacity-60 "+(overdue?"font-semibold text-[#C2384C]":"text-[#525B70]")}>
+  <button ref={trigger} type="button" aria-label={label} aria-haspopup={readOnly?undefined:"dialog"} aria-expanded={readOnly?undefined:open} aria-disabled={readOnly||undefined} disabled={disabled} onClick={toggle} title={value?display(value):"Definir prazo"} className={"flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 px-2 text-xs transition hover:bg-[#F2F6FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7] disabled:cursor-default disabled:opacity-60 "+(overdue?"font-semibold text-[#C2384C]":"text-[#525B70]")}>
    {overdue&&<RotevoTablerIcon name="alert-circle" size={15}/>}<span className="whitespace-nowrap">{display(value)}</span>{!value&&<RotevoTablerIcon name="calendar-week" size={14}/>}
   </button>
   {open&&typeof document!=="undefined"&&createPortal(<>

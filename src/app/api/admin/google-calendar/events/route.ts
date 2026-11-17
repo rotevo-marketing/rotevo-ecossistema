@@ -129,7 +129,9 @@ export async function POST(req:NextRequest){
    const patch={...payload,attendees,...(meeting.googleOptions?.meet&&!external?.googleOptions?.meet?{
      conferenceData:{createRequest:{requestId:digest([eventId,remote.etag]),conferenceSolutionKey:{type:"hangoutsMeet"}}}
     }:!meeting.googleOptions?.meet&&external?.googleOptions?.meet?{conferenceData:null}:{})};
-   const result=await send(address+query,remove?"DELETE":"PATCH",remove?undefined:patch,remote.etag);
+   const result=remove
+    ?await send(address+"?sendUpdates="+(body.notify?"all":"none"),"DELETE",undefined,remote.etag)
+    :await send(address+query,"PATCH",patch,remote.etag);
    if(result.status===412)throw new CalendarError(409,"O evento foi editado no Google. Sincronize novamente.");
    if(!result.ok&&!(remove&&(result.status===404||result.status===410)))throw new CalendarError(502,"O Google não confirmou a alteração.");
    remote=remove?null:await result.json() as GoogleEvent;

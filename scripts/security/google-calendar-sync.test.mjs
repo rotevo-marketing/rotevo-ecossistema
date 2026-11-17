@@ -23,7 +23,7 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
   notes:"Arquivo interno",internalNotes:"Nunca enviar",timing:{allDay:false,timeZone:"America/Sao_Paulo",endDate:"2026-11-19",endTime:"14:00"},
   googleOptions:{guests:["guest@example.test"],description:"Somente esta pauta",recurrence:"RRULE:FREQ=WEEKLY;COUNT=2",reminders:[{method:"email",minutes:20}],meet:true}
  }]}};
- let remote=null,member={active:true,role:"admin"},accessRole="owner",creations=0,patches=0,deletions=0,version=0;
+ let remote=null,member={active:true,role:"admin"},accessRole="owner",creations=0,patches=0,deletions=0,version=0,failLinkOnce=true;
  const projected=()=>project.data.operationalAgenda[0];
  globalThis.calendarFixture={admin:async()=>({userId:"user-a",db:{
   from(table){
@@ -36,6 +36,7 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
      if(table==="rotevo_google_calendar_connections")return {data:{google_account:"owner@example.test",selected_calendar_id:"calendar@example.test",refresh_token_ciphertext:"encrypted"}};
      assert.equal(table,"planning_projects");
      if(filters.id!==project.id||filters.updated_at&&filters.updated_at!==project.updated_at)return {data:null};
+     if(update&&remote&&failLinkOnce){failLinkOnce=false;return {data:null};}
      if(update)Object.assign(project,structuredClone(update));
      return {data:structuredClone(project)};
     }
@@ -65,7 +66,10 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
    return Response.json(remote);
   }
   assert.equal(init.headers["If-Match"],remote.etag);
-  if(init.method==="DELETE"){deletions++;remote=null;return new Response(null,{status:204});}
+  if(init.method==="DELETE"){
+   assert.equal(url.searchParams.has("conferenceDataVersion"),false);
+   deletions++;remote=null;return new Response(null,{status:204});
+  }
   assert.equal(init.method,"PATCH");
   patches++;
   assert.equal(url.searchParams.get("sendUpdates"),"all");
@@ -78,6 +82,8 @@ test("linked events sync both ways without duplicates and resolve concurrent edi
    action:"sync",notify:false,...patch
   })}));
  }
+ assert.equal((await sync()).status,409);
+ assert.equal(creations,1);
  assert.equal((await sync()).status,200);
  assert.equal(projected().googleLink.meetUrl,"https://meet.google.com/aaa-bbbb-ccc");
  assert.equal((await sync()).status,200);

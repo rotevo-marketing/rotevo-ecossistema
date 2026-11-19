@@ -901,3 +901,18 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-li
  .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-more {margin-left:24px}
 }
 
+
+/* Explicit client task sharing and alternating overview rows. */
+.rv-ui3 .rv-ui3-client-summary-list {overflow:hidden;border:1px solid var(--rv3-border,#E3E7F0);border-radius:9px;list-style:none;padding:0;}
+.rv-ui3 .rv-ui3-client-summary-list > li + li {border-top:1px solid var(--rv3-border,#E3E7F0);}
+.rv-ui3 .rv-ui3-client-summary-row {min-height:44px;color:var(--rv3-text,#323647);background:var(--rv3-surface,#fff);cursor:pointer;}
+.rv-ui3 .rv-ui3-client-summary-list > li:nth-child(even) .rv-ui3-client-summary-row {background:color-mix(in srgb,var(--rv3-surface,#fff) 95%,var(--rv3-text,#323647) 5%);}
+.rv-ui3 .rv-ui3-client-summary-row:hover {background:var(--rv3-hover,#EEEAF9);}
+.rv-ui3 .rv-ui3-client-summary-row:focus-visible {outline:2px solid var(--rv3-accent,#6C5CE7);outline-offset:-3px;}
+.rv-ui3 .rv-ui3-client-summary-row :is(.break-words,.truncate) {overflow-wrap:anywhere;}
+.rv-ui3 .rv-ui3-priority-flag {display:inline-flex;align-items:center;min-height:20px;}
+.rv-ui3 .rv-ui3-shared-step {color:var(--rv3-text,#323647);background:var(--rv3-surface,#fff);}
+.rv-ui3 .rv-ui3-shared-step[data-checklist-done="true"] {color:var(--rv3-muted,#697386);background:color-mix(in srgb,var(--rv3-surface,#fff) 94%,var(--rv3-text,#323647) 6%);}
+.rv-ui3 .rv-ui3-shared-step[data-checklist-done="false"] {border-inline-start:2px solid var(--rv3-accent,#6C5CE7);}
+.rv-ui3 .rv-ui3-shared-checklist progress {background:var(--rv3-hover,#EDEAF5);}
+html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-client-summary-row {color:var(--rv3-text);}

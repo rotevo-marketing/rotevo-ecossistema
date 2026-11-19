@@ -1,0 +1,148 @@
+name: Client task sharing refinement (isolated, no deployment)
+on:
+  push:
+    branches: [fix/client-portal-shared-details-20261119]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: portal-final-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  locked-build:
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portal-shared-details-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: offline-build-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: offline-build-placeholder
+      ROTEVO_GOOGLE_CALENDAR_ENABLED: 'false'
+      ROTEVO_NOTIFICATIONS_ENABLED: 'true'
+      NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED: 'true'
+      ROTEVO_CLIENT_ACTIONS_ENABLED: 'true'
+      NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED: 'true'
+      ROTEVO_COLLABORATION_ENABLED: 'true'
+      NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify workflow isolation
+        run: node --test scripts/security/ui3-portals-ci-safety.test.cjs
+      - name: New sharing and overview tests
+        run: node --test scripts/security/client-task-sharing.test.cjs scripts/security/client-task-sharing-ui.test.cjs
+      - name: Verify TypeScript
+        run: npx --no-install tsc --noEmit
+      - name: Lint affected implementation
+        run: node scripts/security/client-task-sharing-lint.cjs
+      - name: Build production bundle with loopback placeholders
+        run: npm run build
+      - name: Verify dependency files and publication guard unchanged
+        run: git diff --exit-code -- package.json package-lock.json vercel.json
+  authenticated-portals:
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portal-shared-details-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact application lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify workflow isolation
+        run: node --test scripts/security/ui3-portals-ci-safety.test.cjs
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - name: Install browser tools separately from application dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/portal-browser-tools"
+          npm install --prefix "$RUNNER_TEMP/portal-browser-tools" --no-save --no-package-lock playwright@1.65.0
+          "$RUNNER_TEMP/portal-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Prepare unlinked disposable local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/portal-final-local"
+          cd "$RUNNER_TEMP/portal-final-local"
+          supabase init --yes
+          cd "$GITHUB_WORKSPACE"
+          node scripts/security/ui3-portals-ci-prepare.mjs "$RUNNER_TEMP/portal-final-local"
+      - name: Start disposable local services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/portal-final-local"
+          test ! -f supabase/.temp/project-ref
+          supabase start --exclude studio,mailpit,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor
+          supabase status -o env > "$RUNNER_TEMP/portal-local.env"
+      - name: Validate new sharing flow with two isolated tenants in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          set -a
+          . "$RUNNER_TEMP/portal-local.env"
+          set +a
+          test "$API_URL" = 'http://127.0.0.1:54321'
+          test ! -f "$RUNNER_TEMP/portal-final-local/supabase/.temp/project-ref"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export ROTEVO_LOCAL_APP_URL='http://127.0.0.1:3000/'
+          export ROTEVO_LOCAL_API_TESTS='YES_LOCAL_ONLY'
+          export ROTEVO_BROWSER_TOOLS="$RUNNER_TEMP/portal-browser-tools"
+          export ROTEVO_TEAM_ACCESS_ENFORCEMENT_ENABLED='true'
+          export ROTEVO_NOTIFICATIONS_ENABLED='true'
+          export NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED='true'
+          export ROTEVO_NOTIFICATIONS_AUDIENCE='enabled_clients'
+          export ROTEVO_STRATEGIST_ASSIGNMENTS_ENABLED='true'
+          export ROTEVO_CLIENT_ACTIONS_ENABLED='true'
+          export NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED='true'
+          export ROTEVO_COLLABORATION_ENABLED='true'
+          export NEXT_PUBLIC_ROTEVO_COLLABORATION_ENABLED='true'
+          export ROTEVO_GOOGLE_CALENDAR_ENABLED='false'
+          unset VERCEL_ENV SUPABASE_ACCESS_TOKEN
+          npm run dev -- --webpack --hostname 127.0.0.1 > "$RUNNER_TEMP/portal-next.log" 2>&1 &
+          next_pid=$!
+          trap 'kill "$next_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 120); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          test "$ready" = 1
+          node scripts/security/client-task-sharing-browser.mjs
+      - name: Preserve synthetic viewport evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-task-sharing-synthetic-viewports
+          path: ${{ runner.temp }}/portal-viewport-evidence/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Verify application lockfile and publication guard unchanged
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json vercel.json
+      - name: Stop disposable local services
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$RUNNER_TEMP/portal-final-local/supabase" ]; then
+            cd "$RUNNER_TEMP/portal-final-local"
+            supabase stop --no-backup || true
+          fi

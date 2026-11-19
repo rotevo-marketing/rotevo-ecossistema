@@ -16,11 +16,16 @@ export function projectClientTask(value:unknown){
   if(typeof t[key]==="string")result[key]=t[key];
  // Existing explicitly shared descriptions retain their prior approval. Previously private
  // descriptions and new internal text never become public merely because tasks are mirrored.
- const description=typeof t.clientSummary==="string"?t.clientSummary:
-  t.clientDescriptionApproved===true||(t.clientProjectionVersion===undefined&&t.visibleToClient===true)?t.description:undefined;
+ const description=t.clientDescriptionApproved===true?t.description:
+  typeof t.clientSummary==="string"?t.clientSummary:
+  t.clientProjectionVersion===undefined&&t.visibleToClient===true?t.description:undefined;
  if(typeof description==="string"&&description.trim())result.description=description.slice(0,2000);
  const checks=Array.isArray(t.checklist)?t.checklist.map(item).filter((v):v is Item=>!!v):[];
  if(checks.length)result.progress={completed:checks.filter(c=>c.done===true).length,total:checks.length};
+ // Sharing is per original step, never inferred from task visibility or a legacy flag.
+ const shared=checks.filter(c=>c.visibleToClient===true&&typeof c.id==="string"&&typeof c.text==="string"&&c.text.trim()&&typeof c.done==="boolean")
+  .slice(0,50).map(c=>({id:c.id,text:(c.text as string).slice(0,240),done:c.done}));
+ if(shared.length)result.checklist=shared;
  return result;
 }
 /** Server-owned privacy history. Caller cannot forge an author or silently rewrite history. */
@@ -36,6 +41,7 @@ export function recordTaskPrivacy(before:unknown,after:unknown,actor:string,now=
   // Older releases must not expose new internal descriptions during rollback.
   if(t.kind==="task"&&(t.clientProjectionVersion===1||t.clientVisibility==="confidential"))t.visibleToClient=false;
   if(t.clientDescriptionApproved!==undefined&&typeof t.clientDescriptionApproved!=="boolean")return false;
+  if(Array.isArray(t.checklist)&&t.checklist.some(raw=>{const c=item(raw);return c?.visibleToClient!==undefined&&typeof c.visibleToClient!=="boolean";}))return false;
   if(JSON.stringify(t.clientVisibilityAudit)!==JSON.stringify(p?.clientVisibilityAudit))return false;
   const confidential=t.clientVisibility==="confidential";
   const changed=(p?.clientVisibility??"project")!==(t.clientVisibility??"project")||p?.clientConfidentialReason!==t.clientConfidentialReason;

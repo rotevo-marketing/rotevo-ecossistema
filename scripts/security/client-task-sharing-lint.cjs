@@ -1,0 +1,3 @@
+const {spawnSync}=require('node:child_process');
+const files=['src/lib/security/clientTaskPolicy.ts','src/lib/security/executionDependencyValidation.ts','src/lib/operations/taskPriority.ts','src/Components/admin/TaskClientSharingFields.tsx','src/Components/admin/CentralTarefas.tsx','src/Components/admin/ExecutionTimelineEditor.tsx','src/Components/cliente/SharedTaskChecklist.tsx','src/Components/cliente/ClientOverview.tsx','src/Components/cliente/ProjectTimeline.tsx','src/Components/shared/TaskPriorityFlag.tsx','src/app/cliente/page.tsx'];
+const r=spawnSync(process.execPath,['node_modules/eslint/bin/eslint.js',...files],{stdio:'inherit'});process.exit(r.status??1);

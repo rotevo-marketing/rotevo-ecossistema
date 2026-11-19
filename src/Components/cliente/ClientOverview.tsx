@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import TaskPriorityFlag from "@/Components/shared/TaskPriorityFlag";
 import {RotevoTablerIcon,type RotevoIconName} from "@/Components/RotevoTablerIcon";
 import {ContentTablerIcon} from "@/Components/ContentTablerIcon";
 import {editorialChannelIcon} from "@/lib/editorial/channels";
@@ -13,7 +14,7 @@ import {balance,brl,displayDate,todayInBrazil,type ClientFinanceState} from "@/l
 
 type Project={id:string;title:string;status:string;updated_at:string;data:{planningStages?:{id:string;title:string;dueDate:string;status:string;visibleToClient?:boolean}[];executionTimeline?:ExecutionItem[];editorialCalendar?:EditorialItem[];operationalAgenda?:AgendaItem[];marketingCampaigns?:CampaignRecord[]}|null};
 type Decision={project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";decided_at:string;comment?:string|null};
-type Attention={title:string;meta:string;kind:"idea"|"final"|"finance";projectId?:string;contentId?:string;module:PortalModule};
+type Attention={priority?:ExecutionItem["priority"];title:string;meta:string;kind:"idea"|"final"|"finance";projectId?:string;contentId?:string;module:PortalModule};
 const icon=(name:RotevoIconName,size=19)=><RotevoTablerIcon name={name} size={size} stroke={1.8}/>;
 const monthLabel=(month:string)=>new Intl.DateTimeFormat("pt-BR",{month:"long",year:"numeric"}).format(new Date(Number(month.slice(0,4)),Number(month.slice(5))-1,1));
 const linkClass="cursor-pointer text-xs font-semibold text-[#6533CF] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D35F5]";
@@ -43,7 +44,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
     ]);
     if(active)setResult({key:decisionKey,final:(a.data??[]) as Decision[],ideas:(b.data??[]) as Decision[],failed:!!a.error||!!b.error});
    })();
-  }else if(active)setResult({key:decisionKey,final:[],ideas:[],failed:false});
+  }
 
   return()=>{active=false};
  },[decisionKey,projects,workspace]);
@@ -55,8 +56,8 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const pendingIdeas=publishedContent.filter(i=>i.status==="idea_pending"&&!hasDecision(ideas,i));
  const pendingFinal=publishedContent.filter(i=>i.status==="awaiting_client"&&!hasDecision(final,i));
  const contentAttention:Attention[]=!approvalsLoading&&!approvalsFailed?[
-  ...pendingIdeas.map(i=>({title:i.title,meta:i.channel+" · "+i.format+" · Aprovação de ideia · Versão "+(i.version||"não informada"),kind:"idea" as const,projectId:i.projectId,contentId:i.id,module:"content" as const})),
-  ...pendingFinal.map(i=>({title:i.title,meta:i.channel+" · "+i.format+" · Aprovação final · Versão "+(i.version||"não informada"),kind:"final" as const,projectId:i.projectId,contentId:i.id,module:"content" as const}))
+  ...pendingIdeas.map(i=>({priority:i.priority,title:i.title,meta:i.channel+" · "+i.format+" · Aprovação de ideia · Versão "+(i.version||"não informada"),kind:"idea" as const,projectId:i.projectId,contentId:i.id,module:"content" as const})),
+  ...pendingFinal.map(i=>({priority:i.priority,title:i.title,meta:i.channel+" · "+i.format+" · Aprovação final · Versão "+(i.version||"não informada"),kind:"final" as const,projectId:i.projectId,contentId:i.id,module:"content" as const}))
  ]:[];
  const invoices=finance?.invoices.filter(i=>!i.cancelled&&balance(i)>0)??[];
  const financeAttention:Attention[]=allowed("finance")?invoices.filter(i=>i.due_date<todayInBrazil()).map(i=>({title:"Mensalidade vencida: "+i.title,meta:brl(balance(i))+" · pagamento pendente",kind:"finance" as const,module:"finance" as const})):[];
@@ -123,18 +124,18 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    <section className={card+" border-[#E1D8FB] bg-[#F7F4FF]"} aria-label="Para hoje">
     <h3 className="flex items-center justify-between text-[15px] font-semibold"><span>Para hoje</span><strong className="rv-ui3-section-count" aria-label="Entregas para hoje">{allowed("execution")?dueToday.length:"—"}</strong></h3>
     <p className="mt-1 text-xs text-[#5A6273]">Entregas compartilhadas com prazo hoje.</p>
-    {!allowed("execution")?<p className="mt-4 text-xs text-[#5A6273]">Tarefas não compartilhadas com esta conta.</p>:dueToday.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{dueToday.slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId)} className="w-full px-2 py-3 text-left text-xs hover:bg-[#F8F7FC]">{t.title}</button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma entrega com prazo hoje.</p>}
+    {!allowed("execution")?<p className="mt-4 text-xs text-[#5A6273]">Tarefas não compartilhadas com esta conta.</p>:dueToday.length?<ul className="rv-ui3-client-summary-list mt-3">{dueToday.slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId,t.id)} className="rv-ui3-client-summary-row flex w-full items-start gap-2 px-3 py-3 text-left text-xs"><TaskPriorityFlag priority={t.priority}/><span className="min-w-0 flex-1 break-words leading-5">{t.title}</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma entrega com prazo hoje.</p>}
     {dueToday.length>5&&<button type="button" onClick={()=>onNavigate("execution")} className={linkClass}>Ver todas as {dueToday.length} entregas</button>}
    </section>
    <section className={card+" border-[#F5E0BD] bg-[#FFF8EB]"} aria-label="Atrasadas">
     <h3 className="flex items-center justify-between text-[15px] font-semibold"><span>Atrasadas</span><strong className="rv-ui3-section-count" aria-label="Entregas atrasadas">{allowed("execution")?overdue.length:"—"}</strong></h3>
     <p className="mt-1 text-xs text-[#5A6273]">Entregas abertas com prazo vencido.</p>
-    {!allowed("execution")?<p className="mt-4 text-xs text-[#5A6273]">Tarefas não compartilhadas com esta conta.</p>:overdue.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{[...overdue].sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??"")).slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId)} className="flex w-full justify-between gap-2 px-2 py-3 text-left text-xs hover:bg-[#FFF8EB]"><span className="min-w-0 truncate">{t.title}</span><span className="shrink-0">{displayDate(t.dueDate??"")}</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma entrega atrasada.</p>}
+    {!allowed("execution")?<p className="mt-4 text-xs text-[#5A6273]">Tarefas não compartilhadas com esta conta.</p>:overdue.length?<ul className="rv-ui3-client-summary-list mt-3">{[...overdue].sort((a,b)=>(a.dueDate??"").localeCompare(b.dueDate??"")).slice(0,5).map(t=><li key={t.projectId+":"+t.id}><button type="button" onClick={()=>onNavigate("execution",t.projectId,t.id)} className="rv-ui3-client-summary-row flex w-full items-start gap-2 px-3 py-3 text-left text-xs"><TaskPriorityFlag priority={t.priority}/><span className="min-w-0 flex-1 break-words leading-5">{t.title}</span><span className="shrink-0">{displayDate(t.dueDate??"")}</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma entrega atrasada.</p>}
     {overdue.length>5&&<button type="button" onClick={()=>onNavigate("execution")} className={linkClass}>Ver todas as {overdue.length} entregas</button>}
    </section>
    <section className={card+" border-[#D9ECE1] bg-[#F3FAF6]"} aria-labelledby="client-focus-title">
     <div className="flex items-center justify-between gap-3"><div><h3 id="client-focus-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("list-check",18)} Aprovações</h3><p className="mt-1 text-xs text-[#5A6273]">Decisões formais pendentes identificadas.</p></div><strong className="rv-ui3-section-count" aria-label="Aprovações pendentes">{!allowed("content")||approvalsLoading||approvalsFailed?"—":approvalsCount}</strong></div>
-    {!allowed("content")?<p className="mt-4 text-xs text-[#5A6273]">Conteúdo não compartilhado com esta conta.</p>:approvalsLoading?<p role="status" className="mt-4 text-xs text-[#5A6273]">Consultando aprovações…</p>:approvalsFailed?<p role="status" className="mt-4 text-xs text-[#5A6273]">Não foi possível consultar as aprovações.</p>:focusApprovals.length?<ul className="mt-3 divide-y divide-[#EDF0F6]">{focusApprovals.slice(0,5).map((item,index)=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-[#F8F7FC] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-[#263146]">{item.title}</span><span className="mt-1 block truncate text-[11px] text-[#5A6273]">{item.meta}</span></span><span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#B66C21]">{icon("flag",14)} Aprovar</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma aprovação pendente.</p>}
+    {!allowed("content")?<p className="mt-4 text-xs text-[#5A6273]">Conteúdo não compartilhado com esta conta.</p>:approvalsLoading?<p role="status" className="mt-4 text-xs text-[#5A6273]">Consultando aprovações…</p>:approvalsFailed?<p role="status" className="mt-4 text-xs text-[#5A6273]">Não foi possível consultar as aprovações.</p>:focusApprovals.length?<ul className="rv-ui3-client-summary-list mt-3">{focusApprovals.slice(0,5).map((item,index)=><li key={item.projectId+":"+item.contentId+":"+item.kind}><button type="button" onClick={()=>onNavigate("content",item.projectId,item.contentId)} className="rv-ui3-client-summary-row flex w-full items-start gap-2 px-3 py-3 text-left"><span className="w-4 shrink-0 text-center text-[11px] tabular-nums text-[#A0A7B5]">{index+1}</span><span className="min-w-0 flex-1"><span className="flex items-start gap-2 text-[13px] font-medium"><TaskPriorityFlag priority={item.priority}/><span className="min-w-0 break-words leading-5">{item.title}</span></span><span className="mt-1 block truncate text-[11px] text-[#5A6273]">{item.meta}</span></span><span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#B66C21]">{icon("check",14)} Aprovar</span></button></li>)}</ul>:<p className="mt-4 text-xs text-[#5A6273]">Nenhuma aprovação pendente.</p>}
    </section>
    <section className={card+" border-[#D8E8FA] bg-[#F3F8FE]"} aria-labelledby="client-agenda-title">
     <div className="flex items-center justify-between gap-3"><h3 id="client-agenda-title" className="flex items-center gap-2 text-[15px] font-semibold">{icon("calendar-week",18)} Agenda</h3><strong className="rv-ui3-section-count" aria-label="Reuniões de hoje">{allowed("meetings")?agendaToday.length:"—"}</strong></div>

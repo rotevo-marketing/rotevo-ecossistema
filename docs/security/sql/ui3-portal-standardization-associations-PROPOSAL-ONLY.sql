@@ -11,12 +11,13 @@ insert into public.client_users(client_id,user_id)
 select p.client_id,p.id from public.profiles p join public.clients c on c.id=p.client_id
 where p.role='client' and c.status='active'
 on conflict(client_id,user_id) do nothing;
--- Audience expansion requires its own authorization. Does not remove Otávio/Rosane.
+-- Audience expansion requires explicit approval. Existing enabled/disabled rows are never changed.
 insert into rotevo_workflow.notification_pilot_users(user_id,enabled)
 select p.id,true from public.profiles p join public.clients c on c.id=p.client_id
 where p.role='client' and c.status='active'
  and exists(select 1 from public.client_users u where u.user_id=p.id and u.client_id=p.client_id)
-on conflict(user_id) do update set enabled=true;
+ and not exists(select 1 from rotevo_workflow.notification_pilot_users n where n.user_id=p.id)
+on conflict(user_id) do nothing;
 commit;
 -- Rollback of the application may retain these valid associations without data loss.
 -- To revert notification enrollment, use the reviewed preflight snapshot of enabled states;

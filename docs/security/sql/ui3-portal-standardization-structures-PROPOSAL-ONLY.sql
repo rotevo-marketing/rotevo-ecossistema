@@ -32,9 +32,10 @@ begin
  insert into public.profiles(id,full_name,email,role,client_id,updated_at)
  values(p_user_id,p_full_name,p_email,'client',p_client_id,clock_timestamp()) on conflict(id) do nothing;
  insert into public.client_users(client_id,user_id) values(p_client_id,p_user_id) on conflict(client_id,user_id) do nothing;
+ -- Replayed provisioning must never override an intentional notification revocation.
  if p_enroll_notifications then
   insert into rotevo_workflow.notification_pilot_users(user_id,enabled) values(p_user_id,true)
-  on conflict(user_id) do update set enabled=true;
+  on conflict(user_id) do nothing;
  end if;
  return jsonb_build_object('userId',p_user_id,'clientId',p_client_id);
 end $$;

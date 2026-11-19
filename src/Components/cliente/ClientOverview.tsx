@@ -91,7 +91,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
  const shownMeetings=meetingDay&&meetingDay.startsWith(month)?meetingsInMonth.filter(m=>m.date===meetingDay):meetingsInMonth.slice(0,5);
  const receivable=invoices.reduce((n,i)=>n+balance(i),0);
  const overdueInvoices=invoices.filter(i=>i.due_date<today);
- const card="rounded-2xl border p-4 sm:p-5";
+ const card="min-w-0 rounded-2xl border p-4 sm:p-5";
  const action="inline-flex min-h-9 cursor-pointer items-center rounded-lg px-2 text-xs font-semibold text-[#6034B7] hover:bg-[#F3EEFF] focus-visible:outline-2 focus-visible:outline-[#6C5CE7]";
  const metrics:{title:string;value:string;subtitle:string;module:PortalModule;icon:RotevoIconName}[]=[
   ...(allowed("execution")?[{title:"Entregas",value:String(openTasks.length),subtitle:"Em andamento",module:"execution" as PortalModule,icon:"list-check" as RotevoIconName}]:[]),
@@ -120,7 +120,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    <h2 className="mt-2 text-[clamp(23px,2.3vw,32px)] font-semibold tracking-tight text-[#17172A]">{greeting}{greetingName?", "+greetingName:""}.</h2>
    <p className="mt-2 max-w-xl text-[13px] leading-5 text-[#646C80]">Suas entregas, compromissos e decisões em um só lugar.</p>
   </header>
-  <div className="grid items-start gap-4 xl:grid-cols-2">
+  <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
    <section className={card+" border-[#E1D8FB] bg-[#F7F4FF]"} aria-label="Para hoje">
     <h3 className="flex items-center justify-between text-[15px] font-semibold"><span>Para hoje</span><strong className="rv-ui3-section-count" aria-label="Entregas para hoje">{allowed("execution")?dueToday.length:"—"}</strong></h3>
     <p className="mt-1 text-xs text-[#5A6273]">Entregas compartilhadas com prazo hoje.</p>

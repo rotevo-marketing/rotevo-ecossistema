@@ -914,5 +914,9 @@ html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-meeting-quick .rv-meeting-li
 .rv-ui3 .rv-ui3-shared-step {color:var(--rv3-text,#323647);background:var(--rv3-surface,#fff);}
 .rv-ui3 .rv-ui3-shared-step[data-checklist-done="true"] {color:var(--rv3-muted,#697386);background:color-mix(in srgb,var(--rv3-surface,#fff) 94%,var(--rv3-text,#323647) 6%);}
 .rv-ui3 .rv-ui3-shared-step[data-checklist-done="false"] {border-inline-start:2px solid var(--rv3-accent,#6C5CE7);}
-.rv-ui3 .rv-ui3-shared-checklist progress {background:var(--rv3-hover,#EDEAF5);}
+.rv-ui3 .rv-ui3-task-description {background:var(--rv3-canvas,#FBFCFE);border-color:var(--rv3-border,#E8EBF1);color:var(--rv3-text,#525B70);}
+.rv-ui3 .rv-ui3-shared-checklist progress {appearance:none;border:0;background:var(--rv3-hover,#EDEAF5);}
+.rv-ui3 .rv-ui3-shared-checklist progress::-webkit-progress-bar {background:var(--rv3-hover,#EDEAF5);}
+.rv-ui3 .rv-ui3-shared-checklist progress::-webkit-progress-value {background:var(--rv3-accent);}
+.rv-ui3 .rv-ui3-shared-checklist progress::-moz-progress-bar {background:var(--rv3-accent);}
 html[data-rotevo-appearance="dark"] .rv-ui3 .rv-ui3-client-summary-row {color:var(--rv3-text);}

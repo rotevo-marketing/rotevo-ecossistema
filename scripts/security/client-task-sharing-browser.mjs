@@ -38,7 +38,40 @@ try{
  const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.route('**/*',route=>{const u=new URL(route.request().url());return ['127.0.0.1','localhost'].includes(u.hostname)||['data:','blob:'].includes(u.protocol)?route.continue():route.abort();});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(app);await page.getByLabel('E-mail',{exact:true}).fill(f.user.email);await page.getByLabel('Senha',{exact:true}).fill(f.user.password);await page.getByRole('button',{name:'Acessar Ecossistema',exact:true}).click();await page.waitForURL('**/cliente',{timeout:60000});await page.locator('.rv-ui3-client-daily-dashboard').waitFor({timeout:60000});
- async function shots(prefix){for(const width of [1440,390])for(const theme of ['light','dark']){await page.setViewportSize({width,height:1000});await page.evaluate(mode=>document.documentElement.dataset.rotevoAppearance=mode,theme);await page.waitForTimeout(180);if(prefix==='overview'){const flag=page.getByRole('img',{name:'Prioridade Urgente',exact:true});assert.equal(await flag.evaluate(el=>getComputedStyle(el).color),'rgb(218, 53, 83)','priority color '+theme);const rowColors=await page.locator('.rv-ui3-client-summary-list').first().locator('button').evaluateAll(rows=>rows.map(el=>getComputedStyle(el).backgroundColor));assert.notEqual(rowColors[0],rowColors[1],'alternating rows '+theme);}const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));assert.ok(size.scroll<=size.width+2,'horizontal overflow');const name=prefix+'-'+width+'-'+theme+'.png';await page.screenshot({path:join(output,name),fullPage:true});report.screenshots.push(name);}}
+ async function shots(prefix){
+  for(const width of [1440,390])for(const theme of ['light','dark']){
+   await page.setViewportSize({width,height:1000});
+   await page.evaluate(mode=>document.documentElement.dataset.rotevoAppearance=mode,theme);
+   if(prefix==='overview'){
+    const flag=page.getByRole('img',{name:'Prioridade Urgente',exact:true});
+    assert.equal(await flag.evaluate(el=>getComputedStyle(el).color),'rgb(218, 53, 83)','priority color '+theme);
+    const dashboard=page.locator('.rv-ui3-client-daily-dashboard');
+    const clipped=await dashboard.evaluate(el=>[...el.querySelectorAll('section, .rv-ui3-client-summary-row, .rv-ui3-section-count')].filter(node=>{
+     const rect=node.getBoundingClientRect(),bounds=el.getBoundingClientRect();
+     return rect.left<bounds.left-1||rect.right>Math.min(bounds.right,innerWidth)+1;
+    }).map(node=>node.getAttribute('aria-label')??node.className));
+    assert.deepEqual(clipped,[],'summary elements within the viewport at '+width);
+    const rowColors=await dashboard.locator('.rv-ui3-client-summary-list').evaluateAll(lists=>lists.map(list=>[...list.querySelectorAll('button')].map(el=>getComputedStyle(el).backgroundColor)));
+    for(const colors of rowColors.filter(colors=>colors.length>1))assert.notEqual(colors[0],colors[1],'alternating rows '+theme);
+   }else{
+    const contrast=await page.locator('.rv-ui3-task-description').evaluate(el=>{
+     const luma=color=>color.match(/[\d.]+/g).slice(0,3).map(value=>{
+      const channel=Number(value)/255;
+      return channel<=0.04045?channel/12.92:((channel+0.055)/1.055)**2.4;
+     }).reduce((sum,channel,i)=>sum+channel*[0.2126,0.7152,0.0722][i],0);
+     const style=getComputedStyle(el);
+     const light=[luma(style.color),luma(style.backgroundColor)].sort((a,b)=>b-a);
+     return (light[0]+0.05)/(light[1]+0.05);
+    });
+    assert.ok(contrast>=4.5,'task description contrast '+theme+': '+contrast.toFixed(2));
+   }
+   const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(size.scroll<=size.width+2,'horizontal overflow');
+   const name=prefix+'-'+width+'-'+theme+'.png';
+   await page.screenshot({path:join(output,name),fullPage:true});
+   report.screenshots.push(name);
+  }
+ }
  await page.waitForFunction(()=>document.querySelectorAll('.rv-ui3-client-summary-list').length===3);
  const lists=page.locator('.rv-ui3-client-summary-list');assert.equal(await lists.count(),3);assert.equal(await lists.nth(0).locator('li').count(),2);assert.equal(await lists.nth(0).locator('[role="img"]').count(),1);assert.equal(await lists.nth(2).locator('[role="img"]').count(),1);
  const colors=await lists.nth(0).locator('button').evaluateAll(buttons=>buttons.map(b=>getComputedStyle(b).backgroundColor));assert.notEqual(colors[0],colors[1]);await shots('overview');

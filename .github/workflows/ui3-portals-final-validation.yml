@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   locked-build:
-    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portals-mirroring-20261118'
+    # Browser-only harness repairs reuse the approved build when application files did not change.
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' && !startsWith(github.event.head_commit.message, 'ci(browser):')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -113,6 +114,7 @@ jobs:
           export ROTEVO_NOTIFICATIONS_ENABLED='true'
           export NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED='true'
           export ROTEVO_NOTIFICATIONS_AUDIENCE='enabled_clients'
+          export ROTEVO_STRATEGIST_ASSIGNMENTS_ENABLED='true'
           export ROTEVO_CLIENT_ACTIONS_ENABLED='true'
           export NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED='true'
           export ROTEVO_COLLABORATION_ENABLED='true'

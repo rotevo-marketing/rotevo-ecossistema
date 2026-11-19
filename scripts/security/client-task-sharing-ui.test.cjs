@@ -43,6 +43,22 @@ test('strategist opts into description and individual steps; old flags remain pr
  try{await mount(Editor,{});const toggle=[...container.querySelectorAll('input')].find(i=>i.getAttribute('aria-label')==='Compartilhar etapa: PRIVATE_STEP');assert.equal(toggle.checked,false);await click(toggle);assert.equal(result.checklist[1].visibleToClient,true);const description=container.querySelector('input');await click(description);assert.equal(result.clientDescriptionApproved,true);assert.equal(container.querySelector('textarea').disabled,true);await click(toggle);assert.equal(result.checklist[1].visibleToClient,false);
  }finally{await unmount();}
 });
+test('timeline keeps an already shared legacy description separate when sharing a checklist step',async()=>{
+ const supabase=mocks['@/lib/supabase'].supabase;
+ const previousFrom=supabase.from;
+ supabase.from=()=>({select(){return this;},eq(){return this;},order:async()=>({data:[],error:null})});
+ const Editor=load('src/Components/admin/ExecutionTimelineEditor.tsx').default;
+ const shared={...rawTask(),clientProjectionVersion:undefined,clientSummary:undefined,visibleToClient:true,description:'Descrição antes compartilhada'};
+ try{
+  await mount(Editor,{projectId:'project-safe',projectData:{executionTimeline:[shared]},updatedAt:'2026-11-19T12:00:00Z',onSaved(){}});
+  await click(button('Editar'));
+  const sharing=container.querySelector('.rv-ui3-task-sharing');
+  await click(sharing.querySelector('[aria-label="Compartilhar etapa: PRIVATE_STEP"]'));
+  assert.equal(sharing.querySelector('textarea').value,shared.description);
+  assert.equal(sharing.querySelector('input').checked,false);
+  assert.equal(shared.checklist[1].visibleToClient,undefined);
+ }finally{await unmount();supabase.from=previousFrom;}
+});
 test('today, overdue and approval rows preserve counts and targets and show only real priority flags',async()=>{
  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const p=row(rawTask());p.data.executionTimeline=[{...rawTask(),id:'today-urgent',title:'Hoje urgente',visibleToClient:true,dueDate:date,priority:'urgent'},{...rawTask(),id:'today-none',title:'Hoje sem prioridade',visibleToClient:true,dueDate:date},{...rawTask(),id:'late',title:'Entrega atrasada',visibleToClient:true,dueDate:'2020-01-01',priority:'high'}];

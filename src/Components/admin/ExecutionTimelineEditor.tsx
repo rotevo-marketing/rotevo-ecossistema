@@ -1,5 +1,5 @@
 "use client";
-import {clientTaskVisible} from "@/lib/security/clientTaskPolicy";
+import {clientTaskVisible,projectClientTask} from "@/lib/security/clientTaskPolicy";
 import TaskClientSharingFields from "./TaskClientSharingFields";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
 import { useEffect, useMemo, useState } from "react";
@@ -88,6 +88,20 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
   const next=editing.id?items.map(i=>i.id===editing.id?row:i):[...items,row];
   void persist(next);
  }
+ function editItem(item:ExecutionItem){
+  if(editing&&!window.confirm("Descartar a entrega em edição?"))return;
+  const draft={...item};
+  if(draft.kind==="task"&&draft.clientProjectionVersion===undefined){
+   if(draft.clientSummary===undefined&&draft.clientDescriptionApproved!==true){
+    const sharedDescription=projectClientTask(item)?.description;
+    draft.clientSummary=typeof sharedDescription==="string"?sharedDescription:"";
+   }
+   draft.clientProjectionVersion=1;
+  }
+  setEditing(draft);
+  setError("");
+  setSuccess("");
+ }
  function removeItem(item:ExecutionItem){
   if(editing){setError("Salve ou cancele a entrega em edição antes de excluir outra.");return;}
   const agenda=projectData as ProjectData & {operationalAgenda?:{relatedTaskId?:string;title?:string}[]};
@@ -106,7 +120,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
    {items.length===0?<p className="mt-5 rounded-xl bg-[#F6F7FB] p-5 text-sm text-[#697386]">Nenhuma entrega operacional cadastrada. Os marcos antigos continuarão disponíveis separadamente no portal.</p>:
     <div className="mt-5 divide-y divide-[#E3E7F0]">{items.map(item=><div key={item.id} className="flex flex-col items-start justify-between gap-4 py-4 sm:flex-row sm:items-center">
      <div className="min-w-0 flex-1"><h3 className="break-words text-sm font-semibold">{item.title}</h3>{item.documentCode&&<p className="mt-1 text-xs text-[#5949D1]">Documento 2027: {item.documentCode} — {strategicDocs.find(d=>d.code===item.documentCode)?.title??"Não incluído no escopo atual"}</p>}<p className="mt-1 text-xs text-[#697386]">{labels[item.status??"planned"]} · {item.dueDate||"Sem prazo"} · {clientTaskVisible(item)?"Visível ao cliente":"Confidencial"}</p></div>
-     <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>{if(editing&&!window.confirm("Descartar a entrega em edição?"))return;setEditing({...item});setError("");setSuccess("")}} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
+     <div className="flex gap-2"><button type="button" disabled={saving} onClick={()=>editItem(item)} className="cursor-pointer rounded-lg border border-[#E3E7F0] px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar</button><button type="button" disabled={saving} onClick={()=>removeItem(item)} className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Excluir</button></div>
     </div>)}</div>}
    {editing&&<div className="fixed inset-0 z-[150] flex justify-end"><button type="button" onClick={closeEditor} aria-label="Fechar edição de entrega" className="absolute inset-0 bg-[#101828]/45"/><aside role="dialog" aria-modal="true" aria-label={editing.id?"Editar entrega":"Nova entrega"} className="relative z-10 h-full w-full max-w-[660px] overflow-y-auto bg-white px-5 py-5 shadow-xl sm:px-7"><DialogFocus onClose={closeEditor}/><div className="flex items-center justify-between gap-3 border-b border-[#E3E6ED] pb-3"><h3 className="text-base font-semibold">{editing.id?"Editar entrega":"Nova entrega"}</h3><button type="button" onClick={closeEditor} className="min-h-9 rounded-lg border border-[#E3E6ED] px-3 text-xs">Fechar</button></div>
 

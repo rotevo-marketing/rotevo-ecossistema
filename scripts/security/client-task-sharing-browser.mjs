@@ -62,8 +62,16 @@ try{
  await http('/api/collaboration/messages',f.session,'POST',{...thread,body:reply,expectedAuthorUserId:f.user.id},201);
  const staffThread=await http(threadUrl,adminSession);
  assert.ok(staffThread.messages.some(message=>message.author_role==='client'&&message.body===reply));
- const assignment=(await http('/api/workflow/client-actions',f.session)).assignments.find(a=>a.id===release.assignment.id);assert.ok(assignment);
- const submission=await http('/api/workflow/client-actions/submit',f.session,'POST',{assignmentId:assignment.id,driveUrl:'https://drive.google.com/file/d/synthetic-sharing/view',note:'Entrega sintética',requestKey:'sharing-drive-'+randomUUID(),expectedAuthorUserId:f.user.id});await http('/api/workflow/client-actions/review',adminSession,'POST',{assignmentId:assignment.id,submissionId:submission.submission.id,decision:'validated',feedback:'Material validado',expectedAuthorUserId:admin.id});
+ const clientAssignments='/api/workflow/client-actions?'+new URLSearchParams({projectId:f.projectId,expectedAuthorUserId:f.user.id});
+ const assignment=(await http(clientAssignments,f.session)).assignments.find(a=>a.id===release.assignment.id);
+ assert.ok(assignment);
+ await http('/api/workflow/client-actions/submit',f.session,'POST',{assignmentId:assignment.id,driveUrl:'https://drive.google.com/file/d/synthetic-sharing/view',note:'Entrega sintética',requestKey:'sharing-drive-'+randomUUID(),expectedAuthorUserId:f.user.id});
+ const staffAssignments='/api/workflow/client-actions/project?'+new URLSearchParams({projectId:f.projectId,expectedAuthorUserId:admin.id});
+ const submitted=(await http(staffAssignments,adminSession)).assignments.find(a=>a.id===assignment.id);
+ assert.equal(submitted?.deliveries.length,1);
+ await http('/api/workflow/client-actions/review',adminSession,'POST',{assignmentId:assignment.id,submissionId:submitted.deliveries[0].id,decision:'validated',feedback:'Material validado',expectedAuthorUserId:admin.id});
+ const reviewed=(await http(clientAssignments,f.session)).assignments.find(a=>a.id===assignment.id);
+ assert.equal(reviewed?.status,'validated');
  const notices=await http('/api/workflow/notifications',f.session);assert.ok(notices.unreadCount>=1);const otherNotices=await http('/api/workflow/notifications',other.session);assert.equal(otherNotices.unreadCount,0);assert.deepEqual(errors,[]);
  report.status='passed';report.checks=['explicit description opt-in','per-step checklist privacy','real persisted checklist progress','focus refresh with modal open','reload persistence','client write/RPC denial','two-tenant isolation','overview counts and real priorities','desktop/mobile light/dark','assignment Drive review','bilateral message notifications'];await context.close();
 }finally{writeFileSync(join(output,'sharing-report.json'),JSON.stringify(report,null,2));await browser.close();}

@@ -471,7 +471,7 @@ html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.
  section[aria-labelledby="client-focus-title"],section[aria-labelledby="client-agenda-title"],
  section[aria-labelledby="daily-today"],section[aria-labelledby="daily-overdue"],
  section[aria-labelledby="daily-approvals"],section[aria-labelledby="daily-agenda"]
-) :is(h3,strong,p,span,li,a,button) {
+) :is(h3,strong,p,span,li,a,button):not(.rv-ui3-priority-flag) {
  color:var(--rv3-text)!important;
 }
 html[data-rotevo-appearance="dark"] .rv-ui3 :is(.rv-ui3-client-daily-dashboard,.rv-ui3-daily-dashboard) :is(

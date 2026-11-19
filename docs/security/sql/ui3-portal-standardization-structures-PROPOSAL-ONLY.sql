@@ -137,7 +137,7 @@ begin
  returning id into v_id;
  return jsonb_build_object('id',v_id,'status','pending','replayed',false);
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rotevo_client_action_list(p_project_id uuid)
  RETURNS jsonb
@@ -180,7 +180,7 @@ begin
   );
  return v_results;
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rotevo_client_action_submit(p_assignment_id uuid, p_note text, p_request_key text, p_drive_url text)
  RETURNS jsonb
@@ -253,7 +253,7 @@ begin
  set status='submitted',updated_at=clock_timestamp() where id=p_assignment_id;
  return jsonb_build_object('id',v_submission,'status','submitted','replayed',false);
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rotevo_client_action_review(p_assignment_id uuid, p_submission_id uuid, p_decision text, p_feedback text)
  RETURNS jsonb
@@ -353,7 +353,7 @@ begin
  where id=p_assignment_id;
  return jsonb_build_object('submissionId',p_submission_id,'status',v_new_status,'replayed',false);
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION rotevo_workflow.record_content_message_event()
  RETURNS trigger
@@ -460,7 +460,7 @@ begin
   end if;
   return new;
 end
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION rotevo_workflow.can_view_event_v2(p_user uuid, p_event uuid)
  RETURNS boolean
@@ -578,7 +578,7 @@ select exists (
     )
    )
 );
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rotevo_project_client_assignments(p_project_id uuid)
  RETURNS jsonb
@@ -638,6 +638,6 @@ begin
  );
  return result;
 end;
-$function$
+$function$;
 
 commit;

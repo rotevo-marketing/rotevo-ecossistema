@@ -1,0 +1,103 @@
+const fs=require('fs'),crypto=require('crypto');
+const P='rtp_final_data_20261119',W='rtp_final_work_20261119',A='rtp_final_auth_20261119';
+const folder='docs/security/sql/';const read=n=>fs.readFileSync(folder+'ui3-portal-standardization-'+n,'utf8');
+const originals={structures:read('structures-PROPOSAL-ONLY.sql'),associations:read('associations-PROPOSAL-ONLY.sql'),rollback:read('functions-ROLLBACK-ONLY.sql')};
+const map=s=>s.replace(/^begin;\s*$/gmi,'').replace(/^commit;\s*$/gmi,'').replace(/public\./g,P+'.').replace(/rotevo_workflow\./g,W+'.').replace(/auth\./g,A+'.');
+const queries=[];const sql=s=>queries.push(s);const assert=(condition,label)=>sql(`select ${P}.ok((${condition}), '${label}');`);
+const uid=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');const user=i=>uid(20+i),client=i=>uid(10+i),project=i=>uid(i),admin=uid(91),staff=uid(92),fresh=uid(93);
+const role=(id,as='authenticated')=>sql(`reset role; select set_config('rtp_lab.actor','${id}',true),set_config('rtp_lab.claims','{"role":"${as}","app_metadata":{}}',true); set local role ${as};`);
+const denied=(statement,label)=>sql(`do $negative$ begin begin ${statement}; raise exception 'Unexpected authorization: ${label}' using errcode='P0001'; exception when insufficient_privilege then null; end;end $negative$;`);
+sql(`-- DISPOSABLE TEST ONLY. Target Supabase project tqedxahsqbskninjenfg, never production.
+-- Namespace-only rewriting of pinned candidate proposals. Existing application schemas are never written.
+create schema ${P};create schema ${W};create schema ${A};
+create function ${P}.ok(v boolean,label text) returns void language plpgsql as $$begin if v is distinct from true then raise exception 'ASSERTION FAILED: %',label;end if;end$$;
+create function ${A}.uid() returns uuid language sql stable as $$ select nullif(current_setting('rtp_lab.actor',true),'')::uuid $$;
+create function ${A}.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('rtp_lab.claims',true),''),'{}')::jsonb$$;
+create table ${A}.users(id uuid primary key,email text not null unique);
+grant usage on schema ${P},${W},${A} to authenticated,anon,service_role;
+`);
+const tables=['clients','profiles','client_users','planning_projects','team_members','team_project_assignments','team_member_permissions','client_workspaces'];
+for(const t of tables)sql(`create table ${P}.${t}(like public.${t} including all);alter table ${P}.${t} enable row level security;`);
+for(const t of ['client_action_assignments','client_action_submissions','notification_pilot_users','operational_events','user_notifications'])sql(`create table ${W}.${t}(like rotevo_workflow.${t} including all);alter table ${W}.${t} enable row level security;`);
+sql(`alter table ${P}.client_users add foreign key(client_id) references ${P}.clients(id);alter table ${P}.client_users add foreign key(user_id) references ${A}.users(id);
+alter table ${P}.profiles add foreign key(id) references ${A}.users(id);
+alter table ${P}.planning_projects add foreign key(client_id) references ${P}.clients(id);
+revoke all on all tables in schema ${P},${W},${A} from public,anon,authenticated;
+create table ${P}.messages(id uuid primary key,project_id uuid,resource_type text,resource_id text,content_version text,author_user_id uuid,author_role text,body text);
+`);
+// Baseline routine ACL is private; CREATE OR REPLACE must retain it.
+sql(map(originals.rollback));
+sql(`revoke all on all functions in schema ${P},${W} from public,anon,authenticated;grant execute on all functions in schema ${P},${W} to authenticated,service_role;grant execute on function ${P}.ok(boolean,text) to anon;`);
+sql(map(originals.structures));sql(map(originals.structures));
+for(let i=1;i<=5;i++){
+ sql(`insert into ${A}.users values('${user(i)}','client${i}@example.invalid');
+ insert into ${P}.clients(id,name,slug)values('${client(i)}','Synthetic client ${i}','synthetic-${i}');
+ insert into ${P}.profiles(id,client_id,role,full_name,email)values('${user(i)}','${client(i)}','client','Synthetic ${i}','client${i}@example.invalid');
+ insert into ${P}.client_workspaces(client_id,data)values('${client(i)}','{"modules":["execution","content"]}');
+ insert into ${P}.planning_projects(id,client_id,title,slug,data)values('${project(i)}','${client(i)}','Synthetic project ${i}','synthetic-${i}','{"portalModules":["execution","content"],"executionTimeline":[{"id":"task-1","title":"Synthetic task","kind":"task","visibleToClient":false,"description":"PRIVATE"},{"id":"private-1","title":"Private task","kind":"task","clientVisibility":"confidential"}],"editorialCalendar":[{"id":"content-1","title":"Synthetic content","visibleToClient":true,"version":"01"}]}');`);
+}
+sql(`insert into ${P}.client_users(client_id,user_id) values('${client(1)}','${user(1)}');
+insert into ${W}.notification_pilot_users(user_id,enabled)values('${user(1)}',true);
+insert into ${A}.users values('${admin}','admin@example.invalid'),('${staff}','staff@example.invalid'),('${fresh}','new@example.invalid');
+insert into ${P}.profiles(id,role,full_name,email)values('${admin}','strategist','Synthetic admin','admin@example.invalid'),('${staff}','staff','Synthetic staff','staff@example.invalid');
+insert into ${P}.team_members(user_id,display_name,role,active)values('${admin}','Synthetic admin','admin',true),('${staff}','Synthetic staff','producer',true);
+`);
+const before=`(select md5(string_agg(data::text,',' order by id)) from ${P}.planning_projects)`;
+sql(`select set_config('rtp_lab.projects_before',${before},true);`);
+sql(map(originals.associations));sql(map(originals.associations));
+assert(`(select count(*)=5 from ${P}.client_users)`,'association replay has no duplicates');
+assert(`(select count(*)=5 from ${W}.notification_pilot_users where enabled)`,'five clients enrolled once');
+assert(`${before}=current_setting('rtp_lab.projects_before')`,'regularization does not modify tasks or projects');
+assert(`not has_function_privilege('authenticated','${P}.rotevo_provision_client_profile(uuid,uuid,text,text,boolean)','execute')`,'client cannot execute service provisioner');
+assert(`not has_function_privilege('anon','${P}.rotevo_workflow_notification_access()','execute')`,'anonymous cannot access inbox');
+assert(`(select count(*)=11 from pg_proc f join pg_namespace n on n.oid=f.pronamespace where n.nspname in ('${P}','${W}') and f.proname<>'ok')`,'all eleven proposal routines compile');
+// Real RLS clone: grant test-only table access, prove own-tenant SELECT and zero operational UPDATE, then revoke it.
+sql(`create policy own_profile on ${P}.profiles for select to authenticated using(id=${A}.uid());
+create policy own_link on ${P}.client_users for select to authenticated using(user_id=${A}.uid());
+create policy own_project on ${P}.planning_projects for select to authenticated using(exists(select 1 from ${P}.profiles p where p.id=${A}.uid() and p.role='client' and p.client_id=planning_projects.client_id));
+grant select on ${P}.profiles,${P}.client_users,${P}.planning_projects to authenticated;
+grant update on ${P}.planning_projects to authenticated;
+`);
+for(let i=1;i<=5;i++){
+ role(user(i));assert(`${P}.rotevo_workflow_notification_access()='client'`,'client '+i+' eligibility');
+ assert(`(select count(*)=1 from ${P}.planning_projects)`,'RLS isolates client '+i);
+ sql(`do $rls$ declare changed integer;begin update ${P}.planning_projects set title='Forbidden';get diagnostics changed=row_count;if changed<>0 then raise exception 'RLS permitted task modification';end if;end $rls$;`);
+ denied(`perform ${P}.rotevo_client_action_list('${project(i===5?1:i+1)}')`,'cross-tenant assignment list');
+ assert(`${P}.rotevo_client_action_list('${project(i)}')='[]'::jsonb`,'mirroring is not formal assignment');
+ denied(`perform ${P}.rotevo_client_action_create('${project(i)}','task','task-1',null,'${user(i)}','send_material','Synthetic instruction',null,'denied-${i}')`,'client cannot assign');
+ denied(`perform ${P}.rotevo_project_client_assignments('${project(i)}')`,'client cannot use strategist RPC');
+}
+sql(`reset role;revoke all on ${P}.profiles,${P}.client_users,${P}.planning_projects from authenticated;`);
+role(user(1));denied(`perform 1 from ${P}.planning_projects`,'raw project JSON grant denied');
+role(staff);denied(`perform ${P}.rotevo_project_client_assignments('${project(1)}')`,'unassigned staff G2 denied');
+role(admin);
+sql(`select set_config('rtp_lab.assignment',(${P}.rotevo_client_action_create('${project(1)}','task','task-1',null,'${user(1)}','send_material','Synthetic instructions',null,'synthetic-release-001')->>'id'),true);`);
+assert(`(${P}.rotevo_client_action_create('${project(1)}','task','task-1',null,'${user(1)}','send_material','Synthetic instructions',null,'synthetic-release-001')->>'id')=current_setting('rtp_lab.assignment')`,'assignment release is idempotent');
+role(user(1));assert(`jsonb_array_length(${P}.rotevo_client_action_list('${project(1)}'))=1`,'released assignment visible');
+sql(`select set_config('rtp_lab.submission',(${P}.rotevo_client_action_submit(current_setting('rtp_lab.assignment')::uuid,'Synthetic note','synthetic-delivery-001','https://drive.google.com/file/d/synthetic/view')->>'id'),true);`);
+assert(`(${P}.rotevo_client_action_submit(current_setting('rtp_lab.assignment')::uuid,'Synthetic note','synthetic-delivery-001','https://drive.google.com/file/d/synthetic/view')->>'id')=current_setting('rtp_lab.submission')`,'submission replay creates no duplicate');
+role(user(2));denied(`perform ${P}.rotevo_client_action_submit(current_setting('rtp_lab.assignment')::uuid,'Wrong client','wrong-delivery-key','https://drive.google.com/file/d/synthetic/view')`,'another client cannot deliver');
+role(admin);assert(`(${P}.rotevo_client_action_review(current_setting('rtp_lab.assignment')::uuid,current_setting('rtp_lab.submission')::uuid,'validated','Synthetic approval')->>'status')='validated'`,'strategist review persists');
+assert(`jsonb_array_length(${P}.rotevo_project_client_assignments('${project(1)}'))=1`,'strategist sees same assignment');
+sql(`reset role;create trigger message_event after insert on ${P}.messages for each row execute function ${W}.record_content_message_event();
+insert into ${P}.messages values('${uid(501)}','${project(1)}','task','task-1',null,'${admin}','strategist','Synthetic bilateral message');`);
+role(user(1));assert(`${P}.rotevo_workflow_unread_notification_count()=1`,'message reaches own inbox');
+role(user(2));assert(`${P}.rotevo_workflow_unread_notification_count()=0`,'message does not reach another client');
+sql(`reset role;update ${W}.notification_pilot_users set enabled=false where user_id='${user(1)}';`);
+role(user(1));assert(`${P}.rotevo_workflow_notification_access() is null`,'pilot revocation immediate');
+denied(`perform ${P}.rotevo_workflow_unread_notification_count()`,'revoked inbox denied');
+sql(`reset role;update ${W}.notification_pilot_users set enabled=true where user_id='${user(1)}';`);
+role(fresh,'service_role');sql(`select ${P}.rotevo_provision_client_profile('${fresh}','${client(1)}','New synthetic client','new@example.invalid',true);select ${P}.rotevo_provision_client_profile('${fresh}','${client(1)}','New synthetic client','new@example.invalid',true);`);
+role(fresh);assert(`${P}.rotevo_workflow_notification_access()='client'`,'future access provisioned and enrolled');
+role(admin);denied(`perform ${P}.rotevo_provision_client_profile('${fresh}','${client(2)}','New synthetic client','new@example.invalid',true)`,'team cannot invoke service-only provisioner');
+role(fresh,'service_role');denied(`perform ${P}.rotevo_provision_client_profile('${fresh}','${client(2)}','New synthetic client','new@example.invalid',true)`,'service cannot reassign existing identity');
+sql(`reset role;`);assert(`(select count(*)=1 from ${P}.client_users where user_id='${fresh}')`,'future provision replay creates one association');
+assert(`(select count(*)=1 from ${W}.client_action_assignments)`,'one operational assignment only');assert(`(select count(*)=1 from ${W}.client_action_submissions)`,'one delivery only');
+assert(`${before}=current_setting('rtp_lab.projects_before')`,'tasks and private descriptions remain unchanged');
+assert(`${W}.client_resource_visible('task','{"id":"t","kind":"task","visibleToClient":false}'::jsonb)`,'automatic mirror independent from old flag');
+assert(`not ${W}.client_resource_visible('task','{"id":"t","kind":"task","clientVisibility":"confidential"}'::jsonb)`,'confidential task excluded');
+assert(`not ${W}.client_resource_visible('content','{"id":"c","visibleToClient":false}'::jsonb)`,'draft content stays private');
+// Rollback compiles and reinstates old task visibility, retaining all data.
+sql(map(originals.rollback));assert(`(select count(*)=1 from ${W}.client_action_assignments)`,'rollback preserves assignment');
+sql(`drop schema ${W} cascade;drop schema ${P} cascade;drop schema ${A} cascade;`);
+const result=queries.join('\n');fs.writeFileSync('local-final-postgres-lab.sql',result);fs.writeFileSync('local-final-postgres-lab-manifest.json',JSON.stringify({target:'tqedxahsqbskninjenfg',schemas:[P,W,A],proposalHashes:Object.fromEntries(Object.entries(originals).map(([k,v])=>[k,crypto.createHash('sha256').update(v).digest('hex')])),bytes:Buffer.byteLength(result),queries:queries.length},null,2));console.log('Prepared disposable Postgres test statements: '+queries.length);

@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-19",
+  "startingCandidate": "f209f3fb426e97435883ccb9c28df24197a32946",
+  "production": {
+    "writes": 0,
+    "deployments": 0,
+    "verifiedElaniaActiveTasks": 18,
+    "distinctTaskIds": 18
+  },
+  "isolatedProject": {
+    "id": "tqedxahsqbskninjenfg",
+    "name": "rotevo-ui3-homologacao",
+    "postgresMajor": 17,
+    "syntheticDataOnly": true,
+    "applicationSchemasWritten": false,
+    "temporarySchemasRemoved": true,
+    "authClaims": "controlled test claims; no actual Auth user created"
+  },
+  "positiveLab": {
+    "migration": "portal_final_disposable_validation_20261119_r1",
+    "version": "20261119112433",
+    "success": true,
+    "generatedStatementGroups": 121,
+    "proposalRoutines": 11,
+    "clientScenarios": 5,
+    "covered": [
+      "namespace-adapted proposal SQL compilation/reapplication",
+      "client association idempotency",
+      "actual Postgres roles and own-tenant RLS",
+      "client task update denied",
+      "raw project table grant denied",
+      "client/team/service-only execution privileges",
+      "cross-tenant and G2 RPC denials",
+      "explicit assignment and Drive submission idempotency",
+      "strategist review of same assignment",
+      "bilateral-message notification count/isolation",
+      "notification revocation",
+      "future client provision/enrollment",
+      "rollback without operational data loss"
+    ]
+  },
+  "negativeLab": {
+    "migration": "portal_association_negative_disposable_validation_20261119_r1",
+    "success": true,
+    "covered": [
+      "conflicting association blocks repair atomically",
+      "missing Auth identity rejected by FK",
+      "missing client rejected by FK",
+      "repeat repair creates no duplicate",
+      "paused client excluded",
+      "no profile/Auth identity creation or deletion"
+    ]
+  },
+  "fix": {
+    "files": 2,
+    "missingStatementTerminators": 14,
+    "semanticFunctionBodyChanges": 0
+  },
+  "limitations": [
+    "exact dependency installation blocked by registry DNS ENOTFOUND",
+    "offline exact install blocked by ENOTCACHED zod-validation-error@4.0.2",
+    "local Docker pipe permission denied",
+    "no interactive browser or browser automation capability",
+    "real Supabase Auth/REST portal flow not exercised"
+  ]
+}

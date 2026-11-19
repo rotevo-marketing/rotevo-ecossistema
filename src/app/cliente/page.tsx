@@ -1,6 +1,8 @@
 "use client";
+import {usePortalRefresh} from "@/hooks/usePortalRefresh";
+
 import AccountAppearanceBootstrap from "@/Components/operations/AccountAppearanceBootstrap";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback,useEffect, useMemo, useRef,useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccountProfileButton,{useAccountProfile} from "@/Components/operations/AccountProfileButton";
@@ -117,6 +119,10 @@ export default function ClientAreaPage(){
    setLoading(false);
  }load();return()=>{mounted=false};},[router]);
  async function logout(){await supabase.auth.signOut();router.replace("/");}
+ const refreshRevision=useRef(0);
+ const refreshProjects=useCallback(async()=>{const user=authenticatedUserId;if(!user||sessionBlocked)return;const revision=++refreshRevision.current;try{const first=await supabase.auth.getUser();if(first.error||first.data.user?.id!==user)return;const session=await supabase.auth.getSession();const token=session.data.session?.access_token;if(!token)return;const response=await fetch("/api/client/projects",{headers:{Authorization:"Bearer "+token},cache:"no-store"});if(!response.ok)throw Error("Não foi possível atualizar as tarefas.");const payload=await response.json();const actor=await supabase.auth.getUser();if(revision===refreshRevision.current&&actor.data.user?.id===user&&!actor.error&&Array.isArray(payload.projects)){setProjects(payload.projects);setError("");}}catch(cause){if(revision===refreshRevision.current)setError(cause instanceof Error?cause.message:"Falha ao atualizar o projeto.");}},[authenticatedUserId,sessionBlocked]);
+ useEffect(()=>()=>{refreshRevision.current++;},[authenticatedUserId,sessionBlocked]);
+ usePortalRefresh(refreshProjects,!!authenticatedUserId&&!sessionBlocked);
  function openModule(module:MenuId,projectId?:string,contentId?:string){setSelectedProjectId(current=>portalTarget(projects,current,projectId));setFocusedContent(module==="content"?(contentId??null):null);setTab(module);setMobileMenu(false);}
  const clientActionEnabled=process.env.NEXT_PUBLIC_ROTEVO_CLIENT_ACTIONS_ENABLED==="true";
  const selected=menu.find(item=>item.id===tab)??menu[0];

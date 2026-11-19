@@ -1,4 +1,4 @@
-import { isPlanningV5 } from "@/lib/planning/v5";
+import {clientTaskVisible} from "@/lib/security/clientTaskPolicy";
 import {workspaceForClient} from "@/lib/operations/model";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -31,7 +31,8 @@ export async function GET(req:NextRequest) {
   const workspace=await admin.from("client_workspaces").select("data").eq("client_id",profile.client_id).maybeSingle();
   if(workspace.error)return fail(503);
   const modules=workspaceForClient(workspace.data?.data).modules;
-  const source=((projects??[]) as PrivateProjectRow[]).filter(project => !isPlanningV5(project.data) || project.status === "published");
+  // Operational follow-up is independent of strategic document publication.
+  const source=(projects??[]) as PrivateProjectRow[];
   const visible=source.map(p=>projectForClient(p,modules));
   // Restrict avatar enrichment to team members already assigned to explicitly shared tasks.
   const assignment=new Map<string,string>();
@@ -42,7 +43,7 @@ export async function GET(req:NextRequest) {
    for(const raw of tasks){
     if(!raw||typeof raw!=="object"||Array.isArray(raw))continue;
     const task=raw as Record<string,unknown>;
-    if(task.visibleToClient===true&&!task.archivedAt&&!task.deletedAt&&typeof task.id==="string"&&typeof task.ownerUserId==="string")
+    if(clientTaskVisible(task)&&typeof task.id==="string"&&typeof task.ownerUserId==="string")
      assignment.set(project.id+":"+task.id,task.ownerUserId);
    }
    const sharedIds=new Set(visible.find(p=>p.id===project.id)?.data.editorialCalendar?.map(x=>x.id)??[]);

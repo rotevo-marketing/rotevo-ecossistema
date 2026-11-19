@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {loginFailureMessage} from "@/lib/auth/loginFeedback";
 
 import { AuthShell, authStyles as s } from "@/Components/auth/AuthShell";
 import { PasswordField } from "@/Components/auth/PasswordField";
@@ -37,7 +38,7 @@ export default function HomePage() {
       });
 
       if (loginError || !loginData.user) {
-        setErrorMessage("E-mail ou senha inválidos.");
+        setErrorMessage(loginFailureMessage(loginError));
         setIsLoading(false);
         return;
       }
@@ -68,8 +69,8 @@ export default function HomePage() {
       await supabase.auth.signOut();
       setErrorMessage("Acesso não autorizado. Fale com o estrategista.");
       setIsLoading(false);
-    } catch {
-      setErrorMessage("Não foi possível conectar. Tente novamente.");
+    } catch (cause) {
+      setErrorMessage(loginFailureMessage(cause));
     } finally {
       setIsLoading(false);
     }

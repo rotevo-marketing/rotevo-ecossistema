@@ -1,4 +1,6 @@
 "use client";
+import {usePortalRefresh} from "@/hooks/usePortalRefresh";
+
 
 import {useCallback,useEffect,useId,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
@@ -11,7 +13,7 @@ type Response={messages:Message[];nextCursor:string|null};
 export type SharedDecisionComposer={body:string;disabled:boolean;onBusy:(busy:boolean)=>void;clear:()=>void};
 type Approval={phase:"idea"|"final";version:string;onDecision:(decision:"approved"|"changes_requested",comment:string|null)=>void};
 
-export default function ProjectConversation({projectId,resourceType,resourceId,readOnly=false,approval,contentDetails=false,renderLegacyActions}:{
+function ConversationPanel({projectId,resourceType,resourceId,readOnly=false,approval,contentDetails=false,renderLegacyActions}:{
  projectId:string;resourceType:"task"|"content";resourceId:string;readOnly?:boolean;approval?:Approval;contentDetails?:boolean;renderLegacyActions?:(composer:SharedDecisionComposer)=>React.ReactNode;
 }){
  const messageId=useId();
@@ -26,15 +28,19 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
  const pendingDecision=useRef(false);
  const [legacyBusy,setLegacyBusy]=useState(false);
  const pendingSend=useRef(false);
+ const readRevision=useRef(0);
  const mountedAuthor=useRef<string|null>(null);
- useEffect(()=>{let active=true;setApprovalDone(null);mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
+ useEffect(()=>{let active=true;mountedAuthor.current=null;void supabase.auth.getUser().then(({data})=>{if(active)mountedAuthor.current=data.user?.id??null;}).catch(()=>{if(active)mountedAuthor.current=null;});return()=>{active=false;mountedAuthor.current=null;};},[projectId,resourceId,resourceType]);
  const path="/api/collaboration/messages?"+new URLSearchParams({projectId,resourceType,resourceId});
  const reload=useCallback(async()=>{
-  try{const response=await request<Response>(path);setMessages(response.messages);setNextCursor(response.nextCursor);setError("");}
-  catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar a conversa.");}
-  finally{setLoading(false);}
+  const revision=++readRevision.current;
+  try{const response=await request<Response>(path);if(revision!==readRevision.current)return;setMessages(current=>{const latest=new Set(response.messages.map(m=>m.id));const older=response.nextCursor?current.filter(m=>!latest.has(m.id)&&m.created_at<(response.messages[0]?.created_at??"")):[];return [...older,...response.messages];});setNextCursor(current=>current??response.nextCursor);setError("");}
+  catch(e){if(revision===readRevision.current)setError(e instanceof Error?e.message:"Não foi possível carregar a conversa.");}
+  finally{if(revision===readRevision.current)setLoading(false);}
  },[path]);
- useEffect(()=>{setMessages([]);setLoading(true);setError("");void reload();},[reload]);
+ const invalidateReads=useCallback(()=>{readRevision.current++;},[]);
+ useEffect(()=>{const timer=window.setTimeout(()=>void reload(),0);return()=>{window.clearTimeout(timer);invalidateReads();};},[reload,invalidateReads]);
+ usePortalRefresh(reload);
  async function loadOlder(){
   if(!nextCursor||olderLoading)return;
   setOlderLoading(true);setError("");
@@ -120,3 +126,5 @@ export default function ProjectConversation({projectId,resourceType,resourceId,r
   {approvalDone&&<p role="status" className="text-xs text-[#126837]">{approvalDone==="changes_requested"?"Solicitação de ajustes registrada.":"Aprovação registrada."}</p>}
  </section>;
 }
+
+export default function ProjectConversation(props:Parameters<typeof ConversationPanel>[0]){return <ConversationPanel key={props.projectId+":"+props.resourceType+":"+props.resourceId} {...props}/>;}

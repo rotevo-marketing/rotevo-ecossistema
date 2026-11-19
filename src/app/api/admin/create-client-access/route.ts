@@ -172,17 +172,10 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 9. Upsert client profile ───────────────────────────────────────────────
-  const { error: upsertError } = await supabaseAdmin.from("profiles").upsert(
-    {
-      id: userId,
-      full_name: fullName,
-      email: email,
-      role: "client",
-      client_id: clientId,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" }
-  );
+  const { error: upsertError } = await supabaseAdmin.rpc("rotevo_provision_client_profile",{
+    p_user_id:userId,p_client_id:clientId,p_full_name:fullName,p_email:email,
+    p_enroll_notifications:process.env.ROTEVO_NOTIFICATIONS_AUDIENCE==="enabled_clients"
+  });
 
   if (upsertError) {
     // Compensate only the account created in this request, never a pre-existing user.

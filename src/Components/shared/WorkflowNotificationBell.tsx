@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useRef,useState} from "react";
-import {request} from "@/lib/operations/api";
+import {usePortalRefresh} from "@/hooks/usePortalRefresh";
+import {RequestError,request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {RotevoTablerIcon} from "@/Components/RotevoTablerIcon";
 
@@ -9,7 +10,7 @@ type Notice={
  resource_id:string;resource_version:string|null;event_type:string;
  event_phase:string|null;action_id?:string|null;occurred_at:string;read_at:string|null;
 };
-type Result={notifications:Notice[]};
+type Result={notifications:Notice[];unreadCount:number};
 const label=(n:Notice)=>{
  if(n.event_type==="approval_requested")return n.event_phase==="idea"?"Ideia aguardando sua aprovação":"Conteúdo aguardando sua aprovação";
  if(n.event_type==="approval_approved")return "Versão aprovada pelo cliente";
@@ -22,53 +23,38 @@ const label=(n:Notice)=>{
 };
 
 /** Feature-gated workflow inbox; navigations are resolved by the authenticated parent. */
-export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTask,onOpenAssignedAction}:{userId:string;onOpenContent?:(projectId:string,resourceId:string)=>void;onOpenTask?:(projectId:string,taskId:string)=>void;onOpenAssignedAction?:(projectId:string,actionId:string)=>void}){
+function NotificationInbox({userId,onOpenContent,onOpenTask,onOpenAssignedAction}:{userId:string;onOpenContent?:(projectId:string,resourceId:string)=>void;onOpenTask?:(projectId:string,taskId:string)=>void;onOpenAssignedAction?:(projectId:string,actionId:string)=>void}){
  const [open,setOpen]=useState(false);
  const [loading,setLoading]=useState(false);
  const [notices,setNotices]=useState<Notice[]>([]);
  const [unread,setUnread]=useState(0);
- const [pilotAllowed,setPilotAllowed]=useState(false);
+ const [availability,setAvailability]=useState<"loading"|"ready"|"forbidden"|"error">("loading");
  const [error,setError]=useState("");
  const identity=useRef(userId);
  const revision=useRef(0);
- // Invalidate in-flight requests on every identity change, before effects run.
- if(identity.current!==userId){identity.current=userId;revision.current+=1;}
- useEffect(()=>{setNotices([]);setUnread(0);setOpen(false);setError("");setPilotAllowed(false);},[userId]);
  const refresh=useCallback(async()=>{
   const expected=identity.current;
   const currentRevision=++revision.current;
   const isCurrent=()=>identity.current===expected&&revision.current===currentRevision;
+  try{
   const {data:actor,error:authError}=await supabase.auth.getUser();
   if(!isCurrent())return;
   if(authError||!actor.user||actor.user.id!==expected){
-   setNotices([]);setUnread(0);setOpen(false);setPilotAllowed(false);return;
+   setNotices([]);setUnread(0);setOpen(false);setAvailability("forbidden");setError("Sessão expirada. Entre novamente.");return;
   }
-  try{
-   const [list,newCount]=await Promise.all([
-    request<Result>("/api/workflow/notifications?limit=30"),
-    request<Result>("/api/workflow/notifications?limit=50&unread=true")
-   ]);
+   const list=await request<Result>("/api/workflow/notifications?limit=30");
    if(!isCurrent())return;
-   setNotices(list.notifications);
-   setUnread(newCount.notifications.length);
-   setPilotAllowed(true);
+   setNotices(list.notifications);setUnread(list.unreadCount);setAvailability("ready");
    setError("");
-  }catch{if(isCurrent()){setPilotAllowed(false);setNotices([]);setUnread(0);setOpen(false);setError("Não foi possível atualizar as notificações.");}}
+  }catch(cause){if(isCurrent()){const denied=cause instanceof RequestError&&cause.status===403;setAvailability(denied?"forbidden":"error");setNotices([]);setUnread(0);setError(denied?"Notificações não habilitadas para esta conta.":"Não foi possível atualizar as notificações. Tente novamente.");}}
  },[]);
  useEffect(()=>{
-  let alive=true;
-  const check=()=>{if(alive&&document.visibilityState==="visible")void refresh();};
-  void refresh();
-  const i=window.setInterval(check,30000);
-  document.addEventListener("visibilitychange",check);
+  const timer=window.setTimeout(()=>void refresh(),0);
   const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
-   if(event==="SIGNED_OUT"||(session?.user&&session.user.id!==identity.current)){
-    revision.current+=1;
-    setNotices([]);setUnread(0);setOpen(false);setPilotAllowed(false);
-   }
+   if(event==="SIGNED_OUT"||(session?.user&&session.user.id!==identity.current)){revision.current+=1;setNotices([]);setUnread(0);setOpen(false);setAvailability("forbidden");setError("Sessão alterada. Entre novamente.");}
   });
-  return()=>{alive=false;window.clearInterval(i);document.removeEventListener("visibilitychange",check);subscription.unsubscribe();};
- },[refresh,userId]);
+  return()=>{window.clearTimeout(timer);revision.current++;subscription.unsubscribe();};
+ },[refresh]);
  async function read(n:Notice){
   if(n.read_at||loading)return;
   const expected=identity.current;
@@ -82,12 +68,13 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
   }catch(e){if(identity.current===expected)setError(e instanceof Error?e.message:"Não foi possível marcar como lida.");}
   finally{setLoading(false);}
  }
- if(!pilotAllowed)return null;
+ usePortalRefresh(refresh,!!userId);
  return <div className="relative">
-  <button type="button" aria-label={unread>0?"Notificações: "+unread+" não lidas":"Notificações"} aria-haspopup="dialog" aria-expanded={open}
+  <button type="button" title={error||"Notificações"} aria-label={availability==="error"?"Notificações indisponíveis":availability==="forbidden"?"Notificações não habilitadas":unread>0?"Notificações: "+unread+" não lidas":"Notificações"} aria-haspopup="dialog" aria-expanded={open}
    onClick={()=>{setOpen(v=>!v);if(!open)void refresh();}}
    className="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-[#525B70] hover:bg-[#F5F3FF] focus-visible:outline-2 focus-visible:outline-[#6D35F5]">
    <RotevoTablerIcon name="bell" size={19} stroke={1.65}/>
+   {(availability==="error"||availability==="forbidden")&&<span aria-hidden="true" className="absolute -right-1 -top-1 rounded-full bg-[#A83E3E] px-1 text-[10px] text-white">!</span>}
    {unread>0&&<span data-rv-tone="violet" aria-hidden="true" className="absolute -right-1 -top-1 rounded-full bg-[#6D35F5] px-1 text-[10px] font-semibold leading-4 text-white">{unread>9?"9+":unread}</span>}
   </button>
   {open&&<section role="dialog" aria-label="Central de notificações" className="absolute right-0 z-50 mt-2 w-[min(350px,90vw)] rounded-xl border border-[#E3E7F0] bg-white p-3 shadow-xl">
@@ -96,6 +83,8 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
     <button type="button" onClick={()=>setOpen(false)} className="cursor-pointer px-2 py-1 text-xs text-[#697386]">Fechar</button>
    </div>
    {error&&<p role="alert" className="mt-2 text-xs text-[#A83E3E]">{error}</p>}
+   {availability==="loading"&&<p role="status" className="py-3 text-xs">Carregando notificações...</p>}
+   {availability==="error"&&<button type="button" className="my-2 rounded border px-3 py-2 text-xs" onClick={()=>void refresh()}>Tentar novamente</button>}
    <ol className="max-h-[360px] overflow-y-auto">
     {notices.map(n=><li key={n.notification_id} className="border-b border-[#EFF1F5] py-3 last:border-0">
      <p className="text-xs font-semibold text-[#344056]">{label(n)}{!n.read_at&&<span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-[#6D35F5]" aria-label="Não lida"/>}</p>
@@ -107,8 +96,11 @@ export default function WorkflowNotificationBell({userId,onOpenContent,onOpenTas
      </button>}
     </li>)}
    </ol>
-   {!notices.length&&!error&&<p className="py-6 text-center text-xs text-[#697386]">Nenhuma notificação disponível.</p>}
+   {!notices.length&&!error&&availability==="ready"&&<p className="py-6 text-center text-xs text-[#697386]">Nenhuma notificação disponível.</p>}
    <p className="border-t border-[#EFF1F5] pt-2 text-[11px] text-[#8B95A5]">Marcar como lida não encerra uma pendência. O acesso ao item será validado novamente.</p>
   </section>}
  </div>;
 }
+
+/** A new authenticated identity gets a new inbox before any old response can render. */
+export default function WorkflowNotificationBell(props:Parameters<typeof NotificationInbox>[0]){return <NotificationInbox key={props.userId} {...props}/>;}

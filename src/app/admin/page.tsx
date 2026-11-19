@@ -1,4 +1,5 @@
 "use client";
+import {clientTaskVisible} from "@/lib/security/clientTaskPolicy";
 import {confirmDiscardChanges} from "@/hooks/useUnsavedChanges";
 import "./rotevo-ui2.css";
 
@@ -192,7 +193,7 @@ export default function AdminPage() {
     openTask(projectId,taskId,true);
   }
   function openTask(projectId:string,taskId:string,sharedOnly=false){
-    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&(!sharedOnly||item.visibleToClient===true)&&!item.archivedAt&&!item.deletedAt)))return;
+    if(!projects.some(p=>p.id===projectId&&p.data?.executionTimeline?.some(item=>item.id===taskId&&(!sharedOnly||clientTaskVisible(item))&&!item.archivedAt&&!item.deletedAt)))return;
     if(!confirmDiscardChanges())return;
     setNotificationTaskTarget({projectId,taskId,nonce:Date.now(),fromCampaign:!sharedOnly});
     navigateWorkspace("tasks");

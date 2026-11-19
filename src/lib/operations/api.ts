@@ -1,6 +1,7 @@
 "use client";
 import {supabase} from "@/lib/supabase";
-export async function request<T=unknown>(path:string,method="GET",body?:unknown):Promise<T>{const session=await supabase.auth.getSession();if(session.error||!session.data.session?.access_token)throw Error("Sessão expirada. Entre novamente.");const r=await fetch(path,{method,headers:{Authorization:"Bearer "+session.data.session.access_token,"Content-Type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:"no-store"});const data=await r.json().catch(()=>null);if(!r.ok)throw Error(typeof data?.error==="string"?data.error:requestFailureMessage(r.status));return data as T;}
+export class RequestError extends Error {status:number;constructor(message:string,status:number){super(message);this.status=status;this.name="RequestError";}}
+export async function request<T=unknown>(path:string,method="GET",body?:unknown):Promise<T>{const session=await supabase.auth.getSession();if(session.error||!session.data.session?.access_token)throw Error("Sessão expirada. Entre novamente.");const r=await fetch(path,{method,headers:{Authorization:"Bearer "+session.data.session.access_token,"Content-Type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:"no-store"});const data=await r.json().catch(()=>null);if(!r.ok)throw new RequestError(typeof data?.error==="string"?data.error:requestFailureMessage(r.status),r.status);if(method!=="GET"&&typeof window!=="undefined")window.dispatchEvent(new Event("rotevo:operational-change"));return data as T;}
 
 export function requestFailureMessage(status:number):string {
  const messages:Record<number,string>={

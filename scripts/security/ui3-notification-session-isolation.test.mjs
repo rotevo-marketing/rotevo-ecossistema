@@ -5,7 +5,7 @@ import {readFileSync} from "node:fs";
 const source=readFileSync(new URL("../../src/Components/shared/WorkflowNotificationBell.tsx",import.meta.url),"utf8");
 
 test("notification state invalidates stale identity and in-flight requests",()=>{
- assert.match(source,/if\(identity\.current!==userId\)\{identity\.current=userId;revision\.current\+=1;\}/);
+ assert.match(source,/<NotificationInbox key=\{props\.userId\} \{\.\.\.props\}\/>/);
  assert.match(source,/const currentRevision=\+\+revision\.current/);
  assert.match(source,/if\(!isCurrent\(\)\)return;[\s\S]*?setNotices\(list\.notifications\)/);
  assert.match(source,/event==="SIGNED_OUT"[\s\S]*?revision\.current\+=1/);

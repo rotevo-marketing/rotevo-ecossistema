@@ -43,6 +43,7 @@ function harness({bearer="Bearer token",profileRole="client",clientId="tenant-a"
  const response={json:(body,{status=200,headers={}}={})=>({status,body,headers})};
  const module={exports:{}};
  const mocks={
+  "@/lib/security/clientTaskPolicy":{clientTaskVisible:t=>t?.kind==="task"&&!t.deletedAt&&!t.archivedAt&&t.clientVisibility!=="confidential"},
   "@/lib/operations/model":{workspaceForClient:data=>data&&Array.isArray(data.modules)?data:{modules:[],contracts:[],folders:[]}},
   "next/server":{NextResponse:response,NextRequest:class{}},
   "@supabase/supabase-js":{createClient},

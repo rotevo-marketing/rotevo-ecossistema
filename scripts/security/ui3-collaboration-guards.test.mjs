@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {parseResource,parseMessageBody,resourceIsVisible,requiredModule,canAccessConversation} from "../../src/lib/collaboration/guards.ts";
 
 const projectId="123e4567-e89b-42d3-a456-426614174000";
-const data={executionTimeline:[{id:"t1",visibleToClient:true},{id:"private",visibleToClient:false}],editorialCalendar:[{id:"c1",visibleToClient:true},{id:"draft",visibleToClient:false}]};
+const data={executionTimeline:[{id:"t1",title:"Tarefa acompanhável",kind:"task",visibleToClient:false},{id:"private",title:"Tarefa confidencial",kind:"task",clientVisibility:"confidential",visibleToClient:false}],editorialCalendar:[{id:"c1",visibleToClient:true},{id:"draft",visibleToClient:false}]};
 const base={role:"client",userClientId:"client-a",projectClientId:"client-a",workspaceModules:["execution","content"],projectData:data,resourceType:"task",resourceId:"t1"};
 test("parse resource accepts only supported scoped identifiers",()=>{
  assert.deepEqual(parseResource({projectId,resourceType:"task",resourceId:"t1"}),{projectId,resourceType:"task",resourceId:"t1"});
@@ -15,7 +15,7 @@ test("message content is bounded and sanitized by callers as plain text",()=>{
  assert.equal(parseMessageBody("x".repeat(3001)),null);
  assert.equal(parseMessageBody("\u0000"),null);
 });
-test("only explicitly shared items can have client-facing discussion",()=>{
+test("mirrored operational tasks and explicitly shared content allow discussion; confidential resources remain closed",()=>{
  assert.equal(resourceIsVisible(data,"task","t1"),true);
  assert.equal(resourceIsVisible(data,"content","c1"),true);
  assert.equal(resourceIsVisible(data,"task","private"),false);
@@ -42,7 +42,7 @@ test("staff requires active membership, explicit assignment and read permission"
  assert.equal(canAccessConversation({...staff,assigned:false}),false);
  assert.equal(canAccessConversation({...staff,permissions:[]}),false);
 });
-test("strategist cannot read unpublished resource; unknown roles are denied",()=>{
+test("confidential resources do not open a client-facing thread; unknown roles are denied",()=>{
  assert.equal(canAccessConversation({...base,role:"strategist"}),true);
  assert.equal(canAccessConversation({...base,role:"strategist",teamActive:false}),false);
  assert.equal(canAccessConversation({...base,role:"strategist",resourceId:"private"}),false);

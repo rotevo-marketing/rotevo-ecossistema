@@ -1,3 +1,4 @@
+import {projectClientTask} from "./clientTaskPolicy.ts";
 import {safeLink,projectModules,type PortalModule} from "../operations/model.ts";
 // Deliberately allowlisted response, never spread the original project JSON.
 type RecordObject = Record<string, unknown>;
@@ -69,8 +70,7 @@ export function projectForClient(project:PrivateProjectRow,allowedModules?:reado
         if(!v||v.visibleToClient!==true||typeof v.id!=="string"||typeof v.title!=="string"||v.title.length>140||typeof v.dueDate!=="string"||!(v.dueDate===""||/^\d{4}-\d{2}-\d{2}$/.test(v.dueDate))||!["pending","in_progress","completed"].includes(String(v.status)))return [];
         return [{id:v.id,title:v.title,dueDate:v.dueDate,status:v.status,visibleToClient:true}];
       }).slice(0,15):[],
-      executionTimeline:publishedArray(modules.includes("execution")?data.executionTimeline:[],
-        ["phase","status","kind","startDate","dueDate","description","priority","owner"],true),
+      executionTimeline:modules.includes("execution")&&Array.isArray(data.executionTimeline)?data.executionTimeline.flatMap(value=>{const row=object(value);if(row?.kind!=="task")return publishedArray([value],["phase","status","kind","startDate","dueDate","description","priority","owner"],true);const task=projectClientTask(value);return task?[task]:[];}):[],
       editorialCalendar:publishedArray(modules.includes("content")?data.editorialCalendar:[],
         ["channel","format","publishDate","deadlineDate","caption","version","status","owner","priority","ideaSummary","objective","audience","funnelStage","keyMessage","cta","briefUrl","references"],true),
       operationalAgenda:publishedArray(modules.includes("meetings")?data.operationalAgenda:[],["kind","date","time","status","notes","modality","location","duration","minutes","meetingUrl","materialUrl"]),

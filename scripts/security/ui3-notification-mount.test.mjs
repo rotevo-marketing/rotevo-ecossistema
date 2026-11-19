@@ -56,10 +56,10 @@ test("task notifications route to the correct authorized task in both portals",(
  assert.match(bell,/onOpenTask\?\.\(n\.project_id,n\.resource_id\)/);
  assert.match(focus,/onOpenTask\?\.\(n\.project_id,n\.resource_id\)/);
  assert.match(admin,/function openWorkflowTask\(projectId:string,taskId:string\)/);
- assert.match(admin,/item\.visibleToClient===true/);
+ assert.match(admin,/!sharedOnly\|\|clientTaskVisible\(item\)/);
  assert.match(client,/onOpenTask=\{\(projectId,taskId\)=>/);
  assert.match(client,/workspace\?\.modules\.includes\("execution"/);
- assert.match(tasks,/notificationTask\?\.nonce/);
+ assert.match(tasks,/focusedNotice\.current===notificationTask\.nonce/);
  assert.match(timeline,/focusedTaskNonce\.current===focusTask\.nonce/);
  assert.match(timeline,/item\.projectKey===focusTask\.projectId&&item\.id===focusTask\.taskId/);
 });
@@ -85,8 +85,9 @@ test("controlled production pilot denies notification access unless user is allo
  const requestRoute=read("src/app/api/workflow/editorial/request/route.ts");
  assert.match(route,/ROTEVO_NOTIFICATIONS_ENABLED!=="true"/);
  assert.match(route,/ROTEVO_NOTIFICATIONS_PILOT_USER_IDS/);
- assert.match(route,/!pilot.length\|\|!pilot.includes\(identity.user.id\)/);
- assert.match(bell,/if\(!pilotAllowed\)return null/);
+ assert.match(route,/!clientEnabled&&\(!pilot.includes\(identity.user.id\)/);
+ assert.doesNotMatch(bell,/if\(!pilotAllowed\)return null/);
+ assert.match(bell,/availability==="forbidden"/);
  assert.match(queue,/if\(status==="unavailable"\)return null/);
  assert.match(decision,/ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"/);
  assert.match(requestRoute,/ROTEVO_WORKFLOW_APPROVALS_ENABLED!=="true"/);

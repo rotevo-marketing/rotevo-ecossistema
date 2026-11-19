@@ -1,5 +1,7 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
+import {usePortalRefresh,announceOperationalChange} from "@/hooks/usePortalRefresh";
+
+import {useCallback,useEffect,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {request} from "@/lib/operations/api";
 import {validGoogleDriveUrl} from "@/lib/workflow/clientActionsContract";
@@ -14,39 +16,34 @@ export function useClientAssignments(projects:Project[],userId?:string){
  const key=JSON.stringify([userId,projects.map(p=>[p.id,p.title]).sort()]);
  const [snapshot,setSnapshot]=useState<{key:string;items:ClientAssignment[]}>({key:"",items:[]});
  const [loading,setLoading]=useState(false),[error,setError]=useState("");
- useEffect(()=>{
-  let active=true;
-  setSnapshot({key,items:[]});setLoading(!!userId);setError("");
-  if(!userId)return;
-  // Session changes are handled by useSessionBoundary in the parent portal.
-  // Do not subscribe a second listener inside the fetch lifecycle: auth events
-  // can invalidate an in-flight response and strand this panel in loading state.
-  // The effect cleanup still discards results on project/user changes or unmount.
-  void (async()=>{
-   try{
-    const results=await Promise.allSettled(projects.map(async p=>{
-     const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
-     const r=await request<{assignments:Omit<ClientAssignment,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
-     return (r.assignments??[]).map(a=>({...a,projectTitle:p.title}));
-    }));
-    if(!active)return;
-    const valid=results.filter((r):r is PromiseFulfilledResult<ClientAssignment[]>=>r.status==="fulfilled");
-    setSnapshot({key,items:valid.flatMap(r=>r.value)});
-    if(valid.length!==results.length)setError("Alguns projetos não puderam ser consultados.");
-   }catch(e){if(active)setError(e instanceof Error?e.message:"Não foi possível consultar suas entregas.");}
-   finally{if(active)setLoading(false);}
-  })();
-  return()=>{active=false;};
+ const revision=useRef(0);
+ const refresh=useCallback(async()=>{
+  const generation=++revision.current;
+  if(!userId){setSnapshot({key,items:[]});setLoading(false);return;}
+  setLoading(true);
+  try{
+   const actor=await supabase.auth.getUser();
+   if(actor.error||actor.data.user?.id!==userId)throw Error("Sessão alterada.");
+   const results=await Promise.allSettled(projects.map(async p=>{
+    const query=new URLSearchParams({projectId:p.id,expectedAuthorUserId:userId});
+    const response=await request<{assignments:Omit<ClientAssignment,"projectTitle">[]}>("/api/workflow/client-actions?"+query);
+    return (response.assignments??[]).filter(a=>a.projectId===p.id).map(a=>({...a,projectTitle:p.title}));
+   }));
+   const latest=await supabase.auth.getUser();
+   if(generation!==revision.current)return;
+   if(latest.error||latest.data.user?.id!==userId)throw Error("Sessão alterada.");
+   setSnapshot({key,items:results.flatMap(r=>r.status==="fulfilled"?r.value:[])});
+   setError(results.some(r=>r.status==="rejected")?"Alguns projetos não puderam ser consultados.":"");
+  }catch(cause){if(generation===revision.current){setSnapshot({key,items:[]});setError(cause instanceof Error?cause.message:"Não foi possível consultar suas entregas.");}}
+  finally{if(generation===revision.current)setLoading(false);}
+ // Projects are captured by their stable ID/title identity.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[key]);
- return {
-  items:snapshot.key===key?snapshot.items:emptyAssignments,
-  loading:!!userId&&(loading||snapshot.key!==key),
-  error:snapshot.key===key?error:"",
-  markSubmitted:(id:string)=>setSnapshot(current=>current.key===key?{
-   ...current,items:current.items.map(item=>item.id===id?{...item,status:"submitted"}:item)
-  }:current)
- };
+ const invalidate=useCallback(()=>{revision.current++;},[]);
+ useEffect(()=>{const timer=window.setTimeout(()=>void refresh(),0);return()=>{window.clearTimeout(timer);invalidate();};},[key,refresh,invalidate]);
+ usePortalRefresh(refresh,!!userId);
+ return {items:snapshot.key===key?snapshot.items:emptyAssignments,loading:!!userId&&(loading||snapshot.key!==key),error:snapshot.key===key?error:"",
+  markSubmitted:(id:string)=>{setSnapshot(current=>current.key===key?{...current,items:current.items.map(item=>item.id===id?{...item,status:"submitted"}:item)}:current);announceOperationalChange();}};
 }
 
 export const assignmentLabels:Record<string,string>={

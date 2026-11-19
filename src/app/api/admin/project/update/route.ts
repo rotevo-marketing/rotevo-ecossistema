@@ -1,3 +1,4 @@
+import {recordTaskPrivacy} from "@/lib/security/clientTaskPolicy";
 import {validPlanningStages} from "@/lib/planning/stages";
 import {validCompanyAnalysis,publicCompanyAnalysis} from "@/lib/planning/companyAnalysis";
 import {validPlanningAreaSchedule} from "@/lib/planning/areaSchedule";
@@ -278,6 +279,7 @@ const previousStages=(existing.data as Record<string,unknown>|null)?.planningSta
   if(new Set((members??[]).map(m=>m.user_id)).size!==changedOwners.length)return fail(400);
  }
 
+ if(!recordTaskPrivacy(oldRoot,nextRoot,identity.user.id))return fail(400);
  recordMeetingMinutes(oldRoot,nextRoot,identity.user.id);
  const nextAt=new Date().toISOString();
  const {data:updated,error:updateError}=await admin.from("planning_projects")

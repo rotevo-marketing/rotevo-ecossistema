@@ -1,3 +1,4 @@
+import {clientResourceVisible} from "../security/clientTaskPolicy.ts";
 /**
  * Shared, pure authorization primitives for UI3 project conversations.
  * Never trusts client-supplied role, tenant, visibility, or author identity.
@@ -26,7 +27,7 @@ function sharedResource(data:unknown,resourceType:ResourceType,resourceId:string
  if(!Array.isArray(rows))return null;
  const matches=rows.map((value:unknown)=>item(value)).filter((entry):entry is Item=>entry?.id===resourceId);
  const resource=matches[0];
- return matches.length===1&&resource.visibleToClient===true&&!resource.archivedAt&&!resource.deletedAt?resource:null;
+ return matches.length===1&&clientResourceVisible(resourceType,resource)?resource:null;
 }
 export function resourceIsVisible(data:unknown,resourceType:ResourceType,resourceId:string):boolean{
  return sharedResource(data,resourceType,resourceId)!==null;

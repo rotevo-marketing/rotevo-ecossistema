@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {usePortalRefresh} from "@/hooks/usePortalRefresh";
+import {useCallback,useEffect,useMemo,useState} from "react";
 import {request} from "@/lib/operations/api";
 import {supabase} from "@/lib/supabase";
 import {validGoogleDriveUrl} from "@/lib/workflow/clientActionsContract";
@@ -20,6 +21,8 @@ export function useStrategistAssignments(projects:Project[],enabled:boolean){
  const ids=useMemo(()=>projects.map(p=>p.id).sort().join("|"),[projects]);
  const [snapshot,setSnapshot]=useState<{ids:string;rows:ProjectAssignment[];error:string}|null>(null);
  const [revision,setRevision]=useState(0);
+ const revalidate=useCallback(()=>setRevision(value=>value+1),[]);
+ usePortalRefresh(revalidate,enabled&&!!ids);
  useEffect(()=>{
   if(!enabled||!ids)return;
   let active=true,requestNumber=0,loadedUser="";
@@ -50,8 +53,7 @@ export function useStrategistAssignments(projects:Project[],enabled:boolean){
    if(event==="SIGNED_IN")setTimeout(()=>{if(active)void refresh();},0);
   });
   void refresh();
-  window.addEventListener("focus",refresh);
-  return()=>{active=false;auth.data.subscription.unsubscribe();window.removeEventListener("focus",refresh);};
+  return()=>{active=false;auth.data.subscription.unsubscribe();};
  },[enabled,ids,revision]);
  return {
   rows:enabled&&snapshot?.ids===ids?snapshot.rows:noAssignments,

@@ -2,6 +2,7 @@
 import {clientTaskVisible,projectClientTask} from "@/lib/security/clientTaskPolicy";
 import TaskClientSharingFields from "./TaskClientSharingFields";
 import {useUnsavedChanges} from "@/hooks/useUnsavedChanges";
+import {announceOperationalChange} from "@/hooks/usePortalRefresh";
 import { useEffect, useMemo, useState } from "react";
 import DialogFocus from "@/Components/ui/DialogFocus";
 import { supabase } from "@/lib/supabase";
@@ -53,6 +54,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
     setError("Não foi possível confirmar a atualização das entregas.");return;
    }
    onSaved(result.project.data as ProjectData,result.project.updated_at);
+   announceOperationalChange();
   }catch{
    setError("Falha de conexão ao salvar as entregas. Tente novamente.");
    return;
@@ -165,7 +167,7 @@ export default function ExecutionTimelineEditor({projectId,projectData,updatedAt
          <textarea disabled={saving} value={editing.description??""} maxLength={2000} rows={3} onChange={e=>setEditing({...editing,description:e.target.value})} className="mt-1 block w-full rounded-lg border border-[#D7DCE6] bg-white px-3 py-2.5 text-sm"/>
        </label>
      </div>
-     {editing.kind==="task"?<section className="mt-4 space-y-3"><TaskClientSharingFields value={editing} onChange={patch=>setEditing({...editing,...patch,clientProjectionVersion:1})}/><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.clientVisibility==="confidential"} onChange={e=>setEditing({...editing,clientVisibility:e.target.checked?"confidential":"project",clientProjectionVersion:1})}/>Manter tarefa confidencial</label>{editing.clientVisibility==="confidential"&&<label className="block text-sm">Motivo da confidencialidade<input maxLength={1000} value={editing.clientConfidentialReason??""} onChange={e=>setEditing({...editing,clientConfidentialReason:e.target.value})} className="mt-1 w-full rounded-lg border p-3"/></label>}</section>:<label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient!==false} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Exibir entrega na Área do Cliente</label>}
+     {editing.kind==="task"?<section className="mt-4 space-y-3 rounded-xl border p-4" aria-label="Acompanhamento do cliente"><TaskClientSharingFields value={editing} onChange={patch=>setEditing({...editing,...patch,clientProjectionVersion:1})}/><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.clientVisibility==="confidential"} onChange={e=>setEditing({...editing,clientVisibility:e.target.checked?"confidential":"project",clientProjectionVersion:1})}/>Manter tarefa confidencial</label>{editing.clientVisibility==="confidential"&&<label className="block text-sm">Motivo da confidencialidade<input maxLength={1000} value={editing.clientConfidentialReason??""} onChange={e=>setEditing({...editing,clientConfidentialReason:e.target.value})} className="mt-1 w-full rounded-lg border p-3"/></label>}</section>:<label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={editing.visibleToClient!==false} onChange={e=>setEditing({...editing,visibleToClient:e.target.checked})} className="h-4 w-4 accent-[#6D35F5]"/> Exibir entrega na Área do Cliente</label>}
      <div className="mt-5 flex flex-wrap justify-end gap-2">
        <button type="button" disabled={saving} onClick={closeEditor} className="cursor-pointer rounded-lg border border-[#D7DCE6] px-4 py-2.5 text-sm disabled:opacity-40">Cancelar</button>
        <button type="button" disabled={saving} onClick={saveItem} className="cursor-pointer rounded-lg bg-[#0B142A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{saving?"Salvando...":"Salvar entrega"}</button>

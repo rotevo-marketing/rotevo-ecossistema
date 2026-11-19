@@ -1,6 +1,7 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),ts=require("typescript");
 const {JSDOM}=require("jsdom"),dom=new JSDOM("<!doctype html><html><body><div id='app'></div></body></html>",{url:"http://127.0.0.1:3000"});
 for(const k of ["window","document","HTMLElement","Element","HTMLInputElement","HTMLTextAreaElement","HTMLSelectElement","Event","MouseEvent","MutationObserver"])globalThis[k]=dom.window[k];
+globalThis.self=dom.window;
 Object.defineProperty(globalThis,"navigator",{value:dom.window.navigator,configurable:true});
 Object.defineProperty(document,"visibilityState",{value:"visible",configurable:true});globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const React=require("react"),{act}=React,{createRoot}=require("react-dom/client"),root=path.resolve(__dirname,"../..");
@@ -13,7 +14,7 @@ const api={RequestError,async request(url,method="GET",body){requests.push({url,
  throw Error("Unexpected request "+url);
 }};
 const mocks={"@/lib/operations/api":api,"@/lib/supabase":{supabase:{auth:{getUser:async()=>({data:{user:{id:actor}},error:null}),onAuthStateChange:fn=>{authListeners.push(fn);return {data:{subscription:{unsubscribe(){authListeners=authListeners.filter(x=>x!==fn);}}}};}}}},
- "@/Components/RotevoTablerIcon":{RotevoTablerIcon:()=>null},"@/Components/admin/TaskGridCells":{TaskAvatar:({name})=>React.createElement("span",{},name)},"@/Components/ui/DialogFocus":{default:()=>null}};
+ "@/Components/RotevoTablerIcon":{RotevoTablerIcon:()=>null},"@/Components/admin/TaskGridCells":{TaskAvatar:({name})=>React.createElement("span",{},name),TaskDropdown:()=>null,TaskDueDateCell:()=>null},"@/Components/ui/DialogFocus":{default:()=>null}};
 const cache=new Map();
 function load(file){const full=path.resolve(root,file);if(cache.has(full))return cache.get(full).exports;const m={exports:{}};cache.set(full,m);const code=ts.transpileModule(fs.readFileSync(full,"utf8"),{fileName:full,compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
  const req=name=>{if(mocks[name])return {__esModule:true,...mocks[name]};if(name.endsWith(".css"))return new Proxy({},{get:(_,k)=>k});let rel;if(name.startsWith("@/"))rel="src/"+name.slice(2);else if(name.startsWith("."))rel=path.relative(root,path.resolve(path.dirname(full),name));else return require(name);if(!fs.existsSync(path.join(root,rel)))rel+=fs.existsSync(path.join(root,rel+".tsx"))?".tsx":".ts";return load(rel);};new Function("require","module","exports",code)(req,m,m.exports);return m.exports;}
@@ -58,6 +59,73 @@ test('timeline keeps an already shared legacy description separate when sharing 
   assert.equal(sharing.querySelector('input').checked,false);
   assert.equal(shared.checklist[1].visibleToClient,undefined);
  }finally{await unmount();supabase.from=previousFrom;}
+});
+test('both strategist modals save explicit sharing on an existing task with nine private steps',async()=>{
+ const supabase=mocks['@/lib/supabase'].supabase;
+ const originalFetch=globalThis.fetch, originalFrom=supabase.from, originalSession=supabase.auth.getSession;
+ supabase.from=()=>({select(){return this;},eq(){return this;},order:async()=>({data:[],error:null})});
+ supabase.auth.getSession=async()=>({data:{session:{access_token:'synthetic-test'}},error:null});
+ const {recordTaskPrivacy}=load('src/lib/security/clientTaskPolicy.ts');
+ const variants=[
+  {Component:load('src/Components/admin/CentralTarefas.tsx').default,open:'Tarefa preexistente',save:'Salvar alterações',props:project=>({projects:[project],onChanged(){}})},
+  {Component:load('src/Components/admin/ExecutionTimelineEditor.tsx').default,open:'Editar',save:'Salvar entrega',props:project=>({projectId:project.id,projectData:project.data,updatedAt:project.updated_at,onSaved(){}})},
+ ];
+ let refreshEvents=0;
+ const onRefresh=()=>refreshEvents++;
+ window.addEventListener('rotevo:operational-change',onRefresh);
+ try{
+  for(const {Component,open,save,props} of variants){
+   const source=row({id:'task-existing',title:'Tarefa preexistente',kind:'task',status:'planned',visibleToClient:false,description:'Descrição interna sintética',checklist:Array.from({length:9},(_,i)=>({id:'step-'+i,text:i===0?'Etapa autorizada':'Etapa privada '+i,done:i<3}))});
+   let saved;
+   globalThis.fetch=async(url,options)=>{
+    assert.equal(url,'/api/admin/project/update');
+    assert.equal(options.method,'PATCH');
+    const {projectId,expectedUpdatedAt,data}=JSON.parse(options.body);
+    assert.equal(projectId,source.id);
+    assert.equal(expectedUpdatedAt,saved?.updated_at??source.updated_at);
+    assert.equal(recordTaskPrivacy(saved?.data??source.data,data,actor),true);
+    saved={...source,data,updated_at:'2026-11-19T12:01:00Z'};
+    return {ok:true,json:async()=>({project:saved})};
+   };
+   await mount(Component,props(source));
+   await click(button(open));
+   const region=container.querySelector('[role="dialog"] [aria-label="Acompanhamento do cliente"]');
+   assert.ok(region);
+   const [description,...steps]=region.querySelectorAll('.rv-ui3-task-sharing input[type="checkbox"]');
+   assert.equal(description.checked,false);
+   assert.equal(steps.length,9);
+   assert.ok(steps.every(step=>!step.checked));
+   await click(description);
+   await click(steps[0]);
+   const priorRefreshEvents=refreshEvents;
+   await click(button(save));
+   assert.equal(refreshEvents,priorRefreshEvents+1);
+   assert.ok(saved);
+   const [task]=saved.data.executionTimeline;
+   assert.equal(task.id,'task-existing');
+   assert.equal(task.checklist.length,9);
+   assert.equal(task.clientDescriptionApproved,true);
+   assert.equal(task.clientSummary,'');
+   assert.equal(task.checklist.filter(step=>step.visibleToClient===true).length,1);
+   const [projected]=projectForClient(saved).data.executionTimeline;
+   assert.equal(projected.description,'Descrição interna sintética');
+   assert.deepEqual(projected.checklist,[{id:'step-0',text:'Etapa autorizada',done:true}]);
+   assert.deepEqual(projected.progress,{completed:3,total:9});
+   await unmount();
+   await mount(Component,props(saved));
+   await click(button(open));
+   await click(container.querySelector('.rv-ui3-task-sharing input'));
+   await click(button(save));
+   assert.equal(projectForClient(saved).data.executionTimeline[0].description,undefined);
+   await unmount();
+  }
+ }finally{
+  await unmount();
+  window.removeEventListener('rotevo:operational-change',onRefresh);
+  globalThis.fetch=originalFetch;
+  supabase.from=originalFrom;
+  supabase.auth.getSession=originalSession;
+ }
 });
 test('today, overdue and approval rows preserve counts and targets and show only real priority flags',async()=>{
  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());

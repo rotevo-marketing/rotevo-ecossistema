@@ -5,6 +5,7 @@ type Sharing={clientDescriptionApproved?:boolean;clientSummary?:string;checklist
 /** Explicit controls for the existing operational record; no copying or historic backfill. */
 export default function TaskClientSharingFields({value,onChange}:{value:Sharing;onChange:(patch:Sharing)=>void}){
  return <div className="rv-ui3-task-sharing space-y-3">
+  <h3 className="text-sm font-semibold">Acompanhamento do cliente</h3>
   <label className="flex items-start gap-2 text-xs font-medium"><input type="checkbox" checked={value.clientDescriptionApproved===true} onChange={e=>onChange({clientDescriptionApproved:e.target.checked})} className="mt-0.5 h-4 w-4 shrink-0 accent-[#6C5CE7]"/>Compartilhar descrição operacional com o cliente</label>
   <p className="text-xs text-[#697386]">Ao ativar, o cliente acompanha o texto atual da descrição. Ao desativar, somente o resumo abaixo é compartilhado.</p>
   <label className="block text-xs font-semibold">Resumo para o cliente<textarea rows={3} maxLength={2000} value={value.clientSummary??""} disabled={value.clientDescriptionApproved===true} onChange={e=>onChange({clientSummary:e.target.value})} className="mt-2 block w-full rounded-lg border p-3 text-sm disabled:opacity-60"/></label>

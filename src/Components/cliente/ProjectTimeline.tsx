@@ -78,7 +78,7 @@ const rowStatus=(item:Row)=>item.approval?approvalPhaseLabels[item.approval.phas
 const priorityInfo=(priority?:string)=>priorities.find(p=>p.id===priority)??priorities[2];
 const isRow=(v:unknown):v is ExecutionItem=>!!v&&typeof v==="object"&&typeof (v as ExecutionItem).id==="string"&&typeof (v as ExecutionItem).title==="string";
 
-type Props={projects:Project[];clientName?:string;showSharedTasks?:boolean;assignmentUserId?:string;assigneeName?:string;focusTask?:{projectId:string;taskId:string;nonce:number}|null};
+type Props={projects:Project[];clientName?:string;assignmentUserId?:string;assigneeName?:string;focusTask?:{projectId:string;taskId:string;nonce:number}|null};
 type Scope={title:string;deadline:"today"|"overdue";day:string;openModule?:()=>void;};
 
 export default function ProjectTimeline(props:Props){

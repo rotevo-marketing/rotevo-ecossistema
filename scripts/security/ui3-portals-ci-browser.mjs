@@ -49,8 +49,10 @@ for(const [i,label] of labels.entries()){
  agendaItem('internal','PRIVATE_MEETING_'+i,alternateDay,{visibleToClient:false})
  ]}}),'synthetic project');
  const release=await http('/api/workflow/client-actions',adminSession,'POST',{projectId,resourceType:'content',resourceId:'content-1',resourceVersion:'01',clientUserId:user.id,actionType:'send_material',instructions:'Enviar material sintético '+i,dueDate:null,requestKey:'portal-release-'+randomUUID(),expectedAuthorUserId:admin.id});
+ const todayAction=await http('/api/workflow/client-actions',adminSession,'POST',{projectId,resourceType:'task',resourceId:'task-1',clientUserId:user.id,actionType:'provide_information',instructions:'Enviar informações de cadastro sintéticas '+i,dueDate:day(0),requestKey:'portal-today-'+randomUUID(),expectedAuthorUserId:admin.id});
+ const overdueAction=await http('/api/workflow/client-actions',adminSession,'POST',{projectId,resourceType:'task',resourceId:'task-2',clientUserId:user.id,actionType:'review_material',instructions:'Revisar material sintético '+i,dueDate:day(-1),requestKey:'portal-overdue-'+randomUUID(),expectedAuthorUserId:admin.id});
  await http('/api/collaboration/messages',adminSession,'POST',{projectId,resourceType:'task',resourceId:'task-1',body:'Orientação sintética '+i,expectedAuthorUserId:admin.id},201);
- fixtures.push({i,label,user,projectId,assignmentId:release.assignment.id,expectedTasks:i===1?18:2});
+ fixtures.push({i,label,user,projectId,assignmentId:release.assignment.id,todayAssignmentId:todayAction.assignment.id,overdueAssignmentId:overdueAction.assignment.id,expectedTasks:i===1?18:2});
 }
 const browser=await chromium.launch();let activePage;
 async function loginPage(user,routeName){

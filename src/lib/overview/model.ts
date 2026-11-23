@@ -9,7 +9,7 @@ export type OperationsProject={
 };
 export type OverviewDecision={id:string;project_id:string;content_id:string;content_version:string;decision:"approved"|"changes_requested";decided_at:string;phase?:"idea"|"final"};
 export type OverviewSource="loading"|"ready"|"unavailable"|"forbidden";
-export type OverviewItem={key:string;kind:"task"|"editorial"|"document"|"meeting";title:string;project:OperationsProject;owner:string;due?:string;time?:string;priority:1|2|3;reasons:string[];personal:boolean;taskPriority:number};
+export type OverviewItem={key:string;kind:"task"|"editorial"|"document"|"meeting";title:string;project:OperationsProject;owner:string;due?:string;time?:string;priority:1|2|3;reasons:string[];personal:boolean;taskPriority:number;approval?:{id:string;phase:ApprovalCenterRow["phase"];priority?:ExecutionItem["priority"]}};
 export const overviewClient=(p:OperationsProject)=>Array.isArray(p.clients)?p.clients[0]:p.clients;
 export function overviewProjectHref(p:OperationsProject){
  const slug=overviewClient(p)?.slug;
@@ -26,9 +26,20 @@ export function validOverviewDate(value:unknown):value is string{
 const distance=(date:string,today:string)=>Math.round((Date.parse(date+"T12:00:00Z")-Date.parse(today+"T12:00:00Z"))/86400000);
 const active=(task:ExecutionItem)=>!task.deletedAt&&!task.archivedAt;
 const open=(task:ExecutionItem)=>active(task)&&task.status!=="completed"&&task.status!=="cancelled";
+export function matchesOverviewDeadline(task:ExecutionItem,deadline:"today"|"overdue",today:string){
+ return open(task)&&validOverviewDate(task.dueDate)&&(deadline==="today"?task.dueDate===today:task.dueDate<today);
+}
+export function editorialApprovalPhase(item:EditorialItem){
+ if(item.visibleToClient!==true||item.deletedAt||item.archivedAt)return null;
+ return item.status==="idea_pending"?"idea":item.status==="awaiting_client"?"final":null;
+}
+export const approvalPhaseLabels={idea:"Aprovação de ideia",final:"Aprovação final",document:"Revisão de documento"};
+export type ApprovalCenterRow={
+ id:string;projectId:string;title:string;phase:"idea"|"final"|"document";priority?:ExecutionItem["priority"];dueDate?:string;open:()=>void;
+};
 const unique=<T extends {id:string;title:string}>(rows:T[])=>[...new Map(rows.filter(x=>x&&typeof x.id==="string"&&x.id&&typeof x.title==="string").map(x=>[x.id,x])).values()];
-export function editorialCandidates(projects:OperationsProject[]){
- return projects.filter(p=>p.status!=="archived"&&p.status!=="cancelled"&&p.status!=="closed").flatMap(project=>unique(Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(x=>(x.status==="awaiting_client"||x.status==="idea_pending")&&x.visibleToClient===true).map(item=>({project,item})));
+export function editorialCandidates<P extends Pick<OperationsProject,"id"|"status"|"data">>(projects:P[]){
+ return projects.filter(p=>p.status!=="archived"&&p.status!=="cancelled"&&p.status!=="closed").flatMap(project=>unique(Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(x=>editorialApprovalPhase(x)).map(item=>({project,item})));
 }
 export function buildOperationsOverview(projects:OperationsProject[],userId:string|null,decisions:OverviewDecision[],decisionSource:OverviewSource,today=overviewToday(),now=new Date()){
  const usable=[...new Map(projects.map(p=>[p.id,p])).values()].filter(p=>!["archived","closed","cancelled"].includes(p.status));
@@ -61,7 +72,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
   for(const code of selected){
    if(!/^\d{2}\.\d{2}$/.test(code))continue;const doc=project.data?.ecosystem2027?.documents?.[code];
    if(doc?.reviewStatus!=="review"||typeof doc.content!=="string"||!doc.content.trim())continue;
-   pendingDecisions++;attention.push({key:JSON.stringify([project.id,"document",code]),kind:"document",title:`Revisar documento ${code}`,project,owner:"Revisor não vinculado",priority:3,reasons:["Documento estratégico em revisão formal"],personal:false,taskPriority:2});
+   pendingDecisions++;attention.push({key:JSON.stringify([project.id,"document",code]),kind:"document",title:`Revisar documento ${code}`,project,owner:"Revisor não vinculado",approval:{id:code,phase:"document"},priority:3,reasons:["Documento estratégico em revisão formal"],personal:false,taskPriority:2});
   }
   const appointments=unique(Array.isArray(project.data?.operationalAgenda)?project.data.operationalAgenda:[]);
   for(const row of appointments.filter(x=>x.status==="planned")){
@@ -81,7 +92,7 @@ export function buildOperationsOverview(projects:OperationsProject[],userId:stri
   const phase=item.status==="idea_pending"?"idea":"final";const decision=latest.get(JSON.stringify([project.id,item.id,item.version??"",phase]));if(decision){if(decision.decision==="changes_requested"){const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Ajuste pela Rotevo",due,priority:due&&due<today?1:2,reasons:["Cliente solicitou ajustes na "+(phase==="idea"?"ideia":"versão final")+" "+decision.content_version],personal:false,taskPriority:2});}continue;}
   const due=validOverviewDate(item.publishDate)?item.publishDate:undefined;if(item.publishDate&&!due)invalidDates++;
   const priority:1|2|3=due&&due<today?1:due&&distance(due,today)<=2?2:3;
-  pendingDecisions++;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Decisão do cliente",due,priority,reasons:[phase==="idea"?"Ideia aguardando aprovação do cliente":"Material final aguardando aprovação do cliente",...(due&&due<today?["Data prevista de publicação vencida"]:[])],personal:false,taskPriority:2});
+  pendingDecisions++;attention.push({key:JSON.stringify([project.id,"editorial",item.id]),kind:"editorial",title:item.title,project,owner:"Decisão do cliente",approval:{id:item.id,phase,priority:item.priority},due,priority,reasons:[phase==="idea"?"Ideia aguardando aprovação do cliente":"Material final aguardando aprovação do cliente",...(due&&due<today?["Data prevista de publicação vencida"]:[])],personal:false,taskPriority:2});
  }
  attention.sort((a,b)=>a.priority-b.priority||(a.due??"9999").localeCompare(b.due??"9999")||a.key.localeCompare(b.key));
  const urgency=(x:OverviewItem)=>x.due&&x.due<today?0:x.due===today?1:2;

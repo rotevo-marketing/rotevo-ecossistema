@@ -131,6 +131,29 @@ test('today, overdue and approval rows preserve counts and targets and show only
  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const p=row(rawTask());p.data.executionTimeline=[{...rawTask(),id:'today-urgent',title:'Hoje urgente',visibleToClient:true,dueDate:date,priority:'urgent'},{...rawTask(),id:'today-none',title:'Hoje sem prioridade',visibleToClient:true,dueDate:date},{...rawTask(),id:'late',title:'Entrega atrasada',visibleToClient:true,dueDate:'2020-01-01',priority:'high'}];
  p.data.editorialCalendar=[{id:'content-1',title:'Aprovação com prioridade',channel:'Instagram',format:'Reels',publishDate:date,status:'awaiting_client',visibleToClient:true,priority:'low',version:'01'},{id:'content-2',title:'Aprovação sem prioridade',channel:'Instagram',format:'Reels',publishDate:date,status:'awaiting_client',visibleToClient:true,version:'01'}];
- const calls=[];try{await mount(Overview,{projects:[p],workspace:{modules:['execution','content']},onNavigate:(...args)=>calls.push(args)});const lists=container.querySelectorAll('.rv-ui3-client-summary-list');assert.equal(lists.length,3);assert.deepEqual([...lists].map(x=>x.children.length),[2,1,2]);assert.equal(container.querySelector('[aria-label="Entregas para hoje"]').textContent,'2');assert.equal(container.querySelector('[aria-label="Aprovações pendentes"]').textContent,'2');assert.equal(lists[2].querySelectorAll('[role="img"]').length,1);assert.equal(lists[0].children[1].querySelector('[role="img"]'),null);await click(lists[0].querySelector('button'));assert.deepEqual(calls[0],['execution','project-safe','today-urgent']);await click(lists[2].querySelector('button'));assert.deepEqual(calls[1],['content','project-safe','content-1']);assert.equal(lists[0].querySelector('[aria-label="Prioridade Urgente"]').style.color,'rgb(218, 53, 83)');}
- finally{await unmount();}
+ const calls=[];
+ const previousFrom=mocks["@/lib/supabase"].supabase.from;
+ mocks["@/lib/supabase"].supabase.from=()=>({select(){return this;},in(){return this;},order(){return this;},range:async()=>({data:[],error:null})});
+ try{
+  await mount(Overview,{projects:[p],workspace:{modules:['execution','content']},onNavigate:(...args)=>calls.push(args)});
+  const sections=['Para hoje','Atrasadas','Aprovações'].map(name=>container.querySelector(`section[aria-label="${name}"]`));
+  assert.deepEqual(sections.map(section=>section.querySelectorAll('table').length),[1,1,1]);
+  assert.deepEqual(sections.map(section=>section.querySelectorAll('tbody tr').length),[3,2,3]);
+  const rowFor=(section,title)=>[...section.querySelectorAll('tbody tr')].find(row=>row.textContent.includes(title));
+  assert.match(rowFor(sections[0],'Hoje urgente').textContent,/Urgente/);
+  assert.doesNotMatch(rowFor(sections[0],'Hoje sem prioridade').textContent,/Normal|Urgente|Alta|Baixa/);
+  assert.doesNotMatch(rowFor(sections[2],'Aprovação sem prioridade').textContent,/Normal|Urgente|Alta|Baixa/);
+  await click(button('Hoje urgente'));
+  assert.ok(container.querySelector('[aria-label="Detalhes da tarefa Hoje urgente"]'));
+  await click(container.querySelector('button[aria-label="Fechar detalhes"]'));
+  await click(button('Aprovação com prioridade'));
+  assert.deepEqual(calls,[['content','project-safe','content-1']]);
+  await click(sections[0].querySelector('[aria-label="Kanban"]'));
+  assert.equal(sections[0].querySelector('table'),null);
+  assert.match(sections[0].querySelector('[aria-label^="Quadro Kanban"]').textContent,/Hoje urgente/);
+  assert.doesNotMatch(sections[0].textContent,/Entrega atrasada/);
+ }finally{
+  await unmount();
+  mocks["@/lib/supabase"].supabase.from=previousFrom;
+ }
 });

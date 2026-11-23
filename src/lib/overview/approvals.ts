@@ -2,7 +2,7 @@ import type {SupabaseClient} from "@supabase/supabase-js";
 import {editorialCandidates,type OperationsProject,type OverviewDecision} from "./model.ts";
 
 /** Only consult the caller's RLS-filtered decision records for already authorized projects. */
-export async function loadOverviewDecisions(db:SupabaseClient,projects:OperationsProject[]):Promise<OverviewDecision[]>{
+export async function loadOverviewDecisions(db:SupabaseClient,projects:Pick<OperationsProject,"id"|"status"|"data">[]):Promise<OverviewDecision[]>{
  const candidates=editorialCandidates(projects);
  const rows:OverviewDecision[]=[];
  for(const [phase,ids] of [["final",[...new Set(candidates.filter(x=>x.item.status==="awaiting_client").map(x=>x.project.id))]],["idea",[...new Set(candidates.filter(x=>x.item.status==="idea_pending").map(x=>x.project.id))]]] as const){

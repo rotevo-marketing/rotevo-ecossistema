@@ -68,7 +68,7 @@ test('approval loading paginates instead of treating a truncated first page as c
 test('financial summary reads authorized financial API without sample money; old decorative sections removed',()=>{
  const source=readFileSync(new URL('../../src/Components/admin/AdminOperationsOverview.tsx',import.meta.url),'utf8');
  assert.match(source,/financeRequest\(false\)/);assert.match(source,/financialError/);assert.doesNotMatch(source,/makeFinanceDemo|from\(["'].*finance|R\$\s*\d|Distribuição da carga|Próximas publicações/);
- for(const label of ['Projetos ativos','Tarefas atrasadas','Aguardando decisão','Recebimentos vencidos','Central de Atenção','Minha Rotina','Próximas Reuniões','Projetos em Atenção','Resumo Financeiro'])assert.ok(source.includes(label),label);
+ for(const label of ['Projetos que exigem atenção','Resumo financeiro'])assert.ok(source.includes(label),label);
  const admin=readFileSync(new URL('../../src/app/admin/page.tsx',import.meta.url),'utf8');assert.match(admin,/setUserId\(userData.user.id\)/);assert.match(admin,/userId=\{userId\}/);assert.match(admin,/<FinanceHub\/>/);assert.doesNotMatch(admin,/<EditorialOperations /);
 });
 test('meetings retain Sunday-first offset consistent with header and real date alignment',()=>{

@@ -17,26 +17,73 @@ const identity=async(label)=>{const email=label+'-'+suffix+'@synthetic.invalid',
 const login=async(user)=>{const client=createClient(api,process.env.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});return (await must(client.auth.signInWithPassword({email:user.email,password:user.password}),'authenticate synthetic identity')).session;};
 async function http(path,session,method='GET',body,status=200){const response=await fetch(new URL(path,app),{method,headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});assert.equal(response.status,status,method+' '+path.split('?')[0]);return response.json();}
 const admin=await identity('admin');await must(service.from('profiles').insert({id:admin.id,email:admin.email,full_name:'Estrategista sintético',role:'strategist'}),'synthetic admin profile');await must(service.from('team_members').insert({user_id:admin.id,display_name:'Estrategista sintético',role:'admin',active:true}),'synthetic G2 administrator');const adminSession=await login(admin);
-const labels=['R. Rubim Consultoria Ltda.','Piffer Desenvolvimento Pessoal ME','Flávia Benetele','Jackson Bruno Psicologia','Ana Paula Santiago'],fixtures=[];
+const labels=['Empresa Alfa','Empresa Beta','Empresa Gama','Empresa Delta','Empresa Épsilon'],fixtures=[];
+const date=new Date();
+const day=offset=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(date.getTime()+offset*86400000));
 for(const [i,label] of labels.entries()){
  const user=await identity('client-'+i),clientId=randomUUID(),projectId=randomUUID();
  await must(service.from('clients').insert({id:clientId,name:'Homologação · '+label,slug:'portal-'+i+'-'+suffix}),'synthetic client');
  await must(service.rpc('rotevo_provision_client_profile',{p_user_id:user.id,p_client_id:clientId,p_full_name:'Cliente sintético '+i,p_email:user.email,p_enroll_notifications:true}),'atomic profile, link and enrollment');
- await must(service.from('client_workspaces').insert({client_id:clientId,data:{modules:['execution','content'],contracts:[],folders:[]}}),'synthetic workspace');
- const tasks=Array.from({length:i===1?18:2},(_,j)=>({id:'task-'+(j+1),kind:'task',title:'Atividade sintética '+(j+1),status:'planned',owner:'Estrategista sintético',priority:'normal',dueDate:'2026-12-20',visibleToClient:false,description:'PRIVATE_DESCRIPTION_'+i,clientSummary:'Resumo seguro de acompanhamento',checklist:[{id:'a',text:'PRIVATE_CHECKLIST',done:true}]}));
+ await must(service.from('client_workspaces').insert({client_id:clientId,data:{modules:['execution','content','meetings'],contracts:[],folders:[]}}),'synthetic workspace');
+ const tasks=Array.from({length:i===1?18:2},(_,j)=>({id:'task-'+(j+1),kind:'task',title:'Atividade sintética '+(j+1),status:'planned',owner:'Estrategista sintético',priority:'normal',dueDate:j===0?day(0):day(-1),ownerUserId:admin.id,visibleToClient:false,description:'PRIVATE_DESCRIPTION_'+i,clientSummary:'Resumo seguro de acompanhamento',checklist:[{id:'a',text:'PRIVATE_CHECKLIST',done:true}]}));
+ tasks.push({...tasks[0],id:'deleted',title:'Tarefa excluída sintética '+i,deletedAt:date.toISOString()});
  tasks.push({id:'confidential',kind:'task',title:'PRIVATE_CONFIDENTIAL_'+i,clientVisibility:'confidential',clientConfidentialReason:'Teste sintético'});
- await must(service.from('planning_projects').insert({id:projectId,client_id:clientId,title:'Projeto sintético '+i,slug:'portal-'+i+'-'+suffix,status:'draft',data:{internalNotes:'PRIVATE_ROOT_'+i,portalModules:['execution','content'],executionTimeline:tasks,editorialCalendar:[{id:'content-1',title:'Material sintético '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'idea'}]}}),'synthetic project');
+ await must(service.from('planning_projects').insert({id:projectId,client_id:clientId,title:'Projeto sintético '+i,slug:'portal-'+i+'-'+suffix,status:'draft',data:{internalNotes:'PRIVATE_ROOT_'+i,portalModules:['execution','content','meetings'],executionTimeline:tasks,editorialCalendar:[{id:'content-1',title:'Material sintético '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'idea'},
+ {id:'approval-live',title:'Aprovação sintética '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'awaiting_client'},
+ {id:'approval-deleted',title:'Aprovação excluída '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'awaiting_client',deletedAt:date.toISOString()}],
+ operationalAgenda:[{id:'today',title:'Compromisso de hoje '+i,status:'planned',kind:'meeting',date:day(0),time:'14:00',visibleToClient:true},
+ {id:'tomorrow',title:'Compromisso de amanhã '+i,status:'planned',kind:'meeting',date:day(1),time:'14:00',visibleToClient:true}]}}),'synthetic project');
  const release=await http('/api/workflow/client-actions',adminSession,'POST',{projectId,resourceType:'content',resourceId:'content-1',resourceVersion:'01',clientUserId:user.id,actionType:'send_material',instructions:'Enviar material sintético '+i,dueDate:null,requestKey:'portal-release-'+randomUUID(),expectedAuthorUserId:admin.id});
  await http('/api/collaboration/messages',adminSession,'POST',{projectId,resourceType:'task',resourceId:'task-1',body:'Orientação sintética '+i,expectedAuthorUserId:admin.id},201);
  fixtures.push({i,label,user,projectId,assignmentId:release.assignment.id,expectedTasks:i===1?18:2});
 }
 const browser=await chromium.launch();let activePage;
+async function loginPage(user,routeName){
+ const context=await browser.newContext({viewport:{width:1440,height:1000}});
+ await context.route('**/*',route=>{const url=new URL(route.request().url());return ['127.0.0.1','localhost'].includes(url.hostname)||['data:','blob:'].includes(url.protocol)?route.continue():route.abort();});
+ const page=await context.newPage();activePage=page;
+ await page.goto(app);await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill(user.password);await page.getByRole('button',{name:'Acessar Ecossistema',exact:true}).click();
+ await page.waitForURL('**/'+routeName,{timeout:60000});
+ return {page,context};
+}
+async function captureOverview(page,label,index){
+ const region=name=>page.getByRole('region',{name,exact:true});
+ const current=region('Para hoje');
+ await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor({timeout:60000});
+ await region('Atrasadas').getByRole('button',{name:'Atividade sintética 2',exact:true}).first().waitFor();
+ await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+index,exact:true}).waitFor();
+ await region('Agenda').getByText('Compromisso de hoje '+index,{exact:true}).waitFor();
+ assert.doesNotMatch(await page.locator('main').first().innerText(),/Aprovação excluída|Tarefa excluída sintética|Compromisso de amanhã/);
+ assert.equal(await current.locator('table').count(),1);
+ await current.getByRole('button',{name:'Kanban',exact:true}).click();
+ assert.equal(await current.locator('table').count(),0);
+ await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor();
+ await current.getByRole('button',{name:'Lista',exact:true}).click();
+ if(label.startsWith('cliente'))assert.equal(await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+((index+1)%fixtures.length),exact:true}).count(),0);
+ for(const width of [1440,390])for(const mode of ['light','dark']){
+  await page.setViewportSize({width,height:1000});
+  await page.evaluate(theme=>{document.documentElement.dataset.rotevoAppearance=theme;},mode);
+  await page.screenshot({path:join(output,'overview-'+label+'-'+width+'-'+mode+'.png'),fullPage:true});
+ }
+ await page.setViewportSize({width:1440,height:1000});
+}
+
 try{
+ const strategist=await loginPage(admin,'admin');
+ await captureOverview(strategist.page,'estrategista',0);
+ const todaySection=strategist.page.getByRole('region',{name:'Para hoje',exact:true});
+ await todaySection.getByRole('button',{name:'Criar tarefa',exact:true}).click();
+ await strategist.page.getByRole('button',{name:'Mostrar checklist e dependências'}).click();
+ assert.equal(await strategist.page.getByText('Tarefa excluída sintética 0',{exact:true}).count(),0);
+ assert.equal(await strategist.page.getByPlaceholder('Adicionar etapa...').inputValue(),'');
+ await strategist.page.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await strategist.context.close();
  for(const f of fixtures){const session=await login(f.user);const projected=await http('/api/client/projects',session);assert.equal(projected.projects.length,1);assert.equal(projected.projects[0].id,f.projectId);assert.equal(projected.projects[0].data.executionTimeline.length,f.expectedTasks);assert.doesNotMatch(JSON.stringify(projected),/PRIVATE_/);
   await http('/api/admin/project/update',session,'PATCH',{projectId:f.projectId,data:{executionTimeline:[]},expectedUpdatedAt:projected.projects[0].updated_at},403);
-  const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.route('**/*',route=>{const url=new URL(route.request().url());return ['127.0.0.1','localhost'].includes(url.hostname)||['data:','blob:'].includes(url.protocol)?route.continue():route.abort();});
-  const page=await context.newPage();activePage=page;const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(app);await page.getByLabel('E-mail',{exact:true}).fill(f.user.email);await page.getByLabel('Senha',{exact:true}).fill(f.user.password);await page.getByRole('button',{name:'Acessar Ecossistema',exact:true}).click();await page.waitForURL('**/cliente',{timeout:60000});await page.getByText('Carregando seu ambiente...').waitFor({state:'hidden',timeout:60000});
+  const {page,context}=await loginPage(f.user,'cliente');
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.getByText('Carregando seu ambiente...').waitFor({state:'hidden',timeout:60000});
+  if(f.i<2)await captureOverview(page,'cliente-'+f.i,f.i);
   const bell=page.getByRole('button',{name:/^Notificações/});await bell.waitFor();await bell.click();await page.getByRole('dialog',{name:'Central de notificações'}).waitFor();await page.getByText('Nova mensagem em uma tarefa',{exact:true}).waitFor();await page.getByRole('button',{name:'Marcar como lida',exact:true}).first().click();await page.getByRole('dialog',{name:'Central de notificações'}).getByRole('button',{name:'Fechar',exact:true}).click();
   await page.getByRole('navigation',{name:'Navegação do portal'}).getByRole('button',{name:'Tarefas',exact:true}).click();await page.getByRole('button',{name:'Atividade sintética 1',exact:true}).waitFor();assert.doesNotMatch(await page.locator('body').innerText(),/PRIVATE_/);
   assert.equal(await page.getByRole('button',{name:/Nova tarefa|Editar tarefa|Excluir tarefa|Arquivar tarefa/}).count(),0);

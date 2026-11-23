@@ -1,10 +1,11 @@
 name: Portal final validation (isolated, no deployment)
 on:
   push:
-    branches: [fix/client-portals-mirroring-20261118]
+    branches: [fix/client-portals-mirroring-20261118, fix/ui3-overviews-shared-task-center-20261123]
     paths:
       - '.github/workflows/ui3-portals-final-validation.yml'
       - 'scripts/security/ui3-portals-ci-*'
+      - 'src/**'
       - 'docs/security/sql/ui3-portal-standardization-structures-PROPOSAL-ONLY.sql'
       - 'docs/security/sql/ui3-portal-standardization-associations-PROPOSAL-ONLY.sql'
   workflow_dispatch:
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   locked-build:
     # Browser-only harness repairs reuse the approved build when application files did not change.
-    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' && !startsWith(github.event.head_commit.message, 'ci(browser):')
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123') && !startsWith(github.event.head_commit.message, 'ci(browser):')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -42,6 +43,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify workflow isolation
         run: node --test scripts/security/ui3-portals-ci-safety.test.cjs
+      - name: Verify overview contract
+        run: node --test scripts/security/{overview-management,ui3-client-overview-contract}.test.mjs
       - name: Verify TypeScript
         run: npx --no-install tsc --noEmit
       - name: Lint affected implementation
@@ -51,7 +54,7 @@ jobs:
       - name: Verify dependency files and publication guard unchanged
         run: git diff --exit-code -- package.json package-lock.json vercel.json
   authenticated-portals:
-    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && github.ref == 'refs/heads/fix/client-portals-mirroring-20261118'
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

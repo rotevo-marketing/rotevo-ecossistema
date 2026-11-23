@@ -78,7 +78,7 @@ const rowStatus=(item:Row)=>item.approval?approvalPhaseLabels[item.approval.phas
 const priorityInfo=(priority?:string)=>priorities.find(p=>p.id===priority)??priorities[2];
 const isRow=(v:unknown):v is ExecutionItem=>!!v&&typeof v==="object"&&typeof (v as ExecutionItem).id==="string"&&typeof (v as ExecutionItem).title==="string";
 
-type Props={projects:Project[];clientName?:string;assignmentUserId?:string;assigneeName?:string;focusTask?:{projectId:string;taskId:string;nonce:number}|null};
+type Props={projects:Project[];clientName?:string;assignmentUserId?:string;assigneeName?:string;assigneeAvatarUrl?:string;focusTask?:{projectId:string;taskId:string;nonce:number}|null};
 type Scope={title:string;deadline:"today"|"overdue";day:string;openModule?:()=>void;};
 
 export default function ProjectTimeline(props:Props){
@@ -98,7 +98,7 @@ export function ApprovalTaskCenter({projects,rows,clientName}:{projects:Project[
  return <TaskTimeline projects={projects} clientName={clientName} approvals={rows}/>;
 }
 
-function TaskTimeline({projects,clientName,focusTask,assignmentUserId,assigneeName,sources,scope,approvals}:Props&{sources?:ReturnType<typeof useClientAssignments>;scope?:Scope;approvals?:ApprovalCenterRow[]}){
+function TaskTimeline({projects,clientName,focusTask,assignmentUserId,assigneeName,assigneeAvatarUrl,sources,scope,approvals}:Props&{sources?:ReturnType<typeof useClientAssignments>;scope?:Scope;approvals?:ApprovalCenterRow[]}){
  const [view,setView]=useState<"list"|"board">("list");
  const [section,setSection]=useState<"active"|"completed">("active");
  const [search,setSearch]=useState(""),[searchOpen,setSearchOpen]=useState(false);
@@ -138,13 +138,14 @@ function TaskTimeline({projects,clientName,focusTask,assignmentUserId,assigneeNa
    rows.set(id,{
     ...metadata,id,assignments:[assignment],virtualAssignment:true,title:action,
     description:assignment.instructions,owner:assigneeName||clientName||"Você",
+    ownerAvatarUrl:assigneeAvatarUrl||undefined,
     dueDate:assignment.dueDate??undefined,
     status:assignmentStatus[assignment.status]??"planned",
     completedAt:assignment.status==="validated"?assignment.updatedAt:undefined,
    });
   }
   return [...rows.values()];
- }),[projects,assignments,assigneeName,clientName,scope,approvals]);
+ }),[projects,assignments,assigneeName,assigneeAvatarUrl,clientName,scope,approvals]);
  const selected=selection?items.find(item=>item.projectKey===selection.projectKey&&item.id===selection.id):undefined;
  const focusedTaskNonce=useRef<number|null>(null);
  useEffect(()=>{

@@ -66,14 +66,16 @@ async function loginPage(user,routeName){
 async function captureOverview(page,label,index){
  const region=name=>page.getByRole('region',{name,exact:true});
  const current=region('Para hoje');
- await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor({timeout:60000});
- await region('Atrasadas').getByRole('button',{name:'Atividade sintética 2',exact:true}).first().waitFor();
+ const isClient=label.startsWith('cliente');
+ await current.getByRole('button',{name:isClient?'Fornecer informações':'Atividade sintética 1',exact:true}).first().waitFor({timeout:60000});
+ await region('Atrasadas').getByRole('button',{name:isClient?'Revisar material':'Atividade sintética 2',exact:true}).first().waitFor();
+ if(isClient){assert.equal(await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).count(),0);assert.equal(await region('Atrasadas').getByRole('button',{name:'Atividade sintética 2',exact:true}).count(),0);}
  await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+index,exact:true}).waitFor();
  assert.doesNotMatch(await page.locator('main').first().innerText(),/Aprovação excluída|Tarefa excluída sintética/);
  assert.equal(await current.locator('table').count(),1);
  await current.getByRole('button',{name:'Kanban',exact:true}).click();
  assert.equal(await current.locator('table').count(),0);
- await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor();
+ await current.getByRole('button',{name:isClient?'Fornecer informações':'Atividade sintética 1',exact:true}).first().waitFor();
  await current.getByRole('button',{name:'Lista',exact:true}).click();
  if(label.startsWith('cliente'))assert.equal(await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+((index+1)%fixtures.length),exact:true}).count(),0);
  await exerciseCalendar(page,region('Agenda'),label,index);

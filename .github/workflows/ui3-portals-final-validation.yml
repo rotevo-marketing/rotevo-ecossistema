@@ -1,7 +1,7 @@
 name: Portal final validation (isolated, no deployment)
 on:
   push:
-    branches: [fix/client-portals-mirroring-20261118, fix/ui3-overviews-shared-task-center-20261123, fix/ui3-overview-meetings-calendar-20261123]
+    branches: [fix/client-portals-mirroring-20261118, fix/ui3-overviews-shared-task-center-20261123, fix/ui3-overview-meetings-calendar-20261123, fix/ui3-client-assignment-only-tasks-20261123]
     paths:
       - '.github/workflows/ui3-portals-final-validation.yml'
       - 'scripts/security/ui3-portals-ci-*'
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   locked-build:
     # Browser-only harness repairs reuse the approved build when application files did not change.
-    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123' || github.ref == 'refs/heads/fix/ui3-overview-meetings-calendar-20261123') && !startsWith(github.event.head_commit.message, 'ci(browser):')
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123' || github.ref == 'refs/heads/fix/ui3-overview-meetings-calendar-20261123' || github.ref == 'refs/heads/fix/ui3-client-assignment-only-tasks-20261123') && !startsWith(github.event.head_commit.message, 'ci(browser):')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -54,7 +54,7 @@ jobs:
       - name: Verify dependency files and publication guard unchanged
         run: git diff --exit-code -- package.json package-lock.json vercel.json
   authenticated-portals:
-    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123' || github.ref == 'refs/heads/fix/ui3-overview-meetings-calendar-20261123')
+    if: github.repository == 'rotevo-marketing/rotevo-ecossistema' && (github.ref == 'refs/heads/fix/client-portals-mirroring-20261118' || github.ref == 'refs/heads/fix/ui3-overviews-shared-task-center-20261123' || github.ref == 'refs/heads/fix/ui3-overview-meetings-calendar-20261123' || github.ref == 'refs/heads/fix/ui3-client-assignment-only-tasks-20261123')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

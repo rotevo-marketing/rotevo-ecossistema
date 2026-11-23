@@ -98,7 +98,7 @@ export function ApprovalTaskCenter({projects,rows,clientName}:{projects:Project[
  return <TaskTimeline projects={projects} clientName={clientName} approvals={rows}/>;
 }
 
-function TaskTimeline({projects,clientName,focusTask,showSharedTasks=true,assignmentUserId,assigneeName,sources,scope,approvals}:Props&{sources?:ReturnType<typeof useClientAssignments>;scope?:Scope;approvals?:ApprovalCenterRow[]}){
+function TaskTimeline({projects,clientName,focusTask,assignmentUserId,assigneeName,sources,scope,approvals}:Props&{sources?:ReturnType<typeof useClientAssignments>;scope?:Scope;approvals?:ApprovalCenterRow[]}){
  const [view,setView]=useState<"list"|"board">("list");
  const [section,setSection]=useState<"active"|"completed">("active");
  const [search,setSearch]=useState(""),[searchOpen,setSearchOpen]=useState(false);
@@ -122,35 +122,29 @@ function TaskTimeline({projects,clientName,focusTask,showSharedTasks=true,assign
   }));
   const tasks=new Map((project.data?.executionTimeline??[]).filter(isRow).map(task=>[task.id,task]));
   const content=new Map((Array.isArray(project.data?.editorialCalendar)?project.data.editorialCalendar:[]).filter(isRow).map(item=>[item.id,item]));
+  // The Client Task Center is a responsibility inbox, not a mirror of Rotevo's
+  // operational plan. Sharing a task for progress tracking never creates an assignment.
   const rows=new Map<string,Row>();
-  if(showSharedTasks)for(const task of tasks.values()){
-   if(task.visibleToClient===true&&!task.deletedAt&&!task.archivedAt)rows.set(task.id,{...task,...metadata});
-  }
   for(const assignment of assignments??[]){
-   if(assignment.projectId!==project.id)continue;
+   if(assignment.projectId!==project.id||!assignment.id)continue;
    const task=assignment.resourceType==="task"?tasks.get(assignment.resourceId):undefined;
    const editorial=assignment.resourceType==="content"?content.get(assignment.resourceId):undefined;
-   if(scope&&(!task||task.visibleToClient!==true||task.status==="completed"||assignment.status==="cancelled"))continue;
    if(task?.deletedAt||task?.archivedAt||task?.status==="cancelled"||editorial?.deletedAt||editorial?.archivedAt)continue;
-   const sharedTask=assignment.resourceType==="task"?rows.get(assignment.resourceId):undefined;
-   const title=editorial?.visibleToClient===true?editorial.title:undefined;
+   if(assignment.status==="cancelled")continue;
    const action=assignmentLabels[assignment.actionType]??assignmentLabels.custom;
-   const id=sharedTask?.id??"client-action:"+assignment.id;
-   const related=[...(sharedTask?.assignments??[]),assignment];
-   // Keep a single task row when multiple deliveries belong to the same shared task.
-   const primary=related.find(item=>!["validated","cancelled"].includes(item.status))??related[0];
+   // Do not reveal the title, description or checklist of the linked internal task.
+   // Each formal client action has its own identity, due date and status.
+   const id="client-action:"+assignment.id;
    rows.set(id,{
-    ...sharedTask,...metadata,id,assignments:[primary,...related.filter(item=>item.id!==primary.id)],
-    virtualAssignment:!sharedTask,title:sharedTask?.title??(title?action+" · "+title:action),
-    owner:assigneeName||clientName||"Você",ownerAvatarUrl:undefined,
-    priority:scope?sharedTask?.priority:sharedTask?.priority??(title?editorial?.priority:undefined)??"normal",
-    dueDate:scope?sharedTask?.dueDate:primary.dueDate??sharedTask?.dueDate,
-    status:assignmentStatus[primary.status]??sharedTask?.status??"planned",
-    completedAt:primary.status==="validated"?primary.updatedAt??sharedTask?.completedAt:undefined,
+    ...metadata,id,assignments:[assignment],virtualAssignment:true,title:action,
+    description:assignment.instructions,owner:assigneeName||clientName||"Você",
+    dueDate:assignment.dueDate??undefined,
+    status:assignmentStatus[assignment.status]??"planned",
+    completedAt:assignment.status==="validated"?assignment.updatedAt:undefined,
    });
   }
   return [...rows.values()];
- }),[projects,assignments,showSharedTasks,assigneeName,clientName,scope,approvals]);
+ }),[projects,assignments,assigneeName,clientName,scope,approvals]);
  const selected=selection?items.find(item=>item.projectKey===selection.projectKey&&item.id===selection.id):undefined;
  const focusedTaskNonce=useRef<number|null>(null);
  useEffect(()=>{

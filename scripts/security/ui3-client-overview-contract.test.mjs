@@ -8,7 +8,7 @@ const source=path=>readFileSync(new URL("../../src/"+path,import.meta.url),"utf8
 test("both overviews render the existing task and agenda modules under their own scopes",()=>{
  const client=source("Components/cliente/ClientOverview.tsx");
  const admin=source("Components/admin/AdminOperationsOverview.tsx");
- assert.match(client,/allowed\("execution"\)&&<DailyClientTaskCenters/);
+ assert.match(client,/\(allowed\("execution"\)\|\|!!assignmentUserId\)&&<DailyClientTaskCenters/);
  assert.match(client,/contentAllowed&&<section/);
  assert.match(client,/allowed\("meetings"\)&&<section/);
  assert.match(client,/<ClientMeetings projects=\{projects\} embeddedCalendar/);
@@ -56,4 +56,16 @@ test("prerequisites use one project's eligible records and reject direct and ind
  assert.equal(own.length,8);
  assert.match(source("Components/admin/CentralTarefas.tsx"),/setDraft\(\{\.\.\.blankDraft\(\),projectId:/);
  assert.match(source("Components/admin/CentralTarefas.tsx"),/checklist:\[\] as ExecutionChecklistItem\[\]/);
+});
+
+test("client task center derives responsibilities only from formal assignments",()=>{
+ const timeline=source("Components/cliente/ProjectTimeline.tsx");
+ assert.match(timeline,/for\(const assignment of assignments\?\?\[\]\)/);
+ assert.match(timeline,/const id="client-action:"\+assignment\.id/);
+ assert.match(timeline,/virtualAssignment:true,title:action/);
+ assert.match(timeline,/dueDate:assignment\.dueDate\?\?undefined/);
+ assert.match(timeline,/status:assignmentStatus\[assignment\.status\]/);
+ assert.doesNotMatch(timeline,/if\(showSharedTasks\)for\(const task/);
+ assert.doesNotMatch(timeline,/title:sharedTask\?\.title/);
+ assert.doesNotMatch(timeline,/dueDate:scope\?sharedTask\?\.dueDate/);
 });

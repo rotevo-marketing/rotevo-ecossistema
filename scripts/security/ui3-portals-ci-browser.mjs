@@ -63,6 +63,7 @@ async function captureOverview(page,label,index){
  for(const width of [1440,390])for(const mode of ['light','dark']){
   await page.setViewportSize({width,height:1000});
   await page.evaluate(theme=>{document.documentElement.dataset.rotevoAppearance=theme;},mode);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),label+' has horizontal page overflow at '+width+'px');
   await page.screenshot({path:join(output,'overview-'+label+'-'+width+'-'+mode+'.png'),fullPage:true});
  }
  await page.setViewportSize({width:1440,height:1000});

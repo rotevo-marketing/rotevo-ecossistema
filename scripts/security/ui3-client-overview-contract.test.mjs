@@ -69,3 +69,16 @@ test("client task center derives responsibilities only from formal assignments",
  assert.doesNotMatch(timeline,/title:sharedTask\?\.title/);
  assert.doesNotMatch(timeline,/dueDate:scope\?sharedTask\?\.dueDate/);
 });
+
+test("formal client assignee avatars use existing authenticated photo or the scoped client photo",()=>{
+ const timeline=source("Components/cliente/ProjectTimeline.tsx");
+ const overview=source("Components/cliente/ClientOverview.tsx");
+ const page=source("app/cliente/page.tsx");
+ const strategist=source("Components/admin/CentralTarefas.tsx");
+ assert.match(timeline,/ownerAvatarUrl:assigneeAvatarUrl\|\|undefined/);
+ assert.match(overview,/assigneeAvatarUrl=\{personAvatarUrl\}/);
+ assert.match(page,/personAvatarUrl=\{account\.avatar\|\|clientAvatar\|\|undefined\}/);
+ assert.match(page,/assigneeAvatarUrl=\{account\.avatar\|\|clientAvatar\|\|undefined\}/);
+ assert.match(strategist,/assigned\?\.clientUserId===task\.ownerUserId\?clientPhotos\[client\?\.id\?\?""\]/);
+ assert.match(strategist,/x\.assignments\?\.some\(item=>item\.clientUserId===x\.task\.ownerUserId\)\?clientPhotos\[x\.client\?\.id\?\?""\]/);
+});

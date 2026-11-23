@@ -160,11 +160,11 @@ export default function ClientAreaPage(){
        {loading?<div className="rounded-2xl border border-[#E3E7F0] bg-white p-7 text-sm text-[#697386]">Carregando seu ambiente...</div>:
        !workspace?<p className="rounded-xl bg-white p-6 text-sm">Seus serviços não puderam ser carregados. Atualize a página.</p>:
        tab!=="overview"&&!workspace.modules.includes(tab as never)&&!(tab==="execution"&&clientActionEnabled)?<p className="rounded-xl bg-white p-6 text-sm">Este serviço não está disponível para sua conta.</p>:
-       tab==="overview"?<ClientOverview assignmentUserId={clientActionEnabled?authenticatedUserId??undefined:undefined} projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
+       tab==="overview"?<ClientOverview assignmentUserId={clientActionEnabled?authenticatedUserId??undefined:undefined} projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} personAvatarUrl={account.avatar||clientAvatar||undefined} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
        tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}
         assignmentUserId={clientActionEnabled?authenticatedUserId??undefined:undefined}
-        assigneeName={account.profile?.displayName||undefined}/>:
+        assigneeName={account.profile?.displayName||undefined} assigneeAvatarUrl={account.avatar||clientAvatar||undefined}/>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :
        tab==="finance"?<ClientFinance/> :
        tab==="campaigns"?<ClientCampaigns key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:

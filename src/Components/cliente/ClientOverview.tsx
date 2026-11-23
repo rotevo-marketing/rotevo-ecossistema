@@ -52,7 +52,7 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    <h2 className="mt-2 text-[clamp(23px,2.3vw,32px)] font-semibold tracking-tight text-[#17172A]">{greeting}{greetingName?", "+greetingName:""}.</h2>
    <p className="mt-2 max-w-xl text-[13px] leading-5 text-[#646C80]">Suas entregas, compromissos e decisões em um só lugar.</p>
   </header>
-  {allowed("execution")&&<DailyClientTaskCenters day={today} projects={projects} clientName={clientName} assigneeName={personName} assignmentUserId={assignmentUserId} openModule={()=>onNavigate("execution")}/>}
+  {(allowed("execution")||!!assignmentUserId)&&<DailyClientTaskCenters day={today} projects={projects} clientName={clientName} assigneeName={personName} assignmentUserId={assignmentUserId} openModule={()=>onNavigate("execution")}/>}
   {contentAllowed&&<section aria-label="Fila de aprovações">
    <ApprovalTaskCenter projects={projects} rows={approvals} clientName={clientName}/>
    {(approvalsLoading||approvalsFailed)&&<p className="mt-2 text-xs" role="status">{approvalsLoading?"Consultando aprovações…":"Não foi possível consultar as aprovações."}</p>}

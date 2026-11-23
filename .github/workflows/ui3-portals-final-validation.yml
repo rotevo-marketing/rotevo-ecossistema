@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/ui3-portals-final-validation.yml'
       - 'scripts/security/ui3-portals-ci-*'
+      - 'scripts/security/ui3-client-overview-contract.test.mjs'
       - 'src/**'
       - 'docs/security/sql/ui3-portal-standardization-structures-PROPOSAL-ONLY.sql'
       - 'docs/security/sql/ui3-portal-standardization-associations-PROPOSAL-ONLY.sql'

@@ -163,7 +163,6 @@ export default function ClientAreaPage(){
        tab==="overview"?<ClientOverview assignmentUserId={clientActionEnabled?authenticatedUserId??undefined:undefined} projects={projects} workspace={workspace} clientName={clientName} personName={account.profile?.displayName} onNavigate={openModule}/>:
        tab==="planning"?<ClientPlanning key={scopedProjects[0]?.id??"no-project"} projects={scopedProjects}/>:
        tab==="execution"?<ProjectTimeline projects={projects} clientName={clientName} focusTask={focusedTask}
-        showSharedTasks={workspace.modules.includes("execution" as never)}
         assignmentUserId={clientActionEnabled?authenticatedUserId??undefined:undefined}
         assigneeName={account.profile?.displayName||undefined}/>:
        tab==="content"?<ClientContent projects={projects} focusContentId={focusedContent} onFocusHandled={()=>setFocusedContent(null)}/> :

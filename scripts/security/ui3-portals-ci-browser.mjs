@@ -85,7 +85,8 @@ async function exerciseCalendar(page,agenda,label,index){
  await panel.getByRole('heading',{name:title(day(0)),exact:true}).waitFor();
  await panel.getByText('Compromisso de hoje '+index,{exact:true}).waitFor();
  assert.equal(await select(day(0)).getAttribute('aria-pressed'),'true');
- assert.equal(await agenda.getByRole('button',{name:/Novo compromisso|Criar compromisso|Gerenciar|Sincronizar|Conectar Google/}).count(),0);
+ assert.equal(await agenda.getByRole('region',{name:'Google Calendar',exact:true}).count(),0);
+ assert.equal(await agenda.getByRole('button',{name:/Novo compromisso|Criar compromisso|Gerenciar|Sincronizar|Conectar conta/}).count(),0);
  await select(alternateDay).click();
  await panel.getByRole('heading',{name:title(alternateDay),exact:true}).waitFor();
  await panel.getByText('Compromisso selecionado '+index,{exact:true}).waitFor();
@@ -128,12 +129,22 @@ async function exerciseCalendar(page,agenda,label,index){
   assert.ok(left&&right);
   assert.ok(width===1440?right.x>=left.x+left.width&&Math.abs(right.y-left.y)<=2:right.y>=left.y+left.height,label+' calendar and agenda layout at '+width+'px');
   assert.ok(right.x+right.width<=width+1,label+' agenda clipped at '+width+'px');
-  await agenda.screenshot({path:join(output,'agenda-'+label+'-'+width+'-'+mode+'.png')});
+  const contrast=await panel.getByText('Compromisso de hoje '+index,{exact:true}).evaluate(el=>{
+   const luminance=color=>color.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>x/255)
+    .map(x=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4)
+    .reduce((sum,x,i)=>sum+x*[0.2126,0.7152,0.0722][i],0);
+   const foreground=luminance(getComputedStyle(el).color);
+   const background=luminance(getComputedStyle(el.closest('article')).backgroundColor);
+   return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
+  });
+  assert.ok(contrast>=4.5,label+' meeting title contrast '+mode+': '+contrast);
+  await agenda.screenshot({path:join(output,'agenda-'+label+'-'+width+'-'+mode+'.png'),style:'.rv-ui2-topbar {position: static !important;} nextjs-portal {display:none!important;}'});
  }
  await page.setViewportSize({width:1440,height:1000});
  await agenda.getByRole('button',{name:'Ver agenda',exact:true}).click();
  await page.getByRole('region',{name:'Calendário de reuniões'}).waitFor();
  if(strategist){
+  await page.getByRole('region',{name:'Google Calendar',exact:true}).waitFor();
   await page.getByRole('button',{name:'Novo compromisso',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'Novo compromisso',exact:true});
   await editor.waitFor();

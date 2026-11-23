@@ -58,8 +58,8 @@ export default function ClientOverview({projects,workspace,onNavigate,clientName
    {(approvalsLoading||approvalsFailed)&&<p className="mt-2 text-xs" role="status">{approvalsLoading?"Consultando aprovações…":"Não foi possível consultar as aprovações."}</p>}
   </section>}
   {allowed("meetings")&&<section className={card} aria-label="Agenda">
-   <div className="mb-3 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Agenda de hoje</h3><button type="button" onClick={()=>onNavigate("meetings")} className="text-xs font-semibold text-[#6533CF] hover:underline">Ver agenda</button></div>
-   <ClientMeetings projects={projects} day={today}/>
+   <div className="mb-3 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Agenda</h3><button type="button" onClick={()=>onNavigate("meetings")} className="text-xs font-semibold text-[#6533CF] hover:underline">Ver agenda</button></div>
+   <ClientMeetings projects={projects} embeddedCalendar/>
   </section>}
  </main>;
 }

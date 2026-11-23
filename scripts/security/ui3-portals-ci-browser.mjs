@@ -20,6 +20,17 @@ const admin=await identity('admin');await must(service.from('profiles').insert({
 const labels=['Empresa Alfa','Empresa Beta','Empresa Gama','Empresa Delta','Empresa Épsilon'],fixtures=[];
 const date=new Date();
 const day=offset=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(date.getTime()+offset*86400000));
+const month=day(0).slice(0,7);
+const [year,monthNumber]=month.split('-').map(Number);
+const nextMonthDay=new Date(Date.UTC(year,monthNumber,1)).toISOString().slice(0,10);
+const alternateDay=month+(day(0).endsWith('-15')?'-16':'-15');
+const emptyDay=month+(day(0).endsWith('-05')?'-06':'-05');
+const agendaItem=(id,title,date,extra={})=>({id,title,date,kind:'meeting',status:'planned',time:'14:00',...extra});
+const foreignOwner=await identity('other-agenda-owner');
+await must(service.from('rotevo_user_agendas').insert([
+ {user_id:admin.id,data:{operationalAgenda:[agendaItem('private','Compromisso privado do estrategista',alternateDay,{meetingUrl:'javascript:alert(1)'})]}},
+ {user_id:foreignOwner.id,data:{operationalAgenda:[agendaItem('foreign','Agenda privada de outro usuário',alternateDay)]}}
+]),'synthetic private agendas owned by distinct accounts');
 for(const [i,label] of labels.entries()){
  const user=await identity('client-'+i),clientId=randomUUID(),projectId=randomUUID();
  await must(service.from('clients').insert({id:clientId,name:'Homologação · '+label,slug:'portal-'+i+'-'+suffix}),'synthetic client');
@@ -31,8 +42,12 @@ for(const [i,label] of labels.entries()){
  await must(service.from('planning_projects').insert({id:projectId,client_id:clientId,title:'Projeto sintético '+i,slug:'portal-'+i+'-'+suffix,status:'draft',data:{internalNotes:'PRIVATE_ROOT_'+i,portalModules:['execution','content','meetings'],executionTimeline:tasks,editorialCalendar:[{id:'content-1',title:'Material sintético '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'idea'},
  {id:'approval-live',title:'Aprovação sintética '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'awaiting_client'},
  {id:'approval-deleted',title:'Aprovação excluída '+i,visibleToClient:true,version:'01',channel:'Instagram',format:'Reels',status:'awaiting_client',deletedAt:date.toISOString()}],
- operationalAgenda:[{id:'today',title:'Compromisso de hoje '+i,status:'planned',kind:'meeting',date:day(0),time:'14:00',visibleToClient:true},
- {id:'tomorrow',title:'Compromisso de amanhã '+i,status:'planned',kind:'meeting',date:day(1),time:'14:00',visibleToClient:true}]}}),'synthetic project');
+ operationalAgenda:[
+ agendaItem('today','Compromisso de hoje '+i,day(0),{visibleToClient:true,notes:'Pauta sintética '+i,meetingUrl:'https://meet.google.com/synthetic-'+i}),
+ agendaItem('alternate','Compromisso selecionado '+i,alternateDay,{status:'cancelled',visibleToClient:true}),
+ agendaItem('next-month','Compromisso do próximo mês '+i,nextMonthDay,{visibleToClient:true}),
+ agendaItem('internal','PRIVATE_MEETING_'+i,alternateDay,{visibleToClient:false})
+ ]}}),'synthetic project');
  const release=await http('/api/workflow/client-actions',adminSession,'POST',{projectId,resourceType:'content',resourceId:'content-1',resourceVersion:'01',clientUserId:user.id,actionType:'send_material',instructions:'Enviar material sintético '+i,dueDate:null,requestKey:'portal-release-'+randomUUID(),expectedAuthorUserId:admin.id});
  await http('/api/collaboration/messages',adminSession,'POST',{projectId,resourceType:'task',resourceId:'task-1',body:'Orientação sintética '+i,expectedAuthorUserId:admin.id},201);
  fixtures.push({i,label,user,projectId,assignmentId:release.assignment.id,expectedTasks:i===1?18:2});
@@ -52,21 +67,80 @@ async function captureOverview(page,label,index){
  await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor({timeout:60000});
  await region('Atrasadas').getByRole('button',{name:'Atividade sintética 2',exact:true}).first().waitFor();
  await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+index,exact:true}).waitFor();
- await region('Agenda').getByText('Compromisso de hoje '+index,{exact:true}).waitFor();
- assert.doesNotMatch(await page.locator('main').first().innerText(),/Aprovação excluída|Tarefa excluída sintética|Compromisso de amanhã/);
+ assert.doesNotMatch(await page.locator('main').first().innerText(),/Aprovação excluída|Tarefa excluída sintética/);
  assert.equal(await current.locator('table').count(),1);
  await current.getByRole('button',{name:'Kanban',exact:true}).click();
  assert.equal(await current.locator('table').count(),0);
  await current.getByRole('button',{name:'Atividade sintética 1',exact:true}).first().waitFor();
  await current.getByRole('button',{name:'Lista',exact:true}).click();
  if(label.startsWith('cliente'))assert.equal(await region('Aprovações').getByRole('button',{name:'Aprovação sintética '+((index+1)%fixtures.length),exact:true}).count(),0);
+ await exerciseCalendar(page,region('Agenda'),label,index);
+}
+async function exerciseCalendar(page,agenda,label,index){
+ const strategist=label==='estrategista';
+ const calendar=agenda.getByRole('region',{name:'Calendário de reuniões'});
+ const panel=agenda.locator('aside');
+ const title=date=>'Agenda de '+date.split('-').reverse().join('/');
+ const select=date=>calendar.getByRole('button',{name:strategist?date:'Ver agenda de '+date,exact:true});
+ await panel.getByRole('heading',{name:title(day(0)),exact:true}).waitFor();
+ await panel.getByText('Compromisso de hoje '+index,{exact:true}).waitFor();
+ assert.equal(await select(day(0)).getAttribute('aria-pressed'),'true');
+ assert.equal(await agenda.getByRole('button',{name:/Novo compromisso|Criar compromisso|Gerenciar|Sincronizar|Conectar Google/}).count(),0);
+ await select(alternateDay).click();
+ await panel.getByRole('heading',{name:title(alternateDay),exact:true}).waitFor();
+ await panel.getByText('Compromisso selecionado '+index,{exact:true}).waitFor();
+ assert.equal(await panel.getByText('Compromisso de hoje '+index,{exact:true}).count(),0);
+ if(strategist){
+  const privateCard=panel.getByRole('article').filter({hasText:'Compromisso privado do estrategista'});
+  await privateCard.waitFor();
+  assert.equal(await privateCard.getByRole('link').count(),0);
+  assert.equal(await agenda.getByText('Agenda privada de outro usuário',{exact:true}).count(),0);
+ }else{
+  assert.doesNotMatch(await agenda.innerText(),/PRIVATE_MEETING|Compromisso privado|Agenda privada de outro usuário/);
+  for(const [other] of labels.entries())if(other!==index){
+   assert.equal(await agenda.getByText('Compromisso de hoje '+other,{exact:true}).count(),0);
+   assert.equal(await agenda.getByText('Compromisso selecionado '+other,{exact:true}).count(),0);
+  }
+ }
+ await select(emptyDay).click();
+ await panel.getByRole('heading',{name:title(emptyDay),exact:true}).waitFor();
+ assert.equal(await panel.getByRole('article').count(),0);
+ await agenda.getByRole('button',{name:'Próximo mês',exact:true}).click();
+ await panel.getByRole('heading',{name:title(nextMonthDay),exact:true}).waitFor();
+ await panel.getByText('Compromisso do próximo mês '+index,{exact:true}).waitFor();
+ await agenda.getByRole('button',{name:'Mês anterior',exact:true}).click();
+ await panel.getByRole('heading',{name:title(day(0)),exact:true}).waitFor();
+ await select(alternateDay).click();
+ await agenda.getByRole('button',{name:'Hoje',exact:true}).click();
+ await panel.getByRole('heading',{name:title(day(0)),exact:true}).waitFor();
+ assert.equal(await panel.getByRole('article').filter({hasText:'Compromisso de hoje '+index}).getByRole('link').getAttribute('href'),'https://meet.google.com/synthetic-'+index);
+ if(!strategist){
+  await panel.getByRole('button',{name:'Visualizar',exact:true}).click();
+  const details=page.getByRole('dialog',{name:'Compromisso de hoje '+index});
+  await details.getByText('Pauta sintética '+index,{exact:true}).waitFor();
+  await details.getByRole('button',{name:'Fechar detalhes',exact:true}).click();
+ }
  for(const width of [1440,390])for(const mode of ['light','dark']){
   await page.setViewportSize({width,height:1000});
   await page.evaluate(theme=>{document.documentElement.dataset.rotevoAppearance=theme;},mode);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),label+' has horizontal page overflow at '+width+'px');
-  await page.screenshot({path:join(output,'overview-'+label+'-'+width+'-'+mode+'.png'),fullPage:true});
+  const left=await calendar.boundingBox(),right=await panel.boundingBox();
+  assert.ok(left&&right);
+  assert.ok(width===1440?right.x>=left.x+left.width&&Math.abs(right.y-left.y)<=2:right.y>=left.y+left.height,label+' calendar and agenda layout at '+width+'px');
+  assert.ok(right.x+right.width<=width+1,label+' agenda clipped at '+width+'px');
+  await agenda.screenshot({path:join(output,'agenda-'+label+'-'+width+'-'+mode+'.png')});
  }
  await page.setViewportSize({width:1440,height:1000});
+ await agenda.getByRole('button',{name:'Ver agenda',exact:true}).click();
+ await page.getByRole('region',{name:'Calendário de reuniões'}).waitFor();
+ if(strategist){
+  await page.getByRole('button',{name:'Novo compromisso',exact:true}).click();
+  const editor=page.getByRole('dialog',{name:'Novo compromisso',exact:true});
+  await editor.waitFor();
+  await editor.getByRole('button',{name:'Fechar janela',exact:true}).click();
+ }
+ await page.getByRole('button',{name:'Visão geral',exact:true}).click();
+ await page.getByRole('region',{name:'Agenda',exact:true}).waitFor();
 }
 
 try{

@@ -11,10 +11,10 @@ test("both overviews render the existing task and agenda modules under their own
  assert.match(client,/allowed\("execution"\)&&<DailyClientTaskCenters/);
  assert.match(client,/contentAllowed&&<section/);
  assert.match(client,/allowed\("meetings"\)&&<section/);
- assert.match(client,/<ClientMeetings projects=\{projects\} day=\{today\}/);
+ assert.match(client,/<ClientMeetings projects=\{projects\} embeddedCalendar/);
  assert.match(admin,/<DailyTaskCenters approvals=/);
  assert.match(client,/<ApprovalTaskCenter/);
- assert.match(admin,/<AdminMeetingsHub[^\n]+day=\{today\}/);
+ assert.match(admin,/<AdminMeetingsHub[^\n]+embeddedCalendar/);
  for(const view of [client,admin]){
 
   assert.doesNotMatch(view,/<table/);

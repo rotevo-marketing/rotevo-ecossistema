@@ -60,8 +60,8 @@ export default function AdminOperationsOverview({projects,userId=null,userName="
       {process.env.NEXT_PUBLIC_ROTEVO_NOTIFICATIONS_ENABLED==="true"&&userId&&onOpenNotification&&<WorkflowFocusQueue userId={userId} onOpenContent={onOpenNotification} onOpenTask={onOpenTaskNotification}/>}
      </section>
      <section className={surface} aria-label="Agenda">
-      <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Agenda de hoje</h3>{onOpenMeetings&&<button type="button" onClick={onOpenMeetings} className={simpleAction}>Ver agenda</button>}</div>
-      <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} userId={userId} onChanged={onChanged} day={today}/>
+      <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Agenda</h3>{onOpenMeetings&&<button type="button" onClick={onOpenMeetings} className={simpleAction}>Ver agenda</button>}</div>
+      <AdminMeetingsHub projects={projects.map(p=>({...p,data:p.data??{}}))} userId={userId} embeddedCalendar onOpenAgenda={onOpenMeetings}/>
      </section>
      <section className={surface} aria-labelledby="daily-finance">
       <div className="flex flex-wrap items-center justify-between gap-3"><h3 id="daily-finance" className="flex items-center gap-2 text-sm font-semibold"><RotevoTablerIcon name="currency-dollar" size={18} stroke={1.6}/> Resumo financeiro</h3>{onOpenFinance&&<button onClick={onOpenFinance} type="button" className={simpleAction} aria-label="Acessar módulo Financeiro"><RotevoTablerIcon name="external-link" size={16} stroke={1.6}/></button>}</div>
